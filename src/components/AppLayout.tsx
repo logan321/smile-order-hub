@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, FileText, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FileText, Settings, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Clientes', to: '/clientes', icon: Users },
   { label: 'Pedidos', to: '/pedidos', icon: ShoppingCart },
   { label: 'Relatórios', to: '/relatorios', icon: FileText },
+  { label: 'Configurações', to: '/configuracoes', icon: Settings },
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {

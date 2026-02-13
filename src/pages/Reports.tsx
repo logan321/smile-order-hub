@@ -1,9 +1,13 @@
 import { useApp } from '@/context/AppContext';
 import { ClientReport } from '@/types';
-import { FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { loadBusinessConfig } from '@/lib/businessConfig';
+import { generateClientReportPDF } from '@/lib/generatePDF';
+import { toast } from 'sonner';
 
 const Reports = () => {
   const { clients, orders } = useApp();
@@ -15,6 +19,16 @@ const Reports = () => {
   }).sort((a, b) => b.total - a.total);
 
   const grandTotal = reports.reduce((sum, r) => sum + r.total, 0);
+
+  const handleExportPDF = (report: ClientReport) => {
+    const config = loadBusinessConfig();
+    if (!config.businessName && !config.ownerName) {
+      toast.warning('Configure seus dados em Configurações antes de gerar o PDF');
+      return;
+    }
+    generateClientReportPDF(report.client, report.orders, report.total, config);
+    toast.success(`PDF gerado para ${report.client.name}`);
+  };
 
   return (
     <div className="animate-fade-in">
@@ -41,26 +55,39 @@ const Reports = () => {
         <div className="grid gap-3">
           {reports.map(({ client, orders: clientOrders, total }) => {
             const isExpanded = expandedClient === client.id;
+            const report = { client, orders: clientOrders, total };
             return (
               <div key={client.id} className="bg-card rounded-xl border border-border/50 overflow-hidden transition-all">
-                <button
-                  onClick={() => setExpandedClient(isExpanded ? null : client.id)}
-                  className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-semibold text-primary">{client.name.charAt(0).toUpperCase()}</span>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setExpandedClient(isExpanded ? null : client.id)}
+                    className="flex-1 p-4 flex items-center justify-between hover:bg-muted/30 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-semibold text-primary">{client.name.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{client.name}</p>
+                        <p className="text-sm text-muted-foreground">{clientOrders.length} pedido{clientOrders.length !== 1 ? 's' : ''}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{client.name}</p>
-                      <p className="text-sm text-muted-foreground">{clientOrders.length} pedido{clientOrders.length !== 1 ? 's' : ''}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-success">R$ {total.toFixed(2)}</span>
+                      {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                     </div>
+                  </button>
+                  <div className="pr-3">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleExportPDF(report)}
+                      title="Exportar PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-success">R$ {total.toFixed(2)}</span>
-                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                </button>
+                </div>
 
                 {isExpanded && clientOrders.length > 0 && (
                   <div className="border-t border-border/50 divide-y divide-border/30 bg-muted/20">
