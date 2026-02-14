@@ -94,6 +94,8 @@ const ShirtEditor = () => {
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Arial');
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [showLogoNotice, setShowLogoNotice] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
   const [pendingPatch, setPendingPatch] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string } | null>(null);
   const [patchSideChoice, setPatchSideChoice] = useState<'front' | 'back' | 'both' | null>(null);
@@ -1002,11 +1004,13 @@ const ShirtEditor = () => {
               {activeTab === 'logo' && (
                 <div className="space-y-2 lg:space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase hidden lg:block">Enviar logo ou imagem</p>
-                  <label className="flex items-center lg:flex-col gap-3 lg:gap-2 px-4 py-4 lg:py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                  <div
+                    onClick={() => setShowLogoNotice(true)}
+                    className="flex items-center lg:flex-col gap-3 lg:gap-2 px-4 py-4 lg:py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
                     <Upload className="h-6 w-6 lg:h-8 lg:w-8 text-muted-foreground" />
                     <div className="lg:text-center"><span className="text-sm text-muted-foreground">Enviar logo ou imagem</span><span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span></div>
-                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
-                  </label>
+                  </div>
+                  <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
                   <p className="text-[10px] text-muted-foreground text-center hidden lg:block">A imagem será aplicada no lado <strong>{activeView === 'front' ? 'Frente' : 'Costas'}</strong></p>
                 </div>
               )}
@@ -1148,6 +1152,23 @@ const ShirtEditor = () => {
                 else if (pendingLogoFile) placeLogoFile(pendingLogoFile);
               }}>Posição livre</Button>
               <Button variant="ghost" size="sm" onClick={() => { setShowZonePicker(null); setPendingLogoFile(null); }}>Cancelar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logo quality notice modal */}
+      {showLogoNotice && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-xl font-bold text-center mb-4">Fique Tranquilo!</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+              O seu desenho passará por especialistas em tratamento de imagem para garantir a qualidade de impressão no produto.
+            </p>
+            <div className="flex justify-end">
+              <Button onClick={() => { setShowLogoNotice(false); logoInputRef.current?.click(); }} className="px-6">
+                Ok
+              </Button>
             </div>
           </div>
         </div>
