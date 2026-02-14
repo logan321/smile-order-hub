@@ -1,4 +1,4 @@
-import { useApp } from '@/context/AppContext';
+import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
 import { ClientReport } from '@/types';
 import { FileText, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { format } from 'date-fns';
@@ -10,13 +10,13 @@ import { generateClientReportPDF } from '@/lib/generatePDF';
 import { toast } from 'sonner';
 
 const Reports = () => {
-  const { clients, orders } = useApp();
+  const { clients, orders, services } = useApp();
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
 
   const reports: ClientReport[] = clients.map(client => {
     const clientOrders = orders.filter(o => o.clientId === client.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const unpaidOrders = clientOrders.filter(o => !o.paid);
-    return { client, orders: clientOrders, total: unpaidOrders.reduce((sum, o) => sum + o.price, 0) };
+    return { client, orders: clientOrders, total: unpaidOrders.reduce((sum, o) => sum + getOrderTotal(o), 0) };
   }).sort((a, b) => b.total - a.total);
 
   const grandTotal = reports.reduce((sum, r) => sum + r.total, 0);
@@ -28,7 +28,7 @@ const Reports = () => {
       return;
     }
     const unpaidOrders = report.orders.filter(o => !o.paid);
-    generateClientReportPDF(report.client, unpaidOrders, report.total, config);
+    generateClientReportPDF(report.client, unpaidOrders, report.total, config, services);
     toast.success(`PDF gerado para ${report.client.name}`);
   };
 
@@ -80,12 +80,7 @@ const Reports = () => {
                     </div>
                   </button>
                   <div className="pr-3">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleExportPDF(report)}
-                      title="Exportar PDF"
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleExportPDF(report)} title="Exportar PDF">
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
@@ -93,18 +88,22 @@ const Reports = () => {
 
                 {isExpanded && clientOrders.length > 0 && (
                   <div className="border-t border-border/50 divide-y divide-border/30 bg-muted/20">
-                    {clientOrders.map(order => (
-                      <div key={order.id} className={`px-4 py-3 flex items-center justify-between ${order.paid ? 'opacity-50' : ''}`}>
-                        <div>
-                          <p className={`text-sm font-medium ${order.paid ? 'line-through' : ''}`}>{order.service}</p>
-                          <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</p>
+                    {clientOrders.map(order => {
+                      const desc = getOrderDescription(order, services);
+                      const orderTotal = getOrderTotal(order);
+                      return (
+                        <div key={order.id} className={`px-4 py-3 flex items-center justify-between ${order.paid ? 'opacity-50' : ''}`}>
+                          <div>
+                            <p className={`text-sm font-medium ${order.paid ? 'line-through' : ''}`}>{desc}</p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {order.paid && <span className="text-xs text-success font-semibold">Pago</span>}
+                            <span className={`text-sm font-semibold ${order.paid ? 'line-through text-muted-foreground' : ''}`}>R$ {orderTotal.toFixed(2)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {order.paid && <span className="text-xs text-success font-semibold">Pago</span>}
-                          <span className={`text-sm font-semibold ${order.paid ? 'line-through text-muted-foreground' : ''}`}>R$ {order.price.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <div className="px-4 py-3 flex items-center justify-between bg-muted/40">
                       <span className="text-sm font-semibold">Total</span>
                       <span className="font-bold text-success">R$ {total.toFixed(2)}</span>
