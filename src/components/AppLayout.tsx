@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
@@ -17,6 +18,12 @@ const navItems = [
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const { isAdmin } = useSubscription();
+
+  const allNavItems = [
+    ...navItems,
+    ...(isAdmin ? [{ label: 'Admin', to: '/admin', icon: Shield }] : []),
+  ];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -34,7 +41,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </h1>
         </div>
         <nav className="flex-1 px-3 space-y-1">
-          {navItems.map(item => (
+          {allNavItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -78,7 +85,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Mobile Nav Overlay */}
         {mobileOpen && (
           <div className="md:hidden bg-card border-b border-border px-4 pb-3 animate-fade-in">
-            {navItems.map(item => (
+            {allNavItems.map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}
