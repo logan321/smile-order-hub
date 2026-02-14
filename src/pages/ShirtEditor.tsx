@@ -336,15 +336,23 @@ const ShirtEditor = () => {
   // Build an arc path for curved text
   const buildArcPath = (curve: number, textWidth: number): Path | undefined => {
     if (curve === 0) return undefined;
-    // Map curve (-100..100) to radius. Smaller abs = larger radius = less curve
     const absCurve = Math.abs(curve);
     const radius = Math.max(80, 1200 - absCurve * 10);
     const arcWidth = Math.max(textWidth * 1.2, 200);
     const halfW = arcWidth / 2;
-    // sweep: 1 = arc up (positive curve), 0 = arc down (negative curve)
     const sweep = curve > 0 ? 1 : 0;
     const pathStr = `M -${halfW},0 A ${radius},${radius} 0 0 ${sweep} ${halfW},0`;
-    return new Path(pathStr, { visible: false, fill: undefined, stroke: undefined });
+    return new Path(pathStr, { visible: false, fill: '', stroke: '' });
+  };
+
+  // Apply curve to an existing text object in real-time
+  const applyCurveToObject = (obj: FabricText, curve: number, canvas: Canvas) => {
+    const arcPath = buildArcPath(curve, obj.width || 200);
+    (obj as any).set({ path: arcPath || undefined });
+    (obj as any)._curveValue = curve;
+    // Fix selectability: recalculate bounding box
+    obj.setCoords();
+    canvas.requestRenderAll();
   };
 
   const addTextToCanvas = async (canvas: Canvas, side: 'front' | 'back', zone?: TemplateZone) => {
@@ -353,11 +361,10 @@ const ShirtEditor = () => {
     if (fontDef?.google) await loadGoogleFont(fontFamily);
 
     const isMultiline = textInput.includes('\n');
-    const isCurved = textCurve !== 0;
 
-    // Use Textbox for multiline, FabricText for single line / curved
+    // Use Textbox for multiline, FabricText for single line
     let text: FabricText | Textbox;
-    if (isMultiline && !isCurved) {
+    if (isMultiline) {
       text = new Textbox(textInput, {
         fontSize, fill: textColor, fontFamily,
         stroke: strokeWidth > 0 ? strokeColor : undefined,
@@ -366,7 +373,7 @@ const ShirtEditor = () => {
         textAlign: 'center',
       });
     } else {
-      text = new FabricText(textInput.replace(/\n/g, ' '), {
+      text = new FabricText(textInput, {
         fontSize, fill: textColor, fontFamily,
         stroke: strokeWidth > 0 ? strokeColor : undefined,
         strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
@@ -374,7 +381,7 @@ const ShirtEditor = () => {
     }
 
     // Apply arc path if curved
-    if (isCurved) {
+    if (textCurve !== 0) {
       const arcPath = buildArcPath(textCurve, text.width || 200);
       if (arcPath) {
         (text as any).set({ path: arcPath });
@@ -771,11 +778,35 @@ const ShirtEditor = () => {
           fill: textColor, stroke: strokeWidth > 0 ? strokeColor : undefined,
           strokeWidth: strokeWidth > 0 ? strokeWidth : 0, fontSize, fontFamily,
         });
-        canvas.renderAll();
+        // Apply curve in real-time
+        applyCurveToObject(active as FabricText, textCurve, canvas);
       };
       applyFont();
     }
-  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, activeView]);
+  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, textCurve, activeView]);
+
+  // Sync UI controls when a text object is selected
+  useEffect(() => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    const onSelect = () => {
+      const active = canvas.getActiveObject();
+      if (active && (active instanceof FabricText || active instanceof Textbox) && (active as any)._userElement) {
+        setTextColor((active.fill as string) || '#000000');
+        setFontSize(active.fontSize || 24);
+        setFontFamily(active.fontFamily || 'Arial');
+        setStrokeWidth(active.strokeWidth || 0);
+        setStrokeColor((active.stroke as string) || '#FFFFFF');
+        setTextCurve((active as any)._curveValue || 0);
+      }
+    };
+    canvas.on('selection:created', onSelect);
+    canvas.on('selection:updated', onSelect);
+    return () => {
+      canvas.off('selection:created', onSelect);
+      canvas.off('selection:updated', onSelect);
+    };
+  }, [activeView, selectedTemplate]);
 
   const deleteSelected = () => {
     const canvas = getActiveCanvas();
