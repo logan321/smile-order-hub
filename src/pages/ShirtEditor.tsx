@@ -23,8 +23,8 @@ interface Stamp {
   imageUrl: string;
 }
 
-const CANVAS_WIDTH = 400;
-const CANVAS_HEIGHT = 500;
+const CANVAS_WIDTH = 500;
+const CANVAS_HEIGHT = 625;
 
 const ShirtEditor = () => {
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -503,116 +503,88 @@ const ShirtEditor = () => {
       </header>
 
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Toolbar */}
-        <aside className="lg:w-72 border-b lg:border-b-0 lg:border-r border-border bg-card p-3 sm:p-4 space-y-3 sm:space-y-4 overflow-y-auto max-h-[40vh] lg:max-h-none">
+        {/* Toolbar - compact */}
+        <aside className="lg:w-60 border-b lg:border-b-0 lg:border-r border-border bg-card p-2.5 sm:p-3 space-y-2.5 overflow-y-auto max-h-[35vh] lg:max-h-none">
           {/* Active view selector */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Editar lado</p>
-            <div className="flex gap-2">
-              <Button
-                variant={activeView === 'front' ? 'default' : 'outline'}
-                size="sm"
-                className="flex-1"
-                onClick={() => setActiveView('front')}
-              >
-                Frente
-              </Button>
-              <Button
-                variant={activeView === 'back' ? 'default' : 'outline'}
-                size="sm"
-                className="flex-1"
-                onClick={() => setActiveView('back')}
-              >
-                Costas
-              </Button>
-            </div>
+          <div className="flex gap-1.5">
+            <Button
+              variant={activeView === 'front' ? 'default' : 'outline'}
+              size="sm"
+              className="flex-1 h-7 text-xs"
+              onClick={() => setActiveView('front')}
+            >
+              Frente
+            </Button>
+            <Button
+              variant={activeView === 'back' ? 'default' : 'outline'}
+              size="sm"
+              className="flex-1 h-7 text-xs"
+              onClick={() => setActiveView('back')}
+            >
+              Costas
+            </Button>
           </div>
 
           {/* Add text with outline */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Adicionar Texto</p>
-            <div className="space-y-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Texto</p>
+            <div className="space-y-1.5">
               <Input
                 value={textInput}
                 onChange={e => setTextInput(e.target.value)}
                 placeholder="Digite o texto..."
+                className="h-7 text-xs"
                 onKeyDown={e => e.key === 'Enter' && handleAddTextClick()}
               />
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground">Cor</label>
-                  <input
-                    type="color"
-                    value={textColor}
-                    onChange={e => setTextColor(e.target.value)}
-                    className="h-7 w-7 rounded border border-border cursor-pointer"
-                  />
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1">
+                  <label className="text-[10px] text-muted-foreground">Cor</label>
+                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground">Tam</label>
-                  <Input
-                    type="number"
-                    value={fontSize}
-                    onChange={e => setFontSize(Number(e.target.value))}
-                    className="h-7 w-16 text-xs"
-                    min={10}
-                    max={72}
-                  />
+                <div className="flex items-center gap-1">
+                  <label className="text-[10px] text-muted-foreground">Tam</label>
+                  <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-6 w-14 text-[10px]" min={10} max={72} />
+                </div>
+                <div className="flex items-center gap-1">
+                  <label className="text-[10px] text-muted-foreground">Cont</label>
+                  <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <label className="text-[10px] text-muted-foreground">Esp</label>
+                  <Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-6 w-14 text-[10px]" min={0} max={10} />
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground">Contorno</label>
-                  <input
-                    type="color"
-                    value={strokeColor}
-                    onChange={e => setStrokeColor(e.target.value)}
-                    className="h-7 w-7 rounded border border-border cursor-pointer"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-muted-foreground">Espessura</label>
-                  <Input
-                    type="number"
-                    value={strokeWidth}
-                    onChange={e => setStrokeWidth(Number(e.target.value))}
-                    className="h-7 w-16 text-xs"
-                    min={0}
-                    max={10}
-                  />
-                </div>
-              </div>
-              <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-2 h-8">
-                <Type className="h-3.5 w-3.5" /> Adicionar Texto
+              <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-7 text-xs">
+                <Type className="h-3 w-3" /> Adicionar
               </Button>
             </div>
           </div>
 
           {/* Upload logo */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Importar Logo / Imagem</p>
-            <label className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-              <Upload className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Clique para enviar imagem (PNG, JPG)</span>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Logo / Imagem</p>
+            <label className="flex items-center gap-2 px-2.5 py-2 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+              <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Enviar imagem</span>
               <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
             </label>
           </div>
 
           {/* Stamps catalog */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Estampas</p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Estampas</p>
             {stamps.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma estampa disponível</p>
+              <p className="text-[10px] text-muted-foreground">Nenhuma estampa</p>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-5 sm:grid-cols-4 lg:grid-cols-3 gap-1.5">
                 {stamps.map(s => (
                   <button
                     key={s.id}
                     onClick={() => addStamp(s)}
-                    className="rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 transition-colors bg-background"
+                    className="rounded-md border border-border/50 overflow-hidden hover:border-primary/50 transition-colors bg-background"
                     title={s.name}
                   >
-                    <img src={s.imageUrl} alt={s.name} className="w-full aspect-square object-contain p-1" />
+                    <img src={s.imageUrl} alt={s.name} className="w-full aspect-square object-contain p-0.5" />
                   </button>
                 ))}
               </div>
@@ -620,29 +592,29 @@ const ShirtEditor = () => {
           </div>
 
           {/* Delete selected */}
-          <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-2 text-destructive">
-            <Trash2 className="h-3.5 w-3.5" /> Remover selecionado
+          <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-7 text-xs">
+            <Trash2 className="h-3 w-3" /> Remover selecionado
           </Button>
         </aside>
 
-        {/* Both canvases */}
-        <div className="flex-1 flex items-start lg:items-center justify-center gap-3 sm:gap-6 p-3 sm:p-4 bg-muted/30 overflow-y-auto">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 items-center">
+        {/* Both canvases - maximized */}
+        <div className="flex-1 flex items-center justify-center p-2 sm:p-3 bg-muted/30 overflow-auto">
+          <div className="flex flex-col md:flex-row gap-2 sm:gap-4 items-center canvas-area">
             <div
-              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
+              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
               onClick={() => setActiveView('front')}
             >
-              <p className="text-center text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Frente</p>
+              <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Frente</p>
               <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
                 <canvas ref={frontCanvasRef} />
               </div>
             </div>
 
             <div
-              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
+              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
               onClick={() => setActiveView('back')}
             >
-              <p className="text-center text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Costas</p>
+              <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Costas</p>
               <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
                 <canvas ref={backCanvasRef} />
               </div>

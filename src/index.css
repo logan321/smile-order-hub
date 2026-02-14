@@ -121,3 +121,22 @@
     @apply text-muted-foreground mt-1;
   }
 }
+
+/* Scale canvases to fit on smaller screens */
+.canvas-area canvas {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .canvas-area {
+    transform: scale(0.62);
+    transform-origin: top center;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .canvas-area {
+    transform: scale(0.75);
+    transform-origin: top center;
+  }
+}
