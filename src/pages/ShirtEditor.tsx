@@ -242,58 +242,59 @@ const ShirtEditor = () => {
     }
   };
 
-  // Add/replace stamp — replaces existing stamp at same position/size
+  // Add/replace stamp — REPLACES the background template image at index 0
   const addStamp = async (stamp: Stamp) => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
 
-    const stampRef = getActiveStampRef();
-    const oldStamp = stampRef.current;
-    const clipPath = getActiveClipPath();
-
     try {
       const img = await FabricImage.fromURL(stamp.imageUrl, { crossOrigin: 'anonymous' });
 
-      if (oldStamp) {
-        const oldLeft = oldStamp.left!;
-        const oldTop = oldStamp.top!;
-        const oldScaleX = oldStamp.scaleX!;
-        const oldScaleY = oldStamp.scaleY!;
-        const oldAngle = oldStamp.angle || 0;
-        const oldBoundingWidth = oldStamp.width! * oldScaleX;
-        const oldBoundingHeight = oldStamp.height! * oldScaleY;
-        const uniformScale = Math.min(oldBoundingWidth / img.width!, oldBoundingHeight / img.height!);
-
-        img.set({
-          left: oldLeft,
-          top: oldTop,
-          scaleX: uniformScale,
-          scaleY: uniformScale,
-          angle: oldAngle,
-          clipPath: clipPath || undefined,
-        });
-
-        canvas.remove(oldStamp);
-      } else {
-        const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
-        img.set({
-          left: (CANVAS_WIDTH - img.width! * scale) / 2,
-          top: (CANVAS_HEIGHT - img.height! * scale) / 2,
-          scaleX: scale,
-          scaleY: scale,
-          clipPath: clipPath || undefined,
-        });
+      // Find and remove the current background (index 0)
+      const objects = canvas.getObjects();
+      const bgObj = objects.find((o: any) => o._isBackground);
+      if (bgObj) {
+        canvas.remove(bgObj);
       }
 
-      // Always insert stamp at index 1 (right after background), pushing everything else up
-      canvas.insertAt(1, img);
+      // Scale stamp to fill the canvas like the original template
+      const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
+      const left = (CANVAS_WIDTH - img.width! * scale) / 2;
+      const top = (CANVAS_HEIGHT - img.height! * scale) / 2;
+      img.set({
+        scaleX: scale,
+        scaleY: scale,
+        left,
+        top,
+        selectable: false,
+        evented: false,
+      });
+      (img as any)._isBackground = true;
 
-      (img as any)._userElement = true;
-      (img as any)._isStamp = true;
-      img.set({ selectable: true, evented: true });
-      canvas.setActiveObject(img);
+      // Insert as the new background at index 0
+      canvas.insertAt(0, img);
+
+      // Update clip path to match the new background shape
+      const clipImg = await FabricImage.fromURL(stamp.imageUrl, { crossOrigin: 'anonymous' });
+      clipImg.set({
+        scaleX: scale,
+        scaleY: scale,
+        left,
+        top,
+        absolutePositioned: true,
+      });
+      if (activeView === 'front') frontClipRef.current = clipImg;
+      else backClipRef.current = clipImg;
+
+      // Re-apply new clipPath to all existing user elements
+      const newClip = activeView === 'front' ? frontClipRef.current : backClipRef.current;
+      canvas.getObjects().forEach((obj: any) => {
+        if (obj._userElement && !obj._isBackground) {
+          obj.set({ clipPath: newClip || undefined });
+        }
+      });
+
       canvas.renderAll();
-      stampRef.current = img;
     } catch {
       toast.error('Erro ao carregar estampa');
     }
