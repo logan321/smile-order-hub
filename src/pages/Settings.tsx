@@ -418,10 +418,16 @@ const Settings = () => {
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Shirt className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className="font-semibold font-display">Templates de Camisa</h2>
                 <p className="text-sm text-muted-foreground">Envie imagens de frente e costas das camisas em branco para o editor</p>
               </div>
+              <a href="/editor" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Eye className="h-4 w-4" />
+                  Abrir Editor
+                </Button>
+              </a>
             </div>
 
             {templatesLoading ? (
