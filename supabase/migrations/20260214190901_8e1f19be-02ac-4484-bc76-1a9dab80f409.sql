@@ -1,0 +1,1 @@
+ALTER TABLE public.template_zones ADD COLUMN rotation numeric NOT NULL DEFAULT 0;

@@ -465,6 +465,7 @@ export type Database = {
           id: string
           name: string
           path_data: Json | null
+          rotation: number
           shared: boolean
           side: string
           template_id: string
@@ -479,6 +480,7 @@ export type Database = {
           id?: string
           name: string
           path_data?: Json | null
+          rotation?: number
           shared?: boolean
           side?: string
           template_id: string
@@ -493,6 +495,7 @@ export type Database = {
           id?: string
           name?: string
           path_data?: Json | null
+          rotation?: number
           shared?: boolean
           side?: string
           template_id?: string
