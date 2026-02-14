@@ -273,10 +273,7 @@ const ShirtEditor = () => {
           clipPath: clipPath || undefined,
         });
 
-        // Find old stamp index to insert new one at same position
-        const oldIndex = canvas.getObjects().indexOf(oldStamp);
         canvas.remove(oldStamp);
-        canvas.insertAt(Math.max(1, oldIndex), img);
       } else {
         const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
         img.set({
@@ -286,9 +283,10 @@ const ShirtEditor = () => {
           scaleY: scale,
           clipPath: clipPath || undefined,
         });
-        // Insert right after background, before any user elements
-        canvas.insertAt(1, img);
       }
+
+      // Always insert stamp at index 1 (right after background), pushing everything else up
+      canvas.insertAt(1, img);
 
       (img as any)._userElement = true;
       (img as any)._isStamp = true;
@@ -475,21 +473,21 @@ const ShirtEditor = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
-      <header className="border-b border-border bg-card px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <header className="border-b border-border bg-card px-3 py-2 sm:px-4 sm:py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
-          <span className="text-sm font-medium">{selectedTemplate.name}</span>
+          <span className="text-sm font-medium truncate">{selectedTemplate.name}</span>
         </div>
-        <Button onClick={handleDownload} disabled={downloading} className="gap-2">
-          <Download className="h-4 w-4" /> {downloading ? 'Baixando...' : 'Baixar Layout'}
+        <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-2">
+          <Download className="h-4 w-4" /> {downloading ? 'Baixando...' : 'Baixar'}
         </Button>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Toolbar */}
-        <aside className="lg:w-72 border-b lg:border-b-0 lg:border-r border-border bg-card p-4 space-y-4 overflow-y-auto">
+        <aside className="lg:w-72 border-b lg:border-b-0 lg:border-r border-border bg-card p-3 sm:p-4 space-y-3 sm:space-y-4 overflow-y-auto max-h-[40vh] lg:max-h-none">
           {/* Active view selector */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Editar lado</p>
@@ -589,7 +587,7 @@ const ShirtEditor = () => {
             {stamps.length === 0 ? (
               <p className="text-xs text-muted-foreground">Nenhuma estampa disponível</p>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-3 gap-2">
                 {stamps.map(s => (
                   <button
                     key={s.id}
@@ -610,25 +608,27 @@ const ShirtEditor = () => {
           </Button>
         </aside>
 
-        {/* Both canvases side by side */}
-        <div className="flex-1 flex items-center justify-center gap-6 p-4 bg-muted/30 flex-wrap">
-          <div
-            className={`relative cursor-pointer transition-all ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
-            onClick={() => setActiveView('front')}
-          >
-            <p className="text-center text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">Frente</p>
-            <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
-              <canvas ref={frontCanvasRef} />
+        {/* Both canvases */}
+        <div className="flex-1 flex items-start lg:items-center justify-center gap-3 sm:gap-6 p-3 sm:p-4 bg-muted/30 overflow-y-auto">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 items-center">
+            <div
+              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
+              onClick={() => setActiveView('front')}
+            >
+              <p className="text-center text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Frente</p>
+              <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
+                <canvas ref={frontCanvasRef} />
+              </div>
             </div>
-          </div>
 
-          <div
-            className={`relative cursor-pointer transition-all ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
-            onClick={() => setActiveView('back')}
-          >
-            <p className="text-center text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">Costas</p>
-            <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
-              <canvas ref={backCanvasRef} />
+            <div
+              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
+              onClick={() => setActiveView('back')}
+            >
+              <p className="text-center text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wider">Costas</p>
+              <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
+                <canvas ref={backCanvasRef} />
+              </div>
             </div>
           </div>
         </div>
