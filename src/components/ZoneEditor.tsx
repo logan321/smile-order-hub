@@ -2,8 +2,9 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Move, X, Link } from 'lucide-react';
+import { Plus, Trash2, Move, X, Link, PenTool } from 'lucide-react';
 import { toast } from 'sonner';
+import PolygonDrawer from '@/components/PolygonDrawer';
 
 interface ZoneEditorProps {
   templateId: string;
@@ -44,8 +45,8 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [newZoneName, setNewZoneName] = useState('');
   const [dragState, setDragState] = useState<DragState | null>(null);
-  // Local zone overrides during drag (avoid DB calls on every mousemove)
   const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<TemplateZone>>>({});
+  const [polygonEditZoneId, setPolygonEditZoneId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Show zones for active side + shared zones from the other side
@@ -299,6 +300,35 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <Move className="h-3 w-3" /> Arraste para mover, use os pontos para redimensionar
             </p>
+
+            {/* Polygon drawer for selected zone */}
+            {polygonEditZoneId && (() => {
+              const zone = zones.find(z => z.id === polygonEditZoneId);
+              if (!zone) return null;
+              const zoneImgUrl = zone.side === 'front' ? frontImageUrl : backImageUrl;
+              return (
+                <div className="mt-3 border-t border-border/50 pt-3">
+                  <p className="text-xs font-semibold mb-2">Contorno: {zone.name}</p>
+                  <PolygonDrawer
+                    imageUrl={zoneImgUrl}
+                    width={PREVIEW_WIDTH}
+                    height={PREVIEW_HEIGHT}
+                    initialPoints={zone.pathData}
+                    onSave={(points) => {
+                      updateZone(zone.id, { pathData: points });
+                      setPolygonEditZoneId(null);
+                      toast.success('Contorno salvo!');
+                    }}
+                    onCancel={() => setPolygonEditZoneId(null)}
+                    onClear={() => {
+                      updateZone(zone.id, { pathData: null as any });
+                      setPolygonEditZoneId(null);
+                      toast.success('Contorno removido');
+                    }}
+                  />
+                </div>
+              );
+            })()}
           </div>
 
           {/* Zone list + controls */}
@@ -329,6 +359,15 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                           <Button
                             variant="ghost"
                             size="icon"
+                            className={`h-6 w-6 ${zone.pathData ? 'text-primary' : 'text-muted-foreground'}`}
+                            title={zone.pathData ? 'Editar contorno personalizado' : 'Desenhar contorno personalizado'}
+                            onClick={() => setPolygonEditZoneId(polygonEditZoneId === zone.id ? null : zone.id)}
+                          >
+                            <PenTool className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className={`h-6 w-6 ${zone.shared ? 'text-primary' : 'text-muted-foreground'}`}
                             title={zone.shared ? 'Compartilhada (frente e costas)' : 'Clique para compartilhar com ambos os lados'}
                             onClick={() => updateZone(zone.id, { shared: !zone.shared })}
@@ -341,6 +380,9 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                         </div>
                         {zone.shared && (
                           <p className="text-[10px] text-primary font-medium">🔗 Compartilhada frente/costas</p>
+                        )}
+                        {zone.pathData && (
+                          <p className="text-[10px] text-primary font-medium">✏️ Contorno personalizado ({zone.pathData.length} pts)</p>
                         )}
 
                         <div className="grid grid-cols-2 gap-1.5">

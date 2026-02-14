@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Canvas, FabricText, FabricImage, Point } from 'fabric';
+import { Canvas, FabricText, FabricImage, Point, Polygon } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -366,7 +366,7 @@ const ShirtEditor = () => {
 
     for (const side of sides) {
       const canvas = side === 'front' ? frontFabricRef.current : backFabricRef.current;
-      const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
+      const templateClip = side === 'front' ? frontClipRef.current : backClipRef.current;
       if (!canvas) continue;
 
       try {
@@ -378,8 +378,23 @@ const ShirtEditor = () => {
         const scale = Math.min(zoneW / img.width!, zoneH / img.height!);
         const left = zoneX + (zoneW - img.width! * scale) / 2;
         const top = zoneY + (zoneH - img.height! * scale) / 2;
-        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: clipPath || undefined });
+
+        // Build clipPath: use polygon contour if available, otherwise template silhouette
+        let clipPath: any = templateClip || undefined;
+        if (zone.pathData && zone.pathData.length >= 3) {
+          const polyPoints = zone.pathData.map(p => ({
+            x: (p.x / 100) * CANVAS_WIDTH,
+            y: (p.y / 100) * CANVAS_HEIGHT,
+          }));
+          clipPath = new Polygon(polyPoints, {
+            absolutePositioned: true,
+            inverted: false,
+          });
+        }
+
+        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath });
         (img as any)._userElement = true;
+        (img as any)._zoneClipData = zone.pathData; // store for reference
         canvas.add(img);
         canvas.renderAll();
       } catch {
