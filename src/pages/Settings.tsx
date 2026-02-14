@@ -658,7 +658,12 @@ const Settings = () => {
                     {patches.map(p => (
                       <div key={p.id} className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
                         <div className="p-2 bg-background">
-                          <img src={p.imageUrl} alt={p.name} className="w-full aspect-square object-contain rounded" />
+                          <div
+                            className="w-full aspect-square bg-center bg-contain bg-no-repeat rounded select-none"
+                            style={{ backgroundImage: `url(${p.imageUrl})` }}
+                            onContextMenu={e => e.preventDefault()}
+                            draggable={false}
+                          />
                         </div>
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
                           <div className="min-w-0">

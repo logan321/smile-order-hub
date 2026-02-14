@@ -123,6 +123,41 @@ const ShirtEditor = () => {
     return activeView === 'front' ? frontClipRef.current : backClipRef.current;
   }, [activeView]);
 
+  // Anti-copy/download protections for corporate patch images
+  useEffect(() => {
+    const blockContext = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Block right-click on the entire editor to prevent "Save Image As"
+      if (target.closest('.patch-protected') || target.tagName === 'CANVAS') {
+        e.preventDefault();
+      }
+    };
+    const blockKeys = (e: KeyboardEvent) => {
+      // Block Ctrl+S, Ctrl+U (view source), Ctrl+Shift+I (dev tools), PrintScreen
+      if (
+        (e.ctrlKey && (e.key === 's' || e.key === 'u' || e.key === 'S' || e.key === 'U')) ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+        e.key === 'PrintScreen'
+      ) {
+        e.preventDefault();
+      }
+    };
+    const blockDrag = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.patch-protected') || target.tagName === 'IMG') {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('contextmenu', blockContext);
+    document.addEventListener('keydown', blockKeys);
+    document.addEventListener('dragstart', blockDrag);
+    return () => {
+      document.removeEventListener('contextmenu', blockContext);
+      document.removeEventListener('keydown', blockKeys);
+      document.removeEventListener('dragstart', blockDrag);
+    };
+  }, []);
+
   // Fetch templates and stamps
   useEffect(() => {
     const fetchData = async () => {
@@ -881,7 +916,7 @@ const ShirtEditor = () => {
 
             {/* Patches (Peixes) tab */}
             {activeTab === 'patches' && (
-              <div>
+              <div className="patch-protected">
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Peixes da Empresa</p>
                 {patches.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>
@@ -891,12 +926,19 @@ const ShirtEditor = () => {
                       <button
                         key={p.id}
                         onClick={() => handlePatchClick(p)}
-                        className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background"
+                        className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative"
                         title={p.name}
+                        onContextMenu={e => e.preventDefault()}
                       >
-                        <img src={p.imageUrl} alt={p.name} className="w-full aspect-square object-contain p-1" />
-                        <div className="pb-1 px-1">
-                          <p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors">{p.name}</p>
+                        <div
+                          className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none"
+                          style={{ backgroundImage: `url(${p.imageUrl})` }}
+                          draggable={false}
+                          aria-hidden="true"
+                        />
+                        <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
+                        <div className="pb-1 px-1 relative z-10">
+                          <p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors select-none">{p.name}</p>
                         </div>
                       </button>
                     ))}
@@ -1039,7 +1081,12 @@ const ShirtEditor = () => {
               <h3 className="font-semibold">{!patchSideChoice ? 'Onde aplicar o peixe?' : 'Escolha a zona'}</h3>
             </div>
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/30 border border-border/30">
-              <img src={pendingPatch.imageUrl} alt={pendingPatch.name} className="h-12 w-12 object-contain rounded" />
+              <div
+                className="h-12 w-12 rounded bg-center bg-contain bg-no-repeat select-none"
+                style={{ backgroundImage: `url(${pendingPatch.imageUrl})` }}
+                onContextMenu={e => e.preventDefault()}
+                draggable={false}
+              />
               <div>
                 <p className="text-sm font-medium">{pendingPatch.name}</p>
                 {patchSideChoice && (
