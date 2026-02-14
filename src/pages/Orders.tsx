@@ -345,6 +345,7 @@ const Orders = () => {
         paid: false,
         tracking_id: '',
         order_type: 'confeccao',
+        delivery_date: data.deliveryDate || null,
       }).select('id').single();
       if (error) throw error;
 
@@ -371,12 +372,6 @@ const Orders = () => {
           file_url: urlData.publicUrl,
           file_name: file.name,
         });
-      }
-
-      // Save delivery date as a custom value with special key
-      if (data.deliveryDate) {
-        // Store as order_custom_values with a pseudo-field — we'll use the order metadata approach
-        // Actually let's just note it. For now delivery_date isn't a column, store as custom value
       }
 
       setConfectionDialogOpen(false);

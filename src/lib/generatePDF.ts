@@ -17,13 +17,11 @@ export function generateClientReportPDF(
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
 
-  // Header - Business name
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.text(config.businessName || 'Relatório de Serviços', pageWidth / 2, y, { align: 'center' });
   y += 10;
 
-  // Business info
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   const businessLines: string[] = [];
@@ -37,12 +35,10 @@ export function generateClientReportPDF(
     y += 8;
   }
 
-  // Line separator
   doc.setDrawColor(200, 200, 200);
   doc.line(14, y, pageWidth - 14, y);
   y += 10;
 
-  // Client info
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Relatório do Cliente', 14, y);
@@ -56,7 +52,6 @@ export function generateClientReportPDF(
   doc.text(`Data do relatório: ${format(new Date(), "dd/MM/yyyy", { locale: ptBR })}`, 14, y);
   y += 10;
 
-  // Orders table - build rows with service details
   const tableData: string[][] = [];
   let rowNum = 1;
   orders.forEach((order) => {
@@ -75,7 +70,6 @@ export function generateClientReportPDF(
         rowNum++;
       });
     } else {
-      // legacy order
       tableData.push([
         rowNum.toString(),
         (order as any).service ?? '',
@@ -108,7 +102,6 @@ export function generateClientReportPDF(
     margin: { left: 14, right: 14 },
   });
 
-  // Payment info section
   y = (doc as any).lastAutoTable.finalY + 15;
 
   const hasPaymentInfo = config.paymentMethods || config.pixKey || config.bankInfo;
@@ -137,7 +130,6 @@ export function generateClientReportPDF(
     }
   }
 
-  // Extra notes
   if (config.extraNotes) {
     y += 5;
     doc.setDrawColor(200, 200, 200);
@@ -149,12 +141,23 @@ export function generateClientReportPDF(
     doc.text(noteLines, 14, y);
   }
 
-  // Save
   const safeName = client.name.replace(/[^a-zA-Z0-9]/g, '_');
   doc.save(`relatorio_${safeName}.pdf`);
 }
 
-/** Generate a single order preview PDF with layout images and technical sheet */
+/** Load image as base64 data URL */
+async function loadImageAsDataUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Generate a single order preview PDF — everything on ONE page */
 export async function generateOrderPreviewPDF(
   order: Order,
   client: Client | undefined,
@@ -166,163 +169,171 @@ export async function generateOrderPreviewPDF(
 ) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 18;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const contentWidth = pageWidth - margin * 2;
+  let y = 14;
 
-  // Header
-  doc.setFontSize(18);
+  // ─── Header (compact) ───
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(config.businessName || 'Pedido', pageWidth / 2, y, { align: 'center' });
-  y += 8;
-
+  doc.text(config.businessName || 'Pedido', margin, y);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  const info: string[] = [];
-  if (config.ownerName) info.push(config.ownerName);
-  if (config.phone) info.push(`Tel: ${config.phone}`);
-  if (config.email) info.push(config.email);
-  if (info.length > 0) {
-    doc.text(info.join('  •  '), pageWidth / 2, y, { align: 'center' });
-    y += 7;
+  doc.text(`Pedido: ${order.trackingId}`, pageWidth - margin, y, { align: 'right' });
+  y += 5;
+
+  // Sub-header line
+  const infoLeft = `Cliente: ${client?.name ?? 'N/A'}  •  ${format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}`;
+  const infoRight = `Status: ${statusLabel}`;
+  doc.setFontSize(8);
+  doc.text(infoLeft, margin, y);
+  doc.text(infoRight, pageWidth - margin, y, { align: 'right' });
+  y += 4;
+
+  if (order.deliveryDate) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Data de Entrega: ${format(new Date(order.deliveryDate), "dd/MM/yyyy", { locale: ptBR })}`, margin, y);
+    doc.setFont('helvetica', 'normal');
+    y += 4;
   }
 
-  doc.setDrawColor(200, 200, 200);
-  doc.line(14, y, pageWidth - 14, y);
-  y += 8;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 4;
 
-  // Order info
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`Pedido: ${order.trackingId}`, 14, y);
-  doc.text(`Status: ${statusLabel}`, pageWidth - 14, y, { align: 'right' });
-  y += 6;
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Cliente: ${client?.name ?? 'N/A'}`, 14, y);
-  doc.text(`Data: ${format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}`, pageWidth - 14, y, { align: 'right' });
-  y += 5;
-  doc.text(`Tipo: ${order.orderType === 'confeccao' ? 'Confecção' : 'Designer'}`, 14, y);
-  y += 8;
+  // ─── Calculate remaining space for images ───
+  // Estimate space needed for ficha técnica + items + footer
+  const fichaTecnicaHeight = customValues.length > 0 ? 8 + Math.ceil(customValues.length / 2) * 5 + 4 : 0;
+  const itemsHeight = order.items.length > 0 ? 8 + order.items.length * 5 + 8 : 0;
+  const footerHeight = 12;
+  const reservedBottom = fichaTecnicaHeight + itemsHeight + footerHeight + 8;
+  const availableForImages = pageHeight - y - reservedBottom - 10;
 
-  // Layout images
+  // ─── Layout Images (side by side, proportional) ───
   if (files.length > 0) {
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, y, pageWidth - 14, y);
-    y += 6;
-    doc.setFontSize(11);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text('Layouts', 14, y);
-    y += 6;
+    doc.text('Layouts', margin, y);
+    y += 4;
 
+    // Load all images
+    const loadedImages: { dataUrl: string; w: number; h: number }[] = [];
     for (const file of files) {
       try {
-        const response = await fetch(file.fileUrl);
-        const blob = await response.blob();
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-
-        const imgProps = doc.getImageProperties(dataUrl);
-        const maxWidth = pageWidth - 28;
-        const maxHeight = 80;
-        const ratio = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
-        const imgW = imgProps.width * ratio;
-        const imgH = imgProps.height * ratio;
-
-        if (y + imgH + 10 > doc.internal.pageSize.getHeight() - 20) {
-          doc.addPage();
-          y = 20;
-        }
-
-        doc.addImage(dataUrl, 'JPEG', 14, y, imgW, imgH);
-        y += imgH + 3;
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'italic');
-        doc.text(file.fileName, 14, y);
-        y += 6;
+        const dataUrl = await loadImageAsDataUrl(file.fileUrl);
+        const props = doc.getImageProperties(dataUrl);
+        loadedImages.push({ dataUrl, w: props.width, h: props.height });
       } catch {
-        doc.setFontSize(8);
-        doc.text(`[Imagem: ${file.fileName}]`, 14, y);
-        y += 6;
+        // skip failed images
       }
     }
-  }
 
-  // Custom fields (Ficha Técnica)
-  if (customValues.length > 0) {
-    if (y + 20 > doc.internal.pageSize.getHeight() - 20) {
-      doc.addPage();
-      y = 20;
+    if (loadedImages.length > 0) {
+      const maxImgHeight = Math.min(availableForImages, 90);
+      const gap = 4;
+
+      if (loadedImages.length === 1) {
+        const img = loadedImages[0];
+        const ratio = Math.min(contentWidth / img.w, maxImgHeight / img.h);
+        const imgW = img.w * ratio;
+        const imgH = img.h * ratio;
+        doc.addImage(img.dataUrl, 'JPEG', margin, y, imgW, imgH);
+        y += imgH + 3;
+      } else {
+        // Side by side: split width equally
+        const slotWidth = (contentWidth - gap * (loadedImages.length - 1)) / Math.min(loadedImages.length, 3);
+        let rowImages = loadedImages.slice(0, 3); // max 3 per row
+        let maxRowH = 0;
+
+        rowImages.forEach((img, i) => {
+          const ratio = Math.min(slotWidth / img.w, maxImgHeight / img.h);
+          const imgW = img.w * ratio;
+          const imgH = img.h * ratio;
+          const x = margin + i * (slotWidth + gap);
+          doc.addImage(img.dataUrl, 'JPEG', x, y, imgW, imgH);
+          if (imgH > maxRowH) maxRowH = imgH;
+        });
+        y += maxRowH + 3;
+
+        // If more than 3 images, second row
+        if (loadedImages.length > 3) {
+          const row2 = loadedImages.slice(3, 6);
+          let maxRowH2 = 0;
+          row2.forEach((img, i) => {
+            const ratio = Math.min(slotWidth / img.w, maxImgHeight / img.h);
+            const imgW = img.w * ratio;
+            const imgH = img.h * ratio;
+            const x = margin + i * (slotWidth + gap);
+            doc.addImage(img.dataUrl, 'JPEG', x, y, imgW, imgH);
+            if (imgH > maxRowH2) maxRowH2 = imgH;
+          });
+          y += maxRowH2 + 3;
+        }
+      }
     }
+
     doc.setDrawColor(200, 200, 200);
-    doc.line(14, y, pageWidth - 14, y);
-    y += 6;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Ficha Técnica', 14, y);
-    y += 2;
-
-    autoTable(doc, {
-      startY: y,
-      head: [['Campo', 'Valor']],
-      body: customValues.map(cv => [cv.fieldName, cv.value]),
-      theme: 'striped',
-      headStyles: { fillColor: [34, 51, 84], textColor: [255, 255, 255], fontStyle: 'bold' },
-      styles: { fontSize: 9, cellPadding: 4 },
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
-      margin: { left: 14, right: 14 },
-    });
-
-    y = (doc as any).lastAutoTable.finalY + 8;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 4;
   }
 
-  // Order items (Designer type)
+  // ─── Ficha Técnica (compact 2-column grid) ───
+  if (customValues.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Ficha Técnica', margin, y);
+    y += 5;
+
+    doc.setFontSize(8);
+    const colWidth = contentWidth / 2;
+    customValues.forEach((cv, i) => {
+      const col = i % 2;
+      const x = margin + col * colWidth;
+      if (col === 0 && i > 0) y += 4.5;
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${cv.fieldName}: `, x, y);
+      const labelWidth = doc.getTextWidth(`${cv.fieldName}: `);
+      doc.setFont('helvetica', 'bold');
+      doc.text(cv.value, x + labelWidth, y);
+    });
+    if (customValues.length % 2 !== 0) y += 4.5;
+    y += 4;
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 4;
+  }
+
+  // ─── Order Items ───
   const total = getOrderTotal(order);
   if (order.items.length > 0) {
-    if (y + 20 > doc.internal.pageSize.getHeight() - 20) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, y, pageWidth - 14, y);
-    y += 6;
-    doc.setFontSize(11);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text('Itens do Pedido', 14, y);
-    y += 2;
+    doc.text('Itens do Pedido', margin, y);
+    y += 5;
 
-    const itemRows = order.items.map((item, i) => {
+    doc.setFontSize(8);
+    order.items.forEach((item, i) => {
       const svc = services.find(s => s.id === item.serviceId);
-      return [
-        (i + 1).toString(),
-        svc?.name ?? 'Serviço removido',
-        item.quantity.toString(),
-        `R$ ${item.unitPrice.toFixed(2)}`,
-        `R$ ${(item.unitPrice * item.quantity).toFixed(2)}`,
-      ];
+      const name = svc?.name ?? 'Serviço removido';
+      const qtyText = item.quantity > 1 ? ` (x${item.quantity})` : '';
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${name}${qtyText}`, margin, y);
+      doc.text(`R$ ${(item.unitPrice * item.quantity).toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
+      y += 4.5;
     });
 
-    autoTable(doc, {
-      startY: y,
-      head: [['#', 'Serviço', 'Qtd', 'Unit.', 'Total']],
-      body: itemRows,
-      foot: [['', '', '', 'TOTAL', `R$ ${total.toFixed(2)}`]],
-      theme: 'striped',
-      headStyles: { fillColor: [34, 51, 84], textColor: [255, 255, 255], fontStyle: 'bold' },
-      footStyles: { fillColor: [240, 240, 240], textColor: [34, 51, 84], fontStyle: 'bold' },
-      styles: { fontSize: 9, cellPadding: 4 },
-      margin: { left: 14, right: 14 },
-    });
-
-    y = (doc as any).lastAutoTable.finalY + 8;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total:', margin, y);
+    doc.text(`R$ ${total.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
+    y += 6;
   }
 
-  // Payment status
-  doc.setFontSize(10);
+  // ─── Payment status ───
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Pagamento: ${order.paid ? 'PAGO' : 'PENDENTE'}`, 14, y);
+  doc.text(`Pagamento: ${order.paid ? 'PAGO' : 'PENDENTE'}`, margin, y);
 
-  // Save
   doc.save(`pedido_${order.trackingId}.pdf`);
 }

@@ -4,7 +4,7 @@ import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, Eye, Image, FileText } from 'lucide-react';
+import { Download, Eye, Image, FileText, CalendarClock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -31,7 +31,6 @@ export function OrderPreview({ order, open, onOpenChange }: OrderPreviewProps) {
     setLoading(true);
 
     const fetchDetails = async () => {
-      // Fetch files
       const { data: filesData } = await supabase
         .from('order_files')
         .select('id, file_name, file_url')
@@ -41,7 +40,6 @@ export function OrderPreview({ order, open, onOpenChange }: OrderPreviewProps) {
         id: f.id, fileName: f.file_name, fileUrl: f.file_url,
       })));
 
-      // Fetch custom values with field names
       const { data: valuesData } = await supabase
         .from('order_custom_values')
         .select('id, value, custom_field_id')
@@ -73,7 +71,6 @@ export function OrderPreview({ order, open, onOpenChange }: OrderPreviewProps) {
 
   const client = clients.find(c => c.id === order.clientId);
   const isConfection = order.orderType === 'confeccao';
-  const desc = getOrderDescription(order, services);
   const total = getOrderTotal(order);
 
   const statusOptions = stages.length > 0
@@ -112,14 +109,20 @@ export function OrderPreview({ order, open, onOpenChange }: OrderPreviewProps) {
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Header info */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-lg font-semibold">{client?.name ?? 'Cliente removido'}</p>
-              <p className="text-sm text-muted-foreground">
-                {format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}
-              </p>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span>{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                {order.deliveryDate && (
+                  <span className="flex items-center gap-1 text-primary font-medium">
+                    <CalendarClock className="h-3.5 w-3.5" />
+                    Entrega: {format(new Date(order.deliveryDate), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span className={cn(
@@ -156,17 +159,22 @@ export function OrderPreview({ order, open, onOpenChange }: OrderPreviewProps) {
             </div>
           </div>
 
-          {/* Layout images */}
+          {/* Layout images - side by side, proportional */}
           {files.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-1">
                 <Image className="h-4 w-4" /> Layouts
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className={cn(
+                "grid gap-3",
+                files.length === 1 ? "grid-cols-1" : "grid-cols-2"
+              )}>
                 {files.map(file => (
                   <a key={file.id} href={file.fileUrl} target="_blank" rel="noopener noreferrer"
-                    className="block rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 transition-colors">
-                    <img src={file.fileUrl} alt={file.fileName} className="w-full h-48 object-cover" />
+                    className="block rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 transition-colors bg-muted/20">
+                    <div className="w-full aspect-[4/3] flex items-center justify-center overflow-hidden">
+                      <img src={file.fileUrl} alt={file.fileName} className="max-w-full max-h-full object-contain" />
+                    </div>
                     <p className="text-xs text-muted-foreground p-2 truncate">{file.fileName}</p>
                   </a>
                 ))}
@@ -174,19 +182,21 @@ export function OrderPreview({ order, open, onOpenChange }: OrderPreviewProps) {
             </div>
           )}
 
-          {/* Custom fields (Ficha Técnica) */}
+          {/* Custom fields (Ficha Técnica) - compact grid */}
           {customValues.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-1">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-1">
                 <FileText className="h-4 w-4" /> Ficha Técnica
               </h3>
-              <div className="bg-muted/30 rounded-lg border border-border/50 divide-y divide-border/30">
-                {customValues.map(cv => (
-                  <div key={cv.fieldId} className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-sm text-muted-foreground">{cv.fieldName}</span>
-                    <span className="text-sm font-medium">{cv.value}</span>
-                  </div>
-                ))}
+              <div className="bg-muted/30 rounded-lg border border-border/50 p-3">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                  {customValues.map(cv => (
+                    <div key={cv.fieldId} className="flex items-baseline justify-between gap-2">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{cv.fieldName}:</span>
+                      <span className="text-xs font-semibold text-right">{cv.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Package, CircleDot, Image, FileText } from 'lucide-react';
+import { Search, Package, CircleDot, Image, FileText, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -25,6 +25,7 @@ interface OrderResult {
   created_at: string;
   user_id: string;
   order_type: string;
+  delivery_date: string | null;
   items: { service_name: string; quantity: number; unit_price: number }[];
   files: OrderFile[];
   customValues: CustomValue[];
@@ -49,7 +50,7 @@ const TrackOrder = () => {
     try {
       const { data: orderData, error } = await supabase
         .from('orders')
-        .select('id, tracking_id, status, date, created_at, user_id, order_type')
+        .select('id, tracking_id, status, date, created_at, user_id, order_type, delivery_date')
         .eq('tracking_id', id)
         .maybeSingle();
 
@@ -106,6 +107,7 @@ const TrackOrder = () => {
         created_at: orderData.created_at,
         user_id: orderData.user_id,
         order_type: orderData.order_type,
+        delivery_date: (orderData as any).delivery_date ?? null,
         items: itemsWithNames,
         files,
         customValues,
@@ -169,6 +171,12 @@ const TrackOrder = () => {
                     {format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}
                   </span>
                 </div>
+                {order.delivery_date && (
+                  <div className="flex items-center gap-1 mt-1 text-sm text-primary font-medium">
+                    <CalendarClock className="h-3.5 w-3.5" />
+                    Entrega: {format(new Date(order.delivery_date), "dd/MM/yyyy", { locale: ptBR })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -178,11 +186,16 @@ const TrackOrder = () => {
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-1">
                   <Image className="h-4 w-4" /> Layouts
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className={cn(
+                  "grid gap-3",
+                  order.files.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                )}>
                   {order.files.map(file => (
                     <a key={file.id} href={file.fileUrl} target="_blank" rel="noopener noreferrer"
-                      className="block rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 transition-colors">
-                      <img src={file.fileUrl} alt={file.fileName} className="w-full h-40 object-cover" />
+                      className="block rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 transition-colors bg-muted/20">
+                      <div className="w-full aspect-[4/3] flex items-center justify-center overflow-hidden">
+                        <img src={file.fileUrl} alt={file.fileName} className="max-w-full max-h-full object-contain" />
+                      </div>
                       <p className="text-xs text-muted-foreground p-2 truncate">{file.fileName}</p>
                     </a>
                   ))}
