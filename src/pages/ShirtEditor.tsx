@@ -334,16 +334,20 @@ const ShirtEditor = () => {
 
   // Helper to add a text object to a specific canvas+side with zone coords
   // Build an arc path for curved text
-  const buildArcPath = (curve: number, textWidth: number): Path | undefined => {
+  const buildArcPath = (curve: number, textWidth: number): { path: Path; startOffset: number } | undefined => {
     if (curve === 0) return undefined;
     const absCurve = Math.abs(curve);
     const radius = Math.max(80, 1200 - absCurve * 10);
-    // Use a fixed arc span based on text width, centered at origin
     const halfW = Math.max(textWidth * 0.6, 100);
     const sweep = curve > 0 ? 1 : 0;
+    // Center the path at 0,0 so text renders symmetrically
     const pathStr = `M ${-halfW},0 A ${radius},${radius} 0 0 ${sweep} ${halfW},0`;
     const p = new Path(pathStr, { visible: false, fill: '', stroke: '' });
-    return p;
+    // Approximate arc length: θ * r where θ = 2 * arcsin(halfW / radius)
+    const theta = 2 * Math.asin(Math.min(halfW / radius, 1));
+    const pathLength = theta * radius;
+    const startOffset = Math.max(0, (pathLength - textWidth) / 2);
+    return { path: p, startOffset };
   };
 
   // Apply curve to an existing text object in real-time, preserving position
@@ -356,8 +360,12 @@ const ShirtEditor = () => {
       (obj as any)._origOriginY = obj.originY;
     }
 
-    const arcPath = buildArcPath(curve, obj.width || 200);
-    (obj as any).set({ path: arcPath || undefined });
+    const result = buildArcPath(curve, obj.width || 200);
+    if (result) {
+      (obj as any).set({ path: result.path, pathStartOffset: result.startOffset });
+    } else {
+      (obj as any).set({ path: undefined, pathStartOffset: 0 });
+    }
     (obj as any)._curveValue = curve;
 
     // Always restore to the original stored position
@@ -398,9 +406,9 @@ const ShirtEditor = () => {
 
     // Apply arc path if curved
     if (textCurve !== 0) {
-      const arcPath = buildArcPath(textCurve, text.width || 200);
-      if (arcPath) {
-        (text as any).set({ path: arcPath });
+      const result = buildArcPath(textCurve, text.width || 200);
+      if (result) {
+        (text as any).set({ path: result.path, pathStartOffset: result.startOffset });
       }
     }
 
