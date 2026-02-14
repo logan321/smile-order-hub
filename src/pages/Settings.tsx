@@ -4,13 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Shirt, Stamp, Upload, Eye, EyeOff, MapPin } from 'lucide-react';
+import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useOrderStages } from '@/hooks/useOrderStages';
 import { useCustomFields } from '@/hooks/useCustomFields';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
+import { usePatchCatalog } from '@/hooks/usePatchCatalog';
+import { useTemplateZones } from '@/hooks/useTemplateZones';
 import ZoneEditor from '@/components/ZoneEditor';
 
 const Settings = () => {
@@ -19,6 +21,7 @@ const Settings = () => {
   const { fields, loading: fieldsLoading, addField, updateField, deleteField } = useCustomFields();
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates();
   const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog();
+  const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog();
 
   // Payment settings
   const update = (field: keyof BusinessConfig, value: string) => {
@@ -148,6 +151,36 @@ const Settings = () => {
   // Zone editor
   const [zoneEditorTemplate, setZoneEditorTemplate] = useState<{ id: string; frontImageUrl: string; backImageUrl: string } | null>(null);
 
+  // Patch (peixes) catalog management
+  const [newPatchName, setNewPatchName] = useState('');
+  const [newPatchZone, setNewPatchZone] = useState('');
+  const [patchFile, setPatchFile] = useState<File | null>(null);
+  const patchFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingPatch, setUploadingPatch] = useState(false);
+
+  // Fetch all zone names across all templates for the dropdown
+  const allZoneNames = templates.reduce<string[]>((acc, t) => {
+    // We don't have zones loaded per template here, so we use a text input instead
+    return acc;
+  }, []);
+
+  const handleAddPatch = async () => {
+    if (!newPatchName.trim() || !patchFile || !newPatchZone.trim()) {
+      toast.error('Preencha o nome, zona alvo e envie a imagem do peixe');
+      return;
+    }
+    setUploadingPatch(true);
+    try {
+      await addPatch(newPatchName.trim(), newPatchZone.trim(), patchFile);
+      setNewPatchName('');
+      setNewPatchZone('');
+      setPatchFile(null);
+      if (patchFileRef.current) patchFileRef.current.value = '';
+      toast.success('Peixe adicionado!');
+    } catch { toast.error('Erro ao adicionar peixe'); }
+    setUploadingPatch(false);
+  };
+
   const handleAddStamp = async () => {
     if (!newStampName.trim() || !stampFrontFile || !stampBackFile) {
       toast.error('Preencha o nome e envie as imagens de frente e costas da estampa');
@@ -199,6 +232,10 @@ const Settings = () => {
           <TabsTrigger value="stamps" className="gap-2">
             <Stamp className="h-4 w-4" />
             Estampas
+          </TabsTrigger>
+          <TabsTrigger value="patches" className="gap-2">
+            <Fish className="h-4 w-4" />
+            Peixes
           </TabsTrigger>
         </TabsList>
 
@@ -600,6 +637,78 @@ const Settings = () => {
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
                     {uploadingStamp ? 'Enviando...' : 'Adicionar Estampa'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab 6: Patch (Peixes) Catalog */}
+        <TabsContent value="patches">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Fish className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">Catálogo de Peixes</h2>
+                <p className="text-sm text-muted-foreground">Cadastre os peixes da empresa e associe cada um a uma zona de aplicação</p>
+              </div>
+            </div>
+
+            {patchesLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando...</p>
+            ) : (
+              <>
+                {patches.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                    {patches.map(p => (
+                      <div key={p.id} className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+                        <div className="p-2 bg-background">
+                          <img src={p.imageUrl} alt={p.name} className="w-full aspect-square object-contain rounded" />
+                        </div>
+                        <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">{p.name}</p>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" /> {p.targetZoneName || 'Sem zona'}
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover peixe?')) deletePatch(p.id); }}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {patches.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground mb-4">
+                    <Fish className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhum peixe cadastrado. Adicione imagens de peixes da empresa.</p>
+                  </div>
+                )}
+
+                <div className="space-y-3 border-t border-border/50 pt-4">
+                  <p className="text-sm font-medium">Adicionar novo peixe</p>
+                  <Input value={newPatchName} onChange={e => setNewPatchName(e.target.value)} placeholder="Nome do peixe (ex: Logo Empresa, Brasão)" />
+                  <Input value={newPatchZone} onChange={e => setNewPatchZone(e.target.value)} placeholder="Nome da zona alvo (ex: Manga Direita, Peito)" />
+                  <p className="text-[10px] text-muted-foreground">O nome da zona deve corresponder exatamente ao nome configurado no editor de zonas do template</p>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Imagem do Peixe *</label>
+                    <div className="border border-dashed border-border rounded-lg p-3">
+                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
+                        <Upload className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{patchFile ? patchFile.name : 'Selecionar'}</span>
+                        <input ref={patchFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setPatchFile(e.target.files?.[0] ?? null)} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                  <Button onClick={handleAddPatch} disabled={uploadingPatch || !newPatchName.trim() || !newPatchZone.trim() || !patchFile}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {uploadingPatch ? 'Enviando...' : 'Adicionar Peixe'}
                   </Button>
                 </div>
               </>

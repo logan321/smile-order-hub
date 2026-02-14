@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle, Fish } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
@@ -66,7 +66,7 @@ interface Stamp {
   backImageUrl: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'logo' | null;
+type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
@@ -81,6 +81,7 @@ const ShirtEditor = () => {
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
+  const [patches, setPatches] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string }[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -122,15 +123,19 @@ const ShirtEditor = () => {
   // Fetch templates and stamps
   useEffect(() => {
     const fetchData = async () => {
-      const [templatesRes, stampsRes] = await Promise.all([
+      const [templatesRes, stampsRes, patchesRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true),
         supabase.from('stamp_catalog').select('*').eq('active', true),
+        supabase.from('patch_catalog').select('*').eq('active', true),
       ]);
       setTemplates((templatesRes.data as any[])?.map(t => ({
         id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id,
       })) ?? []);
       setStamps((stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
+      })) ?? []);
+      setPatches((patchesRes.data as any[])?.map(p => ({
+        id: p.id, name: p.name, imageUrl: p.image_url, targetZoneName: p.target_zone_name,
       })) ?? []);
       setLoading(false);
     };
@@ -352,7 +357,42 @@ const ShirtEditor = () => {
     }
   };
 
-  // Upload logo
+  // Add patch (peixe) to canvas at the matching zone
+  const addPatchToCanvas = async (patch: { id: string; name: string; imageUrl: string; targetZoneName: string }) => {
+    const matchingZones = templateZones.filter(z => z.name.toLowerCase() === patch.targetZoneName.toLowerCase());
+    if (matchingZones.length === 0) {
+      toast.error(`Zona "${patch.targetZoneName}" não encontrada neste template`);
+      return;
+    }
+
+    for (const zone of matchingZones) {
+      const sides: ('front' | 'back')[] = zone.shared ? ['front', 'back'] : [zone.side];
+      for (const side of sides) {
+        const canvas = side === 'front' ? frontFabricRef.current : backFabricRef.current;
+        const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
+        if (!canvas) continue;
+
+        try {
+          const img = await FabricImage.fromURL(patch.imageUrl, { crossOrigin: 'anonymous' });
+          const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
+          const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
+          const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
+          const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
+          const scale = Math.min(zoneW / img.width!, zoneH / img.height!);
+          const left = zoneX + (zoneW - img.width! * scale) / 2;
+          const top = zoneY + (zoneH - img.height! * scale) / 2;
+          img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: clipPath || undefined });
+          (img as any)._userElement = true;
+          canvas.add(img);
+          canvas.renderAll();
+        } catch {
+          toast.error('Erro ao carregar imagem do peixe');
+        }
+      }
+    }
+    toast.success(`Peixe "${patch.name}" aplicado na zona "${patch.targetZoneName}"!`);
+  };
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -523,6 +563,7 @@ const ShirtEditor = () => {
   // ─── Toolbar tab items ────────────────────────────────────────
   const toolbarTabs: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
     { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5" /> },
+    { id: 'patches', label: 'Peixes', icon: <Fish className="h-5 w-5" /> },
     { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5" /> },
     { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5" /> },
   ];
@@ -606,6 +647,35 @@ const ShirtEditor = () => {
                       >
                         <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1" />
                         <p className="text-[9px] text-center text-muted-foreground pb-1 truncate px-1 group-hover:text-primary transition-colors">{s.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Patches (Peixes) tab */}
+            {activeTab === 'patches' && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Peixes da Empresa</p>
+                {patches.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {patches.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => addPatchToCanvas(p)}
+                        className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background"
+                        title={`${p.name} → ${p.targetZoneName}`}
+                      >
+                        <img src={p.imageUrl} alt={p.name} className="w-full aspect-square object-contain p-1" />
+                        <div className="pb-1 px-1">
+                          <p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors">{p.name}</p>
+                          <p className="text-[8px] text-center text-muted-foreground/60 truncate flex items-center justify-center gap-0.5">
+                            <MapPin className="h-2 w-2" />{p.targetZoneName}
+                          </p>
+                        </div>
                       </button>
                     ))}
                   </div>
