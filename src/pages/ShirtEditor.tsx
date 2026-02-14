@@ -525,26 +525,26 @@ const ShirtEditor = () => {
     const targetName = pendingPatch.targetZoneName?.trim().toLowerCase();
 
     if (side === 'both') {
-      // Find zones for front and back (prefer targetZoneName match, fallback to any zone on that side)
-      const frontZone = templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === 'front' || z.shared))
-        || templateZones.find(z => z.side === 'front' || z.shared);
-      const backZone = templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === 'back' || z.shared))
-        || templateZones.find(z => z.side === 'back' || z.shared);
+      // Find zones for front and back
+      // Priority: 1) exact targetZoneName match on that side, 2) any zone native to that side, 3) shared zone
+      const findZoneForSide = (s: 'front' | 'back') =>
+        templateZones.find(z => targetName && z.name.toLowerCase() === targetName && z.side === s) ||
+        templateZones.find(z => targetName && z.name.toLowerCase() === targetName && z.shared) ||
+        templateZones.find(z => z.side === s) ||
+        templateZones.find(z => z.shared);
+
+      const frontZone = findZoneForSide('front');
+      const backZone = findZoneForSide('back');
 
       if (frontZone || backZone) {
-        // Apply to each side with matching zone
         const applied: string[] = [];
         if (frontZone) {
           await addPatchToSide(pendingPatch, frontZone, 'front');
           applied.push('frente');
         }
-        if (backZone && backZone.id !== frontZone?.id) {
+        if (backZone) {
           await addPatchToSide(pendingPatch, backZone, 'back');
           applied.push('costas');
-        } else if (backZone && backZone.id === frontZone?.id && backZone.shared) {
-          // Same shared zone - addPatchToZone already handles both sides
-          await addPatchToZone(pendingPatch, backZone);
-          return; // addPatchToZone already clears state
         }
         toast.success(`Peixe "${pendingPatch.name}" aplicado em ${applied.join(' e ')}!`);
         setPendingPatch(null);
@@ -552,9 +552,11 @@ const ShirtEditor = () => {
         return;
       }
     } else {
-      // Single side - find matching zone
-      const zone = templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === side || z.shared))
-        || templateZones.find(z => z.side === side || z.shared);
+      // Single side - find matching zone (prefer native side, then shared)
+      const zone = templateZones.find(z => targetName && z.name.toLowerCase() === targetName && z.side === side)
+        || templateZones.find(z => targetName && z.name.toLowerCase() === targetName && z.shared)
+        || templateZones.find(z => z.side === side)
+        || templateZones.find(z => z.shared);
 
       if (zone) {
         await addPatchToSide(pendingPatch, zone, side);
