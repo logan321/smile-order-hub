@@ -190,6 +190,8 @@ const ShirtEditor = () => {
       height: CANVAS_HEIGHT,
       backgroundColor: '#f5f5f5',
       selection: true,
+      enableRetinaScaling: true,
+      imageSmoothingEnabled: true,
     });
     frontFabricRef.current = frontCanvas;
 
@@ -198,6 +200,8 @@ const ShirtEditor = () => {
       height: CANVAS_HEIGHT,
       backgroundColor: '#f5f5f5',
       selection: true,
+      enableRetinaScaling: true,
+      imageSmoothingEnabled: true,
     });
     backFabricRef.current = backCanvas;
 
@@ -489,7 +493,7 @@ const ShirtEditor = () => {
     canvas.discardActiveObject();
     canvas.renderAll();
 
-    const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 });
+    const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 4 });
 
     canvas.backgroundColor = origBg as string;
     canvas.setZoom(origZoom);
