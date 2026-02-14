@@ -1,0 +1,1 @@
+ALTER TABLE public.template_zones ADD COLUMN shared boolean NOT NULL DEFAULT false;

@@ -434,6 +434,7 @@ export type Database = {
           height_percent: number
           id: string
           name: string
+          shared: boolean
           side: string
           template_id: string
           user_id: string
@@ -446,6 +447,7 @@ export type Database = {
           height_percent?: number
           id?: string
           name: string
+          shared?: boolean
           side?: string
           template_id: string
           user_id: string
@@ -458,6 +460,7 @@ export type Database = {
           height_percent?: number
           id?: string
           name?: string
+          shared?: boolean
           side?: string
           template_id?: string
           user_id?: string
