@@ -1,0 +1,1 @@
+ALTER TABLE public.subscriptions ADD COLUMN blocked boolean NOT NULL DEFAULT false;

@@ -58,6 +58,18 @@ serve(async (req) => {
       });
     }
 
+    // Check if blocked
+    if (sub.blocked) {
+      return new Response(JSON.stringify({
+        active: false,
+        isAdmin: false,
+        status: 'blocked',
+        blocked: true,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const now = new Date();
     const isTrialing = sub.status === 'trialing' && sub.trial_ends_at && new Date(sub.trial_ends_at) > now;
     const isActive = sub.status === 'active';
