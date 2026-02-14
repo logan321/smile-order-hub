@@ -273,11 +273,9 @@ const ShirtEditor = () => {
     setSelectedTemplate(template);
   };
 
-  // Add text
-  const addTextAtZone = async (zone?: TemplateZone) => {
-    const canvas = getActiveCanvas();
-    if (!canvas || !textInput.trim()) return;
-    const clipPath = getActiveClipPath();
+  // Helper to add a text object to a specific canvas+side with zone coords
+  const addTextToCanvas = async (canvas: Canvas, side: 'front' | 'back', zone?: TemplateZone) => {
+    const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
     const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
     if (fontDef?.google) await loadGoogleFont(fontFamily);
 
@@ -285,11 +283,11 @@ const ShirtEditor = () => {
       fontSize, fill: textColor, fontFamily,
       stroke: strokeWidth > 0 ? strokeColor : undefined,
       strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
-      clipPath: clipPath || undefined,
     });
 
+    let zoneClipData: any = null;
     if (zone) {
-      const coords = getZoneCoordsForSide(zone, activeView);
+      const coords = getZoneCoordsForSide(zone, side);
       const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
       const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
       const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
@@ -297,19 +295,60 @@ const ShirtEditor = () => {
       const tw = text.width || 100;
       const th = text.height || fontSize;
       const fitScale = Math.min(zoneW / tw, zoneH / th);
+
+      // Use polygon clip if available, otherwise template silhouette
+      let textClip: any = clipPath || undefined;
+      if (coords.pathData && coords.pathData.length >= 3) {
+        const polyPoints = coords.pathData.map((p: { x: number; y: number }) => ({
+          x: (p.x / 100) * CANVAS_WIDTH,
+          y: (p.y / 100) * CANVAS_HEIGHT,
+        }));
+        textClip = new Polygon(polyPoints, { absolutePositioned: true, inverted: false });
+        zoneClipData = coords.pathData;
+      }
+
       text.set({
         left: zoneX + zoneW / 2,
         top: zoneY + zoneH / 2,
         scaleX: fitScale, scaleY: fitScale,
         angle: coords.rotation || 0,
         originX: 'center', originY: 'center',
+        clipPath: textClip,
       });
     } else {
-      text.set({ left: CANVAS_WIDTH / 2 - (text.width || 100) / 2, top: CANVAS_HEIGHT / 2 });
+      text.set({ left: CANVAS_WIDTH / 2 - (text.width || 100) / 2, top: CANVAS_HEIGHT / 2, clipPath: clipPath || undefined });
     }
 
     (text as any)._userElement = true;
-    canvas.add(text); canvas.setActiveObject(text); canvas.renderAll();
+    if (zoneClipData) (text as any)._zoneClipData = zoneClipData;
+    canvas.add(text);
+    return text;
+  };
+
+  // Add text — if zone is shared, add to both canvases
+  const addTextAtZone = async (zone?: TemplateZone) => {
+    if (!textInput.trim()) return;
+    const activeCanvas = getActiveCanvas();
+    if (!activeCanvas) return;
+
+    if (zone && zone.shared) {
+      const frontCanvas = frontFabricRef.current;
+      const backCanvas = backFabricRef.current;
+      if (frontCanvas && backCanvas) {
+        const [frontText] = await Promise.all([
+          addTextToCanvas(frontCanvas, 'front', zone),
+          addTextToCanvas(backCanvas, 'back', zone),
+        ]);
+        frontCanvas.setActiveObject(frontText);
+        frontCanvas.renderAll();
+        backCanvas.renderAll();
+      }
+    } else {
+      const text = await addTextToCanvas(activeCanvas, activeView, zone);
+      activeCanvas.setActiveObject(text);
+      activeCanvas.renderAll();
+    }
+
     setTextInput(''); setShowZonePicker(null);
   };
 
@@ -465,34 +504,73 @@ const ShirtEditor = () => {
     else placeLogoFile(file);
   };
 
+  // Helper to place a logo on a specific canvas+side
+  const placeLogoOnCanvas = async (dataUrl: string, canvas: Canvas, side: 'front' | 'back', zone?: TemplateZone) => {
+    const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
+    const img = await FabricImage.fromURL(dataUrl);
+    let left: number, top: number, scale: number;
+    let logoClip: any = clipPath || undefined;
+    let zoneClipData: any = null;
+
+    if (zone) {
+      const coords = getZoneCoordsForSide(zone, side);
+      const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
+      const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
+      const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
+      const zoneH = (coords.heightPercent / 100) * CANVAS_HEIGHT;
+      scale = Math.min(zoneW / img.width!, zoneH / img.height!);
+      left = zoneX + (zoneW - img.width! * scale) / 2;
+      top = zoneY + (zoneH - img.height! * scale) / 2;
+
+      if (coords.pathData && coords.pathData.length >= 3) {
+        const polyPoints = coords.pathData.map((p: { x: number; y: number }) => ({
+          x: (p.x / 100) * CANVAS_WIDTH,
+          y: (p.y / 100) * CANVAS_HEIGHT,
+        }));
+        logoClip = new Polygon(polyPoints, { absolutePositioned: true, inverted: false });
+        zoneClipData = coords.pathData;
+      }
+
+      img.set({ angle: coords.rotation || 0 });
+    } else {
+      const maxSize = 150;
+      scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+      left = CANVAS_WIDTH / 2 - (img.width! * scale) / 2;
+      top = CANVAS_HEIGHT / 3;
+    }
+
+    img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: logoClip });
+    (img as any)._userElement = true;
+    if (zoneClipData) (img as any)._zoneClipData = zoneClipData;
+    canvas.add(img);
+    return img;
+  };
+
   const placeLogoFile = (file: File, zone?: TemplateZone) => {
-    const canvas = getActiveCanvas();
-    if (!canvas) return;
-    const clipPath = getActiveClipPath();
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const dataUrl = event.target!.result as string;
-        const img = await FabricImage.fromURL(dataUrl);
-        let left: number, top: number, scale: number;
-        if (zone) {
-          const coords = getZoneCoordsForSide(zone, activeView);
-          const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
-          const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
-          const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
-          const zoneH = (coords.heightPercent / 100) * CANVAS_HEIGHT;
-          scale = Math.min(zoneW / img.width!, zoneH / img.height!);
-          left = zoneX + (zoneW - img.width! * scale) / 2;
-          top = zoneY + (zoneH - img.height! * scale) / 2;
+
+        if (zone && zone.shared) {
+          const frontCanvas = frontFabricRef.current;
+          const backCanvas = backFabricRef.current;
+          if (frontCanvas && backCanvas) {
+            const [frontImg] = await Promise.all([
+              placeLogoOnCanvas(dataUrl, frontCanvas, 'front', zone),
+              placeLogoOnCanvas(dataUrl, backCanvas, 'back', zone),
+            ]);
+            frontCanvas.setActiveObject(frontImg);
+            frontCanvas.renderAll();
+            backCanvas.renderAll();
+          }
         } else {
-          const maxSize = 150;
-          scale = Math.min(maxSize / img.width!, maxSize / img.height!);
-          left = CANVAS_WIDTH / 2 - (img.width! * scale) / 2;
-          top = CANVAS_HEIGHT / 3;
+          const canvas = getActiveCanvas();
+          if (!canvas) return;
+          const img = await placeLogoOnCanvas(dataUrl, canvas, activeView, zone);
+          canvas.setActiveObject(img);
+          canvas.renderAll();
         }
-        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: clipPath || undefined });
-        (img as any)._userElement = true;
-        canvas.add(img); canvas.setActiveObject(img); canvas.renderAll();
       } catch { toast.error('Erro ao carregar imagem'); }
     };
     reader.readAsDataURL(file);
