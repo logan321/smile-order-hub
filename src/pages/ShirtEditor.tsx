@@ -3,7 +3,7 @@ import { Canvas, FabricText, FabricImage } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
@@ -45,6 +45,7 @@ const ShirtEditor = () => {
   const [fontSize, setFontSize] = useState(24);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   // Fetch zones for selected template
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
@@ -597,26 +598,45 @@ const ShirtEditor = () => {
           </Button>
         </aside>
 
-        {/* Both canvases - maximized */}
-        <div className="flex-1 flex items-center justify-center p-2 sm:p-3 bg-muted/30 overflow-auto">
-          <div className="flex flex-col md:flex-row gap-2 sm:gap-4 items-center canvas-area">
-            <div
-              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
-              onClick={() => setActiveView('front')}
-            >
-              <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Frente</p>
-              <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
-                <canvas ref={frontCanvasRef} />
-              </div>
-            </div>
+        {/* Both canvases - maximized with zoom */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-muted/30">
+          {/* Zoom controls */}
+          <div className="flex items-center justify-center gap-2 py-1.5 bg-card/50 border-b border-border/30">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.max(0.3, z - 0.1))}>
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-xs font-medium text-muted-foreground w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}>
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(1)}>
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
 
+          <div className="flex-1 overflow-auto flex items-start justify-center p-2 sm:p-3">
             <div
-              className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
-              onClick={() => setActiveView('back')}
+              className="flex flex-col md:flex-row gap-2 sm:gap-4 items-center canvas-area"
+              style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}
             >
-              <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Costas</p>
-              <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
-                <canvas ref={backCanvasRef} />
+              <div
+                className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
+                onClick={() => setActiveView('front')}
+              >
+                <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Frente</p>
+                <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
+                  <canvas ref={frontCanvasRef} />
+                </div>
+              </div>
+
+              <div
+                className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
+                onClick={() => setActiveView('back')}
+              >
+                <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Costas</p>
+                <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
+                  <canvas ref={backCanvasRef} />
+                </div>
               </div>
             </div>
           </div>
