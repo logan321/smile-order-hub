@@ -3,8 +3,7 @@ import { Canvas, FabricText, FabricImage } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Type, Upload, Trash2, Send, Image as ImageIcon, ChevronLeft } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 
@@ -37,10 +36,7 @@ const ShirtEditor = () => {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitOpen, setSubmitOpen] = useState(false);
-  const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
   const [strokeColor, setStrokeColor] = useState('#FFFFFF');
@@ -217,12 +213,11 @@ const ShirtEditor = () => {
 
         canvas.remove(oldStamp);
       } else {
-        // First stamp: center it
-        const maxSize = 120;
-        const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+        // First stamp: fill the canvas area like the template
+        const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
         img.set({
-          left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
-          top: CANVAS_HEIGHT / 2 - (img.height! * scale) / 2,
+          left: (CANVAS_WIDTH - img.width! * scale) / 2,
+          top: (CANVAS_HEIGHT - img.height! * scale) / 2,
           scaleX: scale,
           scaleY: scale,
         });
@@ -309,64 +304,36 @@ const ShirtEditor = () => {
     return dataUrl;
   };
 
-  // Submit design
-  const handleSubmit = async () => {
-    if (!clientName.trim()) { toast.error('Informe seu nome'); return; }
-    if (!selectedTemplate) return;
-
+  // Download both canvases as separate PNGs
+  const handleDownload = async () => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
 
-    setSubmitting(true);
+    setDownloading(true);
     try {
       const frontDataUrl = exportCanvasTransparent(frontCanvas);
       const backDataUrl = exportCanvasTransparent(backCanvas);
 
-      const ts = Date.now();
-      const frontBlob = await (await fetch(frontDataUrl)).blob();
-      const backBlob = await (await fetch(backDataUrl)).blob();
+      // Download front
+      const linkFront = document.createElement('a');
+      linkFront.download = `${selectedTemplate?.name || 'camisa'}_frente.png`;
+      linkFront.href = frontDataUrl;
+      linkFront.click();
 
-      const frontPath = `${selectedTemplate.userId}/${ts}_front.png`;
-      const backPath = `${selectedTemplate.userId}/${ts}_back.png`;
+      // Small delay then download back
+      await new Promise(r => setTimeout(r, 500));
+      const linkBack = document.createElement('a');
+      linkBack.download = `${selectedTemplate?.name || 'camisa'}_costas.png`;
+      linkBack.href = backDataUrl;
+      linkBack.click();
 
-      await supabase.storage.from('shirt-designs').upload(frontPath, frontBlob, { contentType: 'image/png' });
-      await supabase.storage.from('shirt-designs').upload(backPath, backBlob, { contentType: 'image/png' });
-
-      const { data: frontUrl } = supabase.storage.from('shirt-designs').getPublicUrl(frontPath);
-      const { data: backUrl } = supabase.storage.from('shirt-designs').getPublicUrl(backPath);
-
-      const { error } = await supabase.from('shirt_designs').insert({
-        template_id: selectedTemplate.id,
-        owner_user_id: selectedTemplate.userId,
-        client_name: clientName.trim(),
-        client_phone: clientPhone.trim(),
-        design_data: { front: [], back: [] },
-        front_preview_url: frontUrl.publicUrl,
-        back_preview_url: backUrl.publicUrl,
-      });
-
-      if (error) throw error;
-
-      await supabase.from('orders').insert({
-        user_id: selectedTemplate.userId,
-        client_id: selectedTemplate.userId,
-        tracking_id: '',
-        order_type: 'confeccao',
-        paid: false,
-        status: 'received',
-      });
-
-      toast.success('🎉 Design enviado com sucesso!');
-      setSubmitOpen(false);
-      setClientName('');
-      setClientPhone('');
-      setSelectedTemplate(null);
+      toast.success('Downloads iniciados!');
     } catch (err) {
       console.error(err);
-      toast.error('Erro ao enviar design');
+      toast.error('Erro ao gerar download');
     }
-    setSubmitting(false);
+    setDownloading(false);
   };
 
   // Template selection screen
@@ -423,8 +390,8 @@ const ShirtEditor = () => {
           </Button>
           <span className="text-sm font-medium">{selectedTemplate.name}</span>
         </div>
-        <Button onClick={() => setSubmitOpen(true)} className="gap-2">
-          <Send className="h-4 w-4" /> Enviar Pedido
+        <Button onClick={handleDownload} disabled={downloading} className="gap-2">
+          <Download className="h-4 w-4" /> {downloading ? 'Baixando...' : 'Baixar Layout'}
         </Button>
       </header>
 
@@ -575,29 +542,6 @@ const ShirtEditor = () => {
         </div>
       </div>
 
-      {/* Submit dialog */}
-      <Dialog open={submitOpen} onOpenChange={setSubmitOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Enviar Pedido</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Preencha seus dados para finalizar o pedido</p>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Seu Nome *</label>
-              <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Nome completo" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Telefone</label>
-              <Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="(00) 00000-0000" />
-            </div>
-            <Button onClick={handleSubmit} disabled={submitting || !clientName.trim()} className="w-full gap-2">
-              <Send className="h-4 w-4" />
-              {submitting ? 'Enviando...' : 'Confirmar Pedido'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
