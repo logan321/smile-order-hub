@@ -1,0 +1,1 @@
+ALTER TABLE public.stamp_catalog ADD COLUMN back_image_url text;

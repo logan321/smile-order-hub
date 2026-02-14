@@ -6,6 +6,7 @@ export interface StampItem {
   name: string;
   category: string;
   imageUrl: string;
+  backImageUrl: string | null;
   active: boolean;
   createdAt: string;
 }
@@ -24,6 +25,7 @@ export function useStampCatalog() {
       name: s.name,
       category: s.category,
       imageUrl: s.image_url,
+      backImageUrl: s.back_image_url ?? null,
       active: s.active,
       createdAt: s.created_at,
     })) ?? []);
@@ -32,22 +34,32 @@ export function useStampCatalog() {
 
   useEffect(() => { fetchStamps(); }, [fetchStamps]);
 
-  const addStamp = useCallback(async (name: string, category: string, file: File) => {
+  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const userId = session.user.id;
-    const filePath = `${userId}/${Date.now()}_${file.name}`;
-    const { error: uploadErr } = await supabase.storage.from('stamp-catalog').upload(filePath, file);
-    if (uploadErr) throw uploadErr;
-    const { data: urlData } = supabase.storage.from('stamp-catalog').getPublicUrl(filePath);
+    const ts = Date.now();
+
+    // Upload front
+    const frontPath = `${userId}/${ts}_front_${frontFile.name}`;
+    const { error: frontErr } = await supabase.storage.from('stamp-catalog').upload(frontPath, frontFile);
+    if (frontErr) throw frontErr;
+    const { data: frontUrl } = supabase.storage.from('stamp-catalog').getPublicUrl(frontPath);
+
+    // Upload back
+    const backPath = `${userId}/${ts}_back_${backFile.name}`;
+    const { error: backErr } = await supabase.storage.from('stamp-catalog').upload(backPath, backFile);
+    if (backErr) throw backErr;
+    const { data: backUrl } = supabase.storage.from('stamp-catalog').getPublicUrl(backPath);
 
     await supabase.from('stamp_catalog').insert({
       user_id: userId,
       name,
       category,
-      image_url: urlData.publicUrl,
-    });
+      image_url: frontUrl.publicUrl,
+      back_image_url: backUrl.publicUrl,
+    } as any);
 
     await fetchStamps();
   }, [fetchStamps]);
