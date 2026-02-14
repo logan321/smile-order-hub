@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,16 +26,36 @@ const ZONE_COLORS = [
   'rgba(249,115,22,0.35)',
 ];
 
+type DragMode = 'move' | 'resize-br' | 'resize-bl' | 'resize-tr' | 'resize-tl' | 'resize-r' | 'resize-l' | 'resize-t' | 'resize-b';
+
+interface DragState {
+  zoneId: string;
+  mode: DragMode;
+  startX: number;
+  startY: number;
+  origX: number;
+  origY: number;
+  origW: number;
+  origH: number;
+}
+
 const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEditorProps) => {
   const { zones, loading, addZone, updateZone, deleteZone } = useTemplateZones(templateId);
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [newZoneName, setNewZoneName] = useState('');
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number; zoneX: number; zoneY: number } | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  // Local zone overrides during drag (avoid DB calls on every mousemove)
+  const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<TemplateZone>>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
   const filteredZones = zones.filter(z => z.side === activeSide);
   const imageUrl = activeSide === 'front' ? frontImageUrl : backImageUrl;
+
+  // Merge DB zones with local drag overrides
+  const getZoneDisplay = (zone: TemplateZone) => ({
+    ...zone,
+    ...(localOverrides[zone.id] || {}),
+  });
 
   const handleAddZone = async () => {
     if (!newZoneName.trim()) return;
@@ -51,7 +71,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
     }
   };
 
-  const getMousePercent = useCallback((e: React.MouseEvent) => {
+  const getMousePercent = useCallback((e: MouseEvent | React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };
     const rect = containerRef.current.getBoundingClientRect();
     return {
@@ -60,29 +80,144 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
     };
   }, []);
 
-  const handleMouseDown = (e: React.MouseEvent, zone: TemplateZone) => {
+  const handleMouseDown = (e: React.MouseEvent, zone: TemplateZone, mode: DragMode) => {
     e.preventDefault();
     e.stopPropagation();
     const pos = getMousePercent(e);
-    setDragging(zone.id);
-    setDragStart({ x: pos.x, y: pos.y, zoneX: zone.xPercent, zoneY: zone.yPercent });
+    const display = getZoneDisplay(zone);
+    setDragState({
+      zoneId: zone.id,
+      mode,
+      startX: pos.x,
+      startY: pos.y,
+      origX: display.xPercent,
+      origY: display.yPercent,
+      origW: display.widthPercent,
+      origH: display.heightPercent,
+    });
   };
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging || !dragStart) return;
-    const pos = getMousePercent(e);
-    const dx = pos.x - dragStart.x;
-    const dy = pos.y - dragStart.y;
-    const newX = Math.max(0, Math.min(90, dragStart.zoneX + dx));
-    const newY = Math.max(0, Math.min(90, dragStart.zoneY + dy));
+  // Use window-level mouse events for smooth dragging
+  useEffect(() => {
+    if (!dragState) return;
 
-    // Optimistic UI update - find zone and update locally
-    updateZone(dragging, { xPercent: Math.round(newX * 10) / 10, yPercent: Math.round(newY * 10) / 10 });
-  }, [dragging, dragStart, getMousePercent, updateZone]);
+    const handleMove = (e: MouseEvent) => {
+      const pos = getMousePercent(e);
+      const dx = pos.x - dragState.startX;
+      const dy = pos.y - dragState.startY;
+      const { mode, origX, origY, origW, origH, zoneId } = dragState;
 
-  const handleMouseUp = () => {
-    setDragging(null);
-    setDragStart(null);
+      let newX = origX, newY = origY, newW = origW, newH = origH;
+
+      if (mode === 'move') {
+        newX = Math.max(0, Math.min(100 - origW, origX + dx));
+        newY = Math.max(0, Math.min(100 - origH, origY + dy));
+      } else if (mode === 'resize-br') {
+        newW = Math.max(5, origW + dx);
+        newH = Math.max(5, origH + dy);
+      } else if (mode === 'resize-r') {
+        newW = Math.max(5, origW + dx);
+      } else if (mode === 'resize-b') {
+        newH = Math.max(5, origH + dy);
+      } else if (mode === 'resize-bl') {
+        newX = origX + dx;
+        newW = Math.max(5, origW - dx);
+        if (newW <= 5) newX = origX + origW - 5;
+      } else if (mode === 'resize-l') {
+        newX = origX + dx;
+        newW = Math.max(5, origW - dx);
+        if (newW <= 5) newX = origX + origW - 5;
+      } else if (mode === 'resize-tr') {
+        newY = origY + dy;
+        newW = Math.max(5, origW + dx);
+        newH = Math.max(5, origH - dy);
+        if (newH <= 5) newY = origY + origH - 5;
+      } else if (mode === 'resize-tl') {
+        newX = origX + dx;
+        newY = origY + dy;
+        newW = Math.max(5, origW - dx);
+        newH = Math.max(5, origH - dy);
+        if (newW <= 5) newX = origX + origW - 5;
+        if (newH <= 5) newY = origY + origH - 5;
+      } else if (mode === 'resize-t') {
+        newY = origY + dy;
+        newH = Math.max(5, origH - dy);
+        if (newH <= 5) newY = origY + origH - 5;
+      }
+
+      setLocalOverrides(prev => ({
+        ...prev,
+        [zoneId]: {
+          xPercent: Math.round(newX * 10) / 10,
+          yPercent: Math.round(newY * 10) / 10,
+          widthPercent: Math.round(newW * 10) / 10,
+          heightPercent: Math.round(newH * 10) / 10,
+        },
+      }));
+    };
+
+    const handleUp = () => {
+      // Commit to DB
+      const override = localOverrides[dragState.zoneId];
+      if (override) {
+        updateZone(dragState.zoneId, override);
+      }
+      setDragState(null);
+      // Clear overrides after a short delay to let DB update
+      setTimeout(() => setLocalOverrides(prev => {
+        const next = { ...prev };
+        delete next[dragState.zoneId];
+        return next;
+      }), 200);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, [dragState, getMousePercent, localOverrides, updateZone]);
+
+  const handleCornerCursor = (mode: DragMode) => {
+    switch (mode) {
+      case 'resize-br': case 'resize-tl': return 'nwse-resize';
+      case 'resize-bl': case 'resize-tr': return 'nesw-resize';
+      case 'resize-r': case 'resize-l': return 'ew-resize';
+      case 'resize-t': case 'resize-b': return 'ns-resize';
+      default: return 'move';
+    }
+  };
+
+  const HANDLE_SIZE = 8;
+
+  const renderResizeHandles = (zone: TemplateZone, i: number) => {
+    const display = getZoneDisplay(zone);
+    const handles: { mode: DragMode; style: React.CSSProperties }[] = [
+      { mode: 'resize-tl', style: { top: -HANDLE_SIZE / 2, left: -HANDLE_SIZE / 2 } },
+      { mode: 'resize-tr', style: { top: -HANDLE_SIZE / 2, right: -HANDLE_SIZE / 2 } },
+      { mode: 'resize-bl', style: { bottom: -HANDLE_SIZE / 2, left: -HANDLE_SIZE / 2 } },
+      { mode: 'resize-br', style: { bottom: -HANDLE_SIZE / 2, right: -HANDLE_SIZE / 2 } },
+      { mode: 'resize-t', style: { top: -HANDLE_SIZE / 2, left: '50%', marginLeft: -HANDLE_SIZE / 2 } },
+      { mode: 'resize-b', style: { bottom: -HANDLE_SIZE / 2, left: '50%', marginLeft: -HANDLE_SIZE / 2 } },
+      { mode: 'resize-l', style: { top: '50%', left: -HANDLE_SIZE / 2, marginTop: -HANDLE_SIZE / 2 } },
+      { mode: 'resize-r', style: { top: '50%', right: -HANDLE_SIZE / 2, marginTop: -HANDLE_SIZE / 2 } },
+    ];
+
+    return handles.map(h => (
+      <div
+        key={h.mode}
+        className="absolute bg-background border-2 rounded-sm z-10"
+        style={{
+          ...h.style,
+          width: HANDLE_SIZE,
+          height: HANDLE_SIZE,
+          cursor: handleCornerCursor(h.mode),
+          borderColor: ZONE_COLORS[i % ZONE_COLORS.length].replace('0.35', '0.9'),
+        }}
+        onMouseDown={e => handleMouseDown(e, zone, h.mode)}
+      />
+    ));
   };
 
   return (
@@ -123,11 +258,8 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
             {/* Image + zone overlays */}
             <div
               ref={containerRef}
-              className="relative border border-border rounded-lg overflow-hidden bg-muted/30 select-none"
+              className="relative border border-border rounded-lg overflow-visible bg-muted/30 select-none"
               style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
             >
               <img
                 src={imageUrl}
@@ -136,30 +268,35 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                 draggable={false}
               />
 
-              {/* Zone overlays */}
-              {filteredZones.map((zone, i) => (
-                <div
-                  key={zone.id}
-                  className="absolute border-2 border-dashed rounded cursor-move flex items-center justify-center"
-                  style={{
-                    left: `${zone.xPercent}%`,
-                    top: `${zone.yPercent}%`,
-                    width: `${zone.widthPercent}%`,
-                    height: `${zone.heightPercent}%`,
-                    backgroundColor: ZONE_COLORS[i % ZONE_COLORS.length],
-                    borderColor: ZONE_COLORS[i % ZONE_COLORS.length].replace('0.35', '0.8'),
-                  }}
-                  onMouseDown={(e) => handleMouseDown(e, zone)}
-                >
-                  <span className="text-[10px] font-bold text-foreground bg-background/80 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
-                    {zone.name}
-                  </span>
-                </div>
-              ))}
+              {/* Zone overlays with resize handles */}
+              {filteredZones.map((zone, i) => {
+                const display = getZoneDisplay(zone);
+                return (
+                  <div
+                    key={zone.id}
+                    className="absolute border-2 border-dashed rounded flex items-center justify-center"
+                    style={{
+                      left: `${display.xPercent}%`,
+                      top: `${display.yPercent}%`,
+                      width: `${display.widthPercent}%`,
+                      height: `${display.heightPercent}%`,
+                      backgroundColor: ZONE_COLORS[i % ZONE_COLORS.length],
+                      borderColor: ZONE_COLORS[i % ZONE_COLORS.length].replace('0.35', '0.8'),
+                      cursor: 'move',
+                    }}
+                    onMouseDown={(e) => handleMouseDown(e, zone, 'move')}
+                  >
+                    <span className="text-[10px] font-bold text-foreground bg-background/80 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap pointer-events-none">
+                      {zone.name}
+                    </span>
+                    {renderResizeHandles(zone, i)}
+                  </div>
+                );
+              })}
             </div>
 
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <Move className="h-3 w-3" /> Arraste as zonas para reposicionar
+              <Move className="h-3 w-3" /> Arraste para mover, use os pontos para redimensionar
             </p>
           </div>
 
@@ -174,67 +311,70 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                 <p className="text-xs text-muted-foreground py-4">Nenhuma zona definida para este lado.</p>
               ) : (
                 <div className="space-y-2">
-                  {filteredZones.map((zone, i) => (
-                    <div key={zone.id} className="rounded-lg border border-border/50 bg-muted/20 p-2.5 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-3 w-3 rounded-sm flex-shrink-0"
-                          style={{ backgroundColor: ZONE_COLORS[i % ZONE_COLORS.length] }}
-                        />
-                        <Input
-                          value={zone.name}
-                          onChange={e => updateZone(zone.id, { name: e.target.value })}
-                          className="h-7 text-xs flex-1"
-                        />
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteZone(zone.id)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
-                      </div>
+                  {filteredZones.map((zone, i) => {
+                    const display = getZoneDisplay(zone);
+                    return (
+                      <div key={zone.id} className="rounded-lg border border-border/50 bg-muted/20 p-2.5 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-sm flex-shrink-0"
+                            style={{ backgroundColor: ZONE_COLORS[i % ZONE_COLORS.length] }}
+                          />
+                          <Input
+                            value={zone.name}
+                            onChange={e => updateZone(zone.id, { name: e.target.value })}
+                            className="h-7 text-xs flex-1"
+                          />
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteZone(zone.id)}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
 
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">X %</label>
-                          <Input
-                            type="number"
-                            value={zone.xPercent}
-                            onChange={e => updateZone(zone.id, { xPercent: Number(e.target.value) })}
-                            className="h-6 text-[10px]"
-                            min={0} max={100} step={1}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">Y %</label>
-                          <Input
-                            type="number"
-                            value={zone.yPercent}
-                            onChange={e => updateZone(zone.id, { yPercent: Number(e.target.value) })}
-                            className="h-6 text-[10px]"
-                            min={0} max={100} step={1}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">Largura %</label>
-                          <Input
-                            type="number"
-                            value={zone.widthPercent}
-                            onChange={e => updateZone(zone.id, { widthPercent: Number(e.target.value) })}
-                            className="h-6 text-[10px]"
-                            min={5} max={100} step={1}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground">Altura %</label>
-                          <Input
-                            type="number"
-                            value={zone.heightPercent}
-                            onChange={e => updateZone(zone.id, { heightPercent: Number(e.target.value) })}
-                            className="h-6 text-[10px]"
-                            min={5} max={100} step={1}
-                          />
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">X %</label>
+                            <Input
+                              type="number"
+                              value={display.xPercent}
+                              onChange={e => updateZone(zone.id, { xPercent: Number(e.target.value) })}
+                              className="h-6 text-[10px]"
+                              min={0} max={100} step={1}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Y %</label>
+                            <Input
+                              type="number"
+                              value={display.yPercent}
+                              onChange={e => updateZone(zone.id, { yPercent: Number(e.target.value) })}
+                              className="h-6 text-[10px]"
+                              min={0} max={100} step={1}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Largura %</label>
+                            <Input
+                              type="number"
+                              value={display.widthPercent}
+                              onChange={e => updateZone(zone.id, { widthPercent: Number(e.target.value) })}
+                              className="h-6 text-[10px]"
+                              min={5} max={100} step={1}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Altura %</label>
+                            <Input
+                              type="number"
+                              value={display.heightPercent}
+                              onChange={e => updateZone(zone.id, { heightPercent: Number(e.target.value) })}
+                              className="h-6 text-[10px]"
+                              min={5} max={100} step={1}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

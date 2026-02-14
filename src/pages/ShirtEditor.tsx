@@ -187,23 +187,13 @@ const ShirtEditor = () => {
     setSelectedTemplate(template);
   };
 
-  // Add text - optionally at a zone position
+  // Add text - optionally at a zone position (centered in zone)
   const addTextAtZone = (zone?: TemplateZone) => {
     const canvas = getActiveCanvas();
     if (!canvas || !textInput.trim()) return;
     const clipPath = getActiveClipPath();
 
-    let left = CANVAS_WIDTH / 2 - 50;
-    let top = CANVAS_HEIGHT / 2;
-
-    if (zone) {
-      left = (zone.xPercent / 100) * CANVAS_WIDTH + ((zone.widthPercent / 100) * CANVAS_WIDTH) / 2 - 50;
-      top = (zone.yPercent / 100) * CANVAS_HEIGHT + ((zone.heightPercent / 100) * CANVAS_HEIGHT) / 2;
-    }
-
     const text = new FabricText(textInput, {
-      left,
-      top,
       fontSize,
       fill: textColor,
       fontFamily: 'Arial',
@@ -211,6 +201,26 @@ const ShirtEditor = () => {
       strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
       clipPath: clipPath || undefined,
     });
+
+    if (zone) {
+      // Center text in zone
+      const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
+      const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
+      const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
+      const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
+      const textWidth = text.width || 100;
+      const textHeight = text.height || fontSize;
+      text.set({
+        left: zoneX + (zoneW - textWidth) / 2,
+        top: zoneY + (zoneH - textHeight) / 2,
+      });
+    } else {
+      text.set({
+        left: CANVAS_WIDTH / 2 - (text.width || 100) / 2,
+        top: CANVAS_HEIGHT / 2,
+      });
+    }
+
     (text as any)._userElement = true;
     canvas.add(text);
     canvas.setActiveObject(text);
@@ -313,19 +323,23 @@ const ShirtEditor = () => {
       try {
         const dataUrl = event.target!.result as string;
         const img = await FabricImage.fromURL(dataUrl);
-        const maxSize = 150;
-        const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
 
-        let left = CANVAS_WIDTH / 2 - (img.width! * scale) / 2;
-        let top = CANVAS_HEIGHT / 3;
+        let left: number, top: number, scale: number;
 
         if (zone) {
+          // Fit logo inside the zone area
           const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
           const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
           const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
           const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
-          left = zoneX + zoneW / 2 - (img.width! * scale) / 2;
-          top = zoneY + zoneH / 2 - (img.height! * scale) / 2;
+          scale = Math.min(zoneW / img.width!, zoneH / img.height!) * 0.85;
+          left = zoneX + (zoneW - img.width! * scale) / 2;
+          top = zoneY + (zoneH - img.height! * scale) / 2;
+        } else {
+          const maxSize = 150;
+          scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+          left = CANVAS_WIDTH / 2 - (img.width! * scale) / 2;
+          top = CANVAS_HEIGHT / 3;
         }
 
         img.set({
