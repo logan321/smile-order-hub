@@ -121,9 +121,3 @@
     @apply text-muted-foreground mt-1;
   }
 }
-
-/* Canvas area base styles */
-.canvas-area canvas {
-  display: block;
-  max-width: none;
-}

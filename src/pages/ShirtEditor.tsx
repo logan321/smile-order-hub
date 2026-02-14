@@ -24,8 +24,8 @@ interface Stamp {
   imageUrl: string;
 }
 
-const CANVAS_WIDTH = 700;
-const CANVAS_HEIGHT = 875;
+const CANVAS_WIDTH = 500;
+const CANVAS_HEIGHT = 625;
 
 const ShirtEditor = () => {
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,7 +46,10 @@ const ShirtEditor = () => {
   const [fontSize, setFontSize] = useState(24);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(0.5);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const frontWrapRef = useRef<HTMLDivElement>(null);
+  const backWrapRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch zones for selected template
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
@@ -169,6 +172,30 @@ const ShirtEditor = () => {
       backClipRef.current = null;
     };
   }, [selectedTemplate, loadBackground]);
+
+  // Apply Fabric.js zoom when zoomLevel changes
+  useEffect(() => {
+    const front = frontFabricRef.current;
+    const back = backFabricRef.current;
+    if (!front || !back) return;
+
+    [front, back].forEach(canvas => {
+      canvas.setZoom(zoomLevel);
+      canvas.setDimensions({
+        width: CANVAS_WIDTH * zoomLevel,
+        height: CANVAS_HEIGHT * zoomLevel,
+      });
+      canvas.renderAll();
+    });
+  }, [zoomLevel]);
+
+  // Auto-scroll to active canvas when switching sides
+  useEffect(() => {
+    const wrapRef = activeView === 'front' ? frontWrapRef : backWrapRef;
+    if (wrapRef.current && scrollContainerRef.current) {
+      wrapRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeView]);
 
   // Select template
   const handleSelectTemplate = (template: Template) => {
@@ -398,9 +425,12 @@ const ShirtEditor = () => {
     }
   };
 
-  // Export full canvas composition as transparent PNG
+  // Export full canvas composition as transparent PNG (reset zoom for export)
   const exportCanvas = (canvas: Canvas): string => {
     const origBg = canvas.backgroundColor;
+    const origZoom = canvas.getZoom();
+    canvas.setZoom(1);
+    canvas.setDimensions({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
     canvas.backgroundColor = 'transparent';
     canvas.discardActiveObject();
     canvas.renderAll();
@@ -408,6 +438,8 @@ const ShirtEditor = () => {
     const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 });
 
     canvas.backgroundColor = origBg as string;
+    canvas.setZoom(origZoom);
+    canvas.setDimensions({ width: CANVAS_WIDTH * origZoom, height: CANVAS_HEIGHT * origZoom });
     canvas.renderAll();
 
     return dataUrl;
@@ -599,36 +631,34 @@ const ShirtEditor = () => {
           </Button>
         </aside>
 
-        {/* Both canvases - maximized with zoom */}
+        {/* Both canvases with native Fabric zoom */}
         <div className="flex-1 flex flex-col overflow-hidden bg-muted/30">
-          {/* Zoom controls - slider based */}
+          {/* Zoom controls */}
           <div className="flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.max(0.2, Math.round((z - 0.1) * 10) / 10))}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}>
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
             <Slider
               value={[zoomLevel * 100]}
               onValueChange={([v]) => setZoomLevel(v / 100)}
-              min={20}
-              max={200}
+              min={30}
+              max={250}
               step={5}
-              className="w-32 sm:w-48"
+              className="w-36 sm:w-52"
             />
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.min(2, Math.round((z + 0.1) * 10) / 10))}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}>
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
             <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round(zoomLevel * 100)}%</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(0.5)} title="Resetar zoom">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(1)} title="Resetar zoom">
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           </div>
 
-          <div className="flex-1 overflow-auto p-2 sm:p-3">
-            <div
-              className="flex flex-col md:flex-row gap-2 sm:gap-4 items-center justify-center canvas-area"
-              style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center top', width: 'fit-content', margin: '0 auto' }}
-            >
+          <div ref={scrollContainerRef} className="flex-1 overflow-auto p-3 sm:p-4">
+            <div className="flex flex-col md:flex-row gap-3 sm:gap-5 items-center justify-center">
               <div
+                ref={frontWrapRef}
                 className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
                 onClick={() => setActiveView('front')}
               >
@@ -639,6 +669,7 @@ const ShirtEditor = () => {
               </div>
 
               <div
+                ref={backWrapRef}
                 className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
                 onClick={() => setActiveView('back')}
               >
