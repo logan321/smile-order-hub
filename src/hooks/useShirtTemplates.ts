@@ -62,6 +62,9 @@ export function useShirtTemplates() {
   }, [fetchTemplates]);
 
   const deleteTemplate = useCallback(async (id: string) => {
+    // Remove dependent records first
+    await supabase.from('shirt_designs').delete().eq('template_id', id);
+    await supabase.from('template_zones').delete().eq('template_id', id);
     await supabase.from('shirt_templates').delete().eq('id', id);
     await fetchTemplates();
   }, [fetchTemplates]);
