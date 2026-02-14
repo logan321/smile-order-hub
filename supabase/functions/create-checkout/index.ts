@@ -61,7 +61,7 @@ serve(async (req) => {
       await adminSupabase.from('subscriptions').update({ stripe_customer_id: customerId }).eq('user_id', userId);
     }
 
-    // Create checkout session
+    // Create checkout session with multiple payment methods
     const params = new URLSearchParams({
       'customer': customerId,
       'mode': 'subscription',
@@ -71,6 +71,9 @@ serve(async (req) => {
       'cancel_url': cancelUrl || `${req.headers.get('origin')}/configuracoes?payment=cancelled`,
       'subscription_data[trial_period_days]': '7',
       'metadata[user_id]': userId,
+      'payment_method_types[0]': 'card',
+      'payment_method_types[1]': 'boleto',
+      'payment_method_types[2]': 'pix',
     });
 
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
