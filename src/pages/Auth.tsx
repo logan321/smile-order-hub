@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, Search } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -99,9 +99,13 @@ const Auth = () => {
           </div>
         </div>
 
-        <div className="text-center mt-6">
-          <a href="/rastreio" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Rastrear um pedido →
+        <div className="mt-6">
+          <a
+            href="/rastreio"
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg border border-border bg-card text-foreground font-medium hover:bg-accent transition-colors"
+          >
+            <Search className="h-4 w-4" />
+            Consultar pedido
           </a>
         </div>
       </div>
