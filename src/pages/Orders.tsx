@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
 import { Order, OrderItem } from '@/types';
-import { Plus, Pencil, Trash2, ShoppingCart, Search, X, CheckCircle2, Circle, Minus } from 'lucide-react';
+import { Plus, Pencil, Trash2, ShoppingCart, Search, X, CheckCircle2, Circle, Minus, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +15,20 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 
+const STATUS_OPTIONS = [
+  { value: 'received', label: 'Recebido' },
+  { value: 'in_production', label: 'Em Produção' },
+  { value: 'ready', label: 'Pronto' },
+  { value: 'delivered', label: 'Entregue' },
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  received: 'bg-muted text-muted-foreground',
+  in_production: 'bg-accent/20 text-accent-foreground',
+  ready: 'bg-success/20 text-success',
+  delivered: 'bg-primary/20 text-primary',
+};
+
 interface OrderFormOutput { clientId: string; items: OrderItem[]; date: string; paid: boolean; }
 
 const OrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit: (data: OrderFormOutput) => void; onCancel: () => void }) => {
@@ -22,7 +36,6 @@ const OrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit:
   const [clientId, setClientId] = useState(initial?.clientId ?? '');
   const [date, setDate] = useState<Date | undefined>(initial ? new Date(initial.date) : new Date());
 
-  // Build initial selected items from existing order
   const buildInitialItems = (): Record<string, number> => {
     if (!initial?.items) return {};
     const map: Record<string, number> = {};
@@ -34,11 +47,7 @@ const OrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit:
   const toggleService = (serviceId: string) => {
     setSelectedItems(prev => {
       const next = { ...prev };
-      if (next[serviceId]) {
-        delete next[serviceId];
-      } else {
-        next[serviceId] = 1;
-      }
+      if (next[serviceId]) { delete next[serviceId]; } else { next[serviceId] = 1; }
       return next;
     });
   };
@@ -145,7 +154,7 @@ const OrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit:
 };
 
 const Orders = () => {
-  const { clients, orders, services, addOrder, updateOrder, deleteOrder, toggleOrderPaid } = useApp();
+  const { clients, orders, services, addOrder, updateOrder, deleteOrder, toggleOrderPaid, updateOrderStatus } = useApp();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
@@ -155,28 +164,37 @@ const Orders = () => {
     const client = clients.find(c => c.id === o.clientId);
     const desc = getOrderDescription(o, services);
     const term = search.toLowerCase();
-    return desc.toLowerCase().includes(term) || (client?.name.toLowerCase().includes(term) ?? false);
+    return desc.toLowerCase().includes(term) || (client?.name.toLowerCase().includes(term) ?? false) || o.trackingId.toLowerCase().includes(term);
   });
 
-  const handleAdd = (data: OrderFormOutput) => {
-    addOrder(data);
-    setDialogOpen(false);
-    toast.success('Pedido cadastrado!');
+  const handleAdd = async (data: OrderFormOutput) => {
+    try {
+      await addOrder(data);
+      setDialogOpen(false);
+      toast.success('Pedido cadastrado!');
+    } catch { toast.error('Erro ao cadastrar pedido'); }
   };
 
-  const handleEdit = (data: OrderFormOutput) => {
+  const handleEdit = async (data: OrderFormOutput) => {
     if (editingOrder) {
-      updateOrder(editingOrder.id, data);
-      setEditingOrder(null);
-      toast.success('Pedido atualizado!');
+      try {
+        await updateOrder(editingOrder.id, data);
+        setEditingOrder(null);
+        toast.success('Pedido atualizado!');
+      } catch { toast.error('Erro ao atualizar pedido'); }
     }
   };
 
-  const handleDelete = (order: Order) => {
+  const handleDelete = async (order: Order) => {
     if (confirm('Remover este pedido?')) {
-      deleteOrder(order.id);
+      await deleteOrder(order.id);
       toast.success('Pedido removido');
     }
+  };
+
+  const copyTrackingId = (trackingId: string) => {
+    navigator.clipboard.writeText(trackingId);
+    toast.success(`ID ${trackingId} copiado!`);
   };
 
   return (
@@ -215,17 +233,33 @@ const Orders = () => {
             const client = clients.find(c => c.id === order.clientId);
             const desc = getOrderDescription(order, services);
             const total = getOrderTotal(order);
+            const statusLabel = STATUS_OPTIONS.find(s => s.value === order.status)?.label ?? order.status;
             return (
               <div key={order.id} className={cn("bg-card rounded-xl border border-border/50 p-4 hover:shadow-sm transition-all", order.paid && "opacity-60")}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <button onClick={() => copyTrackingId(order.trackingId)} className="text-xs font-mono bg-muted px-2 py-0.5 rounded hover:bg-muted/80 transition-colors flex items-center gap-1" title="Copiar ID">
+                        {order.trackingId} <Copy className="h-3 w-3" />
+                      </button>
                       <span className={cn("font-medium", order.paid && "line-through")}>{client?.name ?? 'Cliente removido'}</span>
                       <span className="text-xs text-muted-foreground">•</span>
                       <span className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</span>
                       {order.paid && <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">Pago</span>}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{desc}</p>
+                    <div className="mt-2">
+                      <Select value={order.status} onValueChange={(val) => updateOrderStatus(order.id, val)}>
+                        <SelectTrigger className="h-7 w-auto text-xs">
+                          <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", STATUS_COLORS[order.status] ?? '')}>
+                            {statusLabel}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <span className={cn("font-semibold whitespace-nowrap", order.paid ? "text-muted-foreground line-through" : "text-success")}>R$ {total.toFixed(2)}</span>

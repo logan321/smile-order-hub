@@ -23,14 +23,12 @@ export interface OrderItem {
 export interface Order {
   id: string;
   clientId: string;
+  trackingId: string;
   items: OrderItem[];
   date: string;
   paid: boolean;
+  status: string;
   createdAt: string;
-  /** @deprecated kept for backward compat with old localStorage data */
-  service?: string;
-  /** @deprecated kept for backward compat with old localStorage data */
-  price?: number;
 }
 
 export interface ClientReport {

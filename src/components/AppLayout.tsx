@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
@@ -14,7 +16,13 @@ const navItems = [
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success('Desconectado!');
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -45,6 +53,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             </NavLink>
           ))}
         </nav>
+        <div className="p-3">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+        </div>
       </aside>
 
       {/* Mobile Header */}
@@ -78,6 +95,13 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 {item.label}
               </NavLink>
             ))}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-muted transition-colors w-full"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
           </div>
         )}
 
