@@ -4,13 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Shirt, Stamp, Upload, Eye, EyeOff } from 'lucide-react';
+import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Shirt, Stamp, Upload, Eye, EyeOff, MapPin } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useOrderStages } from '@/hooks/useOrderStages';
 import { useCustomFields } from '@/hooks/useCustomFields';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
+import ZoneEditor from '@/components/ZoneEditor';
 
 const Settings = () => {
   const [config, setConfig] = useState<BusinessConfig>(loadBusinessConfig);
@@ -141,6 +142,9 @@ const Settings = () => {
   const [stampFile, setStampFile] = useState<File | null>(null);
   const stampRef = useRef<HTMLInputElement>(null);
   const [uploadingStamp, setUploadingStamp] = useState(false);
+
+  // Zone editor
+  const [zoneEditorTemplate, setZoneEditorTemplate] = useState<{ id: string; frontImageUrl: string; backImageUrl: string } | null>(null);
 
   const handleAddStamp = async () => {
     if (!newStampName.trim() || !stampFile) {
@@ -451,6 +455,9 @@ const Settings = () => {
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
                           <span className="text-sm font-medium">{t.name}</span>
                           <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
+                              <MapPin className="h-3.5 w-3.5 text-primary" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
                               {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
                             </Button>
@@ -572,6 +579,16 @@ const Settings = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Zone Editor Modal */}
+      {zoneEditorTemplate && (
+        <ZoneEditor
+          templateId={zoneEditorTemplate.id}
+          frontImageUrl={zoneEditorTemplate.frontImageUrl}
+          backImageUrl={zoneEditorTemplate.backImageUrl}
+          onClose={() => setZoneEditorTemplate(null)}
+        />
+      )}
     </div>
   );
 };

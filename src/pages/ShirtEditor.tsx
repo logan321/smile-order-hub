@@ -3,9 +3,10 @@ import { Canvas, FabricText, FabricImage } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
+import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 
 interface Template {
   id: string;
@@ -42,6 +43,11 @@ const ShirtEditor = () => {
   const [strokeColor, setStrokeColor] = useState('#FFFFFF');
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
+
+  // Fetch zones for selected template
+  const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
 
   // Track current stamp per canvas for replacement
   const frontStampRef = useRef<FabricImage | null>(null);
@@ -181,15 +187,23 @@ const ShirtEditor = () => {
     setSelectedTemplate(template);
   };
 
-  // Add text with optional outline
-  const addText = () => {
+  // Add text - optionally at a zone position
+  const addTextAtZone = (zone?: TemplateZone) => {
     const canvas = getActiveCanvas();
     if (!canvas || !textInput.trim()) return;
     const clipPath = getActiveClipPath();
 
+    let left = CANVAS_WIDTH / 2 - 50;
+    let top = CANVAS_HEIGHT / 2;
+
+    if (zone) {
+      left = (zone.xPercent / 100) * CANVAS_WIDTH + ((zone.widthPercent / 100) * CANVAS_WIDTH) / 2 - 50;
+      top = (zone.yPercent / 100) * CANVAS_HEIGHT + ((zone.heightPercent / 100) * CANVAS_HEIGHT) / 2;
+    }
+
     const text = new FabricText(textInput, {
-      left: CANVAS_WIDTH / 2 - 50,
-      top: CANVAS_HEIGHT / 2,
+      left,
+      top,
       fontSize,
       fill: textColor,
       fontFamily: 'Arial',
@@ -202,6 +216,17 @@ const ShirtEditor = () => {
     canvas.setActiveObject(text);
     canvas.renderAll();
     setTextInput('');
+    setShowZonePicker(null);
+  };
+
+  const handleAddTextClick = () => {
+    if (!textInput.trim()) return;
+    const zonesForSide = templateZones.filter(z => z.side === activeView);
+    if (zonesForSide.length > 0) {
+      setShowZonePicker('text');
+    } else {
+      addTextAtZone();
+    }
   };
 
   // Add/replace stamp — replaces existing stamp at same position/size
@@ -263,10 +288,22 @@ const ShirtEditor = () => {
     }
   };
 
-  // Upload custom logo
+  // Upload custom logo - store file, then show zone picker or place directly
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = '';
+
+    const zonesForSide = templateZones.filter(z => z.side === activeView);
+    if (zonesForSide.length > 0) {
+      setPendingLogoFile(file);
+      setShowZonePicker('logo');
+    } else {
+      placeLogoFile(file);
+    }
+  };
+
+  const placeLogoFile = (file: File, zone?: TemplateZone) => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
     const clipPath = getActiveClipPath();
@@ -278,9 +315,22 @@ const ShirtEditor = () => {
         const img = await FabricImage.fromURL(dataUrl);
         const maxSize = 150;
         const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+
+        let left = CANVAS_WIDTH / 2 - (img.width! * scale) / 2;
+        let top = CANVAS_HEIGHT / 3;
+
+        if (zone) {
+          const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
+          const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
+          const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
+          const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
+          left = zoneX + zoneW / 2 - (img.width! * scale) / 2;
+          top = zoneY + zoneH / 2 - (img.height! * scale) / 2;
+        }
+
         img.set({
-          left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
-          top: CANVAS_HEIGHT / 3,
+          left,
+          top,
           scaleX: scale,
           scaleY: scale,
           clipPath: clipPath || undefined,
@@ -294,7 +344,8 @@ const ShirtEditor = () => {
       }
     };
     reader.readAsDataURL(file);
-    e.target.value = '';
+    setShowZonePicker(null);
+    setPendingLogoFile(null);
   };
 
   // Delete selected object
@@ -453,7 +504,7 @@ const ShirtEditor = () => {
                 value={textInput}
                 onChange={e => setTextInput(e.target.value)}
                 placeholder="Digite o texto..."
-                onKeyDown={e => e.key === 'Enter' && addText()}
+                onKeyDown={e => e.key === 'Enter' && handleAddTextClick()}
               />
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5">
@@ -499,7 +550,7 @@ const ShirtEditor = () => {
                   />
                 </div>
               </div>
-              <Button size="sm" onClick={addText} disabled={!textInput.trim()} className="w-full gap-2 h-8">
+              <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-2 h-8">
                 <Type className="h-3.5 w-3.5" /> Adicionar Texto
               </Button>
             </div>
@@ -566,6 +617,64 @@ const ShirtEditor = () => {
         </div>
       </div>
 
+      {/* Zone picker modal */}
+      {showZonePicker && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl shadow-xl max-w-sm w-full p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Onde posicionar?</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Escolha a zona onde {showZonePicker === 'text' ? 'o texto' : 'a logo'} será posicionado(a):
+            </p>
+            <div className="space-y-2 mb-4">
+              {templateZones
+                .filter(z => z.side === activeView)
+                .map(zone => (
+                  <Button
+                    key={zone.id}
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => {
+                      if (showZonePicker === 'text') {
+                        addTextAtZone(zone);
+                      } else if (pendingLogoFile) {
+                        placeLogoFile(pendingLogoFile, zone);
+                      }
+                    }}
+                  >
+                    <MapPin className="h-3.5 w-3.5" />
+                    {zone.name}
+                  </Button>
+                ))}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  if (showZonePicker === 'text') {
+                    addTextAtZone();
+                  } else if (pendingLogoFile) {
+                    placeLogoFile(pendingLogoFile);
+                  }
+                }}
+              >
+                Posição livre
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowZonePicker(null); setPendingLogoFile(null); }}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
