@@ -483,8 +483,91 @@ const ShirtEditor = () => {
     setPatchSideChoice(null);
   };
 
-  const handlePatchSideSelect = (side: 'front' | 'back' | 'both') => {
+  const handlePatchSideSelect = async (side: 'front' | 'back' | 'both') => {
+    if (!pendingPatch) return;
+
+    // Try to auto-apply using targetZoneName or find matching zones for the chosen side(s)
+    const targetName = pendingPatch.targetZoneName?.trim().toLowerCase();
+
+    if (side === 'both') {
+      // Find zones for front and back (prefer targetZoneName match, fallback to any zone on that side)
+      const frontZone = templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === 'front' || z.shared))
+        || templateZones.find(z => z.side === 'front' || z.shared);
+      const backZone = templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === 'back' || z.shared))
+        || templateZones.find(z => z.side === 'back' || z.shared);
+
+      if (frontZone || backZone) {
+        // Apply to each side with matching zone
+        const applied: string[] = [];
+        if (frontZone) {
+          await addPatchToSide(pendingPatch, frontZone, 'front');
+          applied.push('frente');
+        }
+        if (backZone && backZone.id !== frontZone?.id) {
+          await addPatchToSide(pendingPatch, backZone, 'back');
+          applied.push('costas');
+        } else if (backZone && backZone.id === frontZone?.id && backZone.shared) {
+          // Same shared zone - addPatchToZone already handles both sides
+          await addPatchToZone(pendingPatch, backZone);
+          return; // addPatchToZone already clears state
+        }
+        toast.success(`Peixe "${pendingPatch.name}" aplicado em ${applied.join(' e ')}!`);
+        setPendingPatch(null);
+        setPatchSideChoice(null);
+        return;
+      }
+    } else {
+      // Single side - find matching zone
+      const zone = templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === side || z.shared))
+        || templateZones.find(z => z.side === side || z.shared);
+
+      if (zone) {
+        await addPatchToSide(pendingPatch, zone, side);
+        toast.success(`Peixe "${pendingPatch.name}" aplicado em "${zone.name}"!`);
+        setPendingPatch(null);
+        setPatchSideChoice(null);
+        return;
+      }
+    }
+
+    // Fallback: no zones found, show zone picker
     setPatchSideChoice(side);
+  };
+
+  // Add patch to a specific side of a zone (without the shared duplication logic)
+  const addPatchToSide = async (patch: { id: string; name: string; imageUrl: string }, zone: TemplateZone, side: 'front' | 'back') => {
+    const canvas = side === 'front' ? frontFabricRef.current : backFabricRef.current;
+    const templateClip = side === 'front' ? frontClipRef.current : backClipRef.current;
+    if (!canvas) return;
+
+    const coords = getZoneCoordsForSide(zone, side);
+    try {
+      const img = await FabricImage.fromURL(patch.imageUrl, { crossOrigin: 'anonymous' });
+      const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
+      const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
+      const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
+      const zoneH = (coords.heightPercent / 100) * CANVAS_HEIGHT;
+      const scale = Math.min(zoneW / img.width!, zoneH / img.height!);
+      const left = zoneX + (zoneW - img.width! * scale) / 2;
+      const top = zoneY + (zoneH - img.height! * scale) / 2;
+
+      let clipPath: any = templateClip || undefined;
+      if (coords.pathData && coords.pathData.length >= 3) {
+        const polyPoints = coords.pathData.map(p => ({
+          x: (p.x / 100) * CANVAS_WIDTH,
+          y: (p.y / 100) * CANVAS_HEIGHT,
+        }));
+        clipPath = new Polygon(polyPoints, { absolutePositioned: true, inverted: false });
+      }
+
+      img.set({ left, top, scaleX: scale, scaleY: scale, clipPath, angle: coords.rotation || 0 });
+      (img as any)._userElement = true;
+      (img as any)._zoneClipData = coords.pathData;
+      canvas.add(img);
+      canvas.renderAll();
+    } catch {
+      toast.error('Erro ao carregar imagem do peixe');
+    }
   };
 
   // Get zones available for the chosen side
