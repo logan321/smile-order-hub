@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Canvas, FabricText, FabricImage, Rect } from 'fabric';
+import { Canvas, FabricText, FabricImage } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Type, Upload, Trash2, Send, Image as ImageIcon, Palette, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Type, Upload, Trash2, Send, Image as ImageIcon, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 
@@ -28,12 +27,15 @@ const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 500;
 
 const ShirtEditor = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricRef = useRef<Canvas | null>(null);
+  const frontCanvasRef = useRef<HTMLCanvasElement>(null);
+  const backCanvasRef = useRef<HTMLCanvasElement>(null);
+  const frontFabricRef = useRef<Canvas | null>(null);
+  const backFabricRef = useRef<Canvas | null>(null);
+  const [activeView, setActiveView] = useState<'front' | 'back'>('front');
+
   const [templates, setTemplates] = useState<Template[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [view, setView] = useState<'front' | 'back'>('front');
   const [loading, setLoading] = useState(true);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [clientName, setClientName] = useState('');
@@ -41,12 +43,21 @@ const ShirtEditor = () => {
   const [submitting, setSubmitting] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
+  const [strokeColor, setStrokeColor] = useState('#FFFFFF');
+  const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
-  const [showStamps, setShowStamps] = useState(false);
 
-  // Store canvas state for front/back separately
-  const frontStateRef = useRef<string | null>(null);
-  const backStateRef = useRef<string | null>(null);
+  // Track current stamp per canvas for replacement
+  const frontStampRef = useRef<FabricImage | null>(null);
+  const backStampRef = useRef<FabricImage | null>(null);
+
+  const getActiveCanvas = useCallback(() => {
+    return activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+  }, [activeView]);
+
+  const getActiveStampRef = useCallback(() => {
+    return activeView === 'front' ? frontStampRef : backStampRef;
+  }, [activeView]);
 
   // Fetch templates and stamps
   useEffect(() => {
@@ -76,28 +87,8 @@ const ShirtEditor = () => {
     fetchData();
   }, []);
 
-  // Initialize canvas
-  useEffect(() => {
-    if (!canvasRef.current || fabricRef.current) return;
-    const canvas = new Canvas(canvasRef.current, {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
-      backgroundColor: '#f5f5f5',
-      selection: true,
-    });
-    fabricRef.current = canvas;
-
-    return () => {
-      canvas.dispose();
-      fabricRef.current = null;
-    };
-  }, [selectedTemplate]);
-
-  // Load template background image
-  const loadBackground = useCallback(async (imageUrl: string) => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-
+  // Load background image onto a canvas
+  const loadBackground = useCallback(async (canvas: Canvas, imageUrl: string) => {
     try {
       const img = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
       const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
@@ -108,15 +99,8 @@ const ShirtEditor = () => {
         top: (CANVAS_HEIGHT - img.height! * scale) / 2,
         selectable: false,
         evented: false,
-        erasable: false,
       });
-
-      // Remove old background (first object if it's the background)
-      const objects = canvas.getObjects();
-      if (objects.length > 0 && !(objects[0] as any)._userElement) {
-        canvas.remove(objects[0]);
-      }
-
+      (img as any)._isBackground = true;
       canvas.insertAt(0, img);
       canvas.renderAll();
     } catch (e) {
@@ -124,86 +108,71 @@ const ShirtEditor = () => {
     }
   }, []);
 
-  // Switch views (front/back)
-  const switchView = useCallback(async (newView: 'front' | 'back') => {
-    const canvas = fabricRef.current;
-    if (!canvas || !selectedTemplate) return;
+  // Initialize both canvases when template is selected
+  useEffect(() => {
+    if (!selectedTemplate) return;
+    if (!frontCanvasRef.current || !backCanvasRef.current) return;
+    if (frontFabricRef.current) return; // already initialized
 
-    // Save current view state (excluding background)
-    const objects = canvas.getObjects().filter((o: any) => o._userElement);
-    const currentState = JSON.stringify(objects.map(o => o.toJSON()));
-    
-    if (view === 'front') {
-      frontStateRef.current = currentState;
-    } else {
-      backStateRef.current = currentState;
-    }
+    const frontCanvas = new Canvas(frontCanvasRef.current, {
+      width: CANVAS_WIDTH,
+      height: CANVAS_HEIGHT,
+      backgroundColor: '#f5f5f5',
+      selection: true,
+    });
+    frontFabricRef.current = frontCanvas;
 
-    // Clear canvas
-    canvas.clear();
-    canvas.backgroundColor = '#f5f5f5';
+    const backCanvas = new Canvas(backCanvasRef.current, {
+      width: CANVAS_WIDTH,
+      height: CANVAS_HEIGHT,
+      backgroundColor: '#f5f5f5',
+      selection: true,
+    });
+    backFabricRef.current = backCanvas;
 
-    // Load new background
-    const bgUrl = newView === 'front' ? selectedTemplate.frontImageUrl : selectedTemplate.backImageUrl;
-    await loadBackground(bgUrl);
+    loadBackground(frontCanvas, selectedTemplate.frontImageUrl);
+    loadBackground(backCanvas, selectedTemplate.backImageUrl);
 
-    // Restore saved state for new view
-    const savedState = newView === 'front' ? frontStateRef.current : backStateRef.current;
-    if (savedState) {
-      try {
-        const parsed = JSON.parse(savedState);
-        for (const objData of parsed) {
-          if (objData.type === 'FabricText' || objData.type === 'text') {
-            const text = new FabricText(objData.text || '', {
-              left: objData.left,
-              top: objData.top,
-              fontSize: objData.fontSize,
-              fill: objData.fill,
-              fontFamily: objData.fontFamily || 'Arial',
-              scaleX: objData.scaleX,
-              scaleY: objData.scaleY,
-              angle: objData.angle,
-            });
-            (text as any)._userElement = true;
-            canvas.add(text);
-          }
-        }
-      } catch { /* ignore */ }
-    }
-
-    canvas.renderAll();
-    setView(newView);
-  }, [view, selectedTemplate, loadBackground]);
+    return () => {
+      frontCanvas.dispose();
+      backCanvas.dispose();
+      frontFabricRef.current = null;
+      backFabricRef.current = null;
+      frontStampRef.current = null;
+      backStampRef.current = null;
+    };
+  }, [selectedTemplate, loadBackground]);
 
   // Select template
-  const handleSelectTemplate = async (template: Template) => {
+  const handleSelectTemplate = (template: Template) => {
+    // Reset refs so canvases reinitialize
+    if (frontFabricRef.current) {
+      frontFabricRef.current.dispose();
+      frontFabricRef.current = null;
+    }
+    if (backFabricRef.current) {
+      backFabricRef.current.dispose();
+      backFabricRef.current = null;
+    }
+    frontStampRef.current = null;
+    backStampRef.current = null;
+    setActiveView('front');
     setSelectedTemplate(template);
-    frontStateRef.current = null;
-    backStateRef.current = null;
-    setView('front');
-
-    // Wait for canvas to initialize
-    setTimeout(async () => {
-      if (fabricRef.current) {
-        fabricRef.current.clear();
-        fabricRef.current.backgroundColor = '#f5f5f5';
-        await loadBackground(template.frontImageUrl);
-      }
-    }, 100);
   };
 
-  // Add text to canvas
+  // Add text with optional outline
   const addText = () => {
-    const canvas = fabricRef.current;
+    const canvas = getActiveCanvas();
     if (!canvas || !textInput.trim()) return;
 
     const text = new FabricText(textInput, {
       left: CANVAS_WIDTH / 2 - 50,
       top: CANVAS_HEIGHT / 2,
-      fontSize: fontSize,
+      fontSize,
       fill: textColor,
       fontFamily: 'Arial',
-      editable: true,
+      stroke: strokeWidth > 0 ? strokeColor : undefined,
+      strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
     });
     (text as any)._userElement = true;
     canvas.add(text);
@@ -212,42 +181,76 @@ const ShirtEditor = () => {
     setTextInput('');
   };
 
-  // Add stamp to canvas
+  // Add/replace stamp — replaces existing stamp at same position/size
   const addStamp = async (stamp: Stamp) => {
-    const canvas = fabricRef.current;
+    const canvas = getActiveCanvas();
     if (!canvas) return;
+
+    const stampRef = getActiveStampRef();
+    const oldStamp = stampRef.current;
 
     try {
       const img = await FabricImage.fromURL(stamp.imageUrl, { crossOrigin: 'anonymous' });
-      const maxSize = 120;
-      const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
-      img.set({
-        left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
-        top: CANVAS_HEIGHT / 2 - (img.height! * scale) / 2,
-        scaleX: scale,
-        scaleY: scale,
-      });
+
+      if (oldStamp) {
+        // Replace: use old stamp's position and scale
+        const oldLeft = oldStamp.left!;
+        const oldTop = oldStamp.top!;
+        const oldScaleX = oldStamp.scaleX!;
+        const oldScaleY = oldStamp.scaleY!;
+        const oldAngle = oldStamp.angle || 0;
+
+        // Calculate scale to fit into the same bounding box
+        const oldBoundingWidth = oldStamp.width! * oldScaleX;
+        const oldBoundingHeight = oldStamp.height! * oldScaleY;
+        const newScaleX = oldBoundingWidth / img.width!;
+        const newScaleY = oldBoundingHeight / img.height!;
+        const uniformScale = Math.min(newScaleX, newScaleY);
+
+        img.set({
+          left: oldLeft,
+          top: oldTop,
+          scaleX: uniformScale,
+          scaleY: uniformScale,
+          angle: oldAngle,
+        });
+
+        canvas.remove(oldStamp);
+      } else {
+        // First stamp: center it
+        const maxSize = 120;
+        const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+        img.set({
+          left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
+          top: CANVAS_HEIGHT / 2 - (img.height! * scale) / 2,
+          scaleX: scale,
+          scaleY: scale,
+        });
+      }
+
       (img as any)._userElement = true;
+      (img as any)._isStamp = true;
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.renderAll();
-      setShowStamps(false);
+      stampRef.current = img;
     } catch {
       toast.error('Erro ao carregar estampa');
     }
   };
 
   // Upload custom logo
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const canvas = fabricRef.current;
+    const canvas = getActiveCanvas();
     if (!canvas) return;
 
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const img = await FabricImage.fromURL(event.target!.result as string);
+        const dataUrl = event.target!.result as string;
+        const img = await FabricImage.fromURL(dataUrl);
         const maxSize = 150;
         const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
         img.set({
@@ -270,81 +273,56 @@ const ShirtEditor = () => {
 
   // Delete selected object
   const deleteSelected = () => {
-    const canvas = fabricRef.current;
+    const canvas = getActiveCanvas();
     if (!canvas) return;
     const active = canvas.getActiveObject();
     if (active && (active as any)._userElement) {
+      // If it's the stamp, clear ref
+      if ((active as any)._isStamp) {
+        getActiveStampRef().current = null;
+      }
       canvas.remove(active);
       canvas.discardActiveObject();
       canvas.renderAll();
     }
   };
 
+  // Export canvas as PNG without background (transparent)
+  const exportCanvasTransparent = (canvas: Canvas): string => {
+    // Temporarily hide background image and set transparent bg
+    const objects = canvas.getObjects();
+    const bgObj = objects.find((o: any) => o._isBackground);
+    const origBg = canvas.backgroundColor;
+
+    if (bgObj) bgObj.set('visible', false);
+    canvas.backgroundColor = 'transparent';
+    canvas.discardActiveObject();
+    canvas.renderAll();
+
+    const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 });
+
+    // Restore
+    if (bgObj) bgObj.set('visible', true);
+    canvas.backgroundColor = origBg as string;
+    canvas.renderAll();
+
+    return dataUrl;
+  };
+
   // Submit design
   const handleSubmit = async () => {
     if (!clientName.trim()) { toast.error('Informe seu nome'); return; }
     if (!selectedTemplate) return;
-    const canvas = fabricRef.current;
-    if (!canvas) return;
+
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas) return;
 
     setSubmitting(true);
     try {
-      // Save current view state
-      const currentObjects = canvas.getObjects().filter((o: any) => o._userElement);
-      const currentState = JSON.stringify(currentObjects.map(o => o.toJSON()));
-      if (view === 'front') frontStateRef.current = currentState;
-      else backStateRef.current = currentState;
+      const frontDataUrl = exportCanvasTransparent(frontCanvas);
+      const backDataUrl = exportCanvasTransparent(backCanvas);
 
-      // Export front preview
-      // First ensure front is loaded
-      canvas.clear();
-      canvas.backgroundColor = '#f5f5f5';
-      await loadBackground(selectedTemplate.frontImageUrl);
-      if (frontStateRef.current) {
-        try {
-          const parsed = JSON.parse(frontStateRef.current);
-          for (const objData of parsed) {
-            if (objData.type === 'FabricText' || objData.type === 'text') {
-              const t = new FabricText(objData.text || '', {
-                left: objData.left, top: objData.top, fontSize: objData.fontSize,
-                fill: objData.fill, fontFamily: objData.fontFamily || 'Arial',
-                scaleX: objData.scaleX, scaleY: objData.scaleY, angle: objData.angle,
-              });
-              (t as any)._userElement = true;
-              canvas.add(t);
-            }
-          }
-        } catch { /* */ }
-      }
-      canvas.discardActiveObject();
-      canvas.renderAll();
-      const frontDataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 });
-
-      // Export back preview
-      canvas.clear();
-      canvas.backgroundColor = '#f5f5f5';
-      await loadBackground(selectedTemplate.backImageUrl);
-      if (backStateRef.current) {
-        try {
-          const parsed = JSON.parse(backStateRef.current);
-          for (const objData of parsed) {
-            if (objData.type === 'FabricText' || objData.type === 'text') {
-              const t = new FabricText(objData.text || '', {
-                left: objData.left, top: objData.top, fontSize: objData.fontSize,
-                fill: objData.fill, fontFamily: objData.fontFamily || 'Arial',
-                scaleX: objData.scaleX, scaleY: objData.scaleY, angle: objData.angle,
-              });
-              (t as any)._userElement = true;
-              canvas.add(t);
-            }
-          }
-        } catch { /* */ }
-      }
-      canvas.discardActiveObject();
-      canvas.renderAll();
-      const backDataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 });
-
-      // Upload previews to storage
       const ts = Date.now();
       const frontBlob = await (await fetch(frontDataUrl)).blob();
       const backBlob = await (await fetch(backDataUrl)).blob();
@@ -352,39 +330,34 @@ const ShirtEditor = () => {
       const frontPath = `${selectedTemplate.userId}/${ts}_front.png`;
       const backPath = `${selectedTemplate.userId}/${ts}_back.png`;
 
-      await supabase.storage.from('shirt-designs').upload(frontPath, frontBlob);
-      await supabase.storage.from('shirt-designs').upload(backPath, backBlob);
+      await supabase.storage.from('shirt-designs').upload(frontPath, frontBlob, { contentType: 'image/png' });
+      await supabase.storage.from('shirt-designs').upload(backPath, backBlob, { contentType: 'image/png' });
 
       const { data: frontUrl } = supabase.storage.from('shirt-designs').getPublicUrl(frontPath);
       const { data: backUrl } = supabase.storage.from('shirt-designs').getPublicUrl(backPath);
 
-      // Save design to database
       const { error } = await supabase.from('shirt_designs').insert({
         template_id: selectedTemplate.id,
         owner_user_id: selectedTemplate.userId,
         client_name: clientName.trim(),
         client_phone: clientPhone.trim(),
-        design_data: {
-          front: frontStateRef.current ? JSON.parse(frontStateRef.current) : [],
-          back: backStateRef.current ? JSON.parse(backStateRef.current) : [],
-        },
+        design_data: { front: [], back: [] },
         front_preview_url: frontUrl.publicUrl,
         back_preview_url: backUrl.publicUrl,
       });
 
       if (error) throw error;
 
-      // Also create an order automatically
-      const { error: orderError } = await supabase.from('orders').insert({
+      await supabase.from('orders').insert({
         user_id: selectedTemplate.userId,
-        client_id: selectedTemplate.userId, // placeholder - designer will assign client
+        client_id: selectedTemplate.userId,
         tracking_id: '',
         order_type: 'confeccao',
         paid: false,
         status: 'received',
       });
 
-      toast.success('🎉 Design enviado com sucesso! O designer receberá seu pedido.');
+      toast.success('🎉 Design enviado com sucesso!');
       setSubmitOpen(false);
       setClientName('');
       setClientPhone('');
@@ -402,7 +375,7 @@ const ShirtEditor = () => {
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
-            <img src={logo} alt="Macro Master" className="h-10 w-auto mx-auto mb-3" />
+            <img src={logo} alt="Logo" className="h-10 w-auto mx-auto mb-3" />
             <h1 className="text-2xl font-bold font-display">Editor de Camisas</h1>
             <p className="text-muted-foreground mt-1">Escolha um modelo para personalizar</p>
           </div>
@@ -413,7 +386,6 @@ const ShirtEditor = () => {
             <div className="text-center py-16 text-muted-foreground">
               <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-30" />
               <p className="text-lg font-medium">Nenhum template disponível</p>
-              <p className="text-sm mt-1">O designer ainda não cadastrou modelos de camisa</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -435,18 +407,12 @@ const ShirtEditor = () => {
               ))}
             </div>
           )}
-
-          <div className="text-center mt-8">
-            <a href="/rastreio" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Rastrear um pedido →
-            </a>
-          </div>
         </div>
       </div>
     );
   }
 
-  // Editor screen
+  // Editor screen — both canvases side by side
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
@@ -465,30 +431,30 @@ const ShirtEditor = () => {
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Toolbar */}
         <aside className="lg:w-72 border-b lg:border-b-0 lg:border-r border-border bg-card p-4 space-y-4 overflow-y-auto">
-          {/* View switcher */}
+          {/* Active view selector */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Visualização</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Editar lado</p>
             <div className="flex gap-2">
               <Button
-                variant={view === 'front' ? 'default' : 'outline'}
+                variant={activeView === 'front' ? 'default' : 'outline'}
                 size="sm"
                 className="flex-1"
-                onClick={() => switchView('front')}
+                onClick={() => setActiveView('front')}
               >
                 Frente
               </Button>
               <Button
-                variant={view === 'back' ? 'default' : 'outline'}
+                variant={activeView === 'back' ? 'default' : 'outline'}
                 size="sm"
                 className="flex-1"
-                onClick={() => switchView('back')}
+                onClick={() => setActiveView('back')}
               >
                 Costas
               </Button>
             </div>
           </div>
 
-          {/* Add text */}
+          {/* Add text with outline */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Adicionar Texto</p>
             <div className="space-y-2">
@@ -498,7 +464,7 @@ const ShirtEditor = () => {
                 placeholder="Digite o texto..."
                 onKeyDown={e => e.key === 'Enter' && addText()}
               />
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <label className="text-xs text-muted-foreground">Cor</label>
                   <input
@@ -519,20 +485,42 @@ const ShirtEditor = () => {
                     max={72}
                   />
                 </div>
-                <Button size="sm" onClick={addText} disabled={!textInput.trim()} className="ml-auto h-7">
-                  <Type className="h-3.5 w-3.5" />
-                </Button>
               </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground">Contorno</label>
+                  <input
+                    type="color"
+                    value={strokeColor}
+                    onChange={e => setStrokeColor(e.target.value)}
+                    className="h-7 w-7 rounded border border-border cursor-pointer"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-muted-foreground">Espessura</label>
+                  <Input
+                    type="number"
+                    value={strokeWidth}
+                    onChange={e => setStrokeWidth(Number(e.target.value))}
+                    className="h-7 w-16 text-xs"
+                    min={0}
+                    max={10}
+                  />
+                </div>
+              </div>
+              <Button size="sm" onClick={addText} disabled={!textInput.trim()} className="w-full gap-2 h-8">
+                <Type className="h-3.5 w-3.5" /> Adicionar Texto
+              </Button>
             </div>
           </div>
 
           {/* Upload logo */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sua Logo / Imagem</p>
-            <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Importar Logo / Imagem</p>
+            <label className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
               <Upload className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Enviar imagem</span>
-              <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+              <span className="text-sm text-muted-foreground">Clique para enviar imagem (PNG, JPG)</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
             </label>
           </div>
 
@@ -563,14 +551,25 @@ const ShirtEditor = () => {
           </Button>
         </aside>
 
-        {/* Canvas area */}
-        <div className="flex-1 flex items-center justify-center p-4 bg-muted/30">
-          <div className="relative">
-            <p className="text-center text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">
-              {view === 'front' ? 'Frente' : 'Costas'}
-            </p>
+        {/* Both canvases side by side */}
+        <div className="flex-1 flex items-center justify-center gap-6 p-4 bg-muted/30 flex-wrap">
+          <div
+            className={`relative cursor-pointer transition-all ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
+            onClick={() => setActiveView('front')}
+          >
+            <p className="text-center text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">Frente</p>
             <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
-              <canvas ref={canvasRef} />
+              <canvas ref={frontCanvasRef} />
+            </div>
+          </div>
+
+          <div
+            className={`relative cursor-pointer transition-all ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-60 hover:opacity-80'}`}
+            onClick={() => setActiveView('back')}
+          >
+            <p className="text-center text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">Costas</p>
+            <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
+              <canvas ref={backCanvasRef} />
             </div>
           </div>
         </div>
