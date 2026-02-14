@@ -64,6 +64,7 @@ interface Stamp {
   name: string;
   category: string;
   imageUrl: string;
+  backImageUrl: string | null;
 }
 
 const CANVAS_WIDTH = 500;
@@ -136,6 +137,7 @@ const ShirtEditor = () => {
         name: s.name,
         category: s.category,
         imageUrl: s.image_url,
+        backImageUrl: s.back_image_url ?? null,
       })) ?? []);
 
       setLoading(false);
@@ -323,13 +325,10 @@ const ShirtEditor = () => {
     }
   };
 
-  // Add/replace stamp — REPLACES the background template image at index 0
-  const addStamp = async (stamp: Stamp) => {
-    const canvas = getActiveCanvas();
-    if (!canvas) return;
-
+  // Add/replace stamp on a specific canvas
+  const applyStampToCanvas = async (canvas: Canvas, imageUrl: string, side: 'front' | 'back') => {
     try {
-      const img = await FabricImage.fromURL(stamp.imageUrl, { crossOrigin: 'anonymous' });
+      const img = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
 
       // Find and remove the current background (index 0)
       const objects = canvas.getObjects();
@@ -356,7 +355,7 @@ const ShirtEditor = () => {
       canvas.insertAt(0, img);
 
       // Update clip path to match the new background shape
-      const clipImg = await FabricImage.fromURL(stamp.imageUrl, { crossOrigin: 'anonymous' });
+      const clipImg = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
       clipImg.set({
         scaleX: scale,
         scaleY: scale,
@@ -364,11 +363,11 @@ const ShirtEditor = () => {
         top,
         absolutePositioned: true,
       });
-      if (activeView === 'front') frontClipRef.current = clipImg;
+      if (side === 'front') frontClipRef.current = clipImg;
       else backClipRef.current = clipImg;
 
       // Re-apply new clipPath to all existing user elements
-      const newClip = activeView === 'front' ? frontClipRef.current : backClipRef.current;
+      const newClip = side === 'front' ? frontClipRef.current : backClipRef.current;
       canvas.getObjects().forEach((obj: any) => {
         if (obj._userElement && !obj._isBackground) {
           obj.set({ clipPath: newClip || undefined });
@@ -379,6 +378,22 @@ const ShirtEditor = () => {
     } catch {
       toast.error('Erro ao carregar estampa');
     }
+  };
+
+  // Add stamp — applies front image to front canvas and back image to back canvas
+  const addStamp = async (stamp: Stamp) => {
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas) return;
+
+    // Apply front
+    await applyStampToCanvas(frontCanvas, stamp.imageUrl, 'front');
+
+    // Apply back (use backImageUrl if available, otherwise use same imageUrl)
+    const backUrl = stamp.backImageUrl || stamp.imageUrl;
+    await applyStampToCanvas(backCanvas, backUrl, 'back');
+
+    toast.success(`Estampa "${stamp.name}" aplicada na frente e costas!`);
   };
 
   // Upload custom logo - store file, then show zone picker or place directly

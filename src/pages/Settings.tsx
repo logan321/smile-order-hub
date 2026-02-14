@@ -139,25 +139,29 @@ const Settings = () => {
   // Stamp catalog management
   const [newStampName, setNewStampName] = useState('');
   const [newStampCategory, setNewStampCategory] = useState('Geral');
-  const [stampFile, setStampFile] = useState<File | null>(null);
-  const stampRef = useRef<HTMLInputElement>(null);
+  const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
+  const [stampBackFile, setStampBackFile] = useState<File | null>(null);
+  const stampFrontRef = useRef<HTMLInputElement>(null);
+  const stampBackRef = useRef<HTMLInputElement>(null);
   const [uploadingStamp, setUploadingStamp] = useState(false);
 
   // Zone editor
   const [zoneEditorTemplate, setZoneEditorTemplate] = useState<{ id: string; frontImageUrl: string; backImageUrl: string } | null>(null);
 
   const handleAddStamp = async () => {
-    if (!newStampName.trim() || !stampFile) {
-      toast.error('Preencha o nome e envie a imagem da estampa');
+    if (!newStampName.trim() || !stampFrontFile || !stampBackFile) {
+      toast.error('Preencha o nome e envie as imagens de frente e costas da estampa');
       return;
     }
     setUploadingStamp(true);
     try {
-      await addStamp(newStampName.trim(), newStampCategory, stampFile);
+      await addStamp(newStampName.trim(), newStampCategory, stampFrontFile, stampBackFile);
       setNewStampName('');
       setNewStampCategory('Geral');
-      setStampFile(null);
-      if (stampRef.current) stampRef.current.value = '';
+      setStampFrontFile(null);
+      setStampBackFile(null);
+      if (stampFrontRef.current) stampFrontRef.current.value = '';
+      if (stampBackRef.current) stampBackRef.current.value = '';
       toast.success('Estampa adicionada!');
     } catch { toast.error('Erro ao adicionar estampa'); }
     setUploadingStamp(false);
@@ -530,11 +534,20 @@ const Settings = () => {
               <p className="text-sm text-muted-foreground">Carregando...</p>
             ) : (
               <>
-                {stamps.length > 0 && (
+              {stamps.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                     {stamps.map(s => (
                       <div key={s.id} className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
-                        <img src={s.imageUrl} alt={s.name} className="w-full aspect-square object-contain p-2 bg-background" />
+                        <div className="grid grid-cols-2 gap-1 p-2 bg-background">
+                          <img src={s.imageUrl} alt={`${s.name} frente`} className="w-full aspect-[3/4] object-contain rounded" />
+                          {s.backImageUrl ? (
+                            <img src={s.backImageUrl} alt={`${s.name} costas`} className="w-full aspect-[3/4] object-contain rounded" />
+                          ) : (
+                            <div className="w-full aspect-[3/4] rounded bg-muted/30 flex items-center justify-center">
+                              <span className="text-[10px] text-muted-foreground">Sem costas</span>
+                            </div>
+                          )}
+                        </div>
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
                           <div className="min-w-0">
                             <p className="text-xs font-medium truncate">{s.name}</p>
@@ -562,14 +575,29 @@ const Settings = () => {
                     <Input value={newStampName} onChange={e => setNewStampName(e.target.value)} placeholder="Nome da estampa" className="flex-1" />
                     <Input value={newStampCategory} onChange={e => setNewStampCategory(e.target.value)} placeholder="Categoria" className="w-32" />
                   </div>
-                  <div className="border border-dashed border-border rounded-lg p-3">
-                    <label className="flex flex-col items-center gap-1 cursor-pointer">
-                      <Upload className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{stampFile ? stampFile.name : 'Selecionar imagem (PNG, JPG)'}</span>
-                      <input ref={stampRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampFile(e.target.files?.[0] ?? null)} className="hidden" />
-                    </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Imagem Frente *</label>
+                      <div className="border border-dashed border-border rounded-lg p-3">
+                        <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
+                          <Upload className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">{stampFrontFile ? stampFrontFile.name : 'Selecionar'}</span>
+                          <input ref={stampFrontRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampFrontFile(e.target.files?.[0] ?? null)} className="hidden" />
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Imagem Costas *</label>
+                      <div className="border border-dashed border-border rounded-lg p-3">
+                        <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
+                          <Upload className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">{stampBackFile ? stampBackFile.name : 'Selecionar'}</span>
+                          <input ref={stampBackRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampBackFile(e.target.files?.[0] ?? null)} className="hidden" />
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                  <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFile}>
+                  <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
                     {uploadingStamp ? 'Enviando...' : 'Adicionar Estampa'}
                   </Button>

@@ -353,6 +353,7 @@ export type Database = {
       stamp_catalog: {
         Row: {
           active: boolean
+          back_image_url: string | null
           category: string
           created_at: string
           id: string
@@ -362,6 +363,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          back_image_url?: string | null
           category?: string
           created_at?: string
           id?: string
@@ -371,6 +373,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          back_image_url?: string | null
           category?: string
           created_at?: string
           id?: string
