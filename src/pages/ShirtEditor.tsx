@@ -289,24 +289,20 @@ const ShirtEditor = () => {
     });
 
     if (zone) {
-      const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
-      const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
-      const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
-      const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
+      const coords = getZoneCoordsForSide(zone, activeView);
+      const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
+      const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
+      const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
+      const zoneH = (coords.heightPercent / 100) * CANVAS_HEIGHT;
       const tw = text.width || 100;
       const th = text.height || fontSize;
       const fitScale = Math.min(zoneW / tw, zoneH / th);
       text.set({
-        left: zoneX + (zoneW - tw * fitScale) / 2,
-        top: zoneY + (zoneH - th * fitScale) / 2,
-        scaleX: fitScale, scaleY: fitScale,
-        angle: zone.rotation || 0,
-        originX: 'center', originY: 'center',
-      });
-      // Adjust for center origin
-      text.set({
         left: zoneX + zoneW / 2,
         top: zoneY + zoneH / 2,
+        scaleX: fitScale, scaleY: fitScale,
+        angle: coords.rotation || 0,
+        originX: 'center', originY: 'center',
       });
     } else {
       text.set({ left: CANVAS_WIDTH / 2 - (text.width || 100) / 2, top: CANVAS_HEIGHT / 2 });
@@ -382,6 +378,19 @@ const ShirtEditor = () => {
     }
   };
 
+  // Helper to get zone coords for a specific side
+  const getZoneCoordsForSide = (zone: TemplateZone, side: 'front' | 'back') => {
+    const useBack = zone.shared && zone.side !== side;
+    return {
+      xPercent: useBack ? zone.backXPercent : zone.xPercent,
+      yPercent: useBack ? zone.backYPercent : zone.yPercent,
+      widthPercent: useBack ? zone.backWidthPercent : zone.widthPercent,
+      heightPercent: useBack ? zone.backHeightPercent : zone.heightPercent,
+      rotation: useBack ? zone.backRotation : zone.rotation,
+      pathData: useBack ? zone.backPathData : zone.pathData,
+    };
+  };
+
   // Add patch (peixe) to a specific zone on chosen side(s)
   const addPatchToZone = async (patch: { id: string; name: string; imageUrl: string }, zone: TemplateZone) => {
     const sides: ('front' | 'back')[] = zone.shared ? ['front', 'back'] : [zone.side === 'front' ? 'front' : 'back'];
@@ -391,20 +400,22 @@ const ShirtEditor = () => {
       const templateClip = side === 'front' ? frontClipRef.current : backClipRef.current;
       if (!canvas) continue;
 
+      const coords = getZoneCoordsForSide(zone, side);
+
       try {
         const img = await FabricImage.fromURL(patch.imageUrl, { crossOrigin: 'anonymous' });
-        const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
-        const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
-        const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
-        const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
+        const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
+        const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
+        const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
+        const zoneH = (coords.heightPercent / 100) * CANVAS_HEIGHT;
         const scale = Math.min(zoneW / img.width!, zoneH / img.height!);
         const left = zoneX + (zoneW - img.width! * scale) / 2;
         const top = zoneY + (zoneH - img.height! * scale) / 2;
 
         // Build clipPath: use polygon contour if available, otherwise template silhouette
         let clipPath: any = templateClip || undefined;
-        if (zone.pathData && zone.pathData.length >= 3) {
-          const polyPoints = zone.pathData.map(p => ({
+        if (coords.pathData && coords.pathData.length >= 3) {
+          const polyPoints = coords.pathData.map(p => ({
             x: (p.x / 100) * CANVAS_WIDTH,
             y: (p.y / 100) * CANVAS_HEIGHT,
           }));
@@ -414,9 +425,9 @@ const ShirtEditor = () => {
           });
         }
 
-        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath, angle: zone.rotation || 0 });
+        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath, angle: coords.rotation || 0 });
         (img as any)._userElement = true;
-        (img as any)._zoneClipData = zone.pathData; // store for reference
+        (img as any)._zoneClipData = coords.pathData; // store for reference
         canvas.add(img);
         canvas.renderAll();
       } catch {
@@ -465,10 +476,11 @@ const ShirtEditor = () => {
         const img = await FabricImage.fromURL(dataUrl);
         let left: number, top: number, scale: number;
         if (zone) {
-          const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
-          const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
-          const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
-          const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
+          const coords = getZoneCoordsForSide(zone, activeView);
+          const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
+          const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
+          const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
+          const zoneH = (coords.heightPercent / 100) * CANVAS_HEIGHT;
           scale = Math.min(zoneW / img.width!, zoneH / img.height!);
           left = zoneX + (zoneW - img.width! * scale) / 2;
           top = zoneY + (zoneH - img.height! * scale) / 2;

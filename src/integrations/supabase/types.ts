@@ -460,6 +460,12 @@ export type Database = {
       }
       template_zones: {
         Row: {
+          back_height_percent: number
+          back_path_data: Json | null
+          back_rotation: number
+          back_width_percent: number
+          back_x_percent: number
+          back_y_percent: number
           created_at: string
           height_percent: number
           id: string
@@ -475,6 +481,12 @@ export type Database = {
           y_percent: number
         }
         Insert: {
+          back_height_percent?: number
+          back_path_data?: Json | null
+          back_rotation?: number
+          back_width_percent?: number
+          back_x_percent?: number
+          back_y_percent?: number
           created_at?: string
           height_percent?: number
           id?: string
@@ -490,6 +502,12 @@ export type Database = {
           y_percent?: number
         }
         Update: {
+          back_height_percent?: number
+          back_path_data?: Json | null
+          back_rotation?: number
+          back_width_percent?: number
+          back_x_percent?: number
+          back_y_percent?: number
           created_at?: string
           height_percent?: number
           id?: string

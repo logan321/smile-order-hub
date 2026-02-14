@@ -54,11 +54,26 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
   const filteredZones = zones.filter(z => z.side === activeSide || z.shared);
   const imageUrl = activeSide === 'front' ? frontImageUrl : backImageUrl;
 
-  // Merge DB zones with local drag overrides
-  const getZoneDisplay = (zone: TemplateZone) => ({
-    ...zone,
-    ...(localOverrides[zone.id] || {}),
-  });
+  // Check if this zone is being shown on its opposite side (shared zone on the other side)
+  const isBackSideOfShared = (zone: TemplateZone) => zone.shared && zone.side !== activeSide;
+
+  // Merge DB zones with local drag overrides, using back_* coords when viewing back side of shared zone
+  const getZoneDisplay = (zone: TemplateZone) => {
+    const useBack = isBackSideOfShared(zone);
+    const base = useBack ? {
+      ...zone,
+      xPercent: zone.backXPercent,
+      yPercent: zone.backYPercent,
+      widthPercent: zone.backWidthPercent,
+      heightPercent: zone.backHeightPercent,
+      rotation: zone.backRotation,
+      pathData: zone.backPathData,
+    } : zone;
+    return {
+      ...base,
+      ...(localOverrides[zone.id] || {}),
+    };
+  };
 
   const handleAddZone = async () => {
     if (!newZoneName.trim()) return;
@@ -179,10 +194,22 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
     };
 
     const handleUp = () => {
-      // Commit to DB
+      // Commit to DB - map to back_* fields if editing back side of shared zone
       const override = localOverrides[dragState.zoneId];
       if (override) {
-        updateZone(dragState.zoneId, override);
+        const zone = zones.find(z => z.id === dragState.zoneId);
+        const useBack = zone && isBackSideOfShared(zone);
+        if (useBack) {
+          const mapped: any = {};
+          if (override.xPercent !== undefined) mapped.backXPercent = override.xPercent;
+          if (override.yPercent !== undefined) mapped.backYPercent = override.yPercent;
+          if (override.widthPercent !== undefined) mapped.backWidthPercent = override.widthPercent;
+          if (override.heightPercent !== undefined) mapped.backHeightPercent = override.heightPercent;
+          if (override.rotation !== undefined) mapped.backRotation = override.rotation;
+          updateZone(dragState.zoneId, mapped);
+        } else {
+          updateZone(dragState.zoneId, override);
+        }
       }
       setDragState(null);
       // Clear overrides after a short delay to let DB update
@@ -430,6 +457,9 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                         {zone.pathData && (
                           <p className="text-[10px] text-primary font-medium">✏️ Contorno personalizado ({zone.pathData.length} pts)</p>
                         )}
+                        {isBackSideOfShared(zone) && zone.backPathData && (
+                          <p className="text-[10px] text-primary font-medium">✏️ Contorno costas ({zone.backPathData.length} pts)</p>
+                        )}
 
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
@@ -437,7 +467,10 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                             <Input
                               type="number"
                               value={display.xPercent}
-                              onChange={e => updateZone(zone.id, { xPercent: Number(e.target.value) })}
+                              onChange={e => {
+                                const val = Number(e.target.value);
+                                updateZone(zone.id, isBackSideOfShared(zone) ? { backXPercent: val } : { xPercent: val });
+                              }}
                               className="h-6 text-[10px]"
                               min={0} max={100} step={1}
                             />
@@ -447,7 +480,10 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                             <Input
                               type="number"
                               value={display.yPercent}
-                              onChange={e => updateZone(zone.id, { yPercent: Number(e.target.value) })}
+                              onChange={e => {
+                                const val = Number(e.target.value);
+                                updateZone(zone.id, isBackSideOfShared(zone) ? { backYPercent: val } : { yPercent: val });
+                              }}
                               className="h-6 text-[10px]"
                               min={0} max={100} step={1}
                             />
@@ -457,7 +493,10 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                             <Input
                               type="number"
                               value={display.widthPercent}
-                              onChange={e => updateZone(zone.id, { widthPercent: Number(e.target.value) })}
+                              onChange={e => {
+                                const val = Number(e.target.value);
+                                updateZone(zone.id, isBackSideOfShared(zone) ? { backWidthPercent: val } : { widthPercent: val });
+                              }}
                               className="h-6 text-[10px]"
                               min={5} max={100} step={1}
                             />
@@ -467,19 +506,12 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                             <Input
                               type="number"
                               value={display.heightPercent}
-                              onChange={e => updateZone(zone.id, { heightPercent: Number(e.target.value) })}
+                              onChange={e => {
+                                const val = Number(e.target.value);
+                                updateZone(zone.id, isBackSideOfShared(zone) ? { backHeightPercent: val } : { heightPercent: val });
+                              }}
                               className="h-6 text-[10px]"
                               min={5} max={100} step={1}
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-[10px] text-muted-foreground">Rotação °</label>
-                            <Input
-                              type="number"
-                              value={zone.rotation}
-                              onChange={e => updateZone(zone.id, { rotation: Number(e.target.value) })}
-                              className="h-6 text-[10px]"
-                              min={-360} max={360} step={1}
                             />
                           </div>
                         </div>
