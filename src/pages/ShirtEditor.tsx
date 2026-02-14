@@ -338,27 +338,35 @@ const ShirtEditor = () => {
     if (curve === 0) return undefined;
     const absCurve = Math.abs(curve);
     const radius = Math.max(80, 1200 - absCurve * 10);
-    const arcWidth = Math.max(textWidth * 1.2, 200);
-    const halfW = arcWidth / 2;
+    // Use a fixed arc span based on text width, centered at origin
+    const halfW = Math.max(textWidth * 0.6, 100);
     const sweep = curve > 0 ? 1 : 0;
-    const pathStr = `M -${halfW},0 A ${radius},${radius} 0 0 ${sweep} ${halfW},0`;
-    return new Path(pathStr, { visible: false, fill: '', stroke: '' });
+    const pathStr = `M ${-halfW},0 A ${radius},${radius} 0 0 ${sweep} ${halfW},0`;
+    const p = new Path(pathStr, { visible: false, fill: '', stroke: '' });
+    return p;
   };
 
   // Apply curve to an existing text object in real-time, preserving position
   const applyCurveToObject = (obj: FabricText, curve: number, canvas: Canvas) => {
-    // Save exact left/top and origin before changing path
-    const origLeft = obj.left!;
-    const origTop = obj.top!;
-    const origOriginX = obj.originX;
-    const origOriginY = obj.originY;
-    
+    // Store original position on first curve application
+    if ((obj as any)._origCurveLeft === undefined) {
+      (obj as any)._origCurveLeft = obj.left;
+      (obj as any)._origCurveTop = obj.top;
+      (obj as any)._origOriginX = obj.originX;
+      (obj as any)._origOriginY = obj.originY;
+    }
+
     const arcPath = buildArcPath(curve, obj.width || 200);
     (obj as any).set({ path: arcPath || undefined });
     (obj as any)._curveValue = curve;
-    
-    // Force recalculation then restore exact position
-    obj.set({ left: origLeft, top: origTop, originX: origOriginX, originY: origOriginY });
+
+    // Always restore to the original stored position
+    obj.set({
+      left: (obj as any)._origCurveLeft,
+      top: (obj as any)._origCurveTop,
+      originX: (obj as any)._origOriginX,
+      originY: (obj as any)._origOriginY,
+    });
     obj.setCoords();
     canvas.requestRenderAll();
   };
