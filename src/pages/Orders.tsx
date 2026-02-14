@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
 import { Order, OrderItem } from '@/types';
-import { Plus, Pencil, Trash2, ShoppingCart, Search, X, CheckCircle2, Circle, Minus, Copy, Upload, Image } from 'lucide-react';
+import { Plus, Pencil, Trash2, ShoppingCart, Search, X, CheckCircle2, Circle, Minus, Copy, Upload, Image, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { OrderPreview } from '@/components/OrderPreview';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -301,6 +302,7 @@ const Orders = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confectionDialogOpen, setConfectionDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [previewOrder, setPreviewOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
 
   // Build status options from custom stages or fallback
@@ -461,7 +463,7 @@ const Orders = () => {
             const desc = getOrderDescription(order, services);
             const total = getOrderTotal(order);
             const statusLabel = getStatusLabel(order.status);
-            const isConfection = (order as any).orderType === 'confeccao' || order.items.length === 0;
+            const isConfection = order.orderType === 'confeccao';
             return (
               <div key={order.id} className={cn("bg-card rounded-xl border border-border/50 p-4 hover:shadow-sm transition-all", order.paid && "opacity-60")}>
                 <div className="flex items-start justify-between">
@@ -496,6 +498,9 @@ const Orders = () => {
                     {total > 0 && (
                       <span className={cn("font-semibold whitespace-nowrap", order.paid ? "text-muted-foreground line-through" : "text-success")}>R$ {total.toFixed(2)}</span>
                     )}
+                    <Button variant="ghost" size="icon" onClick={() => setPreviewOrder(order)} title="Visualizar pedido">
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => toggleOrderPaid(order.id)} title={order.paid ? 'Marcar como pendente' : 'Marcar como pago'}>
                       {order.paid ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Circle className="h-4 w-4" />}
                     </Button>
@@ -521,6 +526,8 @@ const Orders = () => {
           {editingOrder && <DesignerOrderForm initial={editingOrder} onSubmit={handleEdit} onCancel={() => setEditingOrder(null)} />}
         </DialogContent>
       </Dialog>
+
+      <OrderPreview order={previewOrder} open={!!previewOrder} onOpenChange={(open) => { if (!open) setPreviewOrder(null); }} />
     </div>
   );
 };
