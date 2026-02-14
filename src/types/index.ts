@@ -29,6 +29,7 @@ export interface Order {
   paid: boolean;
   status: string;
   orderType: string;
+  deliveryDate: string | null;
   createdAt: string;
 }
 

@@ -98,7 +98,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const dbOrders = (ordersRes.data ?? []).map((o: any) => ({
         id: o.id, clientId: o.client_id, trackingId: o.tracking_id,
         items: itemsMap[o.id] ?? [], date: o.date, paid: o.paid,
-        status: o.status, orderType: o.order_type ?? 'designer', createdAt: o.created_at,
+        status: o.status, orderType: o.order_type ?? 'designer',
+        deliveryDate: o.delivery_date ?? null, createdAt: o.created_at,
       }));
 
       setClients(dbClients);

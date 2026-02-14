@@ -207,6 +207,7 @@ export type Database = {
           client_id: string
           created_at: string
           date: string
+          delivery_date: string | null
           id: string
           order_type: string
           paid: boolean
@@ -218,6 +219,7 @@ export type Database = {
           client_id: string
           created_at?: string
           date?: string
+          delivery_date?: string | null
           id?: string
           order_type?: string
           paid?: boolean
@@ -229,6 +231,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           date?: string
+          delivery_date?: string | null
           id?: string
           order_type?: string
           paid?: boolean
