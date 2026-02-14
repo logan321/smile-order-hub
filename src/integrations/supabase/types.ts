@@ -41,6 +41,104 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_fields: {
+        Row: {
+          created_at: string
+          field_type: string
+          id: string
+          name: string
+          options: string[] | null
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          name: string
+          options?: string[] | null
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          name?: string
+          options?: string[] | null
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      order_custom_values: {
+        Row: {
+          custom_field_id: string
+          id: string
+          order_id: string
+          value: string
+        }
+        Insert: {
+          custom_field_id: string
+          id?: string
+          order_id: string
+          value?: string
+        }
+        Update: {
+          custom_field_id?: string
+          id?: string
+          order_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_custom_values_custom_field_id_fkey"
+            columns: ["custom_field_id"]
+            isOneToOne: false
+            referencedRelation: "custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_custom_values_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_url: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_files_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           id: string
@@ -80,12 +178,37 @@ export type Database = {
           },
         ]
       }
+      order_stages: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           client_id: string
           created_at: string
           date: string
           id: string
+          order_type: string
           paid: boolean
           status: string
           tracking_id: string
@@ -96,6 +219,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          order_type?: string
           paid?: boolean
           status?: string
           tracking_id: string
@@ -106,6 +230,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          order_type?: string
           paid?: boolean
           status?: string
           tracking_id?: string
