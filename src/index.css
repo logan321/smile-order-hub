@@ -122,31 +122,8 @@
   }
 }
 
-/* Scale canvases to fit on smaller screens */
+/* Canvas area base styles */
 .canvas-area canvas {
   display: block;
-}
-
-@media (max-width: 767px) {
-  .canvas-area {
-    transform: scale(0.44);
-    transform-origin: top center;
-    margin-bottom: -45%;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1279px) {
-  .canvas-area {
-    transform: scale(0.55);
-    transform-origin: top center;
-    margin-bottom: -35%;
-  }
-}
-
-@media (min-width: 1280px) and (max-width: 1535px) {
-  .canvas-area {
-    transform: scale(0.72);
-    transform-origin: top center;
-    margin-bottom: -20%;
-  }
+  max-width: none;
 }
