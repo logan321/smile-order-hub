@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, Path } from 'fabric';
+import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle, Fish, WrapText } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle, Fish } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
@@ -93,7 +93,6 @@ const ShirtEditor = () => {
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Arial');
-  const [textCurve, setTextCurve] = useState(0); // -100 to 100, 0 = flat
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
   const [pendingPatch, setPendingPatch] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string } | null>(null);
@@ -334,51 +333,6 @@ const ShirtEditor = () => {
 
   // Helper to add a text object to a specific canvas+side with zone coords
   // Build an arc path for curved text
-  const buildArcPath = (curve: number, textWidth: number): { path: Path; startOffset: number } | undefined => {
-    if (curve === 0) return undefined;
-    const absCurve = Math.abs(curve);
-    const radius = Math.max(80, 1200 - absCurve * 10);
-    const halfW = Math.max(textWidth * 0.6, 100);
-    const sweep = curve > 0 ? 1 : 0;
-    // Center the path at 0,0 so text renders symmetrically
-    const pathStr = `M ${-halfW},0 A ${radius},${radius} 0 0 ${sweep} ${halfW},0`;
-    const p = new Path(pathStr, { visible: false, fill: '', stroke: '' });
-    // Approximate arc length: θ * r where θ = 2 * arcsin(halfW / radius)
-    const theta = 2 * Math.asin(Math.min(halfW / radius, 1));
-    const pathLength = theta * radius;
-    const startOffset = Math.max(0, (pathLength - textWidth) / 2);
-    return { path: p, startOffset };
-  };
-
-  // Apply curve to an existing text object in real-time, preserving position
-  const applyCurveToObject = (obj: FabricText, curve: number, canvas: Canvas) => {
-    // Store original position on first curve application
-    if ((obj as any)._origCurveLeft === undefined) {
-      (obj as any)._origCurveLeft = obj.left;
-      (obj as any)._origCurveTop = obj.top;
-      (obj as any)._origOriginX = obj.originX;
-      (obj as any)._origOriginY = obj.originY;
-    }
-
-    const result = buildArcPath(curve, obj.width || 200);
-    if (result) {
-      (obj as any).set({ path: result.path, pathStartOffset: result.startOffset });
-    } else {
-      (obj as any).set({ path: undefined, pathStartOffset: 0 });
-    }
-    (obj as any)._curveValue = curve;
-
-    // Always restore to the original stored position
-    obj.set({
-      left: (obj as any)._origCurveLeft,
-      top: (obj as any)._origCurveTop,
-      originX: (obj as any)._origOriginX,
-      originY: (obj as any)._origOriginY,
-    });
-    obj.setCoords();
-    canvas.requestRenderAll();
-  };
-
   const addTextToCanvas = async (canvas: Canvas, side: 'front' | 'back', zone?: TemplateZone) => {
     const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
     const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
@@ -404,13 +358,6 @@ const ShirtEditor = () => {
       });
     }
 
-    // Apply arc path if curved
-    if (textCurve !== 0) {
-      const result = buildArcPath(textCurve, text.width || 200);
-      if (result) {
-        (text as any).set({ path: result.path, pathStartOffset: result.startOffset });
-      }
-    }
 
     let zoneClipData: any = null;
     if (zone) {
@@ -446,7 +393,6 @@ const ShirtEditor = () => {
     }
 
     (text as any)._userElement = true;
-    (text as any)._curveValue = textCurve;
     if (zoneClipData) (text as any)._zoneClipData = zoneClipData;
     canvas.add(text);
     return text;
@@ -802,12 +748,11 @@ const ShirtEditor = () => {
           fill: textColor, stroke: strokeWidth > 0 ? strokeColor : undefined,
           strokeWidth: strokeWidth > 0 ? strokeWidth : 0, fontSize, fontFamily,
         });
-        // Apply curve in real-time
-        applyCurveToObject(active as FabricText, textCurve, canvas);
+        canvas.renderAll();
       };
       applyFont();
     }
-  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, textCurve, activeView]);
+  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, activeView]);
 
   // Sync UI controls when a text object is selected
   useEffect(() => {
@@ -821,7 +766,7 @@ const ShirtEditor = () => {
         setFontFamily(active.fontFamily || 'Arial');
         setStrokeWidth(active.strokeWidth || 0);
         setStrokeColor((active.stroke as string) || '#FFFFFF');
-        setTextCurve((active as any)._curveValue || 0);
+        
       }
     };
     canvas.on('selection:created', onSelect);
@@ -1050,17 +995,6 @@ const ShirtEditor = () => {
                     <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
                     <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
                     <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 lg:w-16 text-xs" min={0} max={10} /></div>
-                  </div>
-                  {/* Curve slider */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] text-muted-foreground flex items-center gap-1"><WrapText className="h-3 w-3" /> Curva do texto</label>
-                      <span className="text-[10px] font-medium text-muted-foreground">{textCurve === 0 ? 'Reto' : textCurve > 0 ? `Arco ↑ ${textCurve}` : `Arco ↓ ${Math.abs(textCurve)}`}</span>
-                    </div>
-                    <Slider value={[textCurve]} onValueChange={([v]) => setTextCurve(v)} min={-100} max={100} step={5} className="w-full" />
-                    {textCurve !== 0 && (
-                      <button onClick={() => setTextCurve(0)} className="text-[9px] text-primary hover:underline">Resetar para reto</button>
-                    )}
                   </div>
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                 </div>
