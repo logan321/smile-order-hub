@@ -153,27 +153,19 @@ const Settings = () => {
 
   // Patch (peixes) catalog management
   const [newPatchName, setNewPatchName] = useState('');
-  const [newPatchZone, setNewPatchZone] = useState('');
   const [patchFile, setPatchFile] = useState<File | null>(null);
   const patchFileRef = useRef<HTMLInputElement>(null);
   const [uploadingPatch, setUploadingPatch] = useState(false);
 
-  // Fetch all zone names across all templates for the dropdown
-  const allZoneNames = templates.reduce<string[]>((acc, t) => {
-    // We don't have zones loaded per template here, so we use a text input instead
-    return acc;
-  }, []);
-
   const handleAddPatch = async () => {
-    if (!newPatchName.trim() || !patchFile || !newPatchZone.trim()) {
-      toast.error('Preencha o nome, zona alvo e envie a imagem do peixe');
+    if (!newPatchName.trim() || !patchFile) {
+      toast.error('Preencha o nome e envie a imagem do peixe');
       return;
     }
     setUploadingPatch(true);
     try {
-      await addPatch(newPatchName.trim(), newPatchZone.trim(), patchFile);
+      await addPatch(newPatchName.trim(), patchFile);
       setNewPatchName('');
-      setNewPatchZone('');
       setPatchFile(null);
       if (patchFileRef.current) patchFileRef.current.value = '';
       toast.success('Peixe adicionado!');
@@ -671,9 +663,6 @@ const Settings = () => {
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
                           <div className="min-w-0">
                             <p className="text-xs font-medium truncate">{p.name}</p>
-                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                              <MapPin className="h-3 w-3" /> {p.targetZoneName || 'Sem zona'}
-                            </p>
                           </div>
                           <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover peixe?')) deletePatch(p.id); }}>
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -694,8 +683,6 @@ const Settings = () => {
                 <div className="space-y-3 border-t border-border/50 pt-4">
                   <p className="text-sm font-medium">Adicionar novo peixe</p>
                   <Input value={newPatchName} onChange={e => setNewPatchName(e.target.value)} placeholder="Nome do peixe (ex: Logo Empresa, Brasão)" />
-                  <Input value={newPatchZone} onChange={e => setNewPatchZone(e.target.value)} placeholder="Nome da zona alvo (ex: Manga Direita, Peito)" />
-                  <p className="text-[10px] text-muted-foreground">O nome da zona deve corresponder exatamente ao nome configurado no editor de zonas do template</p>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Imagem do Peixe *</label>
                     <div className="border border-dashed border-border rounded-lg p-3">
@@ -706,7 +693,8 @@ const Settings = () => {
                       </label>
                     </div>
                   </div>
-                  <Button onClick={handleAddPatch} disabled={uploadingPatch || !newPatchName.trim() || !newPatchZone.trim() || !patchFile}>
+                  <p className="text-[10px] text-muted-foreground">O posicionamento será definido no editor ao selecionar o peixe</p>
+                  <Button onClick={handleAddPatch} disabled={uploadingPatch || !newPatchName.trim() || !patchFile}>
                     <Plus className="h-4 w-4 mr-2" />
                     {uploadingPatch ? 'Enviando...' : 'Adicionar Peixe'}
                   </Button>

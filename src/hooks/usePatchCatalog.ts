@@ -32,7 +32,7 @@ export function usePatchCatalog() {
 
   useEffect(() => { fetchPatches(); }, [fetchPatches]);
 
-  const addPatch = useCallback(async (name: string, targetZoneName: string, file: File) => {
+  const addPatch = useCallback(async (name: string, file: File) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -49,7 +49,6 @@ export function usePatchCatalog() {
       user_id: userId,
       name,
       image_url: urlData.publicUrl,
-      target_zone_name: targetZoneName,
     } as any);
 
     await fetchPatches();

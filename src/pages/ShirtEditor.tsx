@@ -67,6 +67,7 @@ interface Stamp {
 }
 
 type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | null;
+type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
@@ -93,6 +94,7 @@ const ShirtEditor = () => {
   const [fontFamily, setFontFamily] = useState('Arial');
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
+  const [pendingPatch, setPendingPatch] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string } | null>(null);
   const [frontZoom, setFrontZoom] = useState(1);
   const [backZoom, setBackZoom] = useState(1);
   const isPanningRef = useRef(false);
@@ -357,40 +359,60 @@ const ShirtEditor = () => {
     }
   };
 
-  // Add patch (peixe) to canvas at the matching zone
-  const addPatchToCanvas = async (patch: { id: string; name: string; imageUrl: string; targetZoneName: string }) => {
-    const matchingZones = templateZones.filter(z => z.name.toLowerCase() === patch.targetZoneName.toLowerCase());
-    if (matchingZones.length === 0) {
-      toast.error(`Zona "${patch.targetZoneName}" não encontrada neste template`);
-      return;
-    }
+  // Add patch (peixe) to canvas — now receives explicit side choice
+  const addPatchToCanvas = async (patch: { id: string; name: string; imageUrl: string; targetZoneName: string }, sideChoice: 'front' | 'back' | 'both') => {
+    const sides: ('front' | 'back')[] = sideChoice === 'both' ? ['front', 'back'] : [sideChoice];
+    
+    // Find matching zones for the chosen sides
+    const matchingZones = templateZones.filter(z => {
+      const zoneName = z.name.toLowerCase();
+      const targetName = patch.targetZoneName.toLowerCase();
+      if (!targetName) return false;
+      return zoneName === targetName;
+    });
 
-    for (const zone of matchingZones) {
-      const sides: ('front' | 'back')[] = zone.shared ? ['front', 'back'] : [zone.side];
-      for (const side of sides) {
-        const canvas = side === 'front' ? frontFabricRef.current : backFabricRef.current;
-        const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
-        if (!canvas) continue;
+    for (const side of sides) {
+      const canvas = side === 'front' ? frontFabricRef.current : backFabricRef.current;
+      const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
+      if (!canvas) continue;
 
-        try {
-          const img = await FabricImage.fromURL(patch.imageUrl, { crossOrigin: 'anonymous' });
+      // Find zone for this side
+      const zone = matchingZones.find(z => z.side === side || z.shared);
+
+      try {
+        const img = await FabricImage.fromURL(patch.imageUrl, { crossOrigin: 'anonymous' });
+        let left: number, top: number, scale: number;
+
+        if (zone) {
           const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
           const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
           const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
           const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
-          const scale = Math.min(zoneW / img.width!, zoneH / img.height!);
-          const left = zoneX + (zoneW - img.width! * scale) / 2;
-          const top = zoneY + (zoneH - img.height! * scale) / 2;
-          img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: clipPath || undefined });
-          (img as any)._userElement = true;
-          canvas.add(img);
-          canvas.renderAll();
-        } catch {
-          toast.error('Erro ao carregar imagem do peixe');
+          scale = Math.min(zoneW / img.width!, zoneH / img.height!);
+          left = zoneX + (zoneW - img.width! * scale) / 2;
+          top = zoneY + (zoneH - img.height! * scale) / 2;
+        } else {
+          // No matching zone — place centered
+          const maxSize = 100;
+          scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+          left = CANVAS_WIDTH / 2 - (img.width! * scale) / 2;
+          top = CANVAS_HEIGHT / 3;
         }
+
+        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: clipPath || undefined });
+        (img as any)._userElement = true;
+        canvas.add(img);
+        canvas.renderAll();
+      } catch {
+        toast.error('Erro ao carregar imagem do peixe');
       }
     }
-    toast.success(`Peixe "${patch.name}" aplicado na zona "${patch.targetZoneName}"!`);
+    toast.success(`Peixe "${patch.name}" aplicado!`);
+    setPendingPatch(null);
+  };
+
+  const handlePatchClick = (patch: { id: string; name: string; imageUrl: string; targetZoneName: string }) => {
+    setPendingPatch(patch);
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -665,16 +687,13 @@ const ShirtEditor = () => {
                     {patches.map(p => (
                       <button
                         key={p.id}
-                        onClick={() => addPatchToCanvas(p)}
+                        onClick={() => handlePatchClick(p)}
                         className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background"
-                        title={`${p.name} → ${p.targetZoneName}`}
+                        title={p.name}
                       >
                         <img src={p.imageUrl} alt={p.name} className="w-full aspect-square object-contain p-1" />
                         <div className="pb-1 px-1">
                           <p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors">{p.name}</p>
-                          <p className="text-[8px] text-center text-muted-foreground/60 truncate flex items-center justify-center gap-0.5">
-                            <MapPin className="h-2 w-2" />{p.targetZoneName}
-                          </p>
                         </div>
                       </button>
                     ))}
@@ -807,6 +826,36 @@ const ShirtEditor = () => {
           </div>
         </div>
       </div>
+
+      {/* Patch side picker modal */}
+      {pendingPatch && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl shadow-xl max-w-sm w-full p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Fish className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Onde aplicar o peixe?</h3>
+            </div>
+            <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/30 border border-border/30">
+              <img src={pendingPatch.imageUrl} alt={pendingPatch.name} className="h-12 w-12 object-contain rounded" />
+              <p className="text-sm font-medium">{pendingPatch.name}</p>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => addPatchToCanvas(pendingPatch, 'front')}>
+                <Shirt className="h-4 w-4" /> Apenas Frente
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => addPatchToCanvas(pendingPatch, 'back')}>
+                <Shirt className="h-4 w-4 rotate-180" /> Apenas Costas
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={() => addPatchToCanvas(pendingPatch, 'both')}>
+                <Shirt className="h-4 w-4" /> Frente e Costas
+              </Button>
+            </div>
+            <Button variant="ghost" size="sm" className="w-full" onClick={() => setPendingPatch(null)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Zone picker modal */}
       {showZonePicker && (
