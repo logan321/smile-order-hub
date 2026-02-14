@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Move, X, Link, PenTool, RotateCw } from 'lucide-react';
+import { Plus, Trash2, Move, X, Link, PenTool, RotateCw, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { toast } from 'sonner';
 import PolygonDrawer from '@/components/PolygonDrawer';
 
@@ -48,7 +48,12 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<TemplateZone>>>({});
   const [polygonEditZoneId, setPolygonEditZoneId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Show zones for active side + shared zones from the other side
   const filteredZones = zones.filter(z => z.side === activeSide || z.shared);
@@ -88,6 +93,35 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
       toast.success('Zona removida!');
     }
   };
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    setZoom(prev => Math.max(0.5, Math.min(4, prev + delta)));
+  }, []);
+
+  const handleWrapperMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.altKey) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  }, [pan]);
+
+  const handleWrapperMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isPanning) {
+      setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+    }
+  }, [isPanning, panStart]);
+
+  const handleWrapperMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
 
   const getMousePercent = useCallback((e: MouseEvent | React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };
@@ -305,10 +339,44 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
               </Button>
             </div>
 
+            {/* Zoom controls */}
+            <div className="flex items-center gap-1 mb-2">
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.min(4, z + 0.25))}>
+                <ZoomIn className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}>
+                <ZoomOut className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={resetView}>
+                <Maximize className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-[10px] text-muted-foreground ml-1">{Math.round(zoom * 100)}%</span>
+            </div>
+
+            {/* Zoomable wrapper */}
+            <div
+              ref={wrapperRef}
+              className="border border-border rounded-lg overflow-hidden bg-muted/30"
+              style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, cursor: isPanning ? 'grabbing' : 'default' }}
+              onWheel={handleWheel}
+              onMouseDown={handleWrapperMouseDown}
+              onMouseMove={handleWrapperMouseMove}
+              onMouseUp={handleWrapperMouseUp}
+              onMouseLeave={handleWrapperMouseUp}
+            >
+              <div
+                style={{
+                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                  transformOrigin: 'center center',
+                  width: PREVIEW_WIDTH,
+                  height: PREVIEW_HEIGHT,
+                  position: 'relative',
+                }}
+              >
             {/* Image + zone overlays */}
             <div
               ref={containerRef}
-              className="relative border border-border rounded-lg overflow-visible bg-muted/30 select-none"
+              className="relative select-none"
               style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }}
             >
               <img
@@ -369,9 +437,11 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                 );
               })}
             </div>
+              </div>
+            </div>
 
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <Move className="h-3 w-3" /> Arraste para mover, use os pontos para redimensionar
+              <Move className="h-3 w-3" /> Arraste para mover · Scroll para zoom · Alt+Arraste para mover a vista
             </p>
 
             {/* Polygon drawer for selected zone */}
