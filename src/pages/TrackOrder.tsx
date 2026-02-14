@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Package, Clock, Cog, CheckCircle2, Truck, CircleDot } from 'lucide-react';
+import { Search, Package, CircleDot, Image, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -14,11 +14,9 @@ const DEFAULT_STATUS_STEPS = [
   { key: 'delivered', label: 'Entregue', description: 'Pedido entregue' },
 ];
 
-interface StageStep {
-  key: string;
-  label: string;
-  description: string;
-}
+interface StageStep { key: string; label: string; description: string; }
+interface OrderFile { id: string; fileName: string; fileUrl: string; }
+interface CustomValue { fieldName: string; value: string; }
 
 interface OrderResult {
   tracking_id: string;
@@ -26,7 +24,10 @@ interface OrderResult {
   date: string;
   created_at: string;
   user_id: string;
+  order_type: string;
   items: { service_name: string; quantity: number; unit_price: number }[];
+  files: OrderFile[];
+  customValues: CustomValue[];
 }
 
 const TrackOrder = () => {
@@ -46,53 +47,54 @@ const TrackOrder = () => {
     setOrder(null);
 
     try {
-      // Fetch order
       const { data: orderData, error } = await supabase
         .from('orders')
-        .select('tracking_id, status, date, created_at, user_id')
+        .select('id, tracking_id, status, date, created_at, user_id, order_type')
         .eq('tracking_id', id)
         .maybeSingle();
 
       if (error) throw error;
-      if (!orderData) {
-        setOrder(null);
-        return;
-      }
+      if (!orderData) { setOrder(null); return; }
 
-      // Fetch order items with service names
-      const { data: items } = await supabase
-        .from('order_items')
-        .select('quantity, unit_price, service_id')
-        .eq('order_id', (await supabase.from('orders').select('id').eq('tracking_id', id).single()).data?.id ?? '');
+      // Fetch items, files, custom values, and stages in parallel
+      const [itemsRes, filesRes, customRes, stagesRes] = await Promise.all([
+        supabase.from('order_items').select('quantity, unit_price, service_id').eq('order_id', orderData.id),
+        supabase.from('order_files').select('id, file_name, file_url').eq('order_id', orderData.id),
+        supabase.from('order_custom_values').select('value, custom_field_id').eq('order_id', orderData.id),
+        supabase.from('order_stages').select('*').eq('user_id', orderData.user_id).order('position', { ascending: true }),
+      ]);
 
-      // Fetch service names
+      // Resolve service names
       let itemsWithNames: OrderResult['items'] = [];
-      if (items && items.length > 0) {
-        const serviceIds = [...new Set(items.map(i => i.service_id))];
-        const { data: svcs } = await supabase
-          .from('services')
-          .select('id, name')
-          .in('id', serviceIds);
-
-        itemsWithNames = items.map(item => {
-          const svc = svcs?.find((s: any) => s.id === item.service_id);
-          return {
-            service_name: svc?.name ?? 'Serviço',
-            quantity: item.quantity,
-            unit_price: Number(item.unit_price),
-          };
-        });
+      if (itemsRes.data && itemsRes.data.length > 0) {
+        const serviceIds = [...new Set(itemsRes.data.map(i => i.service_id))];
+        const { data: svcs } = await supabase.from('services').select('id, name').in('id', serviceIds);
+        itemsWithNames = itemsRes.data.map(item => ({
+          service_name: svcs?.find((s: any) => s.id === item.service_id)?.name ?? 'Serviço',
+          quantity: item.quantity,
+          unit_price: Number(item.unit_price),
+        }));
       }
 
-      // Fetch custom stages for this order's owner
-      const { data: customStages } = await supabase
-        .from('order_stages')
-        .select('*')
-        .eq('user_id', orderData.user_id)
-        .order('position', { ascending: true });
+      // Resolve custom field names
+      let customValues: CustomValue[] = [];
+      if (customRes.data && customRes.data.length > 0) {
+        const fieldIds = [...new Set(customRes.data.map(v => v.custom_field_id))];
+        const { data: fieldsData } = await supabase.from('custom_fields').select('id, name').in('id', fieldIds);
+        customValues = customRes.data.map(v => ({
+          fieldName: fieldsData?.find((f: any) => f.id === v.custom_field_id)?.name ?? 'Campo',
+          value: v.value,
+        }));
+      }
 
-      if (customStages && customStages.length > 0) {
-        setStatusSteps(customStages.map((s: any) => ({ key: s.id, label: s.name, description: s.name })));
+      // Files
+      const files: OrderFile[] = (filesRes.data ?? []).map((f: any) => ({
+        id: f.id, fileName: f.file_name, fileUrl: f.file_url,
+      }));
+
+      // Stages
+      if (stagesRes.data && stagesRes.data.length > 0) {
+        setStatusSteps(stagesRes.data.map((s: any) => ({ key: s.id, label: s.name, description: s.name })));
       } else {
         setStatusSteps(DEFAULT_STATUS_STEPS);
       }
@@ -103,7 +105,10 @@ const TrackOrder = () => {
         date: orderData.date,
         created_at: orderData.created_at,
         user_id: orderData.user_id,
+        order_type: orderData.order_type,
         items: itemsWithNames,
+        files,
+        customValues,
       });
     } catch (err) {
       console.error(err);
@@ -153,11 +158,54 @@ const TrackOrder = () => {
             <div className="p-6 border-b border-border/50">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-lg font-bold font-display">{order.tracking_id}</h2>
-                <span className="text-sm text-muted-foreground">
-                  {format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "text-xs px-2 py-0.5 rounded-full font-medium",
+                    order.order_type === 'confeccao' ? "bg-accent/20 text-accent-foreground" : "bg-primary/10 text-primary"
+                  )}>
+                    {order.order_type === 'confeccao' ? 'Confecção' : 'Designer'}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                </div>
               </div>
             </div>
+
+            {/* Layout images */}
+            {order.files.length > 0 && (
+              <div className="p-6 border-b border-border/50">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-1">
+                  <Image className="h-4 w-4" /> Layouts
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {order.files.map(file => (
+                    <a key={file.id} href={file.fileUrl} target="_blank" rel="noopener noreferrer"
+                      className="block rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 transition-colors">
+                      <img src={file.fileUrl} alt={file.fileName} className="w-full h-40 object-cover" />
+                      <p className="text-xs text-muted-foreground p-2 truncate">{file.fileName}</p>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Custom fields (Ficha Técnica) */}
+            {order.customValues.length > 0 && (
+              <div className="p-6 border-b border-border/50">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-1">
+                  <FileText className="h-4 w-4" /> Ficha Técnica
+                </h3>
+                <div className="bg-muted/30 rounded-lg border border-border/50 divide-y divide-border/30">
+                  {order.customValues.map((cv, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                      <span className="text-sm text-muted-foreground">{cv.fieldName}</span>
+                      <span className="text-sm font-medium">{cv.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Status timeline */}
             <div className="p-6">

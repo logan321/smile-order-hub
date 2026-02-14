@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Client, Order, Service } from '@/types';
+import { Client, Order, Service, OrderFile, OrderCustomValue } from '@/types';
 import { BusinessConfig } from '@/lib/businessConfig';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -152,4 +152,177 @@ export function generateClientReportPDF(
   // Save
   const safeName = client.name.replace(/[^a-zA-Z0-9]/g, '_');
   doc.save(`relatorio_${safeName}.pdf`);
+}
+
+/** Generate a single order preview PDF with layout images and technical sheet */
+export async function generateOrderPreviewPDF(
+  order: Order,
+  client: Client | undefined,
+  services: Service[],
+  files: OrderFile[],
+  customValues: OrderCustomValue[],
+  statusLabel: string,
+  config: BusinessConfig
+) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 18;
+
+  // Header
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text(config.businessName || 'Pedido', pageWidth / 2, y, { align: 'center' });
+  y += 8;
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  const info: string[] = [];
+  if (config.ownerName) info.push(config.ownerName);
+  if (config.phone) info.push(`Tel: ${config.phone}`);
+  if (config.email) info.push(config.email);
+  if (info.length > 0) {
+    doc.text(info.join('  •  '), pageWidth / 2, y, { align: 'center' });
+    y += 7;
+  }
+
+  doc.setDrawColor(200, 200, 200);
+  doc.line(14, y, pageWidth - 14, y);
+  y += 8;
+
+  // Order info
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Pedido: ${order.trackingId}`, 14, y);
+  doc.text(`Status: ${statusLabel}`, pageWidth - 14, y, { align: 'right' });
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Cliente: ${client?.name ?? 'N/A'}`, 14, y);
+  doc.text(`Data: ${format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}`, pageWidth - 14, y, { align: 'right' });
+  y += 5;
+  doc.text(`Tipo: ${order.orderType === 'confeccao' ? 'Confecção' : 'Designer'}`, 14, y);
+  y += 8;
+
+  // Layout images
+  if (files.length > 0) {
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, y, pageWidth - 14, y);
+    y += 6;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Layouts', 14, y);
+    y += 6;
+
+    for (const file of files) {
+      try {
+        const response = await fetch(file.fileUrl);
+        const blob = await response.blob();
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+
+        const imgProps = doc.getImageProperties(dataUrl);
+        const maxWidth = pageWidth - 28;
+        const maxHeight = 80;
+        const ratio = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
+        const imgW = imgProps.width * ratio;
+        const imgH = imgProps.height * ratio;
+
+        if (y + imgH + 10 > doc.internal.pageSize.getHeight() - 20) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.addImage(dataUrl, 'JPEG', 14, y, imgW, imgH);
+        y += imgH + 3;
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'italic');
+        doc.text(file.fileName, 14, y);
+        y += 6;
+      } catch {
+        doc.setFontSize(8);
+        doc.text(`[Imagem: ${file.fileName}]`, 14, y);
+        y += 6;
+      }
+    }
+  }
+
+  // Custom fields (Ficha Técnica)
+  if (customValues.length > 0) {
+    if (y + 20 > doc.internal.pageSize.getHeight() - 20) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, y, pageWidth - 14, y);
+    y += 6;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Ficha Técnica', 14, y);
+    y += 2;
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Campo', 'Valor']],
+      body: customValues.map(cv => [cv.fieldName, cv.value]),
+      theme: 'striped',
+      headStyles: { fillColor: [34, 51, 84], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 4 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // Order items (Designer type)
+  const total = getOrderTotal(order);
+  if (order.items.length > 0) {
+    if (y + 20 > doc.internal.pageSize.getHeight() - 20) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, y, pageWidth - 14, y);
+    y += 6;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Itens do Pedido', 14, y);
+    y += 2;
+
+    const itemRows = order.items.map((item, i) => {
+      const svc = services.find(s => s.id === item.serviceId);
+      return [
+        (i + 1).toString(),
+        svc?.name ?? 'Serviço removido',
+        item.quantity.toString(),
+        `R$ ${item.unitPrice.toFixed(2)}`,
+        `R$ ${(item.unitPrice * item.quantity).toFixed(2)}`,
+      ];
+    });
+
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Serviço', 'Qtd', 'Unit.', 'Total']],
+      body: itemRows,
+      foot: [['', '', '', 'TOTAL', `R$ ${total.toFixed(2)}`]],
+      theme: 'striped',
+      headStyles: { fillColor: [34, 51, 84], textColor: [255, 255, 255], fontStyle: 'bold' },
+      footStyles: { fillColor: [240, 240, 240], textColor: [34, 51, 84], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 4 },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // Payment status
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Pagamento: ${order.paid ? 'PAGO' : 'PENDENTE'}`, 14, y);
+
+  // Save
+  doc.save(`pedido_${order.trackingId}.pdf`);
 }

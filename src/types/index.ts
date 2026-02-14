@@ -28,7 +28,20 @@ export interface Order {
   date: string;
   paid: boolean;
   status: string;
+  orderType: string;
   createdAt: string;
+}
+
+export interface OrderFile {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+}
+
+export interface OrderCustomValue {
+  fieldId: string;
+  fieldName: string;
+  value: string;
 }
 
 export interface ClientReport {
