@@ -48,23 +48,27 @@ const Clients = () => {
 
   const filtered = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
 
-  const handleAdd = (data: { name: string; phone: string; email: string }) => {
-    addClient(data);
-    setDialogOpen(false);
-    toast.success('Cliente cadastrado!');
+  const handleAdd = async (data: { name: string; phone: string; email: string }) => {
+    try {
+      await addClient(data);
+      setDialogOpen(false);
+      toast.success('Cliente cadastrado!');
+    } catch { toast.error('Erro ao cadastrar cliente'); }
   };
 
-  const handleEdit = (data: { name: string; phone: string; email: string }) => {
+  const handleEdit = async (data: { name: string; phone: string; email: string }) => {
     if (editingClient) {
-      updateClient(editingClient.id, data);
-      setEditingClient(null);
-      toast.success('Cliente atualizado!');
+      try {
+        await updateClient(editingClient.id, data);
+        setEditingClient(null);
+        toast.success('Cliente atualizado!');
+      } catch { toast.error('Erro ao atualizar cliente'); }
     }
   };
 
-  const handleDelete = (client: Client) => {
+  const handleDelete = async (client: Client) => {
     if (confirm(`Remover ${client.name}? Os pedidos deste cliente também serão removidos.`)) {
-      deleteClient(client.id);
+      await deleteClient(client.id);
       toast.success('Cliente removido');
     }
   };

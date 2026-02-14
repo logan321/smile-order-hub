@@ -26,7 +26,7 @@ const ServiceForm = ({ initial, onSubmit, onCancel }: { initial?: Service; onSub
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="text-sm font-medium mb-1.5 block">Nome do Serviço *</label>
-        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Corte de cabelo" />
+        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Diagramação de fechamento" />
       </div>
       <div>
         <label className="text-sm font-medium mb-1.5 block">Descrição</label>
@@ -55,24 +55,30 @@ const Services = () => {
     return s.name.toLowerCase().includes(term) || s.description.toLowerCase().includes(term);
   });
 
-  const handleAdd = (data: ServiceFormData) => {
-    addService(data);
-    setDialogOpen(false);
-    toast.success('Serviço cadastrado!');
+  const handleAdd = async (data: ServiceFormData) => {
+    try {
+      await addService(data);
+      setDialogOpen(false);
+      toast.success('Serviço cadastrado!');
+    } catch { toast.error('Erro ao cadastrar serviço'); }
   };
 
-  const handleEdit = (data: ServiceFormData) => {
+  const handleEdit = async (data: ServiceFormData) => {
     if (editingService) {
-      updateService(editingService.id, data);
-      setEditingService(null);
-      toast.success('Serviço atualizado!');
+      try {
+        await updateService(editingService.id, data);
+        setEditingService(null);
+        toast.success('Serviço atualizado!');
+      } catch { toast.error('Erro ao atualizar serviço'); }
     }
   };
 
-  const handleDelete = (service: Service) => {
+  const handleDelete = async (service: Service) => {
     if (confirm('Remover este serviço?')) {
-      deleteService(service.id);
-      toast.success('Serviço removido');
+      try {
+        await deleteService(service.id);
+        toast.success('Serviço removido');
+      } catch { toast.error('Erro ao remover serviço'); }
     }
   };
 
