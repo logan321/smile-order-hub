@@ -249,6 +249,36 @@ export type Database = {
           },
         ]
       }
+      patch_catalog: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          image_url: string
+          name: string
+          target_zone_name: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url: string
+          name: string
+          target_zone_name?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url?: string
+          name?: string
+          target_zone_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           created_at: string
