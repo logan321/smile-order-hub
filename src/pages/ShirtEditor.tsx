@@ -296,7 +296,18 @@ const ShirtEditor = () => {
       const tw = text.width || 100;
       const th = text.height || fontSize;
       const fitScale = Math.min(zoneW / tw, zoneH / th);
-      text.set({ left: zoneX + (zoneW - tw * fitScale) / 2, top: zoneY + (zoneH - th * fitScale) / 2, scaleX: fitScale, scaleY: fitScale });
+      text.set({
+        left: zoneX + (zoneW - tw * fitScale) / 2,
+        top: zoneY + (zoneH - th * fitScale) / 2,
+        scaleX: fitScale, scaleY: fitScale,
+        angle: zone.rotation || 0,
+        originX: 'center', originY: 'center',
+      });
+      // Adjust for center origin
+      text.set({
+        left: zoneX + zoneW / 2,
+        top: zoneY + zoneH / 2,
+      });
     } else {
       text.set({ left: CANVAS_WIDTH / 2 - (text.width || 100) / 2, top: CANVAS_HEIGHT / 2 });
     }
@@ -335,7 +346,18 @@ const ShirtEditor = () => {
 
       const newClip = side === 'front' ? frontClipRef.current : backClipRef.current;
       canvas.getObjects().forEach((obj: any) => {
-        if (obj._userElement && !obj._isBackground) obj.set({ clipPath: newClip || undefined });
+        if (obj._userElement && !obj._isBackground) {
+          // If this object had a polygon zone clip, rebuild it instead of using template clip
+          if (obj._zoneClipData && obj._zoneClipData.length >= 3) {
+            const polyPoints = obj._zoneClipData.map((p: { x: number; y: number }) => ({
+              x: (p.x / 100) * CANVAS_WIDTH,
+              y: (p.y / 100) * CANVAS_HEIGHT,
+            }));
+            obj.set({ clipPath: new Polygon(polyPoints, { absolutePositioned: true, inverted: false }) });
+          } else {
+            obj.set({ clipPath: newClip || undefined });
+          }
+        }
       });
       canvas.renderAll();
     } catch {
@@ -392,7 +414,7 @@ const ShirtEditor = () => {
           });
         }
 
-        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath });
+        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath, angle: zone.rotation || 0 });
         (img as any)._userElement = true;
         (img as any)._zoneClipData = zone.pathData; // store for reference
         canvas.add(img);

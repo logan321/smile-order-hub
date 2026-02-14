@@ -426,6 +426,16 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                               min={5} max={100} step={1}
                             />
                           </div>
+                          <div className="col-span-2">
+                            <label className="text-[10px] text-muted-foreground">Rotação °</label>
+                            <Input
+                              type="number"
+                              value={zone.rotation}
+                              onChange={e => updateZone(zone.id, { rotation: Number(e.target.value) })}
+                              className="h-6 text-[10px]"
+                              min={-360} max={360} step={1}
+                            />
+                          </div>
                         </div>
                       </div>
                     );
