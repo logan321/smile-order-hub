@@ -18,7 +18,7 @@ const SubscriptionPage = ({ status, trialEndsAt }: SubscriptionPageProps) => {
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
-          priceId: 'prod_TyWj4M4WPoPOjW',
+          priceId: 'price_1T0ZgJ2Nbbg4hzJW8JEG902r',
           successUrl: `${window.location.origin}/configuracoes?payment=success`,
           cancelUrl: `${window.location.origin}/assinatura?payment=cancelled`,
         },
