@@ -1,13 +1,13 @@
-import { useApp } from '@/context/AppContext';
+import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
 import { Users, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const Dashboard = () => {
-  const { clients, orders } = useApp();
+  const { clients, orders, services } = useApp();
 
-  const totalRevenue = orders.reduce((sum, o) => sum + o.price, 0);
-  const pendingRevenue = orders.filter(o => !o.paid).reduce((sum, o) => sum + o.price, 0);
+  const totalRevenue = orders.reduce((sum, o) => sum + getOrderTotal(o), 0);
+  const pendingRevenue = orders.filter(o => !o.paid).reduce((sum, o) => sum + getOrderTotal(o), 0);
   const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
   const stats = [
@@ -49,14 +49,16 @@ const Dashboard = () => {
           <div className="divide-y divide-border/50">
             {recentOrders.map((order) => {
               const client = clients.find(c => c.id === order.clientId);
+              const desc = getOrderDescription(order, services);
+              const total = getOrderTotal(order);
               return (
                 <div key={order.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
                   <div>
                     <p className="font-medium">{client?.name ?? 'Cliente removido'}</p>
-                    <p className="text-sm text-muted-foreground">{order.service}</p>
+                    <p className="text-sm text-muted-foreground">{desc}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-success">R$ {order.price.toFixed(2)}</p>
+                    <p className="font-semibold text-success">R$ {total.toFixed(2)}</p>
                     <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</p>
                   </div>
                 </div>

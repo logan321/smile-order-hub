@@ -1,15 +1,17 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Client, Order } from '@/types';
+import { Client, Order, Service } from '@/types';
 import { BusinessConfig } from '@/lib/businessConfig';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getOrderTotal } from '@/context/AppContext';
 
 export function generateClientReportPDF(
   client: Client,
   orders: Order[],
   total: number,
-  config: BusinessConfig
+  config: BusinessConfig,
+  services: Service[] = []
 ) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -54,28 +56,54 @@ export function generateClientReportPDF(
   doc.text(`Data do relatório: ${format(new Date(), "dd/MM/yyyy", { locale: ptBR })}`, 14, y);
   y += 10;
 
-  // Orders table
-  const tableData = orders.map((order, i) => [
-    (i + 1).toString(),
-    order.service,
-    format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR }),
-    `R$ ${order.price.toFixed(2)}`
-  ]);
+  // Orders table - build rows with service details
+  const tableData: string[][] = [];
+  let rowNum = 1;
+  orders.forEach((order) => {
+    if (order.items && order.items.length > 0) {
+      order.items.forEach(item => {
+        const svc = services.find(s => s.id === item.serviceId);
+        const name = svc?.name ?? 'Serviço removido';
+        tableData.push([
+          rowNum.toString(),
+          name,
+          format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR }),
+          item.quantity.toString(),
+          `R$ ${item.unitPrice.toFixed(2)}`,
+          `R$ ${(item.unitPrice * item.quantity).toFixed(2)}`
+        ]);
+        rowNum++;
+      });
+    } else {
+      // legacy order
+      tableData.push([
+        rowNum.toString(),
+        (order as any).service ?? '',
+        format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR }),
+        '1',
+        `R$ ${((order as any).price ?? 0).toFixed(2)}`,
+        `R$ ${((order as any).price ?? 0).toFixed(2)}`
+      ]);
+      rowNum++;
+    }
+  });
 
   autoTable(doc, {
     startY: y,
-    head: [['#', 'Serviço', 'Data', 'Valor']],
+    head: [['#', 'Serviço', 'Data', 'Qtd', 'Unit.', 'Total']],
     body: tableData,
-    foot: [['', '', 'TOTAL', `R$ ${total.toFixed(2)}`]],
+    foot: [['', '', '', '', 'TOTAL', `R$ ${total.toFixed(2)}`]],
     theme: 'striped',
     headStyles: { fillColor: [34, 51, 84], textColor: [255, 255, 255], fontStyle: 'bold' },
     footStyles: { fillColor: [240, 240, 240], textColor: [34, 51, 84], fontStyle: 'bold' },
     styles: { fontSize: 9, cellPadding: 4 },
     columnStyles: {
-      0: { cellWidth: 12, halign: 'center' },
+      0: { cellWidth: 10, halign: 'center' },
       1: { cellWidth: 'auto' },
-      2: { cellWidth: 30, halign: 'center' },
-      3: { cellWidth: 30, halign: 'right' },
+      2: { cellWidth: 25, halign: 'center' },
+      3: { cellWidth: 12, halign: 'center' },
+      4: { cellWidth: 22, halign: 'right' },
+      5: { cellWidth: 25, halign: 'right' },
     },
     margin: { left: 14, right: 14 },
   });
