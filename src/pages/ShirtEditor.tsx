@@ -833,240 +833,361 @@ const ShirtEditor = () => {
   // ─── Editor screen ────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top header */}
+      {/* Top header — compact on mobile */}
       <header className="border-b border-border bg-card px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)}>
-            <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2">
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline ml-1">Voltar</span>
           </Button>
-          <span className="text-sm font-medium truncate">{selectedTemplate.name}</span>
+          <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">{selectedTemplate.name}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleWhatsAppQuote} className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5">
-            <MessageCircle className="h-4 w-4" /> Orçamento
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="sm" onClick={handleWhatsAppQuote} className="gap-1 text-primary border-primary/30 hover:bg-primary/5 h-8 px-2 sm:px-3">
+            <MessageCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">Orçamento</span>
           </Button>
-          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-1.5">
-            <Download className="h-4 w-4" /> {downloading ? 'Baixando...' : 'Baixar'}
+          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-1 h-8 px-2 sm:px-3">
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">{downloading ? 'Baixando...' : 'Baixar'}</span>
           </Button>
         </div>
       </header>
 
-      {/* Toolbar tabs — inspired by Jumptec */}
-      <div className="border-b border-border bg-card/80 px-2">
-        <div className="flex items-center justify-center gap-1">
+      {/* === MOBILE LAYOUT (< lg) === */}
+      <div className="flex-1 flex flex-col lg:hidden overflow-hidden">
+        {/* Front/Back toggle + zoom — prominent like Jumptec */}
+        <div className="flex items-center justify-between px-3 py-2 bg-card border-b border-border">
+          <div className="flex items-center rounded-lg overflow-hidden border border-border">
+            <button
+              onClick={() => setActiveView('front')}
+              className={`px-5 py-1.5 text-sm font-semibold transition-colors ${
+                activeView === 'front'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Frente
+            </button>
+            <button
+              onClick={() => setActiveView('back')}
+              className={`px-5 py-1.5 text-sm font-semibold transition-colors ${
+                activeView === 'back'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Costas
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}>
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-[10px] font-medium text-muted-foreground w-8 text-center">{Math.round(activeZoom * 100)}%</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}>
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+              setActiveZoom(1);
+              const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+              if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); }
+            }}>
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Single canvas — only active view shown */}
+        <div className="flex-1 overflow-auto flex items-center justify-center bg-muted/20 p-2">
+          <div className="relative flex-shrink-0">
+            <div
+              ref={frontWrapRef}
+              className={activeView === 'front' ? 'block' : 'hidden'}
+            >
+              <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
+                <canvas ref={frontCanvasRef} />
+              </div>
+            </div>
+            <div
+              ref={backWrapRef}
+              className={activeView === 'back' ? 'block' : 'hidden'}
+            >
+              <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
+                <canvas ref={backCanvasRef} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile tool content panel — slides up when a tab is active */}
+        {activeTab && (
+          <div className="bg-card border-t border-border max-h-[40vh] overflow-y-auto animate-fade-in">
+            <div className="p-3">
+              {/* Stamps tab */}
+              {activeTab === 'stamps' && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
+                  {stamps.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2">
+                      {stamps.map(s => (
+                        <button key={s.id} onClick={() => addStamp(s)}
+                          className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 transition-all bg-background" title={s.name}>
+                          <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-0.5" />
+                          <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Patches tab */}
+              {activeTab === 'patches' && (
+                <div className="patch-protected">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Peixes da Empresa</p>
+                  {patches.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2">
+                      {patches.map(p => (
+                        <button key={p.id} onClick={() => handlePatchClick(p)}
+                          className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 transition-all bg-background relative" title={p.name}
+                          onContextMenu={e => e.preventDefault()}>
+                          <div className="w-full aspect-square p-0.5 bg-center bg-contain bg-no-repeat select-none"
+                            style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
+                          <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
+                          <div className="pb-0.5 px-0.5 relative z-10">
+                            <p className="text-[8px] text-center text-muted-foreground truncate select-none">{p.name}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Text tab */}
+              {activeTab === 'text' && (
+                <div className="space-y-2">
+                  <Input value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto..." className="h-8 text-sm"
+                    onKeyDown={e => e.key === 'Enter' && handleAddTextClick()} />
+                  <div className="flex gap-2">
+                    <Select value={fontFamily} onValueChange={setFontFamily}>
+                      <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-14 text-xs" min={10} max={72} />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Cor</label>
+                      <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Contorno</label>
+                      <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Esp.</label>
+                      <Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 text-xs" min={0} max={10} /></div>
+                  </div>
+                  <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8">
+                    <Type className="h-3.5 w-3.5" /> Adicionar
+                  </Button>
+                </div>
+              )}
+              {/* Logo tab */}
+              {activeTab === 'logo' && (
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 px-4 py-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <div>
+                      <span className="text-sm text-muted-foreground">Enviar logo ou imagem</span>
+                      <span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span>
+                    </div>
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                  </label>
+                </div>
+              )}
+              {/* Delete */}
+              <div className="mt-2 pt-2 border-t border-border/30">
+                <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs">
+                  <Trash2 className="h-3.5 w-3.5" /> Remover selecionado
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom tab bar — fixed at bottom like native app */}
+        <div className="border-t border-border bg-card flex items-stretch safe-area-bottom">
           {toolbarTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
-              className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide transition-colors border-b-2 ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold transition-colors ${
                 activeTab === tab.id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  ? 'text-primary bg-primary/5'
+                  : 'text-muted-foreground'
               }`}
             >
               {tab.icon}
               {tab.label}
             </button>
           ))}
-          {/* View toggle */}
-          <div className="ml-auto flex items-center gap-1 pr-2">
-            <Button
-              variant={activeView === 'front' ? 'default' : 'outline'}
-              size="sm" className="h-7 text-xs px-3"
-              onClick={() => setActiveView('front')}
-            >
-              Frente
-            </Button>
-            <Button
-              variant={activeView === 'back' ? 'default' : 'outline'}
-              size="sm" className="h-7 text-xs px-3"
-              onClick={() => setActiveView('back')}
-            >
-              Costas
-            </Button>
-          </div>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Sidebar panel — shown based on active tab */}
-        {activeTab && (
-          <aside className="lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-card p-3 overflow-y-auto max-h-[35vh] lg:max-h-none">
-            {/* Stamps tab */}
-            {activeTab === 'stamps' && (
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
-                {stamps.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    {stamps.map(s => (
-                      <button
-                        key={s.id}
-                        onClick={() => addStamp(s)}
-                        className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background"
-                        title={s.name}
-                      >
-                        <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1" />
-                        <p className="text-[9px] text-center text-muted-foreground pb-1 truncate px-1 group-hover:text-primary transition-colors">{s.name}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
+      {/* === DESKTOP LAYOUT (lg+) === */}
+      <div className="hidden lg:flex flex-1 overflow-hidden">
+        {/* Desktop toolbar tabs — top */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="border-b border-border bg-card/80 px-2">
+            <div className="flex items-center justify-center gap-1">
+              {toolbarTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
+                  className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide transition-colors border-b-2 ${
+                    activeTab === tab.id
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+              <div className="ml-auto flex items-center gap-1 pr-2">
+                <Button variant={activeView === 'front' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3" onClick={() => setActiveView('front')}>Frente</Button>
+                <Button variant={activeView === 'back' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3" onClick={() => setActiveView('back')}>Costas</Button>
               </div>
-            )}
-
-            {/* Patches (Peixes) tab */}
-            {activeTab === 'patches' && (
-              <div className="patch-protected">
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Peixes da Empresa</p>
-                {patches.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    {patches.map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => handlePatchClick(p)}
-                        className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative"
-                        title={p.name}
-                        onContextMenu={e => e.preventDefault()}
-                      >
-                        <div
-                          className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none"
-                          style={{ backgroundImage: `url(${p.imageUrl})` }}
-                          draggable={false}
-                          aria-hidden="true"
-                        />
-                        <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
-                        <div className="pb-1 px-1 relative z-10">
-                          <p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors select-none">{p.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Text tab */}
-            {activeTab === 'text' && (
-              <div className="space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar texto</p>
-                <Input
-                  value={textInput}
-                  onChange={e => setTextInput(e.target.value)}
-                  placeholder="Digite o texto..."
-                  className="h-8 text-sm"
-                  onKeyDown={e => e.key === 'Enter' && handleAddTextClick()}
-                />
-                <Select value={fontFamily} onValueChange={setFontFamily}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Fonte" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {FONT_OPTIONS.map(f => (
-                      <SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>
-                        {f.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label>
-                    <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Tamanho</label>
-                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={10} max={72} />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label>
-                    <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Espessura</label>
-                    <Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} />
-                  </div>
-                </div>
-                <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8">
-                  <Type className="h-3.5 w-3.5" /> Adicionar Texto
-                </Button>
-              </div>
-            )}
-
-            {/* Logo tab */}
-            {activeTab === 'logo' && (
-              <div className="space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
-                <label className="flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Clique para enviar</span>
-                  <span className="text-[10px] text-muted-foreground/60">PNG, JPG, SVG ou WebP</span>
-                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
-                </label>
-                <p className="text-[10px] text-muted-foreground text-center">A imagem será aplicada no lado <strong>{activeView === 'front' ? 'Frente' : 'Costas'}</strong></p>
-              </div>
-            )}
-
-            {/* Delete button — always visible */}
-            <div className="mt-4 pt-3 border-t border-border/30">
-              <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs">
-                <Trash2 className="h-3.5 w-3.5" /> Remover selecionado
-              </Button>
             </div>
-          </aside>
-        )}
-
-        {/* Canvas area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-muted/30">
-          {/* Zoom controls */}
-          <div className="flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
-            <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}>
-              <ZoomOut className="h-3.5 w-3.5" />
-            </Button>
-            <Slider
-              value={[activeZoom * 100]}
-              onValueChange={([v]) => setActiveZoom(v / 100)}
-              min={30} max={250} step={5}
-              className="w-36 sm:w-52"
-            />
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}>
-              <ZoomIn className="h-3.5 w-3.5" />
-            </Button>
-            <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round(activeZoom * 100)}%</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-              setActiveZoom(1);
-              const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
-              if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); }
-            }} title="Resetar zoom">
-              <RotateCcw className="h-3.5 w-3.5" />
-            </Button>
           </div>
 
-          <div ref={scrollContainerRef} className="flex-1 overflow-auto p-3 sm:p-4">
-            <div className="flex flex-col md:flex-row gap-3 sm:gap-5 items-center justify-center">
-              <div
-                ref={frontWrapRef}
-                className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
-                onClick={() => setActiveView('front')}
-              >
-                <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Frente</p>
-                <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
-                  <canvas ref={frontCanvasRef} />
+          <div className="flex-1 flex overflow-hidden">
+            {/* Desktop sidebar panel */}
+            {activeTab && (
+              <aside className="w-64 border-r border-border bg-card p-3 overflow-y-auto">
+                {activeTab === 'stamps' && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
+                    {stamps.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2">
+                        {stamps.map(s => (
+                          <button key={s.id} onClick={() => addStamp(s)}
+                            className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
+                            <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1" />
+                            <p className="text-[9px] text-center text-muted-foreground pb-1 truncate px-1 group-hover:text-primary transition-colors">{s.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {activeTab === 'patches' && (
+                  <div className="patch-protected">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Peixes da Empresa</p>
+                    {patches.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2">
+                        {patches.map(p => (
+                          <button key={p.id} onClick={() => handlePatchClick(p)}
+                            className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name}
+                            onContextMenu={e => e.preventDefault()}>
+                            <div className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none"
+                              style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
+                            <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
+                            <div className="pb-1 px-1 relative z-10">
+                              <p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors select-none">{p.name}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {activeTab === 'text' && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar texto</p>
+                    <Input value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto..." className="h-8 text-sm"
+                      onKeyDown={e => e.key === 'Enter' && handleAddTextClick()} />
+                    <Select value={fontFamily} onValueChange={setFontFamily}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label>
+                        <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                      <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Tamanho</label>
+                        <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={10} max={72} /></div>
+                      <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label>
+                        <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                      <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Espessura</label>
+                        <Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
+                    </div>
+                    <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8">
+                      <Type className="h-3.5 w-3.5" /> Adicionar Texto
+                    </Button>
+                  </div>
+                )}
+                {activeTab === 'logo' && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
+                    <label className="flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Clique para enviar</span>
+                      <span className="text-[10px] text-muted-foreground/60">PNG, JPG, SVG ou WebP</span>
+                      <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                    </label>
+                    <p className="text-[10px] text-muted-foreground text-center">A imagem será aplicada no lado <strong>{activeView === 'front' ? 'Frente' : 'Costas'}</strong></p>
+                  </div>
+                )}
+                <div className="mt-4 pt-3 border-t border-border/30">
+                  <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs">
+                    <Trash2 className="h-3.5 w-3.5" /> Remover selecionado
+                  </Button>
                 </div>
-              </div>
+              </aside>
+            )}
 
-              <div
-                ref={backWrapRef}
-                className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
-                onClick={() => setActiveView('back')}
-              >
-                <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Costas</p>
-                <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background">
-                  <canvas ref={backCanvasRef} />
+            {/* Desktop canvas area */}
+            <div className="flex-1 flex flex-col overflow-hidden bg-muted/30">
+              <div className="flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}>
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </Button>
+                <Slider value={[activeZoom * 100]} onValueChange={([v]) => setActiveZoom(v / 100)} min={30} max={250} step={5} className="w-52" />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}>
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round(activeZoom * 100)}%</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                  setActiveZoom(1);
+                  const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+                  if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); }
+                }} title="Resetar zoom">
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div ref={scrollContainerRef} className="flex-1 overflow-auto p-4">
+                <div className="flex gap-5 items-center justify-center">
+                  <div ref={frontWrapRef}
+                    className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'front' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
+                    onClick={() => setActiveView('front')}>
+                    <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Frente</p>
+                    <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background"><canvas ref={frontCanvasRef} /></div>
+                  </div>
+                  <div ref={backWrapRef}
+                    className={`relative cursor-pointer transition-all flex-shrink-0 ${activeView === 'back' ? 'ring-2 ring-primary ring-offset-2 rounded-xl' : 'opacity-50 hover:opacity-75'}`}
+                    onClick={() => setActiveView('back')}>
+                    <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider">Costas</p>
+                    <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background"><canvas ref={backCanvasRef} /></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1083,12 +1204,8 @@ const ShirtEditor = () => {
               <h3 className="font-semibold">{!patchSideChoice ? 'Onde aplicar o peixe?' : 'Escolha a zona'}</h3>
             </div>
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/30 border border-border/30">
-              <div
-                className="h-12 w-12 rounded bg-center bg-contain bg-no-repeat select-none"
-                style={{ backgroundImage: `url(${pendingPatch.imageUrl})` }}
-                onContextMenu={e => e.preventDefault()}
-                draggable={false}
-              />
+              <div className="h-12 w-12 rounded bg-center bg-contain bg-no-repeat select-none"
+                style={{ backgroundImage: `url(${pendingPatch.imageUrl})` }} onContextMenu={e => e.preventDefault()} draggable={false} />
               <div>
                 <p className="text-sm font-medium">{pendingPatch.name}</p>
                 {patchSideChoice && (
@@ -1098,8 +1215,6 @@ const ShirtEditor = () => {
                 )}
               </div>
             </div>
-
-            {/* Step 1: Choose side */}
             {!patchSideChoice && (
               <div className="space-y-2 mb-4">
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('front')}>
@@ -1113,40 +1228,26 @@ const ShirtEditor = () => {
                 </Button>
               </div>
             )}
-
-            {/* Step 2: Choose zone */}
             {patchSideChoice && (
               <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
                 {patchAvailableZones.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">Nenhuma zona configurada para este lado</p>
                 ) : (
                   patchAvailableZones.map(zone => (
-                    <Button
-                      key={zone.id}
-                      variant="outline"
-                      className="w-full justify-start gap-2"
-                      onClick={() => addPatchToZone(pendingPatch, zone)}
-                    >
+                    <Button key={zone.id} variant="outline" className="w-full justify-start gap-2" onClick={() => addPatchToZone(pendingPatch, zone)}>
                       <MapPin className="h-3.5 w-3.5" />
                       {zone.name}
-                      <span className="text-[10px] text-muted-foreground ml-auto">
-                        {zone.shared ? 'Compartilhada' : zone.side === 'front' ? 'Frente' : 'Costas'}
-                      </span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">{zone.shared ? 'Compartilhada' : zone.side === 'front' ? 'Frente' : 'Costas'}</span>
                     </Button>
                   ))
                 )}
               </div>
             )}
-
             <div className="flex gap-2">
               {patchSideChoice && (
-                <Button variant="ghost" size="sm" className="flex-1" onClick={() => setPatchSideChoice(null)}>
-                  ← Voltar
-                </Button>
+                <Button variant="ghost" size="sm" className="flex-1" onClick={() => setPatchSideChoice(null)}>← Voltar</Button>
               )}
-              <Button variant="ghost" size="sm" className={patchSideChoice ? '' : 'w-full'} onClick={() => { setPendingPatch(null); setPatchSideChoice(null); }}>
-                Cancelar
-              </Button>
+              <Button variant="ghost" size="sm" className={patchSideChoice ? '' : 'w-full'} onClick={() => { setPendingPatch(null); setPatchSideChoice(null); }}>Cancelar</Button>
             </div>
           </div>
         </div>
@@ -1164,33 +1265,22 @@ const ShirtEditor = () => {
               Escolha a zona onde {showZonePicker === 'text' ? 'o texto' : 'a logo'} será posicionado(a):
             </p>
             <div className="space-y-2 mb-4">
-              {templateZones
-                .filter(z => z.side === activeView || z.shared)
-                .map(zone => (
-                  <Button
-                    key={zone.id}
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                    onClick={() => {
-                      if (showZonePicker === 'text') addTextAtZone(zone);
-                      else if (pendingLogoFile) placeLogoFile(pendingLogoFile, zone);
-                    }}
-                  >
-                    <MapPin className="h-3.5 w-3.5" />
-                    {zone.name}
-                  </Button>
-                ))}
+              {templateZones.filter(z => z.side === activeView || z.shared).map(zone => (
+                <Button key={zone.id} variant="outline" className="w-full justify-start gap-2" onClick={() => {
+                  if (showZonePicker === 'text') addTextAtZone(zone);
+                  else if (pendingLogoFile) placeLogoFile(pendingLogoFile, zone);
+                }}>
+                  <MapPin className="h-3.5 w-3.5" />
+                  {zone.name}
+                </Button>
+              ))}
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" className="flex-1" onClick={() => {
                 if (showZonePicker === 'text') addTextAtZone();
                 else if (pendingLogoFile) placeLogoFile(pendingLogoFile);
-              }}>
-                Posição livre
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setShowZonePicker(null); setPendingLogoFile(null); }}>
-                Cancelar
-              </Button>
+              }}>Posição livre</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setShowZonePicker(null); setPendingLogoFile(null); }}>Cancelar</Button>
             </div>
           </div>
         </div>
