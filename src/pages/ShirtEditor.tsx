@@ -23,8 +23,8 @@ interface Stamp {
   imageUrl: string;
 }
 
-const CANVAS_WIDTH = 500;
-const CANVAS_HEIGHT = 625;
+const CANVAS_WIDTH = 700;
+const CANVAS_HEIGHT = 875;
 
 const ShirtEditor = () => {
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
