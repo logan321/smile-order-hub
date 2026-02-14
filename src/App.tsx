@@ -18,6 +18,7 @@ import Auth from "./pages/Auth";
 import TrackOrder from "./pages/TrackOrder";
 import Admin from "./pages/Admin";
 import SubscriptionPage from "./pages/Subscription";
+import ShirtEditor from "./pages/ShirtEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -91,6 +92,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/login" element={<Auth />} />
             <Route path="/rastreio" element={<TrackOrder />} />
+            <Route path="/editor" element={<ShirtEditor />} />
 
             {/* Protected + subscription required routes */}
             <Route path="/" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Dashboard /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
