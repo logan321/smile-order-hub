@@ -3,11 +3,53 @@ import { Canvas, FabricText, FabricImage } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
+
+const FONT_OPTIONS = [
+  { label: 'Arial', value: 'Arial', google: false },
+  { label: 'Impact', value: 'Impact', google: false },
+  { label: 'Georgia', value: 'Georgia', google: false },
+  { label: 'Courier New', value: 'Courier New', google: false },
+  { label: 'Comic Sans MS', value: 'Comic Sans MS', google: false },
+  { label: 'Roboto', value: 'Roboto', google: true },
+  { label: 'Open Sans', value: 'Open Sans', google: true },
+  { label: 'Montserrat', value: 'Montserrat', google: true },
+  { label: 'Oswald', value: 'Oswald', google: true },
+  { label: 'Playfair Display', value: 'Playfair Display', google: true },
+  { label: 'Bebas Neue', value: 'Bebas Neue', google: true },
+  { label: 'Pacifico', value: 'Pacifico', google: true },
+  { label: 'Lobster', value: 'Lobster', google: true },
+  { label: 'Permanent Marker', value: 'Permanent Marker', google: true },
+  { label: 'Dancing Script', value: 'Dancing Script', google: true },
+  { label: 'Righteous', value: 'Righteous', google: true },
+  { label: 'Bangers', value: 'Bangers', google: true },
+  { label: 'Alfa Slab One', value: 'Alfa Slab One', google: true },
+  { label: 'Anton', value: 'Anton', google: true },
+  { label: 'Press Start 2P', value: 'Press Start 2P', google: true },
+];
+
+// Load Google Fonts on demand
+const loadedFonts = new Set<string>();
+const loadGoogleFont = (fontName: string): Promise<void> => {
+  if (loadedFonts.has(fontName)) return Promise.resolve();
+  return new Promise((resolve) => {
+    const link = document.createElement('link');
+    link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}&display=swap`;
+    link.rel = 'stylesheet';
+    link.onload = () => {
+      loadedFonts.add(fontName);
+      // Wait for font to actually be available
+      document.fonts.ready.then(() => resolve());
+    };
+    link.onerror = () => resolve();
+    document.head.appendChild(link);
+  });
+};
 
 interface Template {
   id: string;
@@ -44,6 +86,7 @@ const ShirtEditor = () => {
   const [strokeColor, setStrokeColor] = useState('#FFFFFF');
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
+  const [fontFamily, setFontFamily] = useState('Arial');
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -217,22 +260,27 @@ const ShirtEditor = () => {
   };
 
   // Add text - optionally at a zone position (centered in zone)
-  const addTextAtZone = (zone?: TemplateZone) => {
+  const addTextAtZone = async (zone?: TemplateZone) => {
     const canvas = getActiveCanvas();
     if (!canvas || !textInput.trim()) return;
     const clipPath = getActiveClipPath();
 
+    // Ensure Google Font is loaded before creating text
+    const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
+    if (fontDef?.google) {
+      await loadGoogleFont(fontFamily);
+    }
+
     const text = new FabricText(textInput, {
       fontSize,
       fill: textColor,
-      fontFamily: 'Arial',
+      fontFamily,
       stroke: strokeWidth > 0 ? strokeColor : undefined,
       strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
       clipPath: clipPath || undefined,
     });
 
     if (zone) {
-      // Scale text to fill zone proportionally
       const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
       const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
       const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
@@ -399,15 +447,21 @@ const ShirtEditor = () => {
     if (!canvas) return;
     const active = canvas.getActiveObject();
     if (active && active instanceof FabricText && (active as any)._userElement) {
-      active.set({
-        fill: textColor,
-        stroke: strokeWidth > 0 ? strokeColor : undefined,
-        strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
-        fontSize,
-      });
-      canvas.renderAll();
+      const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
+      const applyFont = async () => {
+        if (fontDef?.google) await loadGoogleFont(fontFamily);
+        active.set({
+          fill: textColor,
+          stroke: strokeWidth > 0 ? strokeColor : undefined,
+          strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+          fontSize,
+          fontFamily,
+        });
+        canvas.renderAll();
+      };
+      applyFont();
     }
-  }, [textColor, strokeColor, strokeWidth, fontSize, activeView]);
+  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, activeView]);
 
   // Delete selected object
   const deleteSelected = () => {
@@ -570,6 +624,18 @@ const ShirtEditor = () => {
                 className="h-7 text-xs"
                 onKeyDown={e => e.key === 'Enter' && handleAddTextClick()}
               />
+              <Select value={fontFamily} onValueChange={setFontFamily}>
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="Fonte" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {FONT_OPTIONS.map(f => (
+                    <SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
                   <label className="text-[10px] text-muted-foreground">Cor</label>
