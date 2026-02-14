@@ -121,3 +121,10 @@
     @apply text-muted-foreground mt-1;
   }
 }
+
+/* High-quality canvas rendering */
+canvas.lower-canvas,
+canvas.upper-canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+}
