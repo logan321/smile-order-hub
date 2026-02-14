@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Move, X, Link, PenTool } from 'lucide-react';
+import { Plus, Trash2, Move, X, Link, PenTool, RotateCw } from 'lucide-react';
 import { toast } from 'sonner';
 import PolygonDrawer from '@/components/PolygonDrawer';
 
@@ -27,7 +27,7 @@ const ZONE_COLORS = [
   'rgba(249,115,22,0.35)',
 ];
 
-type DragMode = 'move' | 'resize-br' | 'resize-bl' | 'resize-tr' | 'resize-tl' | 'resize-r' | 'resize-l' | 'resize-t' | 'resize-b';
+type DragMode = 'move' | 'rotate' | 'resize-br' | 'resize-bl' | 'resize-tr' | 'resize-tl' | 'resize-r' | 'resize-l' | 'resize-t' | 'resize-b';
 
 interface DragState {
   zoneId: string;
@@ -38,6 +38,7 @@ interface DragState {
   origY: number;
   origW: number;
   origH: number;
+  origRotation: number;
 }
 
 const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEditorProps) => {
@@ -96,6 +97,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
       origY: display.yPercent,
       origW: display.widthPercent,
       origH: display.heightPercent,
+      origRotation: zone.rotation || 0,
     });
   };
 
@@ -108,6 +110,24 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
       const dx = pos.x - dragState.startX;
       const dy = pos.y - dragState.startY;
       const { mode, origX, origY, origW, origH, zoneId } = dragState;
+
+      if (mode === 'rotate') {
+        // Calculate angle from zone center to mouse position
+        const centerX = origX + origW / 2;
+        const centerY = origY + origH / 2;
+        const startAngle = Math.atan2(dragState.startY - centerY, dragState.startX - centerX);
+        const currentAngle = Math.atan2(pos.y - centerY, pos.x - centerX);
+        const deltaAngle = ((currentAngle - startAngle) * 180) / Math.PI;
+        const newRotation = Math.round(dragState.origRotation + deltaAngle);
+        setLocalOverrides(prev => ({
+          ...prev,
+          [zoneId]: {
+            ...(prev[zoneId] || {}),
+            rotation: newRotation,
+          },
+        }));
+        return;
+      }
 
       let newX = origX, newY = origY, newW = origW, newH = origH;
 
@@ -187,6 +207,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
       case 'resize-bl': case 'resize-tr': return 'nesw-resize';
       case 'resize-r': case 'resize-l': return 'ew-resize';
       case 'resize-t': case 'resize-b': return 'ns-resize';
+      case 'rotate': return 'grab';
       default: return 'move';
     }
   };
@@ -273,6 +294,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
               {/* Zone overlays with resize handles */}
               {filteredZones.map((zone, i) => {
                 const display = getZoneDisplay(zone);
+                const rotation = display.rotation ?? zone.rotation ?? 0;
                 return (
                   <div
                     key={zone.id}
@@ -285,13 +307,37 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                       backgroundColor: ZONE_COLORS[i % ZONE_COLORS.length],
                       borderColor: ZONE_COLORS[i % ZONE_COLORS.length].replace('0.35', '0.8'),
                       cursor: 'move',
+                      transform: `rotate(${rotation}deg)`,
+                      transformOrigin: 'center center',
                     }}
                     onMouseDown={(e) => handleMouseDown(e, zone, 'move')}
                   >
                     <span className="text-[10px] font-bold text-foreground bg-background/80 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap pointer-events-none">
-                      {zone.name}
+                      {zone.name} {rotation !== 0 ? `${rotation}°` : ''}
                     </span>
                     {renderResizeHandles(zone, i)}
+                    {/* Rotation handle */}
+                    <div
+                      className="absolute flex flex-col items-center"
+                      style={{ top: -28, left: '50%', marginLeft: -5 }}
+                    >
+                      <div
+                        style={{ width: 1, height: 14, backgroundColor: ZONE_COLORS[i % ZONE_COLORS.length].replace('0.35', '0.8') }}
+                      />
+                      <div
+                        className="rounded-full border-2 bg-background flex items-center justify-center"
+                        style={{
+                          width: 12,
+                          height: 12,
+                          cursor: 'grab',
+                          borderColor: ZONE_COLORS[i % ZONE_COLORS.length].replace('0.35', '0.9'),
+                          marginTop: -1,
+                        }}
+                        onMouseDown={e => handleMouseDown(e, zone, 'rotate')}
+                      >
+                        <RotateCw className="h-2 w-2" style={{ color: ZONE_COLORS[i % ZONE_COLORS.length].replace('0.35', '0.9') }} />
+                      </div>
+                    </div>
                   </div>
                 );
               })}
