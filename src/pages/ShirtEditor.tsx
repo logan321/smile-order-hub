@@ -203,16 +203,19 @@ const ShirtEditor = () => {
     });
 
     if (zone) {
-      // Center text in zone
+      // Scale text to fill zone proportionally
       const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
       const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
       const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
       const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
-      const textWidth = text.width || 100;
-      const textHeight = text.height || fontSize;
+      const tw = text.width || 100;
+      const th = text.height || fontSize;
+      const fitScale = Math.min(zoneW / tw, zoneH / th);
       text.set({
-        left: zoneX + (zoneW - textWidth) / 2,
-        top: zoneY + (zoneH - textHeight) / 2,
+        left: zoneX + (zoneW - tw * fitScale) / 2,
+        top: zoneY + (zoneH - th * fitScale) / 2,
+        scaleX: fitScale,
+        scaleY: fitScale,
       });
     } else {
       text.set({
@@ -332,7 +335,7 @@ const ShirtEditor = () => {
           const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
           const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
           const zoneH = (zone.heightPercent / 100) * CANVAS_HEIGHT;
-          scale = Math.min(zoneW / img.width!, zoneH / img.height!) * 0.85;
+          scale = Math.min(zoneW / img.width!, zoneH / img.height!);
           left = zoneX + (zoneW - img.width! * scale) / 2;
           top = zoneY + (zoneH - img.height! * scale) / 2;
         } else {
