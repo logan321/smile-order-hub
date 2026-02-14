@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
@@ -43,7 +43,6 @@ const loadGoogleFont = (fontName: string): Promise<void> => {
     link.rel = 'stylesheet';
     link.onload = () => {
       loadedFonts.add(fontName);
-      // Wait for font to actually be available
       document.fonts.ready.then(() => resolve());
     };
     link.onerror = () => resolve();
@@ -67,6 +66,8 @@ interface Stamp {
   backImageUrl: string | null;
 }
 
+type ToolbarTab = 'stamps' | 'text' | 'logo' | null;
+
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
 
@@ -76,6 +77,7 @@ const ShirtEditor = () => {
   const frontFabricRef = useRef<Canvas | null>(null);
   const backFabricRef = useRef<Canvas | null>(null);
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
+  const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
@@ -98,10 +100,8 @@ const ShirtEditor = () => {
   const backWrapRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch zones for selected template
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
 
-  // Track current stamp per canvas for replacement
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
   const frontClipRef = useRef<FabricImage | null>(null);
@@ -126,23 +126,12 @@ const ShirtEditor = () => {
         supabase.from('shirt_templates').select('*').eq('active', true),
         supabase.from('stamp_catalog').select('*').eq('active', true),
       ]);
-
       setTemplates((templatesRes.data as any[])?.map(t => ({
-        id: t.id,
-        name: t.name,
-        frontImageUrl: t.front_image_url,
-        backImageUrl: t.back_image_url,
-        userId: t.user_id,
+        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id,
       })) ?? []);
-
       setStamps((stampsRes.data as any[])?.map(s => ({
-        id: s.id,
-        name: s.name,
-        category: s.category,
-        imageUrl: s.image_url,
-        backImageUrl: s.back_image_url ?? null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
       })) ?? []);
-
       setLoading(false);
     };
     fetchData();
@@ -155,58 +144,34 @@ const ShirtEditor = () => {
       const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
       const left = (CANVAS_WIDTH - img.width! * scale) / 2;
       const top = (CANVAS_HEIGHT - img.height! * scale) / 2;
-      img.set({
-        scaleX: scale,
-        scaleY: scale,
-        left,
-        top,
-        selectable: false,
-        evented: false,
-      });
+      img.set({ scaleX: scale, scaleY: scale, left, top, selectable: false, evented: false });
       (img as any)._isBackground = true;
       canvas.insertAt(0, img);
 
-      // Create clip path from template silhouette (PowerClip effect)
       const clipImg = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
-      clipImg.set({
-        scaleX: scale,
-        scaleY: scale,
-        left,
-        top,
-        absolutePositioned: true,
-      });
+      clipImg.set({ scaleX: scale, scaleY: scale, left, top, absolutePositioned: true });
       if (side === 'front') frontClipRef.current = clipImg;
       else backClipRef.current = clipImg;
-
       canvas.renderAll();
     } catch (e) {
       console.error('Failed to load background:', e);
     }
   }, []);
 
-  // Initialize both canvases when template is selected
+  // Initialize canvases
   useEffect(() => {
-    if (!selectedTemplate) return;
-    if (!frontCanvasRef.current || !backCanvasRef.current) return;
-    if (frontFabricRef.current) return; // already initialized
+    if (!selectedTemplate || !frontCanvasRef.current || !backCanvasRef.current) return;
+    if (frontFabricRef.current) return;
 
     const frontCanvas = new Canvas(frontCanvasRef.current, {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
-      backgroundColor: '#f5f5f5',
-      selection: true,
-      enableRetinaScaling: true,
-      imageSmoothingEnabled: true,
+      width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: '#f5f5f5',
+      selection: true, enableRetinaScaling: true, imageSmoothingEnabled: true,
     });
     frontFabricRef.current = frontCanvas;
 
     const backCanvas = new Canvas(backCanvasRef.current, {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
-      backgroundColor: '#f5f5f5',
-      selection: true,
-      enableRetinaScaling: true,
-      imageSmoothingEnabled: true,
+      width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: '#f5f5f5',
+      selection: true, enableRetinaScaling: true, imageSmoothingEnabled: true,
     });
     backFabricRef.current = backCanvas;
 
@@ -214,35 +179,27 @@ const ShirtEditor = () => {
     loadBackground(backCanvas, selectedTemplate.backImageUrl, 'back');
 
     return () => {
-      frontCanvas.dispose();
-      backCanvas.dispose();
-      frontFabricRef.current = null;
-      backFabricRef.current = null;
-      frontStampRef.current = null;
-      backStampRef.current = null;
-      frontClipRef.current = null;
-      backClipRef.current = null;
+      frontCanvas.dispose(); backCanvas.dispose();
+      frontFabricRef.current = null; backFabricRef.current = null;
+      frontStampRef.current = null; backStampRef.current = null;
+      frontClipRef.current = null; backClipRef.current = null;
     };
   }, [selectedTemplate, loadBackground]);
 
   const activeZoom = activeView === 'front' ? frontZoom : backZoom;
   const setActiveZoom = activeView === 'front' ? setFrontZoom : setBackZoom;
 
-  // Apply zoom only to the active canvas (centered on canvas middle)
+  // Apply zoom
   useEffect(() => {
     const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
     if (!canvas) return;
     const zoom = activeView === 'front' ? frontZoom : backZoom;
-    const center = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
     canvas.zoomToPoint(new Point(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2), zoom);
-    canvas.setDimensions({
-      width: CANVAS_WIDTH * zoom,
-      height: CANVAS_HEIGHT * zoom,
-    });
+    canvas.setDimensions({ width: CANVAS_WIDTH * zoom, height: CANVAS_HEIGHT * zoom });
     canvas.requestRenderAll();
   }, [frontZoom, backZoom, activeView]);
 
-  // Enable panning (alt+drag or middle-click drag) on active canvas
+  // Pan + wheel zoom
   useEffect(() => {
     const front = frontFabricRef.current;
     const back = backFabricRef.current;
@@ -255,11 +212,9 @@ const ShirtEditor = () => {
           isPanningRef.current = true;
           lastPanPoint.current = { x: evt.clientX, y: evt.clientY };
           canvas.selection = false;
-          evt.preventDefault();
-          evt.stopPropagation();
+          evt.preventDefault(); evt.stopPropagation();
         }
       });
-
       canvas.on('mouse:move', (opt) => {
         if (!isPanningRef.current || !lastPanPoint.current) return;
         const evt = opt.e as MouseEvent;
@@ -269,50 +224,31 @@ const ShirtEditor = () => {
         lastPanPoint.current = { x: evt.clientX, y: evt.clientY };
         canvas.requestRenderAll();
       });
-
       canvas.on('mouse:up', () => {
         if (isPanningRef.current) {
-          isPanningRef.current = false;
-          lastPanPoint.current = null;
-          canvas.selection = true;
+          isPanningRef.current = false; lastPanPoint.current = null; canvas.selection = true;
         }
       });
-
-      // Mouse wheel zoom centered on pointer
       canvas.on('mouse:wheel', (opt) => {
         const evt = opt.e as WheelEvent;
-        evt.preventDefault();
-        evt.stopPropagation();
-        const delta = evt.deltaY;
+        evt.preventDefault(); evt.stopPropagation();
         const pointer = canvas.getViewportPoint(evt);
-        let newZoom = canvas.getZoom() * (1 - delta / 400);
+        let newZoom = canvas.getZoom() * (1 - evt.deltaY / 400);
         newZoom = Math.max(0.3, Math.min(2.5, newZoom));
         canvas.zoomToPoint(pointer, newZoom);
-        canvas.setDimensions({
-          width: CANVAS_WIDTH * newZoom,
-          height: CANVAS_HEIGHT * newZoom,
-        });
-        if (side === 'front') setFrontZoom(newZoom);
-        else setBackZoom(newZoom);
+        canvas.setDimensions({ width: CANVAS_WIDTH * newZoom, height: CANVAS_HEIGHT * newZoom });
+        if (side === 'front') setFrontZoom(newZoom); else setBackZoom(newZoom);
       });
     };
-
     setupPan(front, 'front');
     setupPan(back, 'back');
-
     return () => {
-      front.off('mouse:down');
-      front.off('mouse:move');
-      front.off('mouse:up');
-      front.off('mouse:wheel');
-      back.off('mouse:down');
-      back.off('mouse:move');
-      back.off('mouse:up');
-      back.off('mouse:wheel');
+      front.off('mouse:down'); front.off('mouse:move'); front.off('mouse:up'); front.off('mouse:wheel');
+      back.off('mouse:down'); back.off('mouse:move'); back.off('mouse:up'); back.off('mouse:wheel');
     };
   }, [selectedTemplate]);
 
-  // Auto-scroll to active canvas when switching sides
+  // Auto-scroll to active canvas
   useEffect(() => {
     const wrapRef = activeView === 'front' ? frontWrapRef : backWrapRef;
     if (wrapRef.current && scrollContainerRef.current) {
@@ -320,41 +256,25 @@ const ShirtEditor = () => {
     }
   }, [activeView]);
 
-  // Select template
   const handleSelectTemplate = (template: Template) => {
-    // Reset refs so canvases reinitialize
-    if (frontFabricRef.current) {
-      frontFabricRef.current.dispose();
-      frontFabricRef.current = null;
-    }
-    if (backFabricRef.current) {
-      backFabricRef.current.dispose();
-      backFabricRef.current = null;
-    }
-    frontStampRef.current = null;
-    backStampRef.current = null;
-    frontClipRef.current = null;
-    backClipRef.current = null;
+    if (frontFabricRef.current) { frontFabricRef.current.dispose(); frontFabricRef.current = null; }
+    if (backFabricRef.current) { backFabricRef.current.dispose(); backFabricRef.current = null; }
+    frontStampRef.current = null; backStampRef.current = null;
+    frontClipRef.current = null; backClipRef.current = null;
     setActiveView('front');
     setSelectedTemplate(template);
   };
 
-  // Add text - optionally at a zone position (centered in zone)
+  // Add text
   const addTextAtZone = async (zone?: TemplateZone) => {
     const canvas = getActiveCanvas();
     if (!canvas || !textInput.trim()) return;
     const clipPath = getActiveClipPath();
-
-    // Ensure Google Font is loaded before creating text
     const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
-    if (fontDef?.google) {
-      await loadGoogleFont(fontFamily);
-    }
+    if (fontDef?.google) await loadGoogleFont(fontFamily);
 
     const text = new FabricText(textInput, {
-      fontSize,
-      fill: textColor,
-      fontFamily,
+      fontSize, fill: textColor, fontFamily,
       stroke: strokeWidth > 0 ? strokeColor : undefined,
       strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
       clipPath: clipPath || undefined,
@@ -368,142 +288,91 @@ const ShirtEditor = () => {
       const tw = text.width || 100;
       const th = text.height || fontSize;
       const fitScale = Math.min(zoneW / tw, zoneH / th);
-      text.set({
-        left: zoneX + (zoneW - tw * fitScale) / 2,
-        top: zoneY + (zoneH - th * fitScale) / 2,
-        scaleX: fitScale,
-        scaleY: fitScale,
-      });
+      text.set({ left: zoneX + (zoneW - tw * fitScale) / 2, top: zoneY + (zoneH - th * fitScale) / 2, scaleX: fitScale, scaleY: fitScale });
     } else {
-      text.set({
-        left: CANVAS_WIDTH / 2 - (text.width || 100) / 2,
-        top: CANVAS_HEIGHT / 2,
-      });
+      text.set({ left: CANVAS_WIDTH / 2 - (text.width || 100) / 2, top: CANVAS_HEIGHT / 2 });
     }
 
     (text as any)._userElement = true;
-    canvas.add(text);
-    canvas.setActiveObject(text);
-    canvas.renderAll();
-    setTextInput('');
-    setShowZonePicker(null);
+    canvas.add(text); canvas.setActiveObject(text); canvas.renderAll();
+    setTextInput(''); setShowZonePicker(null);
   };
 
   const handleAddTextClick = () => {
     if (!textInput.trim()) return;
     const zonesForSide = templateZones.filter(z => z.side === activeView);
-    if (zonesForSide.length > 0) {
-      setShowZonePicker('text');
-    } else {
-      addTextAtZone();
-    }
+    if (zonesForSide.length > 0) setShowZonePicker('text');
+    else addTextAtZone();
   };
 
-  // Add/replace stamp on a specific canvas
+  // Apply stamp to canvas
   const applyStampToCanvas = async (canvas: Canvas, imageUrl: string, side: 'front' | 'back') => {
     try {
       const img = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
-
-      // Find and remove the current background (index 0)
       const objects = canvas.getObjects();
       const bgObj = objects.find((o: any) => o._isBackground);
-      if (bgObj) {
-        canvas.remove(bgObj);
-      }
+      if (bgObj) canvas.remove(bgObj);
 
-      // Scale stamp to fill the canvas like the original template
       const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
       const left = (CANVAS_WIDTH - img.width! * scale) / 2;
       const top = (CANVAS_HEIGHT - img.height! * scale) / 2;
-      img.set({
-        scaleX: scale,
-        scaleY: scale,
-        left,
-        top,
-        selectable: false,
-        evented: false,
-      });
+      img.set({ scaleX: scale, scaleY: scale, left, top, selectable: false, evented: false });
       (img as any)._isBackground = true;
-
-      // Insert as the new background at index 0
       canvas.insertAt(0, img);
 
-      // Update clip path to match the new background shape
       const clipImg = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
-      clipImg.set({
-        scaleX: scale,
-        scaleY: scale,
-        left,
-        top,
-        absolutePositioned: true,
-      });
+      clipImg.set({ scaleX: scale, scaleY: scale, left, top, absolutePositioned: true });
       if (side === 'front') frontClipRef.current = clipImg;
       else backClipRef.current = clipImg;
 
-      // Re-apply new clipPath to all existing user elements
       const newClip = side === 'front' ? frontClipRef.current : backClipRef.current;
       canvas.getObjects().forEach((obj: any) => {
-        if (obj._userElement && !obj._isBackground) {
-          obj.set({ clipPath: newClip || undefined });
-        }
+        if (obj._userElement && !obj._isBackground) obj.set({ clipPath: newClip || undefined });
       });
-
       canvas.renderAll();
     } catch {
       toast.error('Erro ao carregar estampa');
     }
   };
 
-  // Add stamp — applies front image to front canvas and back image to back canvas simultaneously
   const addStamp = async (stamp: Stamp) => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
-
     const backUrl = stamp.backImageUrl || stamp.imageUrl;
-
     try {
       await Promise.all([
         applyStampToCanvas(frontCanvas, stamp.imageUrl, 'front'),
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
-      toast.success(`Estampa "${stamp.name}" aplicada na frente e costas!`);
+      toast.success(`Estampa "${stamp.name}" aplicada!`);
     } catch (err) {
       console.error('Erro ao aplicar estampa:', err);
       toast.error('Erro ao aplicar estampa');
     }
   };
 
-  // Upload custom logo - store file, then show zone picker or place directly
+  // Upload logo
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-
     const zonesForSide = templateZones.filter(z => z.side === activeView);
-    if (zonesForSide.length > 0) {
-      setPendingLogoFile(file);
-      setShowZonePicker('logo');
-    } else {
-      placeLogoFile(file);
-    }
+    if (zonesForSide.length > 0) { setPendingLogoFile(file); setShowZonePicker('logo'); }
+    else placeLogoFile(file);
   };
 
   const placeLogoFile = (file: File, zone?: TemplateZone) => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
     const clipPath = getActiveClipPath();
-
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const dataUrl = event.target!.result as string;
         const img = await FabricImage.fromURL(dataUrl);
-
         let left: number, top: number, scale: number;
-
         if (zone) {
-          // Fit logo inside the zone area
           const zoneX = (zone.xPercent / 100) * CANVAS_WIDTH;
           const zoneY = (zone.yPercent / 100) * CANVAS_HEIGHT;
           const zoneW = (zone.widthPercent / 100) * CANVAS_WIDTH;
@@ -517,28 +386,16 @@ const ShirtEditor = () => {
           left = CANVAS_WIDTH / 2 - (img.width! * scale) / 2;
           top = CANVAS_HEIGHT / 3;
         }
-
-        img.set({
-          left,
-          top,
-          scaleX: scale,
-          scaleY: scale,
-          clipPath: clipPath || undefined,
-        });
+        img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: clipPath || undefined });
         (img as any)._userElement = true;
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
-      } catch {
-        toast.error('Erro ao carregar imagem');
-      }
+        canvas.add(img); canvas.setActiveObject(img); canvas.renderAll();
+      } catch { toast.error('Erro ao carregar imagem'); }
     };
     reader.readAsDataURL(file);
-    setShowZonePicker(null);
-    setPendingLogoFile(null);
+    setShowZonePicker(null); setPendingLogoFile(null);
   };
 
-  // Live-update selected text object when style controls change
+  // Live-update text style
   useEffect(() => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
@@ -548,11 +405,8 @@ const ShirtEditor = () => {
       const applyFont = async () => {
         if (fontDef?.google) await loadGoogleFont(fontFamily);
         active.set({
-          fill: textColor,
-          stroke: strokeWidth > 0 ? strokeColor : undefined,
-          strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
-          fontSize,
-          fontFamily,
+          fill: textColor, stroke: strokeWidth > 0 ? strokeColor : undefined,
+          strokeWidth: strokeWidth > 0 ? strokeWidth : 0, fontSize, fontFamily,
         });
         canvas.renderAll();
       };
@@ -560,23 +414,17 @@ const ShirtEditor = () => {
     }
   }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, activeView]);
 
-  // Delete selected object
   const deleteSelected = () => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
     const active = canvas.getActiveObject();
     if (active && (active as any)._userElement) {
-      // If it's the stamp, clear ref
-      if ((active as any)._isStamp) {
-        getActiveStampRef().current = null;
-      }
-      canvas.remove(active);
-      canvas.discardActiveObject();
-      canvas.renderAll();
+      if ((active as any)._isStamp) getActiveStampRef().current = null;
+      canvas.remove(active); canvas.discardActiveObject(); canvas.renderAll();
     }
   };
 
-  // Export full canvas composition as transparent PNG (reset zoom for export)
+  // Export
   const exportCanvas = (canvas: Canvas): string => {
     const origBg = canvas.backgroundColor;
     const origZoom = canvas.getZoom();
@@ -585,53 +433,51 @@ const ShirtEditor = () => {
     canvas.setZoom(1);
     canvas.setDimensions({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
     canvas.backgroundColor = 'transparent';
-    canvas.discardActiveObject();
-    canvas.renderAll();
-
+    canvas.discardActiveObject(); canvas.renderAll();
     const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 4 });
-
     canvas.backgroundColor = origBg as string;
     canvas.viewportTransform = origVpt;
     canvas.setZoom(origZoom);
     canvas.setDimensions({ width: CANVAS_WIDTH * origZoom, height: CANVAS_HEIGHT * origZoom });
     canvas.renderAll();
-
     return dataUrl;
   };
 
-  // Download both canvases as separate PNGs
   const handleDownload = async () => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
-
     setDownloading(true);
     try {
       const frontDataUrl = exportCanvas(frontCanvas);
       const backDataUrl = exportCanvas(backCanvas);
-
-      // Download front
       const linkFront = document.createElement('a');
       linkFront.download = `${selectedTemplate?.name || 'camisa'}_frente.png`;
-      linkFront.href = frontDataUrl;
-      linkFront.click();
-
-      // Small delay then download back
+      linkFront.href = frontDataUrl; linkFront.click();
       await new Promise(r => setTimeout(r, 500));
       const linkBack = document.createElement('a');
       linkBack.download = `${selectedTemplate?.name || 'camisa'}_costas.png`;
-      linkBack.href = backDataUrl;
-      linkBack.click();
-
+      linkBack.href = backDataUrl; linkBack.click();
       toast.success('Downloads iniciados!');
     } catch (err) {
-      console.error(err);
-      toast.error('Erro ao gerar download');
+      console.error(err); toast.error('Erro ao gerar download');
     }
     setDownloading(false);
   };
 
-  // Template selection screen
+  // WhatsApp quote
+  const handleWhatsAppQuote = () => {
+    const templateName = selectedTemplate?.name || 'Camisa personalizada';
+    const message = encodeURIComponent(
+      `Olá! Gostaria de fazer um orçamento para:\n\n` +
+      `🎽 Modelo: ${templateName}\n` +
+      `📋 Personalização feita no editor online\n\n` +
+      `Poderia me enviar mais informações sobre valores e prazos?`
+    );
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  // ─── Template selection screen ────────────────────────────────
   if (!selectedTemplate) {
     return (
       <div className="min-h-screen bg-background">
@@ -674,130 +520,170 @@ const ShirtEditor = () => {
     );
   }
 
-  // Editor screen — both canvases side by side
+  // ─── Toolbar tab items ────────────────────────────────────────
+  const toolbarTabs: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5" /> },
+    { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5" /> },
+    { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5" /> },
+  ];
+
+  // ─── Editor screen ────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top bar */}
-      <header className="border-b border-border bg-card px-3 py-2 sm:px-4 sm:py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 sm:gap-3">
+      {/* Top header */}
+      <header className="border-b border-border bg-card px-3 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
           <span className="text-sm font-medium truncate">{selectedTemplate.name}</span>
         </div>
-        <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-2">
-          <Download className="h-4 w-4" /> {downloading ? 'Baixando...' : 'Baixar'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleWhatsAppQuote} className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5">
+            <MessageCircle className="h-4 w-4" /> Orçamento
+          </Button>
+          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-1.5">
+            <Download className="h-4 w-4" /> {downloading ? 'Baixando...' : 'Baixar'}
+          </Button>
+        </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Toolbar - compact */}
-        <aside className="lg:w-60 border-b lg:border-b-0 lg:border-r border-border bg-card p-2.5 sm:p-3 space-y-2.5 overflow-y-auto max-h-[35vh] lg:max-h-none">
-          {/* Active view selector */}
-          <div className="flex gap-1.5">
+      {/* Toolbar tabs — inspired by Jumptec */}
+      <div className="border-b border-border bg-card/80 px-2">
+        <div className="flex items-center justify-center gap-1">
+          {toolbarTabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
+              className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide transition-colors border-b-2 ${
+                activeTab === tab.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+          {/* View toggle */}
+          <div className="ml-auto flex items-center gap-1 pr-2">
             <Button
               variant={activeView === 'front' ? 'default' : 'outline'}
-              size="sm"
-              className="flex-1 h-7 text-xs"
+              size="sm" className="h-7 text-xs px-3"
               onClick={() => setActiveView('front')}
             >
               Frente
             </Button>
             <Button
               variant={activeView === 'back' ? 'default' : 'outline'}
-              size="sm"
-              className="flex-1 h-7 text-xs"
+              size="sm" className="h-7 text-xs px-3"
               onClick={() => setActiveView('back')}
             >
               Costas
             </Button>
           </div>
+        </div>
+      </div>
 
-          {/* Add text with outline */}
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Texto</p>
-            <div className="space-y-1.5">
-              <Input
-                value={textInput}
-                onChange={e => setTextInput(e.target.value)}
-                placeholder="Digite o texto..."
-                className="h-7 text-xs"
-                onKeyDown={e => e.key === 'Enter' && handleAddTextClick()}
-              />
-              <Select value={fontFamily} onValueChange={setFontFamily}>
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder="Fonte" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {FONT_OPTIONS.map(f => (
-                    <SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <label className="text-[10px] text-muted-foreground">Cor</label>
-                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="text-[10px] text-muted-foreground">Tam</label>
-                  <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-6 w-14 text-[10px]" min={10} max={72} />
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="text-[10px] text-muted-foreground">Cont</label>
-                  <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="text-[10px] text-muted-foreground">Esp</label>
-                  <Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-6 w-14 text-[10px]" min={0} max={10} />
-                </div>
-              </div>
-              <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-7 text-xs">
-                <Type className="h-3 w-3" /> Adicionar
-              </Button>
-            </div>
-          </div>
-
-          {/* Upload logo */}
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Logo / Imagem</p>
-            <label className="flex items-center gap-2 px-2.5 py-2 border border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-              <Upload className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Enviar imagem</span>
-              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
-            </label>
-          </div>
-
-          {/* Stamps catalog */}
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Estampas</p>
-            {stamps.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground">Nenhuma estampa</p>
-            ) : (
-              <div className="grid grid-cols-5 sm:grid-cols-4 lg:grid-cols-3 gap-1.5">
-                {stamps.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => addStamp(s)}
-                    className="rounded-md border border-border/50 overflow-hidden hover:border-primary/50 transition-colors bg-background"
-                    title={s.name}
-                  >
-                    <img src={s.imageUrl} alt={s.name} className="w-full aspect-square object-contain p-0.5" />
-                  </button>
-                ))}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Sidebar panel — shown based on active tab */}
+        {activeTab && (
+          <aside className="lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-card p-3 overflow-y-auto max-h-[35vh] lg:max-h-none">
+            {/* Stamps tab */}
+            {activeTab === 'stamps' && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
+                {stamps.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {stamps.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => addStamp(s)}
+                        className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background"
+                        title={s.name}
+                      >
+                        <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1" />
+                        <p className="text-[9px] text-center text-muted-foreground pb-1 truncate px-1 group-hover:text-primary transition-colors">{s.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
 
-          {/* Delete selected */}
-          <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-7 text-xs">
-            <Trash2 className="h-3 w-3" /> Remover selecionado
-          </Button>
-        </aside>
+            {/* Text tab */}
+            {activeTab === 'text' && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar texto</p>
+                <Input
+                  value={textInput}
+                  onChange={e => setTextInput(e.target.value)}
+                  placeholder="Digite o texto..."
+                  className="h-8 text-sm"
+                  onKeyDown={e => e.key === 'Enter' && handleAddTextClick()}
+                />
+                <Select value={fontFamily} onValueChange={setFontFamily}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Fonte" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {FONT_OPTIONS.map(f => (
+                      <SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>
+                        {f.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label>
+                    <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Tamanho</label>
+                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={10} max={72} />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label>
+                    <input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[10px] text-muted-foreground whitespace-nowrap">Espessura</label>
+                    <Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} />
+                  </div>
+                </div>
+                <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8">
+                  <Type className="h-3.5 w-3.5" /> Adicionar Texto
+                </Button>
+              </div>
+            )}
 
-        {/* Both canvases with native Fabric zoom */}
+            {/* Logo tab */}
+            {activeTab === 'logo' && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
+                <label className="flex flex-col items-center gap-2 px-4 py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Clique para enviar</span>
+                  <span className="text-[10px] text-muted-foreground/60">PNG, JPG, SVG ou WebP</span>
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                </label>
+                <p className="text-[10px] text-muted-foreground text-center">A imagem será aplicada no lado <strong>{activeView === 'front' ? 'Frente' : 'Costas'}</strong></p>
+              </div>
+            )}
+
+            {/* Delete button — always visible */}
+            <div className="mt-4 pt-3 border-t border-border/30">
+              <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs">
+                <Trash2 className="h-3.5 w-3.5" /> Remover selecionado
+              </Button>
+            </div>
+          </aside>
+        )}
+
+        {/* Canvas area */}
         <div className="flex-1 flex flex-col overflow-hidden bg-muted/30">
           {/* Zoom controls */}
           <div className="flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
@@ -808,9 +694,7 @@ const ShirtEditor = () => {
             <Slider
               value={[activeZoom * 100]}
               onValueChange={([v]) => setActiveZoom(v / 100)}
-              min={30}
-              max={250}
-              step={5}
+              min={30} max={250} step={5}
               className="w-36 sm:w-52"
             />
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}>
@@ -820,12 +704,7 @@ const ShirtEditor = () => {
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
               setActiveZoom(1);
               const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
-              if (canvas) {
-                const vpt = canvas.viewportTransform!;
-                vpt[4] = 0;
-                vpt[5] = 0;
-                canvas.requestRenderAll();
-              }
+              if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); }
             }} title="Resetar zoom">
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
@@ -879,11 +758,8 @@ const ShirtEditor = () => {
                     variant="outline"
                     className="w-full justify-start gap-2"
                     onClick={() => {
-                      if (showZonePicker === 'text') {
-                        addTextAtZone(zone);
-                      } else if (pendingLogoFile) {
-                        placeLogoFile(pendingLogoFile, zone);
-                      }
+                      if (showZonePicker === 'text') addTextAtZone(zone);
+                      else if (pendingLogoFile) placeLogoFile(pendingLogoFile, zone);
                     }}
                   >
                     <MapPin className="h-3.5 w-3.5" />
@@ -892,25 +768,13 @@ const ShirtEditor = () => {
                 ))}
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  if (showZonePicker === 'text') {
-                    addTextAtZone();
-                  } else if (pendingLogoFile) {
-                    placeLogoFile(pendingLogoFile);
-                  }
-                }}
-              >
+              <Button variant="ghost" size="sm" className="flex-1" onClick={() => {
+                if (showZonePicker === 'text') addTextAtZone();
+                else if (pendingLogoFile) placeLogoFile(pendingLogoFile);
+              }}>
                 Posição livre
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setShowZonePicker(null); setPendingLogoFile(null); }}
-              >
+              <Button variant="ghost" size="sm" onClick={() => { setShowZonePicker(null); setPendingLogoFile(null); }}>
                 Cancelar
               </Button>
             </div>
