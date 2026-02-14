@@ -380,20 +380,24 @@ const ShirtEditor = () => {
     }
   };
 
-  // Add stamp — applies front image to front canvas and back image to back canvas
+  // Add stamp — applies front image to front canvas and back image to back canvas simultaneously
   const addStamp = async (stamp: Stamp) => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
 
-    // Apply front
-    await applyStampToCanvas(frontCanvas, stamp.imageUrl, 'front');
-
-    // Apply back (use backImageUrl if available, otherwise use same imageUrl)
     const backUrl = stamp.backImageUrl || stamp.imageUrl;
-    await applyStampToCanvas(backCanvas, backUrl, 'back');
 
-    toast.success(`Estampa "${stamp.name}" aplicada na frente e costas!`);
+    try {
+      await Promise.all([
+        applyStampToCanvas(frontCanvas, stamp.imageUrl, 'front'),
+        applyStampToCanvas(backCanvas, backUrl, 'back'),
+      ]);
+      toast.success(`Estampa "${stamp.name}" aplicada na frente e costas!`);
+    } catch (err) {
+      console.error('Erro ao aplicar estampa:', err);
+      toast.error('Erro ao aplicar estampa');
+    }
   };
 
   // Upload custom logo - store file, then show zone picker or place directly
