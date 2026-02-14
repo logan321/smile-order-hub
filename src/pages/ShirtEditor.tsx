@@ -46,6 +46,8 @@ const ShirtEditor = () => {
   // Track current stamp per canvas for replacement
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
+  const frontClipRef = useRef<FabricImage | null>(null);
+  const backClipRef = useRef<FabricImage | null>(null);
 
   const getActiveCanvas = useCallback(() => {
     return activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
@@ -53,6 +55,10 @@ const ShirtEditor = () => {
 
   const getActiveStampRef = useCallback(() => {
     return activeView === 'front' ? frontStampRef : backStampRef;
+  }, [activeView]);
+
+  const getActiveClipPath = useCallback(() => {
+    return activeView === 'front' ? frontClipRef.current : backClipRef.current;
   }, [activeView]);
 
   // Fetch templates and stamps
@@ -84,20 +90,35 @@ const ShirtEditor = () => {
   }, []);
 
   // Load background image onto a canvas
-  const loadBackground = useCallback(async (canvas: Canvas, imageUrl: string) => {
+  const loadBackground = useCallback(async (canvas: Canvas, imageUrl: string, side: 'front' | 'back') => {
     try {
       const img = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
       const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
+      const left = (CANVAS_WIDTH - img.width! * scale) / 2;
+      const top = (CANVAS_HEIGHT - img.height! * scale) / 2;
       img.set({
         scaleX: scale,
         scaleY: scale,
-        left: (CANVAS_WIDTH - img.width! * scale) / 2,
-        top: (CANVAS_HEIGHT - img.height! * scale) / 2,
+        left,
+        top,
         selectable: false,
         evented: false,
       });
       (img as any)._isBackground = true;
       canvas.insertAt(0, img);
+
+      // Create clip path from template silhouette (PowerClip effect)
+      const clipImg = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
+      clipImg.set({
+        scaleX: scale,
+        scaleY: scale,
+        left,
+        top,
+        absolutePositioned: true,
+      });
+      if (side === 'front') frontClipRef.current = clipImg;
+      else backClipRef.current = clipImg;
+
       canvas.renderAll();
     } catch (e) {
       console.error('Failed to load background:', e);
@@ -126,8 +147,8 @@ const ShirtEditor = () => {
     });
     backFabricRef.current = backCanvas;
 
-    loadBackground(frontCanvas, selectedTemplate.frontImageUrl);
-    loadBackground(backCanvas, selectedTemplate.backImageUrl);
+    loadBackground(frontCanvas, selectedTemplate.frontImageUrl, 'front');
+    loadBackground(backCanvas, selectedTemplate.backImageUrl, 'back');
 
     return () => {
       frontCanvas.dispose();
@@ -136,6 +157,8 @@ const ShirtEditor = () => {
       backFabricRef.current = null;
       frontStampRef.current = null;
       backStampRef.current = null;
+      frontClipRef.current = null;
+      backClipRef.current = null;
     };
   }, [selectedTemplate, loadBackground]);
 
@@ -152,6 +175,8 @@ const ShirtEditor = () => {
     }
     frontStampRef.current = null;
     backStampRef.current = null;
+    frontClipRef.current = null;
+    backClipRef.current = null;
     setActiveView('front');
     setSelectedTemplate(template);
   };
@@ -160,6 +185,7 @@ const ShirtEditor = () => {
   const addText = () => {
     const canvas = getActiveCanvas();
     if (!canvas || !textInput.trim()) return;
+    const clipPath = getActiveClipPath();
 
     const text = new FabricText(textInput, {
       left: CANVAS_WIDTH / 2 - 50,
@@ -169,6 +195,7 @@ const ShirtEditor = () => {
       fontFamily: 'Arial',
       stroke: strokeWidth > 0 ? strokeColor : undefined,
       strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+      clipPath: clipPath || undefined,
     });
     (text as any)._userElement = true;
     canvas.add(text);
@@ -184,19 +211,17 @@ const ShirtEditor = () => {
 
     const stampRef = getActiveStampRef();
     const oldStamp = stampRef.current;
+    const clipPath = getActiveClipPath();
 
     try {
       const img = await FabricImage.fromURL(stamp.imageUrl, { crossOrigin: 'anonymous' });
 
       if (oldStamp) {
-        // Replace: use old stamp's position and scale
         const oldLeft = oldStamp.left!;
         const oldTop = oldStamp.top!;
         const oldScaleX = oldStamp.scaleX!;
         const oldScaleY = oldStamp.scaleY!;
         const oldAngle = oldStamp.angle || 0;
-
-        // Calculate scale to fit into the same bounding box
         const oldBoundingWidth = oldStamp.width! * oldScaleX;
         const oldBoundingHeight = oldStamp.height! * oldScaleY;
         const newScaleX = oldBoundingWidth / img.width!;
@@ -209,23 +234,27 @@ const ShirtEditor = () => {
           scaleX: uniformScale,
           scaleY: uniformScale,
           angle: oldAngle,
+          globalCompositeOperation: 'multiply',
+          clipPath: clipPath || undefined,
         });
 
         canvas.remove(oldStamp);
       } else {
-        // First stamp: fill the canvas area like the template
         const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
         img.set({
           left: (CANVAS_WIDTH - img.width! * scale) / 2,
           top: (CANVAS_HEIGHT - img.height! * scale) / 2,
           scaleX: scale,
           scaleY: scale,
+          globalCompositeOperation: 'multiply',
+          clipPath: clipPath || undefined,
         });
       }
 
       (img as any)._userElement = true;
       (img as any)._isStamp = true;
-      canvas.add(img);
+      // Insert right after background for correct layer order
+      canvas.insertAt(1, img);
       canvas.setActiveObject(img);
       canvas.renderAll();
       stampRef.current = img;
@@ -240,6 +269,7 @@ const ShirtEditor = () => {
     if (!file) return;
     const canvas = getActiveCanvas();
     if (!canvas) return;
+    const clipPath = getActiveClipPath();
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -253,6 +283,7 @@ const ShirtEditor = () => {
           top: CANVAS_HEIGHT / 3,
           scaleX: scale,
           scaleY: scale,
+          clipPath: clipPath || undefined,
         });
         (img as any)._userElement = true;
         canvas.add(img);
@@ -282,22 +313,15 @@ const ShirtEditor = () => {
     }
   };
 
-  // Export canvas as PNG without background (transparent)
-  const exportCanvasTransparent = (canvas: Canvas): string => {
-    // Temporarily hide background image and set transparent bg
-    const objects = canvas.getObjects();
-    const bgObj = objects.find((o: any) => o._isBackground);
+  // Export full canvas composition as transparent PNG
+  const exportCanvas = (canvas: Canvas): string => {
     const origBg = canvas.backgroundColor;
-
-    if (bgObj) bgObj.set('visible', false);
     canvas.backgroundColor = 'transparent';
     canvas.discardActiveObject();
     canvas.renderAll();
 
     const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 2 });
 
-    // Restore
-    if (bgObj) bgObj.set('visible', true);
     canvas.backgroundColor = origBg as string;
     canvas.renderAll();
 
@@ -312,8 +336,8 @@ const ShirtEditor = () => {
 
     setDownloading(true);
     try {
-      const frontDataUrl = exportCanvasTransparent(frontCanvas);
-      const backDataUrl = exportCanvasTransparent(backCanvas);
+      const frontDataUrl = exportCanvas(frontCanvas);
+      const backDataUrl = exportCanvas(backCanvas);
 
       // Download front
       const linkFront = document.createElement('a');
