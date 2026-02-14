@@ -262,9 +262,7 @@ const ShirtEditor = () => {
         const oldAngle = oldStamp.angle || 0;
         const oldBoundingWidth = oldStamp.width! * oldScaleX;
         const oldBoundingHeight = oldStamp.height! * oldScaleY;
-        const newScaleX = oldBoundingWidth / img.width!;
-        const newScaleY = oldBoundingHeight / img.height!;
-        const uniformScale = Math.min(newScaleX, newScaleY);
+        const uniformScale = Math.min(oldBoundingWidth / img.width!, oldBoundingHeight / img.height!);
 
         img.set({
           left: oldLeft,
@@ -272,11 +270,13 @@ const ShirtEditor = () => {
           scaleX: uniformScale,
           scaleY: uniformScale,
           angle: oldAngle,
-          globalCompositeOperation: 'multiply',
           clipPath: clipPath || undefined,
         });
 
+        // Find old stamp index to insert new one at same position
+        const oldIndex = canvas.getObjects().indexOf(oldStamp);
         canvas.remove(oldStamp);
+        canvas.insertAt(Math.max(1, oldIndex), img);
       } else {
         const scale = Math.min(CANVAS_WIDTH / img.width!, CANVAS_HEIGHT / img.height!);
         img.set({
@@ -284,15 +284,15 @@ const ShirtEditor = () => {
           top: (CANVAS_HEIGHT - img.height! * scale) / 2,
           scaleX: scale,
           scaleY: scale,
-          globalCompositeOperation: 'multiply',
           clipPath: clipPath || undefined,
         });
+        // Insert right after background, before any user elements
+        canvas.insertAt(1, img);
       }
 
       (img as any)._userElement = true;
       (img as any)._isStamp = true;
-      // Insert right after background for correct layer order
-      canvas.insertAt(1, img);
+      img.set({ selectable: true, evented: true });
       canvas.setActiveObject(img);
       canvas.renderAll();
       stampRef.current = img;
