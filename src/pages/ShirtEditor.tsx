@@ -300,7 +300,7 @@ const ShirtEditor = () => {
 
   const handleAddTextClick = () => {
     if (!textInput.trim()) return;
-    const zonesForSide = templateZones.filter(z => z.side === activeView);
+    const zonesForSide = templateZones.filter(z => z.side === activeView || z.shared);
     if (zonesForSide.length > 0) setShowZonePicker('text');
     else addTextAtZone();
   };
@@ -357,7 +357,7 @@ const ShirtEditor = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    const zonesForSide = templateZones.filter(z => z.side === activeView);
+    const zonesForSide = templateZones.filter(z => z.side === activeView || z.shared);
     if (zonesForSide.length > 0) { setPendingLogoFile(file); setShowZonePicker('logo'); }
     else placeLogoFile(file);
   };
@@ -751,7 +751,7 @@ const ShirtEditor = () => {
             </p>
             <div className="space-y-2 mb-4">
               {templateZones
-                .filter(z => z.side === activeView)
+                .filter(z => z.side === activeView || z.shared)
                 .map(zone => (
                   <Button
                     key={zone.id}

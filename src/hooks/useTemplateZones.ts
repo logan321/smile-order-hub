@@ -10,6 +10,7 @@ export interface TemplateZone {
   yPercent: number;
   widthPercent: number;
   heightPercent: number;
+  shared: boolean;
 }
 
 export function useTemplateZones(templateId?: string) {
@@ -34,6 +35,7 @@ export function useTemplateZones(templateId?: string) {
       yPercent: Number(z.y_percent),
       widthPercent: Number(z.width_percent),
       heightPercent: Number(z.height_percent),
+      shared: Boolean(z.shared),
     })) ?? []);
     setLoading(false);
   }, [templateId]);
@@ -57,13 +59,14 @@ export function useTemplateZones(templateId?: string) {
     await fetchZones();
   }, [templateId, fetchZones]);
 
-  const updateZone = useCallback(async (id: string, updates: Partial<Pick<TemplateZone, 'name' | 'xPercent' | 'yPercent' | 'widthPercent' | 'heightPercent'>>) => {
+  const updateZone = useCallback(async (id: string, updates: Partial<Pick<TemplateZone, 'name' | 'xPercent' | 'yPercent' | 'widthPercent' | 'heightPercent' | 'shared'>>) => {
     const mapped: Record<string, any> = {};
     if (updates.name !== undefined) mapped.name = updates.name;
     if (updates.xPercent !== undefined) mapped.x_percent = updates.xPercent;
     if (updates.yPercent !== undefined) mapped.y_percent = updates.yPercent;
     if (updates.widthPercent !== undefined) mapped.width_percent = updates.widthPercent;
     if (updates.heightPercent !== undefined) mapped.height_percent = updates.heightPercent;
+    if (updates.shared !== undefined) mapped.shared = updates.shared;
 
     await supabase.from('template_zones').update(mapped).eq('id', id);
     await fetchZones();

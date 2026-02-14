@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Move, X } from 'lucide-react';
+import { Plus, Trash2, Move, X, Link } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ZoneEditorProps {
@@ -48,7 +48,8 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
   const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<TemplateZone>>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const filteredZones = zones.filter(z => z.side === activeSide);
+  // Show zones for active side + shared zones from the other side
+  const filteredZones = zones.filter(z => z.side === activeSide || z.shared);
   const imageUrl = activeSide === 'front' ? frontImageUrl : backImageUrl;
 
   // Merge DB zones with local drag overrides
@@ -325,10 +326,22 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                             onChange={e => updateZone(zone.id, { name: e.target.value })}
                             className="h-7 text-xs flex-1"
                           />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-6 w-6 ${zone.shared ? 'text-primary' : 'text-muted-foreground'}`}
+                            title={zone.shared ? 'Compartilhada (frente e costas)' : 'Clique para compartilhar com ambos os lados'}
+                            onClick={() => updateZone(zone.id, { shared: !zone.shared })}
+                          >
+                            <Link className="h-3 w-3" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteZone(zone.id)}>
                             <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
                         </div>
+                        {zone.shared && (
+                          <p className="text-[10px] text-primary font-medium">🔗 Compartilhada frente/costas</p>
+                        )}
 
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
