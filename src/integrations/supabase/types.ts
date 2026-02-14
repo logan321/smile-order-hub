@@ -425,6 +425,53 @@ export type Database = {
         }
         Relationships: []
       }
+      template_zones: {
+        Row: {
+          created_at: string
+          height_percent: number
+          id: string
+          name: string
+          side: string
+          template_id: string
+          user_id: string
+          width_percent: number
+          x_percent: number
+          y_percent: number
+        }
+        Insert: {
+          created_at?: string
+          height_percent?: number
+          id?: string
+          name: string
+          side?: string
+          template_id: string
+          user_id: string
+          width_percent?: number
+          x_percent?: number
+          y_percent?: number
+        }
+        Update: {
+          created_at?: string
+          height_percent?: number
+          id?: string
+          name?: string
+          side?: string
+          template_id?: string
+          user_id?: string
+          width_percent?: number
+          x_percent?: number
+          y_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_zones_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shirt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
