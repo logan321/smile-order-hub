@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Canvas, FabricText, FabricImage, Point, Polygon } from 'fabric';
+import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, Path } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle, Fish } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle, Fish, WrapText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
@@ -92,6 +93,7 @@ const ShirtEditor = () => {
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Arial');
+  const [textCurve, setTextCurve] = useState(0); // -100 to 100, 0 = flat
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
   const [pendingPatch, setPendingPatch] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string } | null>(null);
@@ -331,16 +333,53 @@ const ShirtEditor = () => {
   };
 
   // Helper to add a text object to a specific canvas+side with zone coords
+  // Build an arc path for curved text
+  const buildArcPath = (curve: number, textWidth: number): Path | undefined => {
+    if (curve === 0) return undefined;
+    // Map curve (-100..100) to radius. Smaller abs = larger radius = less curve
+    const absCurve = Math.abs(curve);
+    const radius = Math.max(80, 1200 - absCurve * 10);
+    const arcWidth = Math.max(textWidth * 1.2, 200);
+    const halfW = arcWidth / 2;
+    // sweep: 1 = arc up (positive curve), 0 = arc down (negative curve)
+    const sweep = curve > 0 ? 1 : 0;
+    const pathStr = `M -${halfW},0 A ${radius},${radius} 0 0 ${sweep} ${halfW},0`;
+    return new Path(pathStr, { visible: false, fill: undefined, stroke: undefined });
+  };
+
   const addTextToCanvas = async (canvas: Canvas, side: 'front' | 'back', zone?: TemplateZone) => {
     const clipPath = side === 'front' ? frontClipRef.current : backClipRef.current;
     const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
     if (fontDef?.google) await loadGoogleFont(fontFamily);
 
-    const text = new FabricText(textInput, {
-      fontSize, fill: textColor, fontFamily,
-      stroke: strokeWidth > 0 ? strokeColor : undefined,
-      strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
-    });
+    const isMultiline = textInput.includes('\n');
+    const isCurved = textCurve !== 0;
+
+    // Use Textbox for multiline, FabricText for single line / curved
+    let text: FabricText | Textbox;
+    if (isMultiline && !isCurved) {
+      text = new Textbox(textInput, {
+        fontSize, fill: textColor, fontFamily,
+        stroke: strokeWidth > 0 ? strokeColor : undefined,
+        strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+        width: 300,
+        textAlign: 'center',
+      });
+    } else {
+      text = new FabricText(textInput.replace(/\n/g, ' '), {
+        fontSize, fill: textColor, fontFamily,
+        stroke: strokeWidth > 0 ? strokeColor : undefined,
+        strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+      });
+    }
+
+    // Apply arc path if curved
+    if (isCurved) {
+      const arcPath = buildArcPath(textCurve, text.width || 200);
+      if (arcPath) {
+        (text as any).set({ path: arcPath });
+      }
+    }
 
     let zoneClipData: any = null;
     if (zone) {
@@ -353,7 +392,6 @@ const ShirtEditor = () => {
       const th = text.height || fontSize;
       const fitScale = Math.min(zoneW / tw, zoneH / th);
 
-      // Use polygon clip if available, otherwise template silhouette
       let textClip: any = clipPath || undefined;
       if (coords.pathData && coords.pathData.length >= 3) {
         const polyPoints = coords.pathData.map((p: { x: number; y: number }) => ({
@@ -377,6 +415,7 @@ const ShirtEditor = () => {
     }
 
     (text as any)._userElement = true;
+    (text as any)._curveValue = textCurve;
     if (zoneClipData) (text as any)._zoneClipData = zoneClipData;
     canvas.add(text);
     return text;
@@ -724,7 +763,7 @@ const ShirtEditor = () => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
     const active = canvas.getActiveObject();
-    if (active && active instanceof FabricText && (active as any)._userElement) {
+    if (active && (active instanceof FabricText || active instanceof Textbox) && (active as any)._userElement) {
       const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
       const applyFont = async () => {
         if (fontDef?.google) await loadGoogleFont(fontFamily);
@@ -947,7 +986,7 @@ const ShirtEditor = () => {
               {activeTab === 'text' && (
                 <div className="space-y-2 lg:space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase hidden lg:block">Adicionar texto</p>
-                  <Input value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto..." className="h-8 text-sm" onKeyDown={e => e.key === 'Enter' && handleAddTextClick()} />
+                  <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto... (Enter para quebrar linha)" className="min-h-[60px] text-sm resize-none" rows={2} />
                   <div className="flex gap-2">
                     <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
                     <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-14 lg:w-16 text-xs" min={10} max={72} />
@@ -956,6 +995,17 @@ const ShirtEditor = () => {
                     <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
                     <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
                     <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 lg:w-16 text-xs" min={0} max={10} /></div>
+                  </div>
+                  {/* Curve slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-muted-foreground flex items-center gap-1"><WrapText className="h-3 w-3" /> Curva do texto</label>
+                      <span className="text-[10px] font-medium text-muted-foreground">{textCurve === 0 ? 'Reto' : textCurve > 0 ? `Arco ↑ ${textCurve}` : `Arco ↓ ${Math.abs(textCurve)}`}</span>
+                    </div>
+                    <Slider value={[textCurve]} onValueChange={([v]) => setTextCurve(v)} min={-100} max={100} step={5} className="w-full" />
+                    {textCurve !== 0 && (
+                      <button onClick={() => setTextCurve(0)} className="text-[9px] text-primary hover:underline">Resetar para reto</button>
+                    )}
                   </div>
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                 </div>
