@@ -150,6 +150,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          blocked: boolean
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
@@ -163,6 +164,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          blocked?: boolean
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -176,6 +178,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          blocked?: boolean
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null

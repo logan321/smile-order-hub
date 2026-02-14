@@ -37,25 +37,28 @@ const SubscriptionPage = ({ status, trialEndsAt }: SubscriptionPageProps) => {
   const isExpiredTrial = status === 'trialing' && trialEndsAt && new Date(trialEndsAt) <= new Date();
   const isCanceled = status === 'canceled';
   const isPastDue = status === 'past_due';
+  const isBlocked = status === 'blocked';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
-            {isPastDue ? <AlertTriangle className="h-6 w-6 text-destructive" /> : <Clock className="h-6 w-6 text-warning" />}
+            {isPastDue || isBlocked ? <AlertTriangle className="h-6 w-6 text-destructive" /> : <Clock className="h-6 w-6 text-warning" />}
           </div>
           <CardTitle className="text-xl">
-            {isExpiredTrial && 'Seu período de teste expirou'}
-            {isCanceled && 'Sua assinatura foi cancelada'}
-            {isPastDue && 'Pagamento pendente'}
-            {!isExpiredTrial && !isCanceled && !isPastDue && 'Assine para continuar'}
+            {isBlocked && 'Seu acesso foi bloqueado'}
+            {isExpiredTrial && !isBlocked && 'Seu período de teste expirou'}
+            {isCanceled && !isBlocked && 'Sua assinatura foi cancelada'}
+            {isPastDue && !isBlocked && 'Pagamento pendente'}
+            {!isExpiredTrial && !isCanceled && !isPastDue && !isBlocked && 'Assine para continuar'}
           </CardTitle>
           <CardDescription>
-            {isExpiredTrial && 'Assine um plano para continuar usando a plataforma.'}
-            {isCanceled && 'Renove sua assinatura para recuperar o acesso.'}
-            {isPastDue && 'Atualize seu método de pagamento para manter o acesso.'}
-            {!isExpiredTrial && !isCanceled && !isPastDue && 'Escolha um plano mensal para acessar todas as funcionalidades.'}
+            {isBlocked && 'Entre em contato com o administrador para reativar seu acesso.'}
+            {isExpiredTrial && !isBlocked && 'Assine um plano para continuar usando a plataforma.'}
+            {isCanceled && !isBlocked && 'Renove sua assinatura para recuperar o acesso.'}
+            {isPastDue && !isBlocked && 'Atualize seu método de pagamento para manter o acesso.'}
+            {!isExpiredTrial && !isCanceled && !isPastDue && !isBlocked && 'Escolha um plano mensal para acessar todas as funcionalidades.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -75,10 +78,12 @@ const SubscriptionPage = ({ status, trialEndsAt }: SubscriptionPageProps) => {
             </ul>
           </div>
 
-          <Button onClick={handleSubscribe} className="w-full" size="lg" disabled={loading}>
-            <CreditCard className="h-4 w-4 mr-2" />
-            {loading ? 'Redirecionando...' : 'Assinar agora'}
-          </Button>
+          {!isBlocked && (
+            <Button onClick={handleSubscribe} className="w-full" size="lg" disabled={loading}>
+              <CreditCard className="h-4 w-4 mr-2" />
+              {loading ? 'Redirecionando...' : 'Assinar agora'}
+            </Button>
+          )}
 
           <p className="text-xs text-center text-muted-foreground">
             Pagamento seguro via Stripe. Cancele a qualquer momento.
