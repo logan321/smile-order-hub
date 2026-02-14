@@ -38,7 +38,8 @@ export function usePatchCatalog() {
 
     const userId = session.user.id;
     const ts = Date.now();
-    const path = `${userId}/${ts}_${file.name}`;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${userId}/${ts}_${safeName}`;
 
     const { error: uploadErr } = await supabase.storage.from('patch-catalog').upload(path, file);
     if (uploadErr) throw uploadErr;
