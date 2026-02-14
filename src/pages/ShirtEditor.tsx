@@ -347,13 +347,18 @@ const ShirtEditor = () => {
 
   // Apply curve to an existing text object in real-time, preserving position
   const applyCurveToObject = (obj: FabricText, curve: number, canvas: Canvas) => {
-    // Save center position before changing path
-    const center = obj.getCenterPoint();
+    // Save exact left/top and origin before changing path
+    const origLeft = obj.left!;
+    const origTop = obj.top!;
+    const origOriginX = obj.originX;
+    const origOriginY = obj.originY;
+    
     const arcPath = buildArcPath(curve, obj.width || 200);
     (obj as any).set({ path: arcPath || undefined });
     (obj as any)._curveValue = curve;
-    // Restore center position after path change
-    obj.setPositionByOrigin(center, 'center', 'center');
+    
+    // Force recalculation then restore exact position
+    obj.set({ left: origLeft, top: origTop, originX: origOriginX, originY: origOriginY });
     obj.setCoords();
     canvas.requestRenderAll();
   };
