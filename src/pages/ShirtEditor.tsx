@@ -364,6 +364,22 @@ const ShirtEditor = () => {
     setPendingLogoFile(null);
   };
 
+  // Live-update selected text object when style controls change
+  useEffect(() => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (active && active instanceof FabricText && (active as any)._userElement) {
+      active.set({
+        fill: textColor,
+        stroke: strokeWidth > 0 ? strokeColor : undefined,
+        strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+        fontSize,
+      });
+      canvas.renderAll();
+    }
+  }, [textColor, strokeColor, strokeWidth, fontSize, activeView]);
+
   // Delete selected object
   const deleteSelected = () => {
     const canvas = getActiveCanvas();
