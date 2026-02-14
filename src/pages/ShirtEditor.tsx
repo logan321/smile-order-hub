@@ -345,12 +345,15 @@ const ShirtEditor = () => {
     return new Path(pathStr, { visible: false, fill: '', stroke: '' });
   };
 
-  // Apply curve to an existing text object in real-time
+  // Apply curve to an existing text object in real-time, preserving position
   const applyCurveToObject = (obj: FabricText, curve: number, canvas: Canvas) => {
+    // Save center position before changing path
+    const center = obj.getCenterPoint();
     const arcPath = buildArcPath(curve, obj.width || 200);
     (obj as any).set({ path: arcPath || undefined });
     (obj as any)._curveValue = curve;
-    // Fix selectability: recalculate bounding box
+    // Restore center position after path change
+    obj.setPositionByOrigin(center, 'center', 'center');
     obj.setCoords();
     canvas.requestRenderAll();
   };
