@@ -276,6 +276,110 @@ export type Database = {
         }
         Relationships: []
       }
+      shirt_designs: {
+        Row: {
+          back_preview_url: string | null
+          client_name: string
+          client_phone: string
+          created_at: string
+          design_data: Json
+          front_preview_url: string | null
+          id: string
+          owner_user_id: string
+          template_id: string
+        }
+        Insert: {
+          back_preview_url?: string | null
+          client_name: string
+          client_phone?: string
+          created_at?: string
+          design_data?: Json
+          front_preview_url?: string | null
+          id?: string
+          owner_user_id: string
+          template_id: string
+        }
+        Update: {
+          back_preview_url?: string | null
+          client_name?: string
+          client_phone?: string
+          created_at?: string
+          design_data?: Json
+          front_preview_url?: string | null
+          id?: string
+          owner_user_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shirt_designs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shirt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shirt_templates: {
+        Row: {
+          active: boolean
+          back_image_url: string
+          created_at: string
+          front_image_url: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          back_image_url: string
+          created_at?: string
+          front_image_url: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          back_image_url?: string
+          created_at?: string
+          front_image_url?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stamp_catalog: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          id: string
+          image_url: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          image_url: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           blocked: boolean
