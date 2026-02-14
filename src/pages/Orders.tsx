@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Order } from '@/types';
-import { Plus, Pencil, Trash2, ShoppingCart, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, ShoppingCart, Search, X, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,7 +15,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-interface OrderFormData { clientId: string; service: string; price: number; date: string; }
+interface OrderFormData { clientId: string; service: string; price: number; date: string; paid: boolean; }
 
 const OrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit: (data: OrderFormData) => void; onCancel: () => void }) => {
   const { clients } = useApp();
@@ -30,7 +30,7 @@ const OrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit:
     if (!service.trim()) { toast.error('Descreva o serviço'); return; }
     if (!price || parseFloat(price) <= 0) { toast.error('Insira um preço válido'); return; }
     if (!date) { toast.error('Selecione a data'); return; }
-    onSubmit({ clientId, service: service.trim(), price: parseFloat(price), date: date.toISOString() });
+    onSubmit({ clientId, service: service.trim(), price: parseFloat(price), date: date.toISOString(), paid: false });
   };
 
   return (
@@ -76,7 +76,7 @@ const OrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit:
 };
 
 const Orders = () => {
-  const { clients, orders, addOrder, updateOrder, deleteOrder } = useApp();
+  const { clients, orders, addOrder, updateOrder, deleteOrder, toggleOrderPaid } = useApp();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
@@ -144,18 +144,22 @@ const Orders = () => {
           {filtered.map(order => {
             const client = clients.find(c => c.id === order.clientId);
             return (
-              <div key={order.id} className="bg-card rounded-xl border border-border/50 p-4 hover:shadow-sm transition-all">
+              <div key={order.id} className={cn("bg-card rounded-xl border border-border/50 p-4 hover:shadow-sm transition-all", order.paid && "opacity-60")}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{client?.name ?? 'Cliente removido'}</span>
+                      <span className={cn("font-medium", order.paid && "line-through")}>{client?.name ?? 'Cliente removido'}</span>
                       <span className="text-xs text-muted-foreground">•</span>
                       <span className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                      {order.paid && <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">Pago</span>}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{order.service}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <span className="font-semibold text-success whitespace-nowrap">R$ {order.price.toFixed(2)}</span>
+                    <span className={cn("font-semibold whitespace-nowrap", order.paid ? "text-muted-foreground line-through" : "text-success")}>R$ {order.price.toFixed(2)}</span>
+                    <Button variant="ghost" size="icon" onClick={() => toggleOrderPaid(order.id)} title={order.paid ? 'Marcar como pendente' : 'Marcar como pago'}>
+                      {order.paid ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Circle className="h-4 w-4" />}
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => setEditingOrder(order)}>
                       <Pencil className="h-4 w-4" />
                     </Button>

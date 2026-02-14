@@ -9,6 +9,7 @@ interface AppContextType {
   deleteClient: (id: string) => void;
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   updateOrder: (id: string, order: Omit<Order, 'id' | 'createdAt'>) => void;
+  toggleOrderPaid: (id: string) => void;
   deleteOrder: (id: string) => void;
   getClientOrders: (clientId: string) => Order[];
   getClientTotal: (clientId: string) => number;
@@ -57,6 +58,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setOrders(prev => prev.filter(o => o.id !== id));
   }, []);
 
+  const toggleOrderPaid = useCallback((id: string) => {
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, paid: !o.paid } : o));
+  }, []);
+
   const getClientOrders = useCallback((clientId: string) => {
     return orders.filter(o => o.clientId === clientId);
   }, [orders]);
@@ -66,7 +71,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [orders]);
 
   return (
-    <AppContext.Provider value={{ clients, orders, addClient, updateClient, deleteClient, addOrder, updateOrder, deleteOrder, getClientOrders, getClientTotal }}>
+    <AppContext.Provider value={{ clients, orders, addClient, updateClient, deleteClient, addOrder, updateOrder, deleteOrder, toggleOrderPaid, getClientOrders, getClientTotal }}>
       {children}
     </AppContext.Provider>
   );
