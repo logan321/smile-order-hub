@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
+import logo from '@/assets/logo.png';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
@@ -35,10 +36,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen flex">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-60 bg-sidebar border-r border-sidebar-border shrink-0">
-        <div className="p-5">
-          <h1 className="text-lg font-bold font-display text-sidebar-foreground tracking-tight">
-            <span className="text-sidebar-primary">●</span> GestãoPro
-          </h1>
+        <div className="p-5 flex items-center gap-2">
+          <img src={logo} alt="Macro Master" className="h-8 w-auto" />
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {allNavItems.map(item => (
@@ -74,9 +73,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       {/* Mobile Header */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border bg-card">
-          <h1 className="text-lg font-bold font-display">
-            <span className="text-accent">●</span> GestãoPro
-          </h1>
+          <img src={logo} alt="Macro Master" className="h-7 w-auto" />
           <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Package, CircleDot, Image, FileText, CalendarClock } from 'lucide-react';
@@ -126,9 +127,7 @@ const TrackOrder = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold font-display">
-            <span className="text-accent">●</span> GestãoPro
-          </h1>
+          <img src={logo} alt="Macro Master" className="h-10 w-auto mx-auto mb-2" />
           <p className="text-muted-foreground mt-2">Acompanhe o status do seu pedido</p>
         </div>
 
