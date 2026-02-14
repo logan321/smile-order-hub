@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Undo2, X, Pencil } from 'lucide-react';
+import { Check, Undo2, X, Pencil, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
 interface PolygonDrawerProps {
   imageUrl: string;
@@ -15,6 +15,10 @@ interface PolygonDrawerProps {
 const PolygonDrawer = ({ imageUrl, width, height, initialPoints, onSave, onCancel, onClear }: PolygonDrawerProps) => {
   const [points, setPoints] = useState<{ x: number; y: number }[]>(initialPoints || []);
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
 
   const getPercent = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
@@ -27,7 +31,7 @@ const PolygonDrawer = ({ imageUrl, width, height, initialPoints, onSave, onCance
   }, []);
 
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    // Don't add if clicking on an existing point handle
+    if (isPanning) return;
     if ((e.target as Element).closest('.point-handle')) return;
     const pt = getPercent(e);
     setPoints(prev => [...prev, pt]);
@@ -59,6 +63,30 @@ const PolygonDrawer = ({ imageUrl, width, height, initialPoints, onSave, onCance
     setDragging(null);
   };
 
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    setZoom(prev => Math.max(0.5, Math.min(4, prev + delta)));
+  }, []);
+
+  const handleWrapperMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.altKey) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  }, [pan]);
+
+  const handleWrapperMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isPanning) {
+      setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+    }
+  }, [isPanning, panStart]);
+
+  const handleWrapperMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
   const polyString = points.map(p => `${(p.x / 100) * width},${(p.y / 100) * height}`).join(' ');
 
   return (
@@ -69,7 +97,38 @@ const PolygonDrawer = ({ imageUrl, width, height, initialPoints, onSave, onCance
         <span className="text-muted-foreground text-xs">— Clique para adicionar pontos</span>
       </div>
 
-      <div className="relative border border-primary/50 rounded-lg overflow-hidden" style={{ width, height }}>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.min(4, z + 0.25))}>
+          <ZoomIn className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}>
+          <ZoomOut className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>
+          <Maximize className="h-3.5 w-3.5" />
+        </Button>
+        <span className="text-[10px] text-muted-foreground ml-1">{Math.round(zoom * 100)}%</span>
+      </div>
+
+      <div
+        className="border border-primary/50 rounded-lg overflow-hidden"
+        style={{ width, height, cursor: isPanning ? 'grabbing' : 'crosshair' }}
+        onWheel={handleWheel}
+        onMouseDown={handleWrapperMouseDown}
+        onMouseMove={handleWrapperMouseMove}
+        onMouseUp={handleWrapperMouseUp}
+        onMouseLeave={handleWrapperMouseUp}
+      >
+        <div
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+            width,
+            height,
+            position: 'relative',
+          }}
+        >
+      <div className="relative" style={{ width, height }}>
         <img
           src={imageUrl}
           alt="template"
@@ -140,6 +199,8 @@ const PolygonDrawer = ({ imageUrl, width, height, initialPoints, onSave, onCance
           })}
         </svg>
       </div>
+        </div>
+      </div>
 
       <div className="flex items-center gap-2">
         <Button size="sm" variant="default" onClick={handleSave} disabled={points.length < 3} className="gap-1.5">
@@ -159,7 +220,7 @@ const PolygonDrawer = ({ imageUrl, width, height, initialPoints, onSave, onCance
       <p className="text-[10px] text-muted-foreground">
         {points.length < 3
           ? `Clique ao menos 3 pontos para formar o contorno. (${points.length}/3 mínimo)`
-          : `Contorno com ${points.length} pontos. Arraste os pontos para ajustar. O ponto verde é o início.`
+          : `Contorno com ${points.length} pontos. Arraste os pontos para ajustar. O ponto verde é o início. Scroll para zoom · Alt+Arraste para mover a vista.`
         }
       </p>
     </div>
