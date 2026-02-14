@@ -12,6 +12,7 @@ export interface Order {
   service: string;
   price: number;
   date: string;
+  paid: boolean;
   createdAt: string;
 }
 

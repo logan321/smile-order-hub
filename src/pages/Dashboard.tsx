@@ -7,13 +7,14 @@ const Dashboard = () => {
   const { clients, orders } = useApp();
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.price, 0);
+  const pendingRevenue = orders.filter(o => !o.paid).reduce((sum, o) => sum + o.price, 0);
   const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
   const stats = [
     { label: 'Clientes', value: clients.length, icon: Users, color: 'text-primary' },
     { label: 'Pedidos', value: orders.length, icon: ShoppingCart, color: 'text-accent' },
     { label: 'Receita Total', value: `R$ ${totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-success' },
-    { label: 'Ticket Médio', value: orders.length ? `R$ ${(totalRevenue / orders.length).toFixed(2)}` : 'R$ 0,00', icon: TrendingUp, color: 'text-accent' },
+    { label: 'Pendente', value: `R$ ${pendingRevenue.toFixed(2)}`, icon: TrendingUp, color: 'text-accent' },
   ];
 
   return (

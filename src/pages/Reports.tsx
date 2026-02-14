@@ -15,7 +15,8 @@ const Reports = () => {
 
   const reports: ClientReport[] = clients.map(client => {
     const clientOrders = orders.filter(o => o.clientId === client.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return { client, orders: clientOrders, total: clientOrders.reduce((sum, o) => sum + o.price, 0) };
+    const unpaidOrders = clientOrders.filter(o => !o.paid);
+    return { client, orders: clientOrders, total: unpaidOrders.reduce((sum, o) => sum + o.price, 0) };
   }).sort((a, b) => b.total - a.total);
 
   const grandTotal = reports.reduce((sum, r) => sum + r.total, 0);
@@ -26,7 +27,8 @@ const Reports = () => {
       toast.warning('Configure seus dados em Configurações antes de gerar o PDF');
       return;
     }
-    generateClientReportPDF(report.client, report.orders, report.total, config);
+    const unpaidOrders = report.orders.filter(o => !o.paid);
+    generateClientReportPDF(report.client, unpaidOrders, report.total, config);
     toast.success(`PDF gerado para ${report.client.name}`);
   };
 
@@ -92,12 +94,15 @@ const Reports = () => {
                 {isExpanded && clientOrders.length > 0 && (
                   <div className="border-t border-border/50 divide-y divide-border/30 bg-muted/20">
                     {clientOrders.map(order => (
-                      <div key={order.id} className="px-4 py-3 flex items-center justify-between">
+                      <div key={order.id} className={`px-4 py-3 flex items-center justify-between ${order.paid ? 'opacity-50' : ''}`}>
                         <div>
-                          <p className="text-sm font-medium">{order.service}</p>
+                          <p className={`text-sm font-medium ${order.paid ? 'line-through' : ''}`}>{order.service}</p>
                           <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</p>
                         </div>
-                        <span className="text-sm font-semibold">R$ {order.price.toFixed(2)}</span>
+                        <div className="flex items-center gap-2">
+                          {order.paid && <span className="text-xs text-success font-semibold">Pago</span>}
+                          <span className={`text-sm font-semibold ${order.paid ? 'line-through text-muted-foreground' : ''}`}>R$ {order.price.toFixed(2)}</span>
+                        </div>
                       </div>
                     ))}
                     <div className="px-4 py-3 flex items-center justify-between bg-muted/40">
