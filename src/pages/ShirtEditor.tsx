@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Canvas, FabricText, FabricImage } from 'fabric';
+import { Canvas, FabricText, FabricImage, Point } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,7 +90,10 @@ const ShirtEditor = () => {
   const [fontFamily, setFontFamily] = useState('Arial');
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [frontZoom, setFrontZoom] = useState(1);
+  const [backZoom, setBackZoom] = useState(1);
+  const isPanningRef = useRef(false);
+  const lastPanPoint = useRef<{ x: number; y: number } | null>(null);
   const frontWrapRef = useRef<HTMLDivElement>(null);
   const backWrapRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -222,21 +225,92 @@ const ShirtEditor = () => {
     };
   }, [selectedTemplate, loadBackground]);
 
-  // Apply Fabric.js zoom when zoomLevel changes
+  const activeZoom = activeView === 'front' ? frontZoom : backZoom;
+  const setActiveZoom = activeView === 'front' ? setFrontZoom : setBackZoom;
+
+  // Apply zoom only to the active canvas (centered on canvas middle)
+  useEffect(() => {
+    const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+    if (!canvas) return;
+    const zoom = activeView === 'front' ? frontZoom : backZoom;
+    const center = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
+    canvas.zoomToPoint(new Point(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2), zoom);
+    canvas.setDimensions({
+      width: CANVAS_WIDTH * zoom,
+      height: CANVAS_HEIGHT * zoom,
+    });
+    canvas.requestRenderAll();
+  }, [frontZoom, backZoom, activeView]);
+
+  // Enable panning (alt+drag or middle-click drag) on active canvas
   useEffect(() => {
     const front = frontFabricRef.current;
     const back = backFabricRef.current;
     if (!front || !back) return;
 
-    [front, back].forEach(canvas => {
-      canvas.setZoom(zoomLevel);
-      canvas.setDimensions({
-        width: CANVAS_WIDTH * zoomLevel,
-        height: CANVAS_HEIGHT * zoomLevel,
+    const setupPan = (canvas: Canvas, side: 'front' | 'back') => {
+      canvas.on('mouse:down', (opt) => {
+        const evt = opt.e as MouseEvent;
+        if (evt.altKey || evt.button === 1) {
+          isPanningRef.current = true;
+          lastPanPoint.current = { x: evt.clientX, y: evt.clientY };
+          canvas.selection = false;
+          evt.preventDefault();
+          evt.stopPropagation();
+        }
       });
-      canvas.renderAll();
-    });
-  }, [zoomLevel]);
+
+      canvas.on('mouse:move', (opt) => {
+        if (!isPanningRef.current || !lastPanPoint.current) return;
+        const evt = opt.e as MouseEvent;
+        const vpt = canvas.viewportTransform!;
+        vpt[4] += evt.clientX - lastPanPoint.current.x;
+        vpt[5] += evt.clientY - lastPanPoint.current.y;
+        lastPanPoint.current = { x: evt.clientX, y: evt.clientY };
+        canvas.requestRenderAll();
+      });
+
+      canvas.on('mouse:up', () => {
+        if (isPanningRef.current) {
+          isPanningRef.current = false;
+          lastPanPoint.current = null;
+          canvas.selection = true;
+        }
+      });
+
+      // Mouse wheel zoom centered on pointer
+      canvas.on('mouse:wheel', (opt) => {
+        const evt = opt.e as WheelEvent;
+        evt.preventDefault();
+        evt.stopPropagation();
+        const delta = evt.deltaY;
+        const pointer = canvas.getViewportPoint(evt);
+        let newZoom = canvas.getZoom() * (1 - delta / 400);
+        newZoom = Math.max(0.3, Math.min(2.5, newZoom));
+        canvas.zoomToPoint(pointer, newZoom);
+        canvas.setDimensions({
+          width: CANVAS_WIDTH * newZoom,
+          height: CANVAS_HEIGHT * newZoom,
+        });
+        if (side === 'front') setFrontZoom(newZoom);
+        else setBackZoom(newZoom);
+      });
+    };
+
+    setupPan(front, 'front');
+    setupPan(back, 'back');
+
+    return () => {
+      front.off('mouse:down');
+      front.off('mouse:move');
+      front.off('mouse:up');
+      front.off('mouse:wheel');
+      back.off('mouse:down');
+      back.off('mouse:move');
+      back.off('mouse:up');
+      back.off('mouse:wheel');
+    };
+  }, [selectedTemplate]);
 
   // Auto-scroll to active canvas when switching sides
   useEffect(() => {
@@ -506,6 +580,8 @@ const ShirtEditor = () => {
   const exportCanvas = (canvas: Canvas): string => {
     const origBg = canvas.backgroundColor;
     const origZoom = canvas.getZoom();
+    const origVpt = [...canvas.viewportTransform!] as typeof canvas.viewportTransform;
+    canvas.viewportTransform = [1, 0, 0, 1, 0, 0];
     canvas.setZoom(1);
     canvas.setDimensions({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT });
     canvas.backgroundColor = 'transparent';
@@ -515,6 +591,7 @@ const ShirtEditor = () => {
     const dataUrl = canvas.toDataURL({ format: 'png', multiplier: 4 });
 
     canvas.backgroundColor = origBg as string;
+    canvas.viewportTransform = origVpt;
     canvas.setZoom(origZoom);
     canvas.setDimensions({ width: CANVAS_WIDTH * origZoom, height: CANVAS_HEIGHT * origZoom });
     canvas.renderAll();
@@ -724,22 +801,32 @@ const ShirtEditor = () => {
         <div className="flex-1 flex flex-col overflow-hidden bg-muted/30">
           {/* Zoom controls */}
           <div className="flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}>
+            <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}>
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
             <Slider
-              value={[zoomLevel * 100]}
-              onValueChange={([v]) => setZoomLevel(v / 100)}
+              value={[activeZoom * 100]}
+              onValueChange={([v]) => setActiveZoom(v / 100)}
               min={30}
               max={250}
               step={5}
               className="w-36 sm:w-52"
             />
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}>
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
-            <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round(zoomLevel * 100)}%</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoomLevel(1)} title="Resetar zoom">
+            <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round(activeZoom * 100)}%</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+              setActiveZoom(1);
+              const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+              if (canvas) {
+                const vpt = canvas.viewportTransform!;
+                vpt[4] = 0;
+                vpt[5] = 0;
+                canvas.requestRenderAll();
+              }
+            }} title="Resetar zoom">
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           </div>
