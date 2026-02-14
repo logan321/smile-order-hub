@@ -1,24 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Package, Clock, Cog, CheckCircle2, Truck } from 'lucide-react';
+import { Search, Package, Clock, Cog, CheckCircle2, Truck, CircleDot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const STATUS_STEPS = [
-  { key: 'received', label: 'Recebido', icon: Clock, description: 'Pedido recebido' },
-  { key: 'in_production', label: 'Em Produção', icon: Cog, description: 'Seu pedido está sendo produzido' },
-  { key: 'ready', label: 'Pronto', icon: CheckCircle2, description: 'Pedido finalizado, pronto para retirada/entrega' },
-  { key: 'delivered', label: 'Entregue', icon: Truck, description: 'Pedido entregue' },
+const DEFAULT_STATUS_STEPS = [
+  { key: 'received', label: 'Recebido', description: 'Pedido recebido' },
+  { key: 'in_production', label: 'Em Produção', description: 'Seu pedido está sendo produzido' },
+  { key: 'ready', label: 'Pronto', description: 'Pedido finalizado, pronto para retirada/entrega' },
+  { key: 'delivered', label: 'Entregue', description: 'Pedido entregue' },
 ];
+
+interface StageStep {
+  key: string;
+  label: string;
+  description: string;
+}
 
 interface OrderResult {
   tracking_id: string;
   status: string;
   date: string;
   created_at: string;
+  user_id: string;
   items: { service_name: string; quantity: number; unit_price: number }[];
 }
 
@@ -27,6 +34,7 @@ const TrackOrder = () => {
   const [order, setOrder] = useState<OrderResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [statusSteps, setStatusSteps] = useState<StageStep[]>(DEFAULT_STATUS_STEPS);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +49,7 @@ const TrackOrder = () => {
       // Fetch order
       const { data: orderData, error } = await supabase
         .from('orders')
-        .select('tracking_id, status, date, created_at')
+        .select('tracking_id, status, date, created_at, user_id')
         .eq('tracking_id', id)
         .maybeSingle();
 
@@ -76,11 +84,25 @@ const TrackOrder = () => {
         });
       }
 
+      // Fetch custom stages for this order's owner
+      const { data: customStages } = await supabase
+        .from('order_stages')
+        .select('*')
+        .eq('user_id', orderData.user_id)
+        .order('position', { ascending: true });
+
+      if (customStages && customStages.length > 0) {
+        setStatusSteps(customStages.map((s: any) => ({ key: s.id, label: s.name, description: s.name })));
+      } else {
+        setStatusSteps(DEFAULT_STATUS_STEPS);
+      }
+
       setOrder({
         tracking_id: orderData.tracking_id,
         status: orderData.status,
         date: orderData.date,
         created_at: orderData.created_at,
+        user_id: orderData.user_id,
         items: itemsWithNames,
       });
     } catch (err) {
@@ -91,7 +113,7 @@ const TrackOrder = () => {
     }
   };
 
-  const currentStepIndex = order ? STATUS_STEPS.findIndex(s => s.key === order.status) : -1;
+  const currentStepIndex = order ? statusSteps.findIndex(s => s.key === order.status) : -1;
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,10 +163,9 @@ const TrackOrder = () => {
             <div className="p-6">
               <h3 className="text-sm font-semibold mb-6">Status do Pedido</h3>
               <div className="space-y-0">
-                {STATUS_STEPS.map((step, index) => {
+                {statusSteps.map((step, index) => {
                   const isCompleted = index <= currentStepIndex;
                   const isCurrent = index === currentStepIndex;
-                  const Icon = step.icon;
                   return (
                     <div key={step.key} className="flex gap-4">
                       <div className="flex flex-col items-center">
@@ -154,9 +175,9 @@ const TrackOrder = () => {
                           isCompleted ? "bg-primary/20 border-primary text-primary" :
                           "bg-muted border-border text-muted-foreground"
                         )}>
-                          <Icon className="h-4 w-4" />
+                          <CircleDot className="h-4 w-4" />
                         </div>
-                        {index < STATUS_STEPS.length - 1 && (
+                        {index < statusSteps.length - 1 && (
                           <div className={cn("w-0.5 h-8", isCompleted ? "bg-primary" : "bg-border")} />
                         )}
                       </div>
