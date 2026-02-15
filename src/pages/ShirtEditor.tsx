@@ -566,11 +566,12 @@ const ShirtEditor = () => {
 
     if (side === 'both') {
       // Find zones for front and back
-      // Priority: 1) exact targetZoneName match on that side, 2) any zone native to that side, 3) shared zone
+      // Priority: 1) exact targetZoneName match on that side, 2) shared zone with matching name (uses back_* coords), 3) shared zone (any)
+      // Do NOT fallback to random unrelated zones
       const findZoneForSide = (s: 'front' | 'back') =>
         templateZones.find(z => targetName && z.name.toLowerCase() === targetName && z.side === s) ||
         templateZones.find(z => targetName && z.name.toLowerCase() === targetName && z.shared) ||
-        templateZones.find(z => z.side === s) ||
+        templateZones.find(z => z.shared && z.side === s) ||
         templateZones.find(z => z.shared);
 
       const frontZone = findZoneForSide('front');
