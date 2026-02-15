@@ -848,7 +848,7 @@ const ShirtEditor = () => {
     setDownloading(false);
   };
 
-  // WhatsApp quote - collect design details, upload previews, and open WhatsApp directly
+  // WhatsApp quote - upload previews + logo, send direct wa.me link with all URLs
   const handleWhatsAppQuote = async () => {
     const ownerUserId = selectedTemplate?.userId;
     if (!ownerUserId) { toast.error('Template sem dono identificado'); return; }
@@ -866,27 +866,49 @@ const ShirtEditor = () => {
     const templateName = selectedTemplate?.name || 'Camisa personalizada';
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
+    const timestamp = Date.now();
+    const imageLinks: string[] = [];
 
-    // Export canvas images as files
-    const files: File[] = [];
+    // Upload canvas previews to storage
     try {
       if (frontCanvas) {
         const frontDataUrl = exportCanvas(frontCanvas);
         const frontBlob = await (await fetch(frontDataUrl)).blob();
-        files.push(new File([frontBlob], `${templateName}_frente.png`, { type: 'image/png' }));
+        const path = `quotes/${timestamp}_frente.png`;
+        const { error } = await supabase.storage.from('shirt-designs').upload(path, frontBlob, { contentType: 'image/png' });
+        if (!error) {
+          const { data: u } = supabase.storage.from('shirt-designs').getPublicUrl(path);
+          imageLinks.push(`📸 Frente: ${u.publicUrl}`);
+        }
       }
       if (backCanvas) {
         const backDataUrl = exportCanvas(backCanvas);
         const backBlob = await (await fetch(backDataUrl)).blob();
-        files.push(new File([backBlob], `${templateName}_costas.png`, { type: 'image/png' }));
+        const path = `quotes/${timestamp}_costas.png`;
+        const { error } = await supabase.storage.from('shirt-designs').upload(path, backBlob, { contentType: 'image/png' });
+        if (!error) {
+          const { data: u } = supabase.storage.from('shirt-designs').getPublicUrl(path);
+          imageLinks.push(`📸 Costas: ${u.publicUrl}`);
+        }
       }
     } catch (err) {
-      console.error('Error exporting canvases:', err);
+      console.error('Error uploading canvas previews:', err);
     }
 
-    // Include uploaded logo file if available
+    // Upload imported logo file if available
     if (uploadedLogoFileRef.current) {
-      files.push(uploadedLogoFileRef.current);
+      try {
+        const logoFile = uploadedLogoFileRef.current;
+        const ext = logoFile.name.split('.').pop() || 'png';
+        const path = `quotes/${timestamp}_logo.${ext}`;
+        const { error } = await supabase.storage.from('shirt-designs').upload(path, logoFile, { contentType: logoFile.type });
+        if (!error) {
+          const { data: u } = supabase.storage.from('shirt-designs').getPublicUrl(path);
+          imageLinks.push(`📁 Arquivo do cliente: ${u.publicUrl}`);
+        }
+      } catch (err) {
+        console.error('Error uploading logo file:', err);
+      }
     }
 
     // Collect design details from both canvases
@@ -909,9 +931,7 @@ const ShirtEditor = () => {
           if (obj._elementType === 'patch' && obj._patchName) {
             patchNames.add(obj._patchName);
           }
-          if (obj._elementType === 'logo') {
-            hasLogo = true;
-          }
+          if (obj._elementType === 'logo') hasLogo = true;
         }
       });
     });
@@ -925,31 +945,8 @@ const ShirtEditor = () => {
       `Olá! Gostaria de fazer um orçamento para:\n\n` +
       `🎽 Modelo: ${templateName}\n` +
       (designDetails.length > 0 ? `\n${designDetails.join('\n')}\n\n` : `\n`) +
-      `📋 Personalização feita no editor online\n\n` +
+      (imageLinks.length > 0 ? `📎 *Arquivos:*\n${imageLinks.join('\n')}\n\n` : '') +
       `Poderia me enviar mais informações sobre valores e prazos?`;
-
-    // Try native share with files (mobile) — sends images directly to WhatsApp
-    if (navigator.share && files.length > 0) {
-      try {
-        const shareData: ShareData = { text: message, files };
-        if (navigator.canShare && navigator.canShare(shareData)) {
-          await navigator.share(shareData);
-          return;
-        }
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-        // Fall through to wa.me link
-      }
-    }
-
-    // Desktop fallback: open WhatsApp with text + auto-download images
-    for (const file of files) {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url; a.download = file.name; a.click();
-      URL.revokeObjectURL(url);
-      await new Promise(r => setTimeout(r, 300));
-    }
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
