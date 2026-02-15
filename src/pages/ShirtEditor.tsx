@@ -831,15 +831,64 @@ const ShirtEditor = () => {
   };
 
   // WhatsApp quote
-  const handleWhatsAppQuote = () => {
+  const handleWhatsAppQuote = async () => {
+    const { loadBusinessConfig } = await import('@/lib/businessConfig');
+    const config = loadBusinessConfig();
+    const whatsappNumber = config.whatsappNumber?.replace(/\D/g, '') || '';
+
+    if (!whatsappNumber) {
+      toast.error('Configure o número do WhatsApp em Configurações → WhatsApp');
+      return;
+    }
+
     const templateName = selectedTemplate?.name || 'Camisa personalizada';
-    const message = encodeURIComponent(
+
+    // Export canvas images as files for sharing
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    const files: File[] = [];
+
+    try {
+      if (frontCanvas) {
+        const frontDataUrl = exportCanvas(frontCanvas);
+        const frontBlob = await (await fetch(frontDataUrl)).blob();
+        files.push(new File([frontBlob], `${templateName}_frente.png`, { type: 'image/png' }));
+      }
+      if (backCanvas) {
+        const backDataUrl = exportCanvas(backCanvas);
+        const backBlob = await (await fetch(backDataUrl)).blob();
+        files.push(new File([backBlob], `${templateName}_costas.png`, { type: 'image/png' }));
+      }
+    } catch (err) {
+      console.error('Error exporting canvases:', err);
+    }
+
+    const message =
       `Olá! Gostaria de fazer um orçamento para:\n\n` +
       `🎽 Modelo: ${templateName}\n` +
       `📋 Personalização feita no editor online\n\n` +
-      `Poderia me enviar mais informações sobre valores e prazos?`
-    );
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+      `Poderia me enviar mais informações sobre valores e prazos?`;
+
+    // Try Web Share API with files first (mobile-friendly)
+    if (navigator.share && files.length > 0) {
+      try {
+        const canShareFiles = navigator.canShare && navigator.canShare({ files });
+        if (canShareFiles) {
+          await navigator.share({
+            text: message,
+            files,
+          });
+          return;
+        }
+      } catch (err) {
+        // User cancelled or share failed, fall through to WhatsApp link
+        if ((err as Error).name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: open WhatsApp with message (without files)
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
 
   // ─── Template selection screen ────────────────────────────────

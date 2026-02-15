@@ -8,6 +8,7 @@ export interface BusinessConfig {
   pixKey: string;
   bankInfo: string;
   extraNotes: string;
+  whatsappNumber: string;
 }
 
 const STORAGE_KEY = 'business_config';
@@ -22,6 +23,7 @@ const defaultConfig: BusinessConfig = {
   pixKey: '',
   bankInfo: '',
   extraNotes: '',
+  whatsappNumber: '',
 };
 
 export function loadBusinessConfig(): BusinessConfig {
