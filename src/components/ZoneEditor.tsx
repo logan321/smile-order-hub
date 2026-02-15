@@ -181,8 +181,8 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
       let newX = origX, newY = origY, newW = origW, newH = origH;
 
       if (mode === 'move') {
-        newX = Math.max(0, Math.min(100 - origW, origX + dx));
-        newY = Math.max(0, Math.min(100 - origH, origY + dy));
+        newX = origX + dx;
+        newY = origY + dy;
       } else if (mode === 'resize-br') {
         newW = Math.max(5, origW + dx);
         newH = Math.max(5, origH + dy);
