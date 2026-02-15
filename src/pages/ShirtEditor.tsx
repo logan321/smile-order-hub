@@ -895,9 +895,9 @@ const ShirtEditor = () => {
 
   // ─── Editor screen ────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Top header — compact on mobile */}
-      <header className="border-b border-border bg-card px-3 py-2 flex items-center justify-between">
+      <header className="border-b border-border bg-card px-3 py-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2">
             <ChevronLeft className="h-4 w-4" />
@@ -918,9 +918,9 @@ const ShirtEditor = () => {
       </header>
 
       {/* Unified responsive layout */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Top toolbar — tabs + view toggle + zoom */}
-        <div className="border-b border-border bg-card">
+        <div className="border-b border-border bg-card shrink-0">
           {/* Desktop: horizontal tab bar */}
           <div className="hidden lg:flex items-center justify-center gap-1 px-2">
             {toolbarTabs.map(tab => (
@@ -1126,12 +1126,12 @@ const ShirtEditor = () => {
           </div>
         </div>
 
-        {/* Mobile bottom tab bar */}
-        <div className="lg:hidden border-t-2 border-border bg-card flex items-stretch shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
+        {/* Mobile bottom tab bar — always visible */}
+        <div className="lg:hidden border-t-2 border-border bg-card flex items-stretch shadow-[0_-2px_8px_rgba(0,0,0,0.08)] shrink-0">
           {toolbarTabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-semibold transition-colors ${activeTab === tab.id ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
-              <span className="[&_svg]:h-7 [&_svg]:w-7">{tab.icon}</span>
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-semibold transition-colors ${activeTab === tab.id ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
+              <span className="[&_svg]:h-6 [&_svg]:w-6">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
