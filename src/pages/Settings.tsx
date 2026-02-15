@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish } from 'lucide-react';
+import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useOrderStages } from '@/hooks/useOrderStages';
@@ -228,6 +228,10 @@ const Settings = () => {
           <TabsTrigger value="patches" className="gap-2">
             <Fish className="h-4 w-4" />
             Peixes
+          </TabsTrigger>
+          <TabsTrigger value="whatsapp" className="gap-2">
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp
           </TabsTrigger>
         </TabsList>
 
@@ -706,6 +710,51 @@ const Settings = () => {
                 </div>
               </>
             )}
+          </div>
+        </TabsContent>
+
+        {/* Tab: WhatsApp */}
+        <TabsContent value="whatsapp">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">WhatsApp para Orçamentos</h2>
+                <p className="text-sm text-muted-foreground">Configure o número que receberá os pedidos de orçamento do editor de camisas</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Número do WhatsApp</label>
+                <Input
+                  value={config.whatsappNumber}
+                  onChange={e => update('whatsappNumber', e.target.value)}
+                  placeholder="5511999999999 (código do país + DDD + número, sem espaços)"
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Digite apenas números, incluindo o código do país (55 para Brasil). Ex: 5511999999999
+                </p>
+              </div>
+
+              {config.whatsappNumber && (
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-1">Preview do link:</p>
+                  <p className="text-sm font-mono text-primary break-all">
+                    https://wa.me/{config.whatsappNumber.replace(/\D/g, '')}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button onClick={handleSave}>
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Configurações
+              </Button>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
