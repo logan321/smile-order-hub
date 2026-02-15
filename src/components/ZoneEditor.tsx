@@ -13,8 +13,8 @@ interface ZoneEditorProps {
   onClose: () => void;
 }
 
-const PREVIEW_WIDTH = 360;
-const PREVIEW_HEIGHT = 450;
+const PREVIEW_WIDTH = 480;
+const PREVIEW_HEIGHT = 600;
 
 const ZONE_COLORS = [
   'rgba(239,68,68,0.35)',
