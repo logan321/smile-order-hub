@@ -311,11 +311,11 @@ const ShirtEditor = () => {
     const updateScale = () => {
       // Only scale on mobile (< 1024px)
       if (window.innerWidth >= 1024) { setMobileScale(1); return; }
-      const containerWidth = container.clientWidth - 16;
-      const containerHeight = container.clientHeight - 16;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
       const scaleW = containerWidth / CANVAS_WIDTH;
       const scaleH = containerHeight / CANVAS_HEIGHT;
-      setMobileScale(Math.min(scaleW, scaleH, 1));
+      setMobileScale(Math.min(scaleW, scaleH));
     };
     updateScale();
     const ro = new ResizeObserver(updateScale);
@@ -1106,7 +1106,7 @@ const ShirtEditor = () => {
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActiveZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }} title="Resetar zoom"><RotateCcw className="h-3.5 w-3.5" /></Button>
             </div>
             {/* Canvas container — single render, responsive display */}
-            <div ref={mobileCanvasContainerRef} className="flex-1 overflow-auto p-2 lg:p-4 flex items-center justify-center">
+            <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden lg:overflow-auto p-0 lg:p-4 flex items-center justify-center">
               <div className="relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center"
                 style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
                 <div ref={frontWrapRef}
