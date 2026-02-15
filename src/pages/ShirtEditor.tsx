@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle, Fish } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, MessageCircle, Fish, X } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
@@ -950,19 +950,19 @@ const ShirtEditor = () => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* Sidebar panel — on mobile: top panel above canvas, on desktop: left sidebar */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+          {/* Desktop sidebar panel */}
           {activeTab && (
-            <aside className="order-1 lg:order-1 lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-card p-3 overflow-y-auto max-h-[40vh] lg:max-h-none shrink-0">
+            <aside className="hidden lg:block lg:w-64 lg:border-r border-border bg-card p-3 overflow-y-auto">
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-4 lg:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-0.5 lg:p-1" />
-                          <p className="text-[8px] lg:text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
+                          <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1" />
+                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
                     </div>
@@ -973,12 +973,12 @@ const ShirtEditor = () => {
                 <div className="patch-protected">
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Peixes da Empresa</p>
                   {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>) : (
-                    <div className="grid grid-cols-4 lg:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {patches.map(p => (
                         <button key={p.id} onClick={() => handlePatchClick(p)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
-                          <div className="w-full aspect-square p-0.5 lg:p-1 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
+                          <div className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
                           <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
-                          <div className="pb-0.5 px-0.5 relative z-10"><p className="text-[8px] lg:text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors select-none">{p.name}</p></div>
+                          <div className="pb-0.5 px-0.5 relative z-10"><p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors select-none">{p.name}</p></div>
                         </button>
                       ))}
                     </div>
@@ -986,42 +986,116 @@ const ShirtEditor = () => {
                 </div>
               )}
               {activeTab === 'text' && (
-                <div className="space-y-2 lg:space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase hidden lg:block">Adicionar texto</p>
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar texto</p>
                   <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto... (Enter para quebrar linha)" className="min-h-[60px] text-sm resize-none" rows={2} />
                   <div className="flex gap-2">
                     <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-14 lg:w-16 text-xs" min={10} max={72} />
+                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-16 text-xs" min={10} max={72} />
                   </div>
-                  <div className="flex items-center gap-3 lg:grid lg:grid-cols-2 lg:gap-2">
-                    <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                    <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                    <div className="flex items-center gap-1 lg:gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 lg:w-16 text-xs" min={0} max={10} /></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
                   </div>
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                 </div>
               )}
               {activeTab === 'logo' && (
-                <div className="space-y-2 lg:space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase hidden lg:block">Enviar logo ou imagem</p>
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
                   <div
                     onClick={() => setShowLogoNotice(true)}
-                    className="flex items-center lg:flex-col gap-3 lg:gap-2 px-4 py-4 lg:py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-                    <Upload className="h-6 w-6 lg:h-8 lg:w-8 text-muted-foreground" />
-                    <div className="lg:text-center"><span className="text-sm text-muted-foreground">Enviar logo ou imagem</span><span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span></div>
+                    className="flex flex-col gap-2 items-center py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <div className="text-center"><span className="text-sm text-muted-foreground">Enviar logo ou imagem</span><span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span></div>
                   </div>
                   <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
-                  <p className="text-[10px] text-muted-foreground text-center hidden lg:block">A imagem será aplicada no lado <strong>{activeView === 'front' ? 'Frente' : 'Costas'}</strong></p>
+                  <p className="text-[10px] text-muted-foreground text-center">A imagem será aplicada no lado <strong>{activeView === 'front' ? 'Frente' : 'Costas'}</strong></p>
                 </div>
               )}
-              <div className="mt-2 lg:mt-4 pt-2 lg:pt-3 border-t border-border/30">
+              <div className="mt-4 pt-3 border-t border-border/30">
                 <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
               </div>
             </aside>
           )}
 
+          {/* Mobile overlay panel — opens on top of canvas */}
+          {activeTab && (
+            <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t border-border rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] max-h-[55vh] flex flex-col animate-fade-in">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50">
+                <p className="text-sm font-semibold text-foreground">
+                  {activeTab === 'stamps' ? 'Estampas' : activeTab === 'patches' ? 'Peixes' : activeTab === 'text' ? 'Texto' : 'Logo / Imagem'}
+                </p>
+                <button onClick={() => setActiveTab(null)} className="p-1.5 rounded-full hover:bg-muted transition-colors">
+                  <X className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3">
+                {activeTab === 'stamps' && (
+                  <div>
+                    {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
+                      <div className="grid grid-cols-4 gap-2">
+                        {stamps.map(s => (
+                          <button key={s.id} onClick={() => { addStamp(s); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
+                            <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-0.5" />
+                            <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {activeTab === 'patches' && (
+                  <div className="patch-protected">
+                    {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>) : (
+                      <div className="grid grid-cols-4 gap-2">
+                        {patches.map(p => (
+                          <button key={p.id} onClick={() => { handlePatchClick(p); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
+                            <div className="w-full aspect-square p-0.5 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
+                            <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
+                            <div className="pb-0.5 px-0.5 relative z-10"><p className="text-[8px] text-center text-muted-foreground truncate select-none">{p.name}</p></div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {activeTab === 'text' && (
+                  <div className="space-y-2">
+                    <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto... (Enter para quebrar linha)" className="min-h-[60px] text-sm resize-none" rows={2} />
+                    <div className="flex gap-2">
+                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                      <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-14 text-xs" min={10} max={72} />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 text-xs" min={0} max={10} /></div>
+                    </div>
+                    <Button size="sm" onClick={() => { handleAddTextClick(); setActiveTab(null); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
+                  </div>
+                )}
+                {activeTab === 'logo' && (
+                  <div className="space-y-3">
+                    <div
+                      onClick={() => setShowLogoNotice(true)}
+                      className="flex items-center gap-3 px-4 py-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <div><span className="text-sm text-muted-foreground">Enviar logo ou imagem</span><span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span></div>
+                    </div>
+                    <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                  </div>
+                )}
+                <div className="mt-3 pt-2 border-t border-border/30">
+                  <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Canvas area */}
-          <div className="order-2 lg:order-2 flex-1 flex flex-col overflow-hidden bg-muted/30 min-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden bg-muted/30 min-h-0">
             {/* Desktop zoom bar */}
             <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
               <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
