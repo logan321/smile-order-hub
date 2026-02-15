@@ -887,10 +887,10 @@ const ShirtEditor = () => {
 
   // ─── Toolbar tab items ────────────────────────────────────────
   const toolbarTabs: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5" /> },
-    { id: 'patches', label: 'Peixes', icon: <Fish className="h-5 w-5" /> },
-    { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5" /> },
-    { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5" /> },
+    { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    { id: 'patches', label: 'Peixes', icon: <Fish className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
   ];
 
   // ─── Editor screen ────────────────────────────────────────────
@@ -1053,11 +1053,11 @@ const ShirtEditor = () => {
         </div>
 
         {/* Mobile bottom tab bar */}
-        <div className="lg:hidden border-t border-border bg-card flex items-stretch">
+        <div className="lg:hidden border-t-2 border-border bg-card flex items-stretch shadow-[0_-2px_8px_rgba(0,0,0,0.08)]">
           {toolbarTabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold transition-colors ${activeTab === tab.id ? 'text-primary bg-primary/5' : 'text-muted-foreground'}`}>
-              {tab.icon}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-semibold transition-colors ${activeTab === tab.id ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
+              <span className="[&_svg]:h-7 [&_svg]:w-7">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
