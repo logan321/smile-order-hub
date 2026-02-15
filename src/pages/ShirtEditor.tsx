@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
-import { loadBusinessConfig } from '@/lib/businessConfig';
+
 
 const FONT_OPTIONS = [
   { label: 'Arial', value: 'Arial', google: false },
@@ -833,8 +833,12 @@ const ShirtEditor = () => {
 
   // WhatsApp quote
   const handleWhatsAppQuote = async () => {
-    const config = loadBusinessConfig();
-    const whatsappNumber = config.whatsappNumber?.replace(/\D/g, '') || '';
+    // Fetch whatsapp number from database using template owner's user_id
+    const ownerUserId = selectedTemplate?.userId;
+    if (!ownerUserId) { toast.error('Template sem dono identificado'); return; }
+
+    const { data } = await supabase.from('user_settings').select('whatsapp_number').eq('user_id', ownerUserId).maybeSingle();
+    const whatsappNumber = data?.whatsapp_number?.replace(/\D/g, '') || '';
 
     if (!whatsappNumber) {
       toast.error('Configure o número do WhatsApp em Configurações → WhatsApp');

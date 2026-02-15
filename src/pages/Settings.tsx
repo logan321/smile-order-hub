@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { BusinessConfig, loadBusinessConfig, saveBusinessConfig } from '@/lib/businessConfig';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -17,11 +18,36 @@ import ZoneEditor from '@/components/ZoneEditor';
 
 const Settings = () => {
   const [config, setConfig] = useState<BusinessConfig>(loadBusinessConfig);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [whatsappLoading, setWhatsappLoading] = useState(true);
   const { stages, loading: stagesLoading, addStage, updateStage, deleteStage, reorderStages, initDefaults } = useOrderStages();
   const { fields, loading: fieldsLoading, addField, updateField, deleteField } = useCustomFields();
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates();
   const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog();
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog();
+
+  // Load WhatsApp from database
+  useEffect(() => {
+    const loadWhatsapp = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setWhatsappLoading(false); return; }
+      const { data } = await supabase.from('user_settings').select('whatsapp_number').eq('user_id', session.user.id).maybeSingle();
+      if (data) setWhatsappNumber(data.whatsapp_number);
+      setWhatsappLoading(false);
+    };
+    loadWhatsapp();
+  }, []);
+
+  const handleSaveWhatsapp = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) { toast.error('Faça login primeiro'); return; }
+    const { error } = await supabase.from('user_settings').upsert({
+      user_id: session.user.id,
+      whatsapp_number: whatsappNumber.replace(/\D/g, ''),
+    }, { onConflict: 'user_id' });
+    if (error) { toast.error('Erro ao salvar'); console.error(error); return; }
+    toast.success('WhatsApp salvo!');
+  };
 
   // Payment settings
   const update = (field: keyof BusinessConfig, value: string) => {
@@ -730,29 +756,30 @@ const Settings = () => {
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Número do WhatsApp</label>
                 <Input
-                  value={config.whatsappNumber}
-                  onChange={e => update('whatsappNumber', e.target.value)}
+                  value={whatsappNumber}
+                  onChange={e => setWhatsappNumber(e.target.value)}
                   placeholder="5511999999999 (código do país + DDD + número, sem espaços)"
+                  disabled={whatsappLoading}
                 />
                 <p className="text-xs text-muted-foreground mt-1.5">
                   Digite apenas números, incluindo o código do país (55 para Brasil). Ex: 5511999999999
                 </p>
               </div>
 
-              {config.whatsappNumber && (
+              {whatsappNumber && (
                 <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                   <p className="text-xs text-muted-foreground mb-1">Preview do link:</p>
                   <p className="text-sm font-mono text-primary break-all">
-                    https://wa.me/{config.whatsappNumber.replace(/\D/g, '')}
+                    https://wa.me/{whatsappNumber.replace(/\D/g, '')}
                   </p>
                 </div>
               )}
             </div>
 
             <div className="mt-6 flex justify-end">
-              <Button onClick={handleSave}>
+              <Button onClick={handleSaveWhatsapp}>
                 <Save className="h-4 w-4 mr-2" />
-                Salvar Configurações
+                Salvar WhatsApp
               </Button>
             </div>
           </div>
