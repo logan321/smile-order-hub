@@ -97,6 +97,7 @@ const ShirtEditor = () => {
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const uploadedLogoFileRef = useRef<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
   const [pendingPatch, setPendingPatch] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string } | null>(null);
   const [patchSideChoice, setPatchSideChoice] = useState<'front' | 'back' | 'both' | null>(null);
@@ -723,6 +724,7 @@ const ShirtEditor = () => {
   };
 
   const placeLogoFile = (file: File, zone?: TemplateZone) => {
+    uploadedLogoFileRef.current = file;
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -865,32 +867,26 @@ const ShirtEditor = () => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
 
-    // Upload canvas previews to storage and get public URLs
-    const imageLinks: string[] = [];
-    const timestamp = Date.now();
+    // Export canvas images as files
+    const files: File[] = [];
     try {
       if (frontCanvas) {
         const frontDataUrl = exportCanvas(frontCanvas);
         const frontBlob = await (await fetch(frontDataUrl)).blob();
-        const frontPath = `quotes/${timestamp}_frente.png`;
-        const { error } = await supabase.storage.from('shirt-designs').upload(frontPath, frontBlob, { contentType: 'image/png' });
-        if (!error) {
-          const { data: urlData } = supabase.storage.from('shirt-designs').getPublicUrl(frontPath);
-          imageLinks.push(`📸 Frente: ${urlData.publicUrl}`);
-        }
+        files.push(new File([frontBlob], `${templateName}_frente.png`, { type: 'image/png' }));
       }
       if (backCanvas) {
         const backDataUrl = exportCanvas(backCanvas);
         const backBlob = await (await fetch(backDataUrl)).blob();
-        const backPath = `quotes/${timestamp}_costas.png`;
-        const { error } = await supabase.storage.from('shirt-designs').upload(backPath, backBlob, { contentType: 'image/png' });
-        if (!error) {
-          const { data: urlData } = supabase.storage.from('shirt-designs').getPublicUrl(backPath);
-          imageLinks.push(`📸 Costas: ${urlData.publicUrl}`);
-        }
+        files.push(new File([backBlob], `${templateName}_costas.png`, { type: 'image/png' }));
       }
     } catch (err) {
-      console.error('Error uploading previews:', err);
+      console.error('Error exporting canvases:', err);
+    }
+
+    // Include uploaded logo file if available
+    if (uploadedLogoFileRef.current) {
+      files.push(uploadedLogoFileRef.current);
     }
 
     // Collect design details from both canvases
@@ -929,9 +925,31 @@ const ShirtEditor = () => {
       `Olá! Gostaria de fazer um orçamento para:\n\n` +
       `🎽 Modelo: ${templateName}\n` +
       (designDetails.length > 0 ? `\n${designDetails.join('\n')}\n\n` : `\n`) +
-      (imageLinks.length > 0 ? `${imageLinks.join('\n')}\n\n` : '') +
       `📋 Personalização feita no editor online\n\n` +
       `Poderia me enviar mais informações sobre valores e prazos?`;
+
+    // Try native share with files (mobile) — sends images directly to WhatsApp
+    if (navigator.share && files.length > 0) {
+      try {
+        const shareData: ShareData = { text: message, files };
+        if (navigator.canShare && navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+        // Fall through to wa.me link
+      }
+    }
+
+    // Desktop fallback: open WhatsApp with text + auto-download images
+    for (const file of files) {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url; a.download = file.name; a.click();
+      URL.revokeObjectURL(url);
+      await new Promise(r => setTimeout(r, 300));
+    }
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
