@@ -951,9 +951,9 @@ const ShirtEditor = () => {
         </div>
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* Sidebar panel — on mobile: bottom slide-up, on desktop: left sidebar */}
+          {/* Sidebar panel — on mobile: top panel above canvas, on desktop: left sidebar */}
           {activeTab && (
-            <aside className="order-2 lg:order-1 lg:w-64 border-t lg:border-t-0 lg:border-r border-border bg-card p-3 overflow-y-auto max-h-[30vh] lg:max-h-none">
+            <aside className="order-1 lg:order-1 lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-card p-3 overflow-y-auto max-h-[40vh] lg:max-h-none shrink-0">
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
@@ -1021,7 +1021,7 @@ const ShirtEditor = () => {
           )}
 
           {/* Canvas area */}
-          <div className="order-1 lg:order-2 flex-1 flex flex-col overflow-hidden bg-muted/30">
+          <div className="order-2 lg:order-2 flex-1 flex flex-col overflow-hidden bg-muted/30 min-h-0">
             {/* Desktop zoom bar */}
             <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
               <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
