@@ -470,6 +470,7 @@ export type Database = {
           height_percent: number
           id: string
           name: string
+          patch_only: boolean
           path_data: Json | null
           rotation: number
           shared: boolean
@@ -491,6 +492,7 @@ export type Database = {
           height_percent?: number
           id?: string
           name: string
+          patch_only?: boolean
           path_data?: Json | null
           rotation?: number
           shared?: boolean
@@ -512,6 +514,7 @@ export type Database = {
           height_percent?: number
           id?: string
           name?: string
+          patch_only?: boolean
           path_data?: Json | null
           rotation?: number
           shared?: boolean

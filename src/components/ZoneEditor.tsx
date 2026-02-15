@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Move, X, Link, PenTool, RotateCw, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { Plus, Trash2, Move, X, Link, PenTool, RotateCw, ZoomIn, ZoomOut, Maximize, Fish } from 'lucide-react';
 import { toast } from 'sonner';
 import PolygonDrawer from '@/components/PolygonDrawer';
 
@@ -511,6 +511,15 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                           <Button
                             variant="ghost"
                             size="icon"
+                            className={`h-6 w-6 ${zone.patchOnly ? 'text-orange-500' : 'text-muted-foreground'}`}
+                            title={zone.patchOnly ? 'Exclusiva para peixes (clique para desativar)' : 'Marcar como exclusiva para peixes'}
+                            onClick={() => updateZone(zone.id, { patchOnly: !zone.patchOnly })}
+                          >
+                            <Fish className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className={`h-6 w-6 ${zone.shared ? 'text-primary' : 'text-muted-foreground'}`}
                             title={zone.shared ? 'Compartilhada (frente e costas)' : 'Clique para compartilhar com ambos os lados'}
                             onClick={() => updateZone(zone.id, { shared: !zone.shared })}
@@ -521,6 +530,9 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                             <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
                         </div>
+                        {zone.patchOnly && (
+                          <p className="text-[10px] text-orange-500 font-medium">🐟 Exclusiva para peixes</p>
+                        )}
                         {zone.shared && (
                           <p className="text-[10px] text-primary font-medium">🔗 Compartilhada frente/costas</p>
                         )}

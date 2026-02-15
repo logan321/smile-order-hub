@@ -1,0 +1,1 @@
+ALTER TABLE public.template_zones ADD COLUMN patch_only boolean NOT NULL DEFAULT false;
