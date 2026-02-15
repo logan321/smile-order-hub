@@ -396,6 +396,9 @@ const ShirtEditor = () => {
     }
 
     (text as any)._userElement = true;
+    (text as any)._elementType = 'text';
+    (text as any)._fontName = fontFamily;
+    (text as any)._textContent = textInput;
     if (zoneClipData) (text as any)._zoneClipData = zoneClipData;
     canvas.add(text);
     return text;
@@ -487,6 +490,13 @@ const ShirtEditor = () => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       toast.success(`Estampa "${stamp.name}" aplicada!`);
+      // Tag stamp metadata on front canvas objects
+      frontCanvas.getObjects().forEach((obj: any) => {
+        if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
+      });
+      backCanvas.getObjects().forEach((obj: any) => {
+        if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
+      });
     } catch (err) {
       console.error('Erro ao aplicar estampa:', err);
       toast.error('Erro ao aplicar estampa');
@@ -542,6 +552,8 @@ const ShirtEditor = () => {
 
         img.set({ left, top, scaleX: scale, scaleY: scale, clipPath, angle: coords.rotation || 0 });
         (img as any)._userElement = true;
+        (img as any)._elementType = 'patch';
+        (img as any)._patchName = patch.name;
         (img as any)._zoneClipData = coords.pathData; // store for reference
         canvas.add(img);
         canvas.renderAll();
@@ -640,6 +652,8 @@ const ShirtEditor = () => {
 
       img.set({ left, top, scaleX: scale, scaleY: scale, clipPath, angle: coords.rotation || 0 });
       (img as any)._userElement = true;
+      (img as any)._elementType = 'patch';
+      (img as any)._patchName = patch.name;
       (img as any)._zoneClipData = coords.pathData;
       canvas.add(img);
       canvas.renderAll();
@@ -702,6 +716,7 @@ const ShirtEditor = () => {
 
     img.set({ left, top, scaleX: scale, scaleY: scale, clipPath: logoClip });
     (img as any)._userElement = true;
+    (img as any)._elementType = 'logo';
     if (zoneClipData) (img as any)._zoneClipData = zoneClipData;
     canvas.add(img);
     return img;
@@ -831,9 +846,8 @@ const ShirtEditor = () => {
     setDownloading(false);
   };
 
-  // WhatsApp quote
+  // WhatsApp quote - collect design details and open WhatsApp directly
   const handleWhatsAppQuote = async () => {
-    // Fetch whatsapp number from database using template owner's user_id
     const ownerUserId = selectedTemplate?.userId;
     if (!ownerUserId) { toast.error('Template sem dono identificado'); return; }
 
@@ -847,50 +861,46 @@ const ShirtEditor = () => {
 
     const templateName = selectedTemplate?.name || 'Camisa personalizada';
 
-    // Export canvas images as files for sharing
-    const frontCanvas = frontFabricRef.current;
-    const backCanvas = backFabricRef.current;
-    const files: File[] = [];
+    // Collect design details from both canvases
+    const designDetails: string[] = [];
+    const stampNames = new Set<string>();
+    const patchNames = new Set<string>();
+    const textElements: { text: string; font: string }[] = [];
+    let hasLogo = false;
 
-    try {
-      if (frontCanvas) {
-        const frontDataUrl = exportCanvas(frontCanvas);
-        const frontBlob = await (await fetch(frontDataUrl)).blob();
-        files.push(new File([frontBlob], `${templateName}_frente.png`, { type: 'image/png' }));
-      }
-      if (backCanvas) {
-        const backDataUrl = exportCanvas(backCanvas);
-        const backBlob = await (await fetch(backDataUrl)).blob();
-        files.push(new File([backBlob], `${templateName}_costas.png`, { type: 'image/png' }));
-      }
-    } catch (err) {
-      console.error('Error exporting canvases:', err);
-    }
+    [frontFabricRef.current, backFabricRef.current].forEach(canvas => {
+      if (!canvas) return;
+      canvas.getObjects().forEach((obj: any) => {
+        if (obj._isBackground && obj._stampName) {
+          stampNames.add(`${obj._stampName}${obj._stampCategory ? ` (${obj._stampCategory})` : ''}`);
+        }
+        if (obj._userElement) {
+          if (obj._elementType === 'text' && obj._textContent) {
+            textElements.push({ text: obj._textContent, font: obj._fontName || 'Arial' });
+          }
+          if (obj._elementType === 'patch' && obj._patchName) {
+            patchNames.add(obj._patchName);
+          }
+          if (obj._elementType === 'logo') {
+            hasLogo = true;
+          }
+        }
+      });
+    });
+
+    if (stampNames.size > 0) designDetails.push(`🎨 Estampa: ${[...stampNames].join(', ')}`);
+    if (patchNames.size > 0) designDetails.push(`🐟 Peixes: ${[...patchNames].join(', ')}`);
+    textElements.forEach(t => designDetails.push(`✏️ Texto: "${t.text}" — Fonte: ${t.font}`));
+    if (hasLogo) designDetails.push(`📎 Logo personalizado incluso`);
 
     const message =
       `Olá! Gostaria de fazer um orçamento para:\n\n` +
       `🎽 Modelo: ${templateName}\n` +
+      (designDetails.length > 0 ? `\n${designDetails.join('\n')}\n\n` : `\n`) +
       `📋 Personalização feita no editor online\n\n` +
       `Poderia me enviar mais informações sobre valores e prazos?`;
 
-    // Try Web Share API with files first (mobile-friendly)
-    if (navigator.share && files.length > 0) {
-      try {
-        const canShareFiles = navigator.canShare && navigator.canShare({ files });
-        if (canShareFiles) {
-          await navigator.share({
-            text: message,
-            files,
-          });
-          return;
-        }
-      } catch (err) {
-        // User cancelled or share failed, fall through to WhatsApp link
-        if ((err as Error).name === 'AbortError') return;
-      }
-    }
-
-    // Fallback: open WhatsApp with message (without files)
+    // Always open WhatsApp directly
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
