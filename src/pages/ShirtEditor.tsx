@@ -846,7 +846,7 @@ const ShirtEditor = () => {
     setDownloading(false);
   };
 
-  // WhatsApp quote - collect design details and open WhatsApp directly
+  // WhatsApp quote - collect design details, upload previews, and open WhatsApp directly
   const handleWhatsAppQuote = async () => {
     const ownerUserId = selectedTemplate?.userId;
     if (!ownerUserId) { toast.error('Template sem dono identificado'); return; }
@@ -859,7 +859,39 @@ const ShirtEditor = () => {
       return;
     }
 
+    toast.info('Preparando orçamento...');
+
     const templateName = selectedTemplate?.name || 'Camisa personalizada';
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+
+    // Upload canvas previews to storage and get public URLs
+    const imageLinks: string[] = [];
+    const timestamp = Date.now();
+    try {
+      if (frontCanvas) {
+        const frontDataUrl = exportCanvas(frontCanvas);
+        const frontBlob = await (await fetch(frontDataUrl)).blob();
+        const frontPath = `quotes/${timestamp}_frente.png`;
+        const { error } = await supabase.storage.from('shirt-designs').upload(frontPath, frontBlob, { contentType: 'image/png' });
+        if (!error) {
+          const { data: urlData } = supabase.storage.from('shirt-designs').getPublicUrl(frontPath);
+          imageLinks.push(`📸 Frente: ${urlData.publicUrl}`);
+        }
+      }
+      if (backCanvas) {
+        const backDataUrl = exportCanvas(backCanvas);
+        const backBlob = await (await fetch(backDataUrl)).blob();
+        const backPath = `quotes/${timestamp}_costas.png`;
+        const { error } = await supabase.storage.from('shirt-designs').upload(backPath, backBlob, { contentType: 'image/png' });
+        if (!error) {
+          const { data: urlData } = supabase.storage.from('shirt-designs').getPublicUrl(backPath);
+          imageLinks.push(`📸 Costas: ${urlData.publicUrl}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error uploading previews:', err);
+    }
 
     // Collect design details from both canvases
     const designDetails: string[] = [];
@@ -868,7 +900,7 @@ const ShirtEditor = () => {
     const textElements: { text: string; font: string }[] = [];
     let hasLogo = false;
 
-    [frontFabricRef.current, backFabricRef.current].forEach(canvas => {
+    [frontCanvas, backCanvas].forEach(canvas => {
       if (!canvas) return;
       canvas.getObjects().forEach((obj: any) => {
         if (obj._isBackground && obj._stampName) {
@@ -897,10 +929,10 @@ const ShirtEditor = () => {
       `Olá! Gostaria de fazer um orçamento para:\n\n` +
       `🎽 Modelo: ${templateName}\n` +
       (designDetails.length > 0 ? `\n${designDetails.join('\n')}\n\n` : `\n`) +
+      (imageLinks.length > 0 ? `${imageLinks.join('\n')}\n\n` : '') +
       `📋 Personalização feita no editor online\n\n` +
       `Poderia me enviar mais informações sobre valores e prazos?`;
 
-    // Always open WhatsApp directly
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
