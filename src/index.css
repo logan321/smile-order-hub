@@ -122,6 +122,27 @@
   }
 }
 
+/* Custom scrollbar for editor canvas area */
+.editor-scroll::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+.editor-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 7px;
+}
+.editor-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.4);
+  border-radius: 7px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.editor-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.6);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
 /* High-quality canvas rendering */
 canvas.lower-canvas,
 canvas.upper-canvas {
