@@ -149,3 +149,12 @@ canvas.upper-canvas {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
 }
+
+/* Protected images - prevent easy download */
+.protected-img {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+}

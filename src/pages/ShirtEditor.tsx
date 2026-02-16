@@ -12,6 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
+import { toProxyUrl } from '@/lib/imageProxy';
 
 interface ShirtEditorProps {
   useOwnAssets?: boolean;
@@ -313,25 +314,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
       ]);
       const allT = (templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id, nicheId: t.niche_id ?? null,
+        id: t.id, name: t.name, frontImageUrl: toProxyUrl(t.front_image_url), backImageUrl: toProxyUrl(t.back_image_url), userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
       setAllTemplates(allT);
       setTemplates(allT);
       const allS = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
+        id: s.id, name: s.name, category: s.category, imageUrl: toProxyUrl(s.image_url), backImageUrl: s.back_image_url ? toProxyUrl(s.back_image_url) : null,
       })) ?? [];
       setAllStamps(allS);
       setStamps(allS);
       const allP = (patchesRes.data as any[])?.map(p => ({
-        id: p.id, name: p.name, imageUrl: p.image_url, targetZoneName: p.target_zone_name, nicheId: p.niche_id ?? null,
+        id: p.id, name: p.name, imageUrl: toProxyUrl(p.image_url), targetZoneName: p.target_zone_name, nicheId: p.niche_id ?? null,
       })) ?? [];
       setAllPatches(allP);
       setPatches(allP);
       setTextStyles((textStylesRes.data as any[])?.map(ts => ({
-        id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
+        id: ts.id, name: ts.name, category: ts.category, imageUrl: toProxyUrl(ts.image_url),
       })) ?? []);
       setNiches((nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
+        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: toProxyUrl(n.cover_image_url || ''), backgroundImageUrl: toProxyUrl(n.background_image_url || ''),
       })) ?? []);
       setLoading(false);
     };
@@ -1224,7 +1225,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   >
                     {coverImage ? (
                       <div className="w-full aspect-[3/4] bg-muted/30 overflow-hidden">
-                        <img src={coverImage} alt={n.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
+                        <img src={coverImage} alt={n.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform protected-img" />
                       </div>
                     ) : (
                       <div className="w-full aspect-[3/4] bg-muted/30 flex items-center justify-center">
@@ -1282,8 +1283,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   className="group rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-md transition-all"
                 >
                   <div className="grid grid-cols-2 gap-1 p-2">
-                    <img src={t.frontImageUrl} alt="Frente" className="w-full aspect-[3/4] object-contain rounded bg-muted/30" />
-                    <img src={t.backImageUrl} alt="Costas" className="w-full aspect-[3/4] object-contain rounded bg-muted/30" />
+                    <img src={t.frontImageUrl} alt="Frente" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
+                    <img src={t.backImageUrl} alt="Costas" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
                   </div>
                   <div className="px-3 py-2.5 border-t border-border/30">
                     <p className="text-sm font-semibold group-hover:text-primary transition-colors">{t.name}</p>
@@ -1382,7 +1383,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="grid grid-cols-3 gap-2">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1" />
+                          <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1 protected-img" />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
@@ -1433,7 +1434,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   </div>
                   {selectedTextStyle && (
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/30">
-                      <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded" />
+                      <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded protected-img" />
                       <span className="text-[10px] text-foreground font-medium flex-1 truncate">{selectedTextStyle.name}</span>
                       <button onClick={() => setSelectedTextStyle(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
                     </div>
@@ -1481,7 +1482,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="grid grid-cols-4 gap-2">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-0.5" />
+                            <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
@@ -1530,7 +1531,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
                     {selectedTextStyle && (
                       <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/30">
-                        <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded" />
+                        <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded protected-img" />
                         <span className="text-[10px] text-foreground font-medium flex-1 truncate">{selectedTextStyle.name}</span>
                         <button onClick={() => setSelectedTextStyle(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
                       </div>
@@ -1756,7 +1757,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {textStyles.map(ts => (
                 <button key={ts.id} onClick={() => { selectTextStyle(ts); setShowTextStylesOverlay(false); }} className="group rounded-xl border-2 border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all bg-card" title={ts.name}>
-                  <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-2 bg-muted/20" />
+                  <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-2 bg-muted/20 protected-img" />
                   <p className="text-sm text-center text-muted-foreground py-2 truncate px-2 font-medium group-hover:text-primary transition-colors">{ts.name}</p>
                 </button>
               ))}
