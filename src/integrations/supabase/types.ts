@@ -419,6 +419,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          editor_enabled: boolean
           id: string
           plan: string
           status: string
@@ -433,6 +434,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          editor_enabled?: boolean
           id?: string
           plan?: string
           status?: string
@@ -447,6 +449,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          editor_enabled?: boolean
           id?: string
           plan?: string
           status?: string

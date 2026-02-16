@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield, Shirt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -19,10 +19,11 @@ const navItems = [
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
-  const { isAdmin } = useSubscription();
+  const { isAdmin, editorEnabled } = useSubscription();
 
   const allNavItems = [
     ...navItems,
+    ...(editorEnabled ? [{ label: 'Editor', to: '/meu-editor', icon: Shirt }] : []),
     ...(isAdmin ? [{ label: 'Admin', to: '/admin', icon: Shield }] : []),
   ];
 

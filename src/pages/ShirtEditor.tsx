@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 
+interface ShirtEditorProps {
+  useOwnAssets?: boolean;
+}
 
 const FONT_OPTIONS = [
   { label: 'Arial', value: 'Arial', google: false },
@@ -74,7 +78,8 @@ type PatchSideChoice = 'front' | 'back' | 'both' | null;
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
 
-const ShirtEditor = () => {
+const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
+  const { userId: urlUserId } = useParams<{ userId: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
   const frontFabricRef = useRef<Canvas | null>(null);
@@ -165,13 +170,27 @@ const ShirtEditor = () => {
     };
   }, []);
 
-  // Fetch templates and stamps
+  // Determine which user's assets to load
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+
   useEffect(() => {
+    if (urlUserId) {
+      setOwnerUserId(urlUserId);
+    } else if (useOwnAssets) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setOwnerUserId(session?.user?.id ?? null);
+      });
+    }
+  }, [urlUserId, useOwnAssets]);
+
+  // Fetch templates and stamps filtered by owner
+  useEffect(() => {
+    if (!ownerUserId) return;
     const fetchData = async () => {
       const [templatesRes, stampsRes, patchesRes] = await Promise.all([
-        supabase.from('shirt_templates').select('*').eq('active', true),
-        supabase.from('stamp_catalog').select('*').eq('active', true),
-        supabase.from('patch_catalog').select('*').eq('active', true),
+        supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
+        supabase.from('stamp_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
+        supabase.from('patch_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
       ]);
       setTemplates((templatesRes.data as any[])?.map(t => ({
         id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id,
@@ -185,7 +204,7 @@ const ShirtEditor = () => {
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [ownerUserId]);
 
   // Load background image onto a canvas
   const loadBackground = useCallback(async (canvas: Canvas, imageUrl: string, side: 'front' | 'back') => {

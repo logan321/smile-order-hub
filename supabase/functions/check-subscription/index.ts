@@ -40,7 +40,7 @@ serve(async (req) => {
       .single();
 
     if (roleData) {
-      return new Response(JSON.stringify({ active: true, isAdmin: true, status: 'admin' }), {
+      return new Response(JSON.stringify({ active: true, isAdmin: true, status: 'admin', editorEnabled: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -53,7 +53,7 @@ serve(async (req) => {
       .single();
 
     if (!sub) {
-      return new Response(JSON.stringify({ active: false, isAdmin: false, status: 'none' }), {
+      return new Response(JSON.stringify({ active: false, isAdmin: false, status: 'none', editorEnabled: false }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -65,6 +65,7 @@ serve(async (req) => {
         isAdmin: false,
         status: 'blocked',
         blocked: true,
+        editorEnabled: false,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -81,6 +82,7 @@ serve(async (req) => {
       status: sub.status,
       trialEndsAt: sub.trial_ends_at,
       currentPeriodEnd: sub.current_period_end,
+      editorEnabled: sub.editor_enabled ?? false,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

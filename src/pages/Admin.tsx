@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Users, AlertTriangle, CheckCircle, Ban, ShieldCheck, MoreHorizontal, CalendarPlus, Clock, DollarSign } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Users, AlertTriangle, CheckCircle, Ban, ShieldCheck, MoreHorizontal, CalendarPlus, Clock, DollarSign, Shirt, ExternalLink } from 'lucide-react';
 import { format, addDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -21,6 +22,7 @@ interface Subscriber {
   current_period_end: string | null;
   created_at: string;
   blocked: boolean;
+  editor_enabled: boolean;
 }
 
 type ModalAction = 'extend_trial' | 'add_months' | 'change_plan' | null;
@@ -70,6 +72,22 @@ const Admin = () => {
       toast.error(err.message || 'Erro ao atualizar');
     } finally {
       setToggling(null);
+    }
+  };
+
+  const toggleEditor = async (userId: string, currentlyEnabled: boolean) => {
+    try {
+      const { error } = await supabase.functions.invoke('admin-subscribers', {
+        method: 'POST',
+        body: { action: 'toggle_editor', target_user_id: userId, enabled: !currentlyEnabled },
+      });
+      if (error) throw error;
+      setSubscribers(prev =>
+        prev.map(s => s.user_id === userId ? { ...s, editor_enabled: !currentlyEnabled } : s)
+      );
+      toast.success(!currentlyEnabled ? 'Editor liberado' : 'Editor desativado');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar editor');
     }
   };
 
@@ -257,12 +275,13 @@ const Admin = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-2 font-medium">E-mail</th>
-                    <th className="text-left py-3 px-2 font-medium">Status</th>
-                    <th className="text-left py-3 px-2 font-medium">Plano</th>
-                    <th className="text-left py-3 px-2 font-medium">Cadastro</th>
-                    <th className="text-left py-3 px-2 font-medium">Vencimento</th>
-                    <th className="text-left py-3 px-2 font-medium">Ações</th>
+                     <th className="text-left py-3 px-2 font-medium">E-mail</th>
+                     <th className="text-left py-3 px-2 font-medium">Status</th>
+                     <th className="text-left py-3 px-2 font-medium">Plano</th>
+                     <th className="text-left py-3 px-2 font-medium">Editor</th>
+                     <th className="text-left py-3 px-2 font-medium">Cadastro</th>
+                     <th className="text-left py-3 px-2 font-medium">Vencimento</th>
+                     <th className="text-left py-3 px-2 font-medium">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -271,6 +290,25 @@ const Admin = () => {
                       <td className="py-3 px-2">{sub.email}</td>
                       <td className="py-3 px-2">{statusBadge(sub)}</td>
                       <td className="py-3 px-2 text-muted-foreground capitalize">{sub.plan}</td>
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={sub.editor_enabled}
+                            onCheckedChange={() => toggleEditor(sub.user_id, sub.editor_enabled)}
+                          />
+                          {sub.editor_enabled && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => window.open(`/editor/${sub.user_id}`, '_blank')}
+                              title="Editar como este cliente"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-2 text-muted-foreground">
                         {format(new Date(sub.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                       </td>
