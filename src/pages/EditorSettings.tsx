@@ -10,10 +10,15 @@ import { useStampCatalog } from '@/hooks/useStampCatalog';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import ZoneEditor from '@/components/ZoneEditor';
 
-const EditorSettings = () => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates();
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog();
-  const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog();
+interface EditorSettingsProps {
+  targetUserId?: string;
+  targetEmail?: string;
+}
+
+const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
+  const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
 
   // WhatsApp
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -21,20 +26,21 @@ const EditorSettings = () => {
 
   useEffect(() => {
     const loadWhatsapp = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { setWhatsappLoading(false); return; }
-      const { data } = await supabase.from('user_settings').select('whatsapp_number').eq('user_id', session.user.id).maybeSingle();
+      const userId = targetUserId || (await supabase.auth.getSession()).data.session?.user?.id;
+      if (!userId) { setWhatsappLoading(false); return; }
+      const { data } = await supabase.from('user_settings').select('whatsapp_number').eq('user_id', userId).maybeSingle();
       if (data) setWhatsappNumber(data.whatsapp_number);
       setWhatsappLoading(false);
     };
     loadWhatsapp();
-  }, []);
+  }, [targetUserId]);
 
   const handleSaveWhatsapp = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) { toast.error('Faça login primeiro'); return; }
+    const userId = targetUserId || session.user.id;
     const { error } = await supabase.from('user_settings').upsert({
-      user_id: session.user.id,
+      user_id: userId,
       whatsapp_number: whatsappNumber.replace(/\D/g, ''),
     }, { onConflict: 'user_id' });
     if (error) { toast.error('Erro ao salvar'); console.error(error); return; }
@@ -121,8 +127,14 @@ const EditorSettings = () => {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">Configurações do Editor</h1>
-        <p className="page-description">Gerencie templates, estampas, peixes e WhatsApp do seu editor de camisas</p>
+        <h1 className="page-title">
+          {targetUserId ? `Editor de: ${targetEmail || 'Cliente'}` : 'Configurações do Editor'}
+        </h1>
+        <p className="page-description">
+          {targetUserId
+            ? 'Gerenciando templates, estampas, peixes e WhatsApp deste cliente'
+            : 'Gerencie templates, estampas, peixes e WhatsApp do seu editor de camisas'}
+        </p>
       </div>
 
       <Tabs defaultValue="templates" className="max-w-3xl">

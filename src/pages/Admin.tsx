@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import { Users, AlertTriangle, CheckCircle, Ban, ShieldCheck, MoreHorizontal, CalendarPlus, Clock, DollarSign, Shirt, ExternalLink } from 'lucide-react';
+import { Users, AlertTriangle, CheckCircle, Ban, ShieldCheck, MoreHorizontal, CalendarPlus, Clock, DollarSign, Shirt, ExternalLink, Palette } from 'lucide-react';
 import { format, addDays, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -28,6 +29,7 @@ interface Subscriber {
 type ModalAction = 'extend_trial' | 'add_months' | 'change_plan' | null;
 
 const Admin = () => {
+  const navigate = useNavigate();
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -327,6 +329,12 @@ const Admin = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            {sub.editor_enabled && (
+                              <DropdownMenuItem onClick={() => navigate(`/admin/editor/${sub.user_id}?email=${encodeURIComponent(sub.email)}`)}>
+                                <Palette className="h-4 w-4 mr-2" />
+                                Configurar Editor
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => openModal('extend_trial', sub)}>
                               <CalendarPlus className="h-4 w-4 mr-2" />
                               Adicionar dias (trial)
