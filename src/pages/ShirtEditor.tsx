@@ -81,15 +81,15 @@ const CANVAS_HEIGHT = 625;
 // Configure Fabric.js selection controls globally — large, high-contrast circles for mobile touch
 FabricObject.ownDefaults = {
   ...FabricObject.ownDefaults,
-  cornerSize: 16,
-  touchCornerSize: 44,
+  cornerSize: 24,
+  touchCornerSize: 48,
   cornerStyle: 'circle' as const,
-  cornerColor: '#ffffff',
-  cornerStrokeColor: '#2563eb',
+  cornerColor: '#2563eb',
+  cornerStrokeColor: '#ffffff',
   transparentCorners: false,
   borderColor: '#2563eb',
   borderScaleFactor: 2.5,
-  padding: 8,
+  padding: 10,
   borderDashArray: [6, 3],
 };
 
