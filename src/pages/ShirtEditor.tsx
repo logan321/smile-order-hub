@@ -84,12 +84,20 @@ const loadGoogleFont = (fontName: string): Promise<void> => {
   });
 };
 
+interface Niche {
+  id: string;
+  name: string;
+  icon: string;
+  patchLabel: string;
+}
+
 interface Template {
   id: string;
   name: string;
   frontImageUrl: string;
   backImageUrl: string;
   userId: string;
+  nicheId: string | null;
 }
 
 interface Stamp {
@@ -131,8 +139,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeTab, setActiveTab] = useState<ToolbarTab>(null);
 
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [allTemplates, setAllTemplates] = useState<Template[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
+  const [allStamps, setAllStamps] = useState<Stamp[]>([]);
   const [patches, setPatches] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string }[]>([]);
+  const [allPatches, setAllPatches] = useState<{ id: string; name: string; imageUrl: string; targetZoneName: string }[]>([]);
+  const [niches, setNiches] = useState<Niche[]>([]);
+  const [selectedNiche, setSelectedNiche] = useState<Niche | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -232,27 +245,37 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   }, [urlUserId, useOwnAssets]);
 
-  // Fetch templates and stamps filtered by owner
+  // Fetch templates, stamps, patches, text styles and niches filtered by owner
   useEffect(() => {
     if (!ownerUserId) return;
     const fetchData = async () => {
-      const [templatesRes, stampsRes, patchesRes, textStylesRes] = await Promise.all([
+      const [templatesRes, stampsRes, patchesRes, textStylesRes, nichesRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('stamp_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('patch_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('text_styles').select('*').eq('active', true).eq('user_id', ownerUserId),
+        supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
       ]);
-      setTemplates((templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id,
-      })) ?? []);
-      setStamps((stampsRes.data as any[])?.map(s => ({
+      const allT = (templatesRes.data as any[])?.map(t => ({
+        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id, nicheId: t.niche_id ?? null,
+      })) ?? [];
+      setAllTemplates(allT);
+      setTemplates(allT);
+      const allS = (stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
-      })) ?? []);
-      setPatches((patchesRes.data as any[])?.map(p => ({
-        id: p.id, name: p.name, imageUrl: p.image_url, targetZoneName: p.target_zone_name,
-      })) ?? []);
+      })) ?? [];
+      setAllStamps(allS);
+      setStamps(allS);
+      const allP = (patchesRes.data as any[])?.map(p => ({
+        id: p.id, name: p.name, imageUrl: p.image_url, targetZoneName: p.target_zone_name, nicheId: p.niche_id ?? null,
+      })) ?? [];
+      setAllPatches(allP);
+      setPatches(allP);
       setTextStyles((textStylesRes.data as any[])?.map(ts => ({
         id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
+      })) ?? []);
+      setNiches((nichesRes.data as any[])?.map(n => ({
+        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label,
       })) ?? []);
       setLoading(false);
     };
@@ -1124,6 +1147,62 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
 
+  // Handle niche selection — filter templates/stamps/patches by niche
+  const handleSelectNiche = (niche: Niche) => {
+    setSelectedNiche(niche);
+    setTemplates(allTemplates.filter(t => t.nicheId === niche.id));
+    setStamps(allStamps.filter((s: any) => s.nicheId === niche.id || !s.nicheId));
+    setPatches(allPatches.filter((p: any) => p.nicheId === niche.id || !p.nicheId));
+  };
+
+  const handleBackToNiches = () => {
+    setSelectedNiche(null);
+    setTemplates(allTemplates);
+    setStamps(allStamps);
+    setPatches(allPatches);
+  };
+
+  // Get current niche's patch label
+  const currentPatchLabel = selectedNiche?.patchLabel || 'Emblemas';
+
+  // ─── Niche selection screen ────────────────────────────────
+  if (!selectedTemplate && !selectedNiche && niches.length > 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <img src={logo} alt="Logo" className="h-10 w-auto mx-auto mb-3" />
+            <h1 className="text-2xl font-bold font-display">Editor de Camisas</h1>
+            <p className="text-muted-foreground mt-1">Escolha o segmento para começar</p>
+          </div>
+
+          {loading ? (
+            <p className="text-center text-muted-foreground">Carregando...</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+              {niches.map(n => {
+                const nicheTemplateCount = allTemplates.filter(t => t.nicheId === n.id).length;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => handleSelectNiche(n)}
+                    className="group rounded-2xl border-2 border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all p-6 flex flex-col items-center gap-3"
+                  >
+                    <span className="text-5xl group-hover:scale-110 transition-transform">{n.icon}</span>
+                    <div className="text-center">
+                      <p className="text-base font-bold group-hover:text-primary transition-colors">{n.name}</p>
+                      <p className="text-xs text-muted-foreground">{nicheTemplateCount} modelo{nicheTemplateCount !== 1 ? 's' : ''}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ─── Template selection screen ────────────────────────────────
   if (!selectedTemplate) {
     return (
@@ -1131,7 +1210,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <img src={logo} alt="Logo" className="h-10 w-auto mx-auto mb-3" />
-            <h1 className="text-2xl font-bold font-display">Editor de Camisas</h1>
+            {selectedNiche && (
+              <button onClick={handleBackToNiches} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
+                <ChevronLeft className="h-4 w-4" /> Voltar aos segmentos
+              </button>
+            )}
+            <h1 className="text-2xl font-bold font-display">
+              {selectedNiche ? `${selectedNiche.icon} ${selectedNiche.name}` : 'Editor de Camisas'}
+            </h1>
             <p className="text-muted-foreground mt-1">Escolha um modelo para personalizar</p>
           </div>
 
@@ -1141,6 +1227,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <div className="text-center py-16 text-muted-foreground">
               <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-30" />
               <p className="text-lg font-medium">Nenhum template disponível</p>
+              {selectedNiche && (
+                <Button variant="outline" className="mt-4" onClick={handleBackToNiches}>Voltar aos segmentos</Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -1170,7 +1259,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // ─── Toolbar tab items ────────────────────────────────────────
   const toolbarTabs: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
     { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'patches', label: 'Peixes', icon: <Fish className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    { id: 'patches', label: currentPatchLabel, icon: <Fish className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
   ];
@@ -1261,8 +1350,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               )}
               {activeTab === 'patches' && (
                 <div className="patch-protected">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Peixes da Empresa</p>
-                  {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>) : (
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{currentPatchLabel}</p>
+                  {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
                     <div className="grid grid-cols-3 gap-2">
                       {patches.map(p => (
                         <button key={p.id} onClick={() => handlePatchClick(p)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
@@ -1337,7 +1426,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t-2 border-accent rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-h-[45vh] flex flex-col animate-fade-in">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
                 <p className="text-sm font-bold text-foreground">
-                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? '🐟 Peixes' : activeTab === 'text' ? '✏️ Texto' : activeTab === 'logo' ? '📤 Logo / Imagem' : ''}
+                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? `🏷️ ${currentPatchLabel}` : activeTab === 'text' ? '✏️ Texto' : activeTab === 'logo' ? '📤 Logo / Imagem' : ''}
                 </p>
                 <button onClick={() => setActiveTab(null)} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors">
                   <X className="h-5 w-5 text-muted-foreground" />
@@ -1360,7 +1449,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 )}
                 {activeTab === 'patches' && (
                   <div className="patch-protected">
-                    {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum peixe disponível</p>) : (
+                    {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
                       <div className="grid grid-cols-4 gap-2">
                         {patches.map(p => (
                           <button key={p.id} onClick={() => { handlePatchClick(p); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
@@ -1480,7 +1569,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           <div className="bg-card border border-border rounded-xl shadow-xl max-w-sm w-full p-5">
             <div className="flex items-center gap-2 mb-4">
               <Fish className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">{!patchSideChoice ? 'Onde aplicar o peixe?' : 'Escolha a zona'}</h3>
+              <h3 className="font-semibold">{!patchSideChoice ? `Onde aplicar?` : 'Escolha a zona'}</h3>
             </div>
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/30 border border-border/30">
               <div className="h-12 w-12 rounded bg-center bg-contain bg-no-repeat select-none"

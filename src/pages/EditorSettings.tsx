@@ -3,12 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
+import { useNiches } from '@/hooks/useNiches';
 import ZoneEditor from '@/components/ZoneEditor';
 
 interface EditorSettingsProps {
@@ -20,6 +22,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
+  const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche } = useNiches(targetUserId);
 
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
@@ -91,6 +94,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
   // Templates
   const [newTemplateName, setNewTemplateName] = useState('');
+  const [newTemplateNicheId, setNewTemplateNicheId] = useState<string>('');
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
   const frontRef = useRef<HTMLInputElement>(null);
@@ -106,7 +110,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     setUploadingTemplate(true);
     try {
       await addTemplate(newTemplateName.trim(), frontFile, backFile);
+      // Update niche_id if selected
+      if (newTemplateNicheId) {
+        const { data: latestTemplates } = await supabase.from('shirt_templates').select('id').order('created_at', { ascending: false }).limit(1);
+        if (latestTemplates?.[0]) {
+          await supabase.from('shirt_templates').update({ niche_id: newTemplateNicheId } as any).eq('id', latestTemplates[0].id);
+        }
+      }
       setNewTemplateName('');
+      setNewTemplateNicheId('');
       setFrontFile(null);
       setBackFile(null);
       if (frontRef.current) frontRef.current.value = '';
@@ -118,7 +130,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
   // Stamps
   const [newStampName, setNewStampName] = useState('');
-  const [newStampCategory, setNewStampCategory] = useState('Geral');
+  const [newStampNicheId, setNewStampNicheId] = useState<string>('');
   const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
   const [stampBackFile, setStampBackFile] = useState<File | null>(null);
   const stampFrontRef = useRef<HTMLInputElement>(null);
@@ -132,9 +144,17 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     }
     setUploadingStamp(true);
     try {
-      await addStamp(newStampName.trim(), newStampCategory, stampFrontFile, stampBackFile);
+      const nicheObj = niches.find(n => n.id === newStampNicheId);
+      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile);
+      // Update niche_id
+      if (newStampNicheId) {
+        const { data: latestStamps } = await supabase.from('stamp_catalog').select('id').order('created_at', { ascending: false }).limit(1);
+        if (latestStamps?.[0]) {
+          await supabase.from('stamp_catalog').update({ niche_id: newStampNicheId } as any).eq('id', latestStamps[0].id);
+        }
+      }
       setNewStampName('');
-      setNewStampCategory('Geral');
+      setNewStampNicheId('');
       setStampFrontFile(null);
       setStampBackFile(null);
       if (stampFrontRef.current) stampFrontRef.current.value = '';
@@ -146,24 +166,121 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
   // Patches
   const [newPatchName, setNewPatchName] = useState('');
+  const [newPatchNicheId, setNewPatchNicheId] = useState<string>('');
   const [patchFile, setPatchFile] = useState<File | null>(null);
   const patchFileRef = useRef<HTMLInputElement>(null);
   const [uploadingPatch, setUploadingPatch] = useState(false);
 
   const handleAddPatch = async () => {
     if (!newPatchName.trim() || !patchFile) {
-      toast.error('Preencha o nome e envie a imagem do peixe');
+      toast.error('Preencha o nome e envie a imagem');
       return;
     }
     setUploadingPatch(true);
     try {
       await addPatch(newPatchName.trim(), patchFile);
+      if (newPatchNicheId) {
+        const { data: latestPatches } = await supabase.from('patch_catalog').select('id').order('created_at', { ascending: false }).limit(1);
+        if (latestPatches?.[0]) {
+          await supabase.from('patch_catalog').update({ niche_id: newPatchNicheId } as any).eq('id', latestPatches[0].id);
+        }
+      }
       setNewPatchName('');
+      setNewPatchNicheId('');
       setPatchFile(null);
       if (patchFileRef.current) patchFileRef.current.value = '';
-      toast.success('Peixe adicionado!');
-    } catch { toast.error('Erro ao adicionar peixe'); }
+      toast.success('Emblema adicionado!');
+    } catch { toast.error('Erro ao adicionar emblema'); }
     setUploadingPatch(false);
+  };
+
+  // Niches form
+  const [newNicheName, setNewNicheName] = useState('');
+  const [newNicheIcon, setNewNicheIcon] = useState('🏷️');
+  const [newNichePatchLabel, setNewNichePatchLabel] = useState('Emblemas');
+  const [editingNiche, setEditingNiche] = useState<string | null>(null);
+  const [editNicheName, setEditNicheName] = useState('');
+  const [editNicheIcon, setEditNicheIcon] = useState('');
+  const [editNichePatchLabel, setEditNichePatchLabel] = useState('');
+
+  const handleAddNiche = async () => {
+    if (!newNicheName.trim()) { toast.error('Nome do nicho é obrigatório'); return; }
+    await addNiche(newNicheName.trim(), newNicheIcon || '🏷️', newNichePatchLabel.trim() || 'Emblemas');
+    setNewNicheName(''); setNewNicheIcon('🏷️'); setNewNichePatchLabel('Emblemas');
+    toast.success('Nicho adicionado!');
+  };
+
+  const startEditNiche = (n: typeof niches[0]) => {
+    setEditingNiche(n.id);
+    setEditNicheName(n.name);
+    setEditNicheIcon(n.icon);
+    setEditNichePatchLabel(n.patchLabel);
+  };
+
+  const saveEditNiche = async () => {
+    if (!editingNiche) return;
+    await updateNiche(editingNiche, { name: editNicheName, icon: editNicheIcon, patchLabel: editNichePatchLabel });
+    setEditingNiche(null);
+    toast.success('Nicho atualizado!');
+  };
+
+  // Helper: get niche name by id (for display on assets)
+  const getNicheName = (nicheId: string | null | undefined) => {
+    if (!nicheId) return null;
+    const n = niches.find(x => x.id === nicheId);
+    return n ? `${n.icon} ${n.name}` : null;
+  };
+
+  // Helper: niche selector component
+  const NicheSelector = ({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-9 text-xs">
+        <SelectValue placeholder={label || 'Selecione o nicho'} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">Sem nicho</SelectItem>
+        {niches.map(n => (
+          <SelectItem key={n.id} value={n.id}>{n.icon} {n.name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  // Get niche info from assets (requires fetching niche_id from raw data)
+  // For display, we'll use a simple mapping approach
+  const [templateNicheMap, setTemplateNicheMap] = useState<Record<string, string | null>>({});
+  const [stampNicheMap, setStampNicheMap] = useState<Record<string, string | null>>({});
+  const [patchNicheMap, setPatchNicheMap] = useState<Record<string, string | null>>({});
+
+  useEffect(() => {
+    const loadNicheMaps = async () => {
+      const userId = targetUserId || (await supabase.auth.getSession()).data.session?.user?.id;
+      if (!userId) return;
+      const [t, s, p] = await Promise.all([
+        supabase.from('shirt_templates').select('id, niche_id').eq('user_id', userId),
+        supabase.from('stamp_catalog').select('id, niche_id').eq('user_id', userId),
+        supabase.from('patch_catalog').select('id, niche_id').eq('user_id', userId),
+      ]);
+      const tMap: Record<string, string | null> = {};
+      (t.data as any[])?.forEach(r => { tMap[r.id] = r.niche_id; });
+      setTemplateNicheMap(tMap);
+      const sMap: Record<string, string | null> = {};
+      (s.data as any[])?.forEach(r => { sMap[r.id] = r.niche_id; });
+      setStampNicheMap(sMap);
+      const pMap: Record<string, string | null> = {};
+      (p.data as any[])?.forEach(r => { pMap[r.id] = r.niche_id; });
+      setPatchNicheMap(pMap);
+    };
+    loadNicheMaps();
+  }, [targetUserId, templates, stamps, patches]);
+
+  const updateAssetNiche = async (table: 'shirt_templates' | 'stamp_catalog' | 'patch_catalog', id: string, nicheId: string | null) => {
+    await (supabase.from(table).update({ niche_id: nicheId } as any).eq('id', id) as any);
+    // Refresh maps
+    if (table === 'shirt_templates') setTemplateNicheMap(prev => ({ ...prev, [id]: nicheId }));
+    if (table === 'stamp_catalog') setStampNicheMap(prev => ({ ...prev, [id]: nicheId }));
+    if (table === 'patch_catalog') setPatchNicheMap(prev => ({ ...prev, [id]: nicheId }));
+    toast.success('Nicho atualizado!');
   };
 
   return (
@@ -174,8 +291,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
         </h1>
         <p className="page-description">
           {targetUserId
-            ? 'Gerenciando templates, estampas, peixes e WhatsApp deste cliente'
-            : 'Gerencie templates, estampas, peixes e WhatsApp do seu editor de camisas'}
+            ? 'Gerenciando nichos, templates, estampas, emblemas e WhatsApp deste cliente'
+            : 'Gerencie nichos, templates, estampas, emblemas e WhatsApp do seu editor de camisas'}
         </p>
       </div>
 
@@ -201,8 +318,12 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
         </div>
       )}
 
-      <Tabs defaultValue="templates" className="max-w-3xl">
+      <Tabs defaultValue="niches" className="max-w-3xl">
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
+          <TabsTrigger value="niches" className="gap-2">
+            <Tag className="h-4 w-4" />
+            Nichos
+          </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
             <Shirt className="h-4 w-4" />
             Templates
@@ -213,7 +334,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           </TabsTrigger>
           <TabsTrigger value="patches" className="gap-2">
             <Fish className="h-4 w-4" />
-            Peixes
+            Emblemas
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
@@ -224,6 +345,82 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
             WhatsApp
           </TabsTrigger>
         </TabsList>
+
+        {/* Niches */}
+        <TabsContent value="niches">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Tag className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">Nichos de Mercado</h2>
+                <p className="text-sm text-muted-foreground">Crie nichos para organizar seus templates, estampas e emblemas por segmento</p>
+              </div>
+            </div>
+
+            {nichesLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando...</p>
+            ) : (
+              <>
+                {niches.length > 0 && (
+                  <div className="space-y-2 mb-6">
+                    {niches.map(n => (
+                      <div key={n.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/20">
+                        {editingNiche === n.id ? (
+                          <>
+                            <Input value={editNicheIcon} onChange={e => setEditNicheIcon(e.target.value)} className="w-14 h-8 text-center text-lg" />
+                            <Input value={editNicheName} onChange={e => setEditNicheName(e.target.value)} className="flex-1 h-8 text-sm" />
+                            <Input value={editNichePatchLabel} onChange={e => setEditNichePatchLabel(e.target.value)} className="w-28 h-8 text-xs" placeholder="Nome dos emblemas" />
+                            <Button size="sm" variant="outline" className="h-8" onClick={saveEditNiche}><Check className="h-3.5 w-3.5" /></Button>
+                            <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditingNiche(null)}>Cancelar</Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-2xl">{n.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold">{n.name}</p>
+                              <p className="text-[10px] text-muted-foreground">Emblemas: "{n.patchLabel}"</p>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditNiche(n)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (confirm(`Remover nicho "${n.name}"?`)) deleteNiche(n.id); }}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {niches.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground mb-4">
+                    <Tag className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhum nicho cadastrado. Crie nichos como PESCA, AGRO, ESPORTE, etc.</p>
+                  </div>
+                )}
+
+                <div className="space-y-3 border-t border-border/50 pt-4">
+                  <p className="text-sm font-medium">Adicionar novo nicho</p>
+                  <div className="flex gap-2">
+                    <Input value={newNicheIcon} onChange={e => setNewNicheIcon(e.target.value)} placeholder="🎣" className="w-14 text-center text-lg" />
+                    <Input value={newNicheName} onChange={e => setNewNicheName(e.target.value)} placeholder="Nome do nicho (ex: PESCA)" className="flex-1" />
+                    <Input value={newNichePatchLabel} onChange={e => setNewNichePatchLabel(e.target.value)} placeholder="Nome dos emblemas (ex: Peixes)" className="w-36" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    O "Nome dos emblemas" define como a categoria de emblemas será chamada neste nicho. Ex: PESCA → "Peixes", AGRO → "Maquinários"
+                  </p>
+                  <Button onClick={handleAddNiche} disabled={!newNicheName.trim()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Nicho
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </TabsContent>
 
         {/* Templates */}
         <TabsContent value="templates">
@@ -263,8 +460,20 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                           </div>
                         </div>
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
-                          <span className="text-sm font-medium">{t.name}</span>
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium">{t.name}</span>
+                            {getNicheName(templateNicheMap[t.id]) && (
+                              <p className="text-[10px] text-muted-foreground">{getNicheName(templateNicheMap[t.id])}</p>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1">
+                            <Select value={templateNicheMap[t.id] || 'none'} onValueChange={v => updateAssetNiche('shirt_templates', t.id, v === 'none' ? null : v)}>
+                              <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue placeholder="Nicho" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem nicho</SelectItem>
+                                {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
                               <MapPin className="h-3.5 w-3.5 text-primary" />
                             </Button>
@@ -290,7 +499,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
                 <div className="space-y-3 border-t border-border/50 pt-4">
                   <p className="text-sm font-medium">Adicionar novo template</p>
-                  <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="Nome do modelo (ex: Camisa Polo, Baby Look)" />
+                  <div className="flex gap-2">
+                    <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="Nome do modelo (ex: Gola O Manga Longa)" className="flex-1" />
+                    <NicheSelector value={newTemplateNicheId || 'none'} onChange={v => setNewTemplateNicheId(v === 'none' ? '' : v)} label="Nicho" />
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Imagem Frente *</label>
@@ -357,11 +569,22 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
                           <div className="min-w-0">
                             <p className="text-xs font-medium truncate">{s.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{s.category}</p>
+                            {getNicheName(stampNicheMap[s.id]) && (
+                              <p className="text-[10px] text-muted-foreground">{getNicheName(stampNicheMap[s.id])}</p>
+                            )}
                           </div>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover estampa?')) deleteStamp(s.id); }}>
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Select value={stampNicheMap[s.id] || 'none'} onValueChange={v => updateAssetNiche('stamp_catalog', s.id, v === 'none' ? null : v)}>
+                              <SelectTrigger className="h-7 w-20 text-[10px]"><SelectValue placeholder="Nicho" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem</SelectItem>
+                                {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover estampa?')) deleteStamp(s.id); }}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -379,7 +602,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   <p className="text-sm font-medium">Adicionar nova estampa</p>
                   <div className="flex gap-2">
                     <Input value={newStampName} onChange={e => setNewStampName(e.target.value)} placeholder="Nome da estampa" className="flex-1" />
-                    <Input value={newStampCategory} onChange={e => setNewStampCategory(e.target.value)} placeholder="Categoria" className="w-32" />
+                    <NicheSelector value={newStampNicheId || 'none'} onChange={v => setNewStampNicheId(v === 'none' ? '' : v)} label="Nicho" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -413,7 +636,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           </div>
         </TabsContent>
 
-        {/* Patches */}
+        {/* Patches (Emblemas) */}
         <TabsContent value="patches">
           <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -421,8 +644,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 <Fish className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="font-semibold font-display">Catálogo de Peixes</h2>
-                <p className="text-sm text-muted-foreground">Cadastre os peixes da empresa e associe cada um a uma zona de aplicação</p>
+                <h2 className="font-semibold font-display">Catálogo de Emblemas</h2>
+                <p className="text-sm text-muted-foreground">Cadastre os emblemas de cada nicho e associe a uma zona de aplicação</p>
               </div>
             </div>
 
@@ -445,10 +668,22 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
                           <div className="min-w-0">
                             <p className="text-xs font-medium truncate">{p.name}</p>
+                            {getNicheName(patchNicheMap[p.id]) && (
+                              <p className="text-[10px] text-muted-foreground">{getNicheName(patchNicheMap[p.id])}</p>
+                            )}
                           </div>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover peixe?')) deletePatch(p.id); }}>
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Select value={patchNicheMap[p.id] || 'none'} onValueChange={v => updateAssetNiche('patch_catalog', p.id, v === 'none' ? null : v)}>
+                              <SelectTrigger className="h-7 w-20 text-[10px]"><SelectValue placeholder="Nicho" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem</SelectItem>
+                                {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover emblema?')) deletePatch(p.id); }}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -458,15 +693,18 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 {patches.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground mb-4">
                     <Fish className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Nenhum peixe cadastrado. Adicione imagens de peixes da empresa.</p>
+                    <p className="text-sm">Nenhum emblema cadastrado. Adicione imagens de emblemas para cada nicho.</p>
                   </div>
                 )}
 
                 <div className="space-y-3 border-t border-border/50 pt-4">
-                  <p className="text-sm font-medium">Adicionar novo peixe</p>
-                  <Input value={newPatchName} onChange={e => setNewPatchName(e.target.value)} placeholder="Nome do peixe (ex: Logo Empresa, Brasão)" />
+                  <p className="text-sm font-medium">Adicionar novo emblema</p>
+                  <div className="flex gap-2">
+                    <Input value={newPatchName} onChange={e => setNewPatchName(e.target.value)} placeholder="Nome do emblema (ex: Logo Empresa, Trator)" className="flex-1" />
+                    <NicheSelector value={newPatchNicheId || 'none'} onChange={v => setNewPatchNicheId(v === 'none' ? '' : v)} label="Nicho" />
+                  </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Imagem do Peixe *</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Imagem do Emblema *</label>
                     <div className="border border-dashed border-border rounded-lg p-3">
                       <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
                         <Upload className="h-4 w-4 text-muted-foreground" />
@@ -475,10 +713,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                       </label>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">O posicionamento será definido no editor ao selecionar o peixe</p>
+                  <p className="text-[10px] text-muted-foreground">O posicionamento será definido no editor ao selecionar o emblema</p>
                   <Button onClick={handleAddPatch} disabled={uploadingPatch || !newPatchName.trim() || !patchFile}>
                     <Plus className="h-4 w-4 mr-2" />
-                    {uploadingPatch ? 'Enviando...' : 'Adicionar Peixe'}
+                    {uploadingPatch ? 'Enviando...' : 'Adicionar Emblema'}
                   </Button>
                 </div>
               </>

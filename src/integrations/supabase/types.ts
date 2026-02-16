@@ -71,6 +71,36 @@ export type Database = {
         }
         Relationships: []
       }
+      niches: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          patch_label: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          patch_label?: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          patch_label?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_custom_values: {
         Row: {
           custom_field_id: string
@@ -256,6 +286,7 @@ export type Database = {
           id: string
           image_url: string
           name: string
+          niche_id: string | null
           target_zone_name: string
           user_id: string
         }
@@ -265,6 +296,7 @@ export type Database = {
           id?: string
           image_url: string
           name: string
+          niche_id?: string | null
           target_zone_name?: string
           user_id: string
         }
@@ -274,10 +306,19 @@ export type Database = {
           id?: string
           image_url?: string
           name?: string
+          niche_id?: string | null
           target_zone_name?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patch_catalog_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       services: {
         Row: {
@@ -358,6 +399,7 @@ export type Database = {
           front_image_url: string
           id: string
           name: string
+          niche_id: string | null
           user_id: string
         }
         Insert: {
@@ -367,6 +409,7 @@ export type Database = {
           front_image_url: string
           id?: string
           name: string
+          niche_id?: string | null
           user_id: string
         }
         Update: {
@@ -376,9 +419,18 @@ export type Database = {
           front_image_url?: string
           id?: string
           name?: string
+          niche_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shirt_templates_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stamp_catalog: {
         Row: {
@@ -389,6 +441,7 @@ export type Database = {
           id: string
           image_url: string
           name: string
+          niche_id: string | null
           user_id: string
         }
         Insert: {
@@ -399,6 +452,7 @@ export type Database = {
           id?: string
           image_url: string
           name: string
+          niche_id?: string | null
           user_id: string
         }
         Update: {
@@ -409,9 +463,18 @@ export type Database = {
           id?: string
           image_url?: string
           name?: string
+          niche_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stamp_catalog_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
