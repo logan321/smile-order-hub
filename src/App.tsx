@@ -20,6 +20,7 @@ import Admin from "./pages/Admin";
 import SubscriptionPage from "./pages/Subscription";
 import ShirtEditor from "./pages/ShirtEditor";
 import EditorSettings from "./pages/EditorSettings";
+import AdminEditorConfig from "./pages/AdminEditorConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,7 @@ const App = () => (
 
             {/* Admin only */}
             <Route path="/admin" element={<ProtectedRoute><AdminRoute><AppLayout><Admin /></AppLayout></AdminRoute></ProtectedRoute>} />
+            <Route path="/admin/editor/:userId" element={<ProtectedRoute><AdminRoute><AppLayout><AdminEditorConfig /></AppLayout></AdminRoute></ProtectedRoute>} />
 
             {/* Subscription page */}
             <Route path="/assinatura" element={<ProtectedRoute><SubscriptionPage status="none" /></ProtectedRoute>} />

@@ -10,13 +10,16 @@ export interface PatchItem {
   createdAt: string;
 }
 
-export function usePatchCatalog() {
+export function usePatchCatalog(targetUserId?: string) {
   const [patches, setPatches] = useState<PatchItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPatches = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
+    let userId = targetUserId;
+    if (!userId) {
+      const { data: { session } } = await supabase.auth.getSession();
+      userId = session?.user?.id;
+    }
     let query = supabase.from('patch_catalog').select('*').order('created_at', { ascending: false });
     if (userId) query = query.eq('user_id', userId);
     const { data } = await query;
@@ -37,7 +40,7 @@ export function usePatchCatalog() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const userId = session.user.id;
+    const userId = targetUserId || session.user.id;
     const ts = Date.now();
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const path = `${userId}/${ts}_${safeName}`;
