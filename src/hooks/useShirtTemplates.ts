@@ -15,10 +15,11 @@ export function useShirtTemplates() {
   const [loading, setLoading] = useState(true);
 
   const fetchTemplates = useCallback(async () => {
-    const { data } = await supabase
-      .from('shirt_templates')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    let query = supabase.from('shirt_templates').select('*').order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    const { data } = await query;
     setTemplates((data as any[])?.map(t => ({
       id: t.id,
       name: t.name,
