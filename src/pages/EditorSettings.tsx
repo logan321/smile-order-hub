@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil } from 'lucide-react';
+import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
@@ -336,7 +336,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
             Estampas
           </TabsTrigger>
           <TabsTrigger value="patches" className="gap-2">
-            <Fish className="h-4 w-4" />
+            <Sparkles className="h-4 w-4" />
             Emblemas
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
@@ -642,7 +642,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Fish className="h-5 w-5 text-primary" />
+                <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h2 className="font-semibold font-display">Catálogo de Emblemas</h2>
@@ -693,7 +693,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
                 {patches.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground mb-4">
-                    <Fish className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <Sparkles className="h-10 w-10 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">Nenhum emblema cadastrado. Adicione imagens de emblemas para cada nicho.</p>
                   </div>
                 )}

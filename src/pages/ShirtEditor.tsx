@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Fish, X, Sparkles } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X } from 'lucide-react';
 import { Shadow } from 'fabric';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
@@ -1181,17 +1181,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
               {niches.map(n => {
-                const nicheTemplateCount = allTemplates.filter(t => t.nicheId === n.id).length;
+                const nicheTemplates = allTemplates.filter(t => t.nicheId === n.id);
+                const coverImage = nicheTemplates[0]?.frontImageUrl;
                 return (
                   <button
                     key={n.id}
                     onClick={() => handleSelectNiche(n)}
-                    className="group rounded-2xl border-2 border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all p-6 flex flex-col items-center gap-3"
+                    className="group rounded-2xl border-2 border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all flex flex-col items-center"
                   >
-                    <span className="text-5xl group-hover:scale-110 transition-transform">{n.icon}</span>
-                    <div className="text-center">
+                    {coverImage ? (
+                      <div className="w-full aspect-[3/4] bg-muted/30 overflow-hidden">
+                        <img src={coverImage} alt={n.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-[3/4] bg-muted/30 flex items-center justify-center">
+                        <span className="text-5xl opacity-40">{n.icon}</span>
+                      </div>
+                    )}
+                    <div className="text-center py-3 px-2">
                       <p className="text-base font-bold group-hover:text-primary transition-colors">{n.name}</p>
-                      <p className="text-xs text-muted-foreground">{nicheTemplateCount} modelo{nicheTemplateCount !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-muted-foreground">{nicheTemplates.length} modelo{nicheTemplates.length !== 1 ? 's' : ''}</p>
                     </div>
                   </button>
                 );
@@ -1259,7 +1268,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // ─── Toolbar tab items ────────────────────────────────────────
   const toolbarTabs: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
     { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'patches', label: currentPatchLabel, icon: <Fish className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    { id: 'patches', label: currentPatchLabel, icon: <Sparkles className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
   ];
@@ -1568,7 +1577,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-xl shadow-xl max-w-sm w-full p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Fish className="h-5 w-5 text-primary" />
+              <Sparkles className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">{!patchSideChoice ? `Onde aplicar?` : 'Escolha a zona'}</h3>
             </div>
             <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-muted/30 border border-border/30">
