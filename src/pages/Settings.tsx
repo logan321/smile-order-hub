@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import { generateUserManualPDF } from '@/lib/generateManualPDF';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useOrderStages } from '@/hooks/useOrderStages';
@@ -111,9 +112,15 @@ const Settings = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title">Configurações</h1>
-        <p className="page-description">Configure os dados da sua empresa e personalize seu fluxo de trabalho</p>
+      <div className="page-header flex items-center justify-between">
+        <div>
+          <h1 className="page-title">Configurações</h1>
+          <p className="page-description">Configure os dados da sua empresa e personalize seu fluxo de trabalho</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => generateUserManualPDF()} className="gap-2">
+          <Download className="h-4 w-4" />
+          Manual PDF
+        </Button>
       </div>
 
       <Tabs defaultValue="payment" className="max-w-3xl">
