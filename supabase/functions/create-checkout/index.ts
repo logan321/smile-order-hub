@@ -78,6 +78,8 @@ serve(async (req) => {
       'cancel_url': cancelUrl || `${req.headers.get('origin')}/assinatura?payment=cancelled`,
       'subscription_data[trial_period_days]': '7',
       'metadata[user_id]': userId,
+      'payment_method_types[0]': 'card',
+      'payment_method_types[1]': 'boleto',
     });
 
     console.log('Creating checkout session...');
