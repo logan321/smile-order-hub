@@ -3,11 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle, Plus, Trash2, Save, Link, Copy, Check } from 'lucide-react';
+import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
+import { useTextStyles } from '@/hooks/useTextStyles';
 import ZoneEditor from '@/components/ZoneEditor';
 
 interface EditorSettingsProps {
@@ -33,6 +34,22 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       });
     }
   }, [targetUserId]);
+
+  const effectiveUserId = targetUserId || editorUserId || undefined;
+  const { styles: textStyles, loading: textStylesLoading, addStyle: addTextStyle, deleteStyle: deleteTextStyle } = useTextStyles(effectiveUserId);
+
+  // Text style form
+  const [newStyleName, setNewStyleName] = useState('');
+  const [newStyleCategory, setNewStyleCategory] = useState('Geral');
+  const textStyleFileRef = useRef<HTMLInputElement>(null);
+  const [textStyleFile, setTextStyleFile] = useState<File | null>(null);
+
+  const handleAddTextStyle = async () => {
+    if (!newStyleName.trim() || !textStyleFile) { toast.error('Nome e imagem são obrigatórios'); return; }
+    await addTextStyle(newStyleName.trim(), newStyleCategory.trim() || 'Geral', textStyleFile);
+    setNewStyleName(''); setNewStyleCategory('Geral'); setTextStyleFile(null);
+    if (textStyleFileRef.current) textStyleFileRef.current.value = '';
+  };
 
   const publicEditorLink = editorUserId
     ? `${window.location.origin}/editor/${editorUserId}`
@@ -197,6 +214,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           <TabsTrigger value="patches" className="gap-2">
             <Fish className="h-4 w-4" />
             Peixes
+          </TabsTrigger>
+          <TabsTrigger value="textstyles" className="gap-2">
+            <Type className="h-4 w-4" />
+            Estilos de Texto
           </TabsTrigger>
           <TabsTrigger value="whatsapp" className="gap-2">
             <MessageCircle className="h-4 w-4" />
@@ -508,6 +529,60 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 Salvar WhatsApp
               </Button>
             </div>
+          </div>
+        </TabsContent>
+
+        {/* Text Styles */}
+        <TabsContent value="textstyles">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-accent/20 flex items-center justify-center">
+                <Type className="h-5 w-5 text-accent" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">Estilos de Texto</h2>
+                <p className="text-sm text-muted-foreground">Cadastre modelos de texto estilizado (imagens PNG) para seus clientes usarem</p>
+              </div>
+            </div>
+
+            {/* Add new style */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 p-4 rounded-lg border border-border/50 bg-muted/20">
+              <Input value={newStyleName} onChange={e => setNewStyleName(e.target.value)} placeholder="Nome do estilo" />
+              <Input value={newStyleCategory} onChange={e => setNewStyleCategory(e.target.value)} placeholder="Categoria (ex: Nomes, Frases)" />
+              <div className="flex gap-2">
+                <input ref={textStyleFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setTextStyleFile(e.target.files?.[0] || null)} className="text-xs file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary w-full" />
+                <Button size="sm" onClick={handleAddTextStyle} disabled={!newStyleName.trim() || !textStyleFile} className="shrink-0">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-4">
+              💡 Dica: Crie imagens PNG com fundo transparente mostrando textos estilizados (ex: "NOME TIME" com fonte decorada, sombra, gradiente). O cliente verá essas opções no editor e poderá aplicar como imagem na camisa.
+            </p>
+
+            {textStylesLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Carregando...</p>
+            ) : textStyles.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum estilo de texto cadastrado ainda</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {textStyles.map(style => (
+                  <div key={style.id} className="rounded-lg border border-border/50 overflow-hidden bg-background group">
+                    <img src={style.imageUrl} alt={style.name} className="w-full aspect-video object-contain p-2 bg-muted/20" />
+                    <div className="p-2 flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate">{style.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{style.category}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteTextStyle(style.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>

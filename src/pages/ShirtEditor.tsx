@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Fish, X } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Fish, X, Sparkles } from 'lucide-react';
+import { Shadow } from 'fabric';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
@@ -99,7 +100,7 @@ interface Stamp {
   backImageUrl: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | null;
+type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | 'textStyles' | null;
 type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
@@ -141,6 +142,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Arial');
+  const [shadowEnabled, setShadowEnabled] = useState(false);
+  const [shadowColor, setShadowColor] = useState('#000000');
+  const [shadowBlur, setShadowBlur] = useState(4);
+  const [textStyles, setTextStyles] = useState<{ id: string; name: string; category: string; imageUrl: string }[]>([]);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -229,10 +234,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   useEffect(() => {
     if (!ownerUserId) return;
     const fetchData = async () => {
-      const [templatesRes, stampsRes, patchesRes] = await Promise.all([
+      const [templatesRes, stampsRes, patchesRes, textStylesRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('stamp_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('patch_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
+        supabase.from('text_styles').select('*').eq('active', true).eq('user_id', ownerUserId),
       ]);
       setTemplates((templatesRes.data as any[])?.map(t => ({
         id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id,
@@ -242,6 +248,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       })) ?? []);
       setPatches((patchesRes.data as any[])?.map(p => ({
         id: p.id, name: p.name, imageUrl: p.image_url, targetZoneName: p.target_zone_name,
+      })) ?? []);
+      setTextStyles((textStylesRes.data as any[])?.map(ts => ({
+        id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
       })) ?? []);
       setLoading(false);
     };
@@ -470,6 +479,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
     // Use Textbox for multiline, FabricText for single line
     let text: FabricText | Textbox;
+    const textShadow = shadowEnabled ? new Shadow({ color: shadowColor, blur: shadowBlur, offsetX: 2, offsetY: 2 }) : undefined;
     if (isMultiline) {
       text = new Textbox(textInput, {
         fontSize, fill: textColor, fontFamily,
@@ -477,12 +487,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
         width: 300,
         textAlign: 'center',
+        shadow: textShadow,
       });
     } else {
       text = new FabricText(textInput, {
         fontSize, fill: textColor, fontFamily,
         stroke: strokeWidth > 0 ? strokeColor : undefined,
         strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+        shadow: textShadow,
       });
     }
 
@@ -891,6 +903,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         active.set({
           fill: textColor, stroke: strokeWidth > 0 ? strokeColor : undefined,
           strokeWidth: strokeWidth > 0 ? strokeWidth : 0, fontSize, fontFamily,
+          shadow: shadowEnabled ? new Shadow({ color: shadowColor, blur: shadowBlur, offsetX: 2, offsetY: 2 }) : undefined,
         });
         (active as any)._fontName = fontFamily;
         // Force Fabric to recalculate text dimensions with new font
@@ -903,7 +916,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       };
       applyFont();
     }
-  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, activeView]);
+  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, shadowEnabled, shadowColor, shadowBlur, activeView]);
 
   // Auto-select last text object when text tab is opened (mobile)
   useEffect(() => {
@@ -1156,8 +1169,36 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'patches', label: 'Peixes', icon: <Fish className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    ...(textStyles.length > 0 ? [{ id: 'textStyles' as ToolbarTab, label: 'Estilos', icon: <Sparkles className="h-5 w-5 lg:h-5 lg:w-5" /> }] : []),
     { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
   ];
+
+  // Place a text style image on canvas (same as logo but categorized)
+  const addTextStyleImage = async (style: { imageUrl: string; name: string }) => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    const clipPath = getActiveClipPath();
+    try {
+      const img = await FabricImage.fromURL(style.imageUrl, { crossOrigin: 'anonymous' });
+      const maxSize = 200;
+      const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+      img.set({
+        left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
+        top: CANVAS_HEIGHT / 3,
+        scaleX: scale, scaleY: scale,
+        clipPath: clipPath || undefined,
+      });
+      (img as any)._userElement = true;
+      (img as any)._elementType = 'textStyle';
+      (img as any)._textStyleName = style.name;
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+      toast.success(`Estilo "${style.name}" aplicado!`);
+    } catch {
+      toast.error('Erro ao carregar estilo de texto');
+    }
+  };
 
   // ─── Editor screen ────────────────────────────────────────────
   return (
@@ -1266,7 +1307,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
                     <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" checked={shadowEnabled} onChange={e => setShadowEnabled(e.target.checked)} className="rounded" />
+                      <span className="text-[10px] text-muted-foreground">Sombra</span>
+                    </label>
+                    {shadowEnabled && (
+                      <>
+                        <input type="color" value={shadowColor} onChange={e => setShadowColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
+                        <Input type="number" value={shadowBlur} onChange={e => setShadowBlur(Number(e.target.value))} className="h-7 w-12 text-xs" min={1} max={20} />
+                      </>
+                    )}
+                  </div>
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
+                </div>
+              )}
+              {activeTab === 'textStyles' && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Estilos de Texto Prontos</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {textStyles.map(ts => (
+                      <button key={ts.id} onClick={() => addTextStyleImage(ts)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={ts.name}>
+                        <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-1" />
+                        <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{ts.name}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {activeTab === 'logo' && (
@@ -1341,7 +1407,31 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
                       <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 text-xs" min={0} max={10} /></div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={shadowEnabled} onChange={e => setShadowEnabled(e.target.checked)} className="rounded" />
+                        <span className="text-[10px] text-muted-foreground">Sombra</span>
+                      </label>
+                      {shadowEnabled && (
+                        <>
+                          <input type="color" value={shadowColor} onChange={e => setShadowColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
+                          <Input type="number" value={shadowBlur} onChange={e => setShadowBlur(Number(e.target.value))} className="h-7 w-12 text-xs" min={1} max={20} />
+                        </>
+                      )}
+                    </div>
                     <Button size="sm" onClick={() => { handleAddTextClick(); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
+                  </div>
+                )}
+                {activeTab === 'textStyles' && (
+                  <div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {textStyles.map(ts => (
+                        <button key={ts.id} onClick={() => { addTextStyleImage(ts); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={ts.name}>
+                          <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-0.5" />
+                          <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{ts.name}</p>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {activeTab === 'logo' && (
