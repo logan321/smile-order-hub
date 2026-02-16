@@ -19,6 +19,7 @@ import TrackOrder from "./pages/TrackOrder";
 import Admin from "./pages/Admin";
 import SubscriptionPage from "./pages/Subscription";
 import ShirtEditor from "./pages/ShirtEditor";
+import EditorSettings from "./pages/EditorSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="/servicos" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Services /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Reports /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><SubscriptionGuard><AppLayout><SettingsPage /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
+            <Route path="/config-editor" element={<ProtectedRoute><SubscriptionGuard><AppLayout><EditorSettings /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/meu-editor" element={<ProtectedRoute><SubscriptionGuard><ShirtEditor useOwnAssets /></SubscriptionGuard></ProtectedRoute>} />
 
             {/* Admin only */}

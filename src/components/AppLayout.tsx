@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield, Shirt } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield, Shirt, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,7 +23,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   const allNavItems = [
     ...navItems,
-    ...(editorEnabled ? [{ label: 'Editor', to: '/meu-editor', icon: Shirt }] : []),
+    ...(editorEnabled ? [
+      { label: 'Config. Editor', to: '/config-editor', icon: Palette },
+      { label: 'Editor', to: '/meu-editor', icon: Shirt },
+    ] : []),
     ...(isAdmin ? [{ label: 'Admin', to: '/admin', icon: Shield }] : []),
   ];
 
