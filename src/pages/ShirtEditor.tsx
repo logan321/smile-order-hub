@@ -39,58 +39,47 @@ const FONT_OPTIONS = [
   { label: 'Press Start 2P', value: 'Press Start 2P', google: true },
 ];
 
-// Load Google Fonts on demand — uses FontFace API for reliable canvas rendering
+// Load Google Fonts on demand — forces actual font file download for canvas use
 const loadedFonts = new Set<string>();
 const loadGoogleFont = (fontName: string): Promise<void> => {
   if (loadedFonts.has(fontName)) return Promise.resolve();
-  return new Promise((resolve) => {
-    // Add stylesheet link for CSS usage
+  return new Promise<void>((resolve) => {
+    // 1. Add stylesheet link
     const link = document.createElement('link');
     link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}&display=swap`;
     link.rel = 'stylesheet';
     document.head.appendChild(link);
 
-    // Use FontFace API to ensure font is actually loaded for canvas
-    const checkFont = () => {
-      return document.fonts.check(`16px "${fontName}"`);
-    };
+    // 2. Create a hidden DOM element to force the browser to actually download the font file
+    //    (Canvas alone won't trigger CSS font loading)
+    const probe = document.createElement('span');
+    probe.textContent = 'ABCabc123';
+    probe.style.fontFamily = `"${fontName}", sans-serif`;
+    probe.style.position = 'absolute';
+    probe.style.left = '-9999px';
+    probe.style.top = '-9999px';
+    probe.style.fontSize = '48px';
+    probe.style.visibility = 'hidden';
+    document.body.appendChild(probe);
 
-    // Poll until font is ready (mobile sometimes needs extra time)
-    let attempts = 0;
-    const poll = () => {
-      if (checkFont() || attempts > 50) {
-        loadedFonts.add(fontName);
-        resolve();
-        return;
-      }
-      attempts++;
-      setTimeout(poll, 100);
-    };
-
-    // Start checking after stylesheet starts loading
-    link.onload = () => {
+    // 3. Use document.fonts.load() to explicitly request the font
+    document.fonts.load(`48px "${fontName}"`).then(() => {
+      loadedFonts.add(fontName);
+      // Clean up probe after a delay
+      setTimeout(() => {
+        try { document.body.removeChild(probe); } catch {}
+      }, 2000);
+      resolve();
+    }).catch(() => {
+      // Fallback: wait for fonts.ready
       document.fonts.ready.then(() => {
-        if (checkFont()) {
-          loadedFonts.add(fontName);
-          resolve();
-        } else {
-          poll();
-        }
-      });
-    };
-    link.onerror = () => {
-      // Fallback: try loading via FontFace API directly
-      try {
-        const face = new FontFace(fontName, `url(https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')})`);
-        document.fonts.add(face);
-        face.load().then(() => {
-          loadedFonts.add(fontName);
-          resolve();
-        }).catch(() => resolve());
-      } catch {
+        loadedFonts.add(fontName);
+        setTimeout(() => {
+          try { document.body.removeChild(probe); } catch {}
+        }, 2000);
         resolve();
-      }
-    };
+      });
+    });
   });
 };
 
