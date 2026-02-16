@@ -146,6 +146,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [shadowColor, setShadowColor] = useState('#000000');
   const [shadowBlur, setShadowBlur] = useState(4);
   const [textStyles, setTextStyles] = useState<{ id: string; name: string; category: string; imageUrl: string }[]>([]);
+  const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
   const [showTextStylesOverlay, setShowTextStylesOverlay] = useState(false);
@@ -1109,6 +1110,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     if (stampNames.size > 0) designDetails.push(`🎨 Estampa: ${[...stampNames].join(', ')}`);
     if (patchNames.size > 0) designDetails.push(`🐟 Peixes: ${[...patchNames].join(', ')}`);
     textElements.forEach(t => designDetails.push(`✏️ Texto: "${t.text}" — Fonte: ${t.font}`));
+    if (selectedTextStyle) designDetails.push(`🎨 Estilo de texto: ${selectedTextStyle.name}\n📎 Referência: ${selectedTextStyle.imageUrl}`);
     if (hasLogo) designDetails.push(`📎 Logo personalizado incluso`);
 
     const message =
@@ -1173,31 +1175,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
   ];
 
-  // Place a text style image on canvas (same as logo but categorized)
-  const addTextStyleImage = async (style: { imageUrl: string; name: string }) => {
-    const canvas = getActiveCanvas();
-    if (!canvas) return;
-    const clipPath = getActiveClipPath();
-    try {
-      const img = await FabricImage.fromURL(style.imageUrl, { crossOrigin: 'anonymous' });
-      const maxSize = 200;
-      const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
-      img.set({
-        left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
-        top: CANVAS_HEIGHT / 3,
-        scaleX: scale, scaleY: scale,
-        clipPath: clipPath || undefined,
-      });
-      (img as any)._userElement = true;
-      (img as any)._elementType = 'textStyle';
-      (img as any)._textStyleName = style.name;
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.renderAll();
-      toast.success(`Estilo "${style.name}" aplicado!`);
-    } catch {
-      toast.error('Erro ao carregar estilo de texto');
-    }
+  // Select a text style as reference (not applied to canvas)
+  const selectTextStyle = (style: { imageUrl: string; name: string }) => {
+    setSelectedTextStyle(style);
+    toast.success(`Estilo "${style.name}" selecionado como referência!`);
   };
 
   // ─── Editor screen ────────────────────────────────────────────
@@ -1319,8 +1300,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </>
                     )}
                   </div>
+                  {selectedTextStyle && (
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/30">
+                      <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded" />
+                      <span className="text-[10px] text-foreground font-medium flex-1 truncate">{selectedTextStyle.name}</span>
+                      <button onClick={() => setSelectedTextStyle(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  )}
                   {textStyles.length > 0 && (
-                    <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> Estilos de Texto</Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> {selectedTextStyle ? 'Trocar Estilo' : 'Estilos de Texto'}</Button>
                   )}
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                 </div>
@@ -1409,8 +1397,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         </>
                       )}
                     </div>
+                    {selectedTextStyle && (
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/30">
+                        <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded" />
+                        <span className="text-[10px] text-foreground font-medium flex-1 truncate">{selectedTextStyle.name}</span>
+                        <button onClick={() => setSelectedTextStyle(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                    )}
                     {textStyles.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> Estilos de Texto</Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> {selectedTextStyle ? 'Trocar Estilo' : 'Estilos de Texto'}</Button>
                     )}
                     <Button size="sm" onClick={() => { handleAddTextClick(); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                   </div>
@@ -1586,7 +1581,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <p className="text-sm text-muted-foreground mb-4">Toque em um estilo para aplicá-lo na camisa</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {textStyles.map(ts => (
-                <button key={ts.id} onClick={() => { addTextStyleImage(ts); setShowTextStylesOverlay(false); }} className="group rounded-xl border-2 border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all bg-card" title={ts.name}>
+                <button key={ts.id} onClick={() => { selectTextStyle(ts); setShowTextStylesOverlay(false); }} className="group rounded-xl border-2 border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all bg-card" title={ts.name}>
                   <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-2 bg-muted/20" />
                   <p className="text-sm text-center text-muted-foreground py-2 truncate px-2 font-medium group-hover:text-primary transition-colors">{ts.name}</p>
                 </button>
