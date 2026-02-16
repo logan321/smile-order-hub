@@ -259,11 +259,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
     backFabricRef.current = backCanvas;
 
-    // Custom render for the rotation control — draw a visible circle with rotation icon
+    // Custom controls for all added objects — ensure large handles + rotation icon
     const customizeControls = (canvas: Canvas) => {
       canvas.on('object:added', (e) => {
         const obj = e.target;
         if (!obj || (obj as any)._isBackground) return;
+
+        // Force large, visible corner handles on every user object (mobile touch)
+        obj.set({
+          cornerSize: 24,
+          touchCornerSize: 48,
+          cornerStyle: 'circle' as const,
+          cornerColor: '#2563eb',
+          cornerStrokeColor: '#ffffff',
+          transparentCorners: false,
+          borderColor: '#2563eb',
+          borderScaleFactor: 2.5,
+          padding: 10,
+          borderDashArray: [6, 3],
+        });
+
         // Make rotation control more prominent
         const mtr = obj.controls?.mtr;
         if (mtr) {
@@ -274,7 +289,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             const size = 22;
             ctx.save();
             ctx.translate(left, top);
-            // Draw circle
             ctx.beginPath();
             ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
             ctx.fillStyle = '#2563eb';
@@ -282,14 +296,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2;
             ctx.stroke();
-            // Draw rotation arrow icon
             ctx.beginPath();
             ctx.arc(0, 0, size / 4, -Math.PI * 0.8, Math.PI * 0.5);
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2;
             ctx.lineCap = 'round';
             ctx.stroke();
-            // Arrow tip
             const tipAngle = Math.PI * 0.5;
             const tipX = Math.cos(tipAngle) * size / 4;
             const tipY = Math.sin(tipAngle) * size / 4;
@@ -840,7 +852,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     setShowZonePicker(null); setPendingLogoFile(null);
   };
 
-  // Live-update text style
+  // Live-update text style on active text object
   useEffect(() => {
     const canvas = getActiveCanvas();
     if (!canvas) return;
@@ -853,11 +865,37 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           fill: textColor, stroke: strokeWidth > 0 ? strokeColor : undefined,
           strokeWidth: strokeWidth > 0 ? strokeWidth : 0, fontSize, fontFamily,
         });
+        (active as any)._fontName = fontFamily;
         canvas.renderAll();
       };
       applyFont();
     }
   }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, activeView]);
+
+  // Auto-select last text object when text tab is opened (mobile)
+  useEffect(() => {
+    if (activeTab !== 'text') return;
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (active && (active instanceof FabricText || active instanceof Textbox) && (active as any)._userElement) return; // already selected
+    // Find last text object on canvas
+    const objects = canvas.getObjects();
+    for (let i = objects.length - 1; i >= 0; i--) {
+      const obj = objects[i] as any;
+      if (obj._userElement && obj._elementType === 'text') {
+        canvas.setActiveObject(obj);
+        canvas.renderAll();
+        // Sync UI
+        setTextColor((obj.fill as string) || '#000000');
+        setFontSize(obj.fontSize || 24);
+        setFontFamily(obj.fontFamily || 'Arial');
+        setStrokeWidth(obj.strokeWidth || 0);
+        setStrokeColor((obj.stroke as string) || '#FFFFFF');
+        break;
+      }
+    }
+  }, [activeTab, activeView]);
 
   // Sync UI controls when a text object is selected
   useEffect(() => {
@@ -1270,7 +1308,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
                       <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 text-xs" min={0} max={10} /></div>
                     </div>
-                    <Button size="sm" onClick={() => { handleAddTextClick(); setActiveTab(null); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
+                    <Button size="sm" onClick={() => { handleAddTextClick(); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                   </div>
                 )}
                 {activeTab === 'logo' && (
