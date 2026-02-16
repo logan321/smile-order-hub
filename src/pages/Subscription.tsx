@@ -68,7 +68,7 @@ const SubscriptionPage = ({ status, trialEndsAt }: SubscriptionPageProps) => {
                 <p className="font-semibold">Plano Mensal</p>
                 <p className="text-sm text-muted-foreground">Acesso completo à plataforma</p>
               </div>
-              <p className="text-2xl font-bold">R$ --</p>
+              <p className="text-2xl font-bold">R$ 150,00<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
             </div>
             <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
               <li>✓ Clientes ilimitados</li>

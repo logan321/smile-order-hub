@@ -21,10 +21,9 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) throw new Error('Unauthorized');
-    const userId = claimsData.claims.sub;
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) throw new Error('Unauthorized');
+    const userId = userData.user.id;
 
     // Check admin role first
     const adminSupabase = createClient(

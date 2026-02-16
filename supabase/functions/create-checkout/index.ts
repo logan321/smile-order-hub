@@ -24,13 +24,10 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) throw new Error('Unauthorized');
-    const userId = claimsData.claims.sub;
-
-    const { data: userData } = await supabase.auth.getUser();
-    const email = userData?.user?.email;
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) throw new Error('Unauthorized');
+    const userId = userData.user.id;
+    const email = userData.user.email;
 
     const { priceId, successUrl, cancelUrl } = await req.json();
 
