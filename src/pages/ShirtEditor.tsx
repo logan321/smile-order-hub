@@ -1150,7 +1150,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // Handle niche selection — filter templates/stamps/patches by niche
   const handleSelectNiche = (niche: Niche) => {
     setSelectedNiche(niche);
-    setTemplates(allTemplates.filter(t => t.nicheId === niche.id));
+    setTemplates(allTemplates.filter(t => t.nicheId === niche.id || !t.nicheId));
     setStamps(allStamps.filter((s: any) => s.nicheId === niche.id || !s.nicheId));
     setPatches(allPatches.filter((p: any) => p.nicheId === niche.id || !p.nicheId));
   };

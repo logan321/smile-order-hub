@@ -111,7 +111,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     try {
       await addTemplate(newTemplateName.trim(), frontFile, backFile);
       // Update niche_id if selected
-      if (newTemplateNicheId) {
+      if (newTemplateNicheId && newTemplateNicheId !== 'all') {
         const { data: latestTemplates } = await supabase.from('shirt_templates').select('id').order('created_at', { ascending: false }).limit(1);
         if (latestTemplates?.[0]) {
           await supabase.from('shirt_templates').update({ niche_id: newTemplateNicheId } as any).eq('id', latestTemplates[0].id);
@@ -225,7 +225,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   };
 
   // Helper: get niche name by id (for display on assets)
-  const getNicheName = (nicheId: string | null | undefined) => {
+  const getNicheName = (nicheId: string | null | undefined, table?: string) => {
+    if (!nicheId && table === 'shirt_templates') return '🌐 Todos os Nichos';
     if (!nicheId) return null;
     const n = niches.find(x => x.id === nicheId);
     return n ? `${n.icon} ${n.name}` : null;
@@ -239,6 +240,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="none">Sem nicho</SelectItem>
+        <SelectItem value="all">🌐 Todos os Nichos</SelectItem>
         {niches.map(n => (
           <SelectItem key={n.id} value={n.id}>{n.icon} {n.name}</SelectItem>
         ))}
@@ -274,8 +276,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     loadNicheMaps();
   }, [targetUserId, templates, stamps, patches]);
 
-  const updateAssetNiche = async (table: 'shirt_templates' | 'stamp_catalog' | 'patch_catalog', id: string, nicheId: string | null) => {
-    await (supabase.from(table).update({ niche_id: nicheId } as any).eq('id', id) as any);
+  const updateAssetNiche = async (table: 'shirt_templates' | 'stamp_catalog' | 'patch_catalog', id: string, nicheId: string | null | 'all') => {
+    const dbValue = nicheId === 'all' ? null : nicheId;
+    await (supabase.from(table).update({ niche_id: dbValue } as any).eq('id', id) as any);
     // Refresh maps
     if (table === 'shirt_templates') setTemplateNicheMap(prev => ({ ...prev, [id]: nicheId }));
     if (table === 'stamp_catalog') setStampNicheMap(prev => ({ ...prev, [id]: nicheId }));
@@ -462,15 +465,13 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         <div className="px-3 py-2 flex items-center justify-between border-t border-border/30">
                           <div className="min-w-0">
                             <span className="text-sm font-medium">{t.name}</span>
-                            {getNicheName(templateNicheMap[t.id]) && (
-                              <p className="text-[10px] text-muted-foreground">{getNicheName(templateNicheMap[t.id])}</p>
-                            )}
+                            {(() => { const label = getNicheName(templateNicheMap[t.id], 'shirt_templates'); return label ? <p className="text-[10px] text-muted-foreground">{label}</p> : null; })()}
                           </div>
                           <div className="flex items-center gap-1">
-                            <Select value={templateNicheMap[t.id] || 'none'} onValueChange={v => updateAssetNiche('shirt_templates', t.id, v === 'none' ? null : v)}>
-                              <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue placeholder="Nicho" /></SelectTrigger>
+                            <Select value={templateNicheMap[t.id] || 'all'} onValueChange={v => updateAssetNiche('shirt_templates', t.id, v)}>
+                              <SelectTrigger className="h-7 w-28 text-[10px]"><SelectValue placeholder="Nicho" /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none" className="text-xs">Sem nicho</SelectItem>
+                                <SelectItem value="all" className="text-xs">🌐 Todos</SelectItem>
                                 {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
                               </SelectContent>
                             </Select>
