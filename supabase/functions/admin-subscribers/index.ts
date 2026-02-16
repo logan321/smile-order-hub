@@ -41,6 +41,21 @@ serve(async (req) => {
 
     if (!roleData) throw new Error('Forbidden: admin role required');
 
+    // Handle POST for toggling editor_enabled
+    if (req.method === 'POST') {
+      const body = await req.json();
+      if (body.action === 'toggle_editor') {
+        const { error: updateError } = await adminSupabase
+          .from('subscriptions')
+          .update({ editor_enabled: body.enabled })
+          .eq('user_id', body.target_user_id);
+        if (updateError) throw updateError;
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Fetch all subscriptions with user emails
     const { data: subs } = await adminSupabase
       .from('subscriptions')

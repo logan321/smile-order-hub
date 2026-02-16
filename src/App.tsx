@@ -92,7 +92,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/login" element={<Auth />} />
             <Route path="/rastreio" element={<TrackOrder />} />
-            <Route path="/editor" element={<ShirtEditor />} />
+            <Route path="/editor/:userId" element={<ShirtEditor />} />
 
             {/* Protected + subscription required routes */}
             <Route path="/" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Dashboard /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
@@ -101,6 +101,7 @@ const App = () => (
             <Route path="/servicos" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Services /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Reports /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><SubscriptionGuard><AppLayout><SettingsPage /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
+            <Route path="/meu-editor" element={<ProtectedRoute><SubscriptionGuard><ShirtEditor useOwnAssets /></SubscriptionGuard></ProtectedRoute>} />
 
             {/* Admin only */}
             <Route path="/admin" element={<ProtectedRoute><AdminRoute><AppLayout><Admin /></AppLayout></AdminRoute></ProtectedRoute>} />

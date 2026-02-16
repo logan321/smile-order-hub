@@ -7,19 +7,20 @@ interface SubscriptionStatus {
   status: string;
   trialEndsAt?: string;
   currentPeriodEnd?: string;
+  editorEnabled: boolean;
   loading: boolean;
 }
 
 export function useSubscription() {
   const [sub, setSub] = useState<SubscriptionStatus>({
-    active: true, isAdmin: false, status: 'loading', loading: true,
+    active: true, isAdmin: false, status: 'loading', editorEnabled: false, loading: true,
   });
 
   const checkSubscription = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setSub({ active: false, isAdmin: false, status: 'unauthenticated', loading: false });
+        setSub({ active: false, isAdmin: false, status: 'unauthenticated', editorEnabled: false, loading: false });
         return;
       }
 
@@ -32,11 +33,12 @@ export function useSubscription() {
         status: data.status,
         trialEndsAt: data.trialEndsAt,
         currentPeriodEnd: data.currentPeriodEnd,
+        editorEnabled: data.editorEnabled ?? false,
         loading: false,
       });
     } catch (err) {
       console.error('Error checking subscription:', err);
-      setSub({ active: true, isAdmin: false, status: 'error', loading: false });
+      setSub({ active: true, isAdmin: false, status: 'error', editorEnabled: false, loading: false });
     }
   }, []);
 
