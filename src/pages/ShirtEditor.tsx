@@ -653,7 +653,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(frontCanvas, stamp.imageUrl, 'front'),
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
-      toast.success(`Estampa "${stamp.name}" aplicada!`);
+      // stamp applied silently
       // Tag stamp metadata on front canvas objects
       frontCanvas.getObjects().forEach((obj: any) => {
         if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
@@ -725,7 +725,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         toast.error('Erro ao carregar imagem do peixe');
       }
     }
-    toast.success(`Peixe "${patch.name}" aplicado em "${zone.name}"!`);
+    // patch applied silently
     setPendingPatch(null);
     setPatchSideChoice(null);
   };
@@ -763,7 +763,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           await addPatchToSide(pendingPatch, backZone, 'back');
           applied.push('costas');
         }
-        toast.success(`Peixe "${pendingPatch.name}" aplicado em ${applied.join(' e ')}!`);
+        // patches applied silently
         setPendingPatch(null);
         setPatchSideChoice(null);
         return;
@@ -777,7 +777,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
       if (zone) {
         await addPatchToSide(pendingPatch, zone, side);
-        toast.success(`Peixe "${pendingPatch.name}" aplicado em "${zone.name}"!`);
+        // patch applied silently
         setPendingPatch(null);
         setPatchSideChoice(null);
         return;
@@ -1278,7 +1278,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // Select a text style as reference (not applied to canvas)
   const selectTextStyle = (style: { imageUrl: string; name: string }) => {
     setSelectedTextStyle(style);
-    toast.success(`Estilo "${style.name}" selecionado como referência!`);
+    // style selected silently
   };
 
   // ─── Editor screen ────────────────────────────────────────────
