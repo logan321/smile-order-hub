@@ -148,6 +148,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [textStyles, setTextStyles] = useState<{ id: string; name: string; category: string; imageUrl: string }[]>([]);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
+  const [showTextStylesOverlay, setShowTextStylesOverlay] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const uploadedLogoFileRef = useRef<File | null>(null);
   const [showZonePicker, setShowZonePicker] = useState<'text' | 'logo' | null>(null);
@@ -1169,7 +1170,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'patches', label: 'Peixes', icon: <Fish className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    ...(textStyles.length > 0 ? [{ id: 'textStyles' as ToolbarTab, label: 'Estilos', icon: <Sparkles className="h-5 w-5 lg:h-5 lg:w-5" /> }] : []),
     { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
   ];
 
@@ -1319,20 +1319,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </>
                     )}
                   </div>
+                  {textStyles.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> Estilos de Texto</Button>
+                  )}
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
-                </div>
-              )}
-              {activeTab === 'textStyles' && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Estilos de Texto Prontos</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {textStyles.map(ts => (
-                      <button key={ts.id} onClick={() => addTextStyleImage(ts)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={ts.name}>
-                        <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-1" />
-                        <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{ts.name}</p>
-                      </button>
-                    ))}
-                  </div>
                 </div>
               )}
               {activeTab === 'logo' && (
@@ -1359,7 +1349,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t-2 border-accent rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-h-[45vh] flex flex-col animate-fade-in">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
                 <p className="text-sm font-bold text-foreground">
-                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? '🐟 Peixes' : activeTab === 'text' ? '✏️ Texto' : '📤 Logo / Imagem'}
+                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? '🐟 Peixes' : activeTab === 'text' ? '✏️ Texto' : activeTab === 'logo' ? '📤 Logo / Imagem' : ''}
                 </p>
                 <button onClick={() => setActiveTab(null)} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors">
                   <X className="h-5 w-5 text-muted-foreground" />
@@ -1419,19 +1409,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         </>
                       )}
                     </div>
+                    {textStyles.length > 0 && (
+                      <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> Estilos de Texto</Button>
+                    )}
                     <Button size="sm" onClick={() => { handleAddTextClick(); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
-                  </div>
-                )}
-                {activeTab === 'textStyles' && (
-                  <div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {textStyles.map(ts => (
-                        <button key={ts.id} onClick={() => { addTextStyleImage(ts); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={ts.name}>
-                          <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-0.5" />
-                          <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{ts.name}</p>
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 )}
                 {activeTab === 'logo' && (
@@ -1584,6 +1565,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 else if (pendingLogoFile) placeLogoFile(pendingLogoFile);
               }}>Posição livre</Button>
               <Button variant="ghost" size="sm" onClick={() => { setShowZonePicker(null); setPendingLogoFile(null); }}>Cancelar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Text styles full-screen overlay */}
+      {showTextStylesOverlay && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col animate-fade-in">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shadow-sm">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold">Estilos de Texto</h3>
+            </div>
+            <button onClick={() => setShowTextStylesOverlay(false)} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors">
+              <X className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            <p className="text-sm text-muted-foreground mb-4">Toque em um estilo para aplicá-lo na camisa</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {textStyles.map(ts => (
+                <button key={ts.id} onClick={() => { addTextStyleImage(ts); setShowTextStylesOverlay(false); }} className="group rounded-xl border-2 border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all bg-card" title={ts.name}>
+                  <img src={ts.imageUrl} alt={ts.name} className="w-full aspect-video object-contain p-2 bg-muted/20" />
+                  <p className="text-sm text-center text-muted-foreground py-2 truncate px-2 font-medium group-hover:text-primary transition-colors">{ts.name}</p>
+                </button>
+              ))}
             </div>
           </div>
         </div>
