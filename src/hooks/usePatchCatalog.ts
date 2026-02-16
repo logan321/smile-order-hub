@@ -15,10 +15,11 @@ export function usePatchCatalog() {
   const [loading, setLoading] = useState(true);
 
   const fetchPatches = useCallback(async () => {
-    const { data } = await supabase
-      .from('patch_catalog')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    let query = supabase.from('patch_catalog').select('*').order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    const { data } = await query;
     setPatches((data as any[])?.map(p => ({
       id: p.id,
       name: p.name,

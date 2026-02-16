@@ -16,10 +16,11 @@ export function useStampCatalog() {
   const [loading, setLoading] = useState(true);
 
   const fetchStamps = useCallback(async () => {
-    const { data } = await supabase
-      .from('stamp_catalog')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    let query = supabase.from('stamp_catalog').select('*').order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    const { data } = await query;
     setStamps((data as any[])?.map(s => ({
       id: s.id,
       name: s.name,
