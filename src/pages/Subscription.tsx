@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, CreditCard, Clock } from 'lucide-react';
+import { AlertTriangle, CreditCard, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SubscriptionPageProps {
@@ -10,8 +10,17 @@ interface SubscriptionPageProps {
   trialEndsAt?: string;
 }
 
+const ADMIN_WHATSAPP = '5562982193686';
+
 const SubscriptionPage = ({ status, trialEndsAt }: SubscriptionPageProps) => {
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data?.user?.email || '');
+    });
+  }, []);
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -32,6 +41,12 @@ const SubscriptionPage = ({ status, trialEndsAt }: SubscriptionPageProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleWhatsAppPix = () => {
+    const message = `Olá! Gostaria de assinar o plano mensal (R$ 150,00) via PIX.\n\nE-mail da conta: ${userEmail}`;
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${encoded}`, '_blank');
   };
 
   const isExpiredTrial = status === 'trialing' && trialEndsAt && new Date(trialEndsAt) <= new Date();
@@ -79,14 +94,26 @@ const SubscriptionPage = ({ status, trialEndsAt }: SubscriptionPageProps) => {
           </div>
 
           {!isBlocked && (
-            <Button onClick={handleSubscribe} className="w-full" size="lg" disabled={loading}>
-              <CreditCard className="h-4 w-4 mr-2" />
-              {loading ? 'Redirecionando...' : 'Assinar agora'}
-            </Button>
+            <div className="space-y-2">
+              <Button onClick={handleSubscribe} className="w-full" size="lg" disabled={loading}>
+                <CreditCard className="h-4 w-4 mr-2" />
+                {loading ? 'Redirecionando...' : 'Pagar com Cartão / Boleto'}
+              </Button>
+
+              <div className="relative flex items-center justify-center">
+                <span className="absolute bg-background px-2 text-xs text-muted-foreground">ou</span>
+                <div className="w-full border-t border-border" />
+              </div>
+
+              <Button onClick={handleWhatsAppPix} variant="outline" className="w-full border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700" size="lg">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Pagar via PIX (WhatsApp)
+              </Button>
+            </div>
           )}
 
           <p className="text-xs text-center text-muted-foreground">
-            Pagamento seguro via Stripe. Cancele a qualquer momento.
+            Cartão/Boleto processados via Stripe. PIX direto com o fornecedor.
           </p>
         </CardContent>
       </Card>
