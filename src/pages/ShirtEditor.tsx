@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand } from 'lucide-react';
 import { Shadow } from 'fabric';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
@@ -172,6 +172,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [patchSideChoice, setPatchSideChoice] = useState<'front' | 'back' | 'both' | null>(null);
   const [frontZoom, setFrontZoom] = useState(1);
   const [backZoom, setBackZoom] = useState(1);
+  const [panMode, setPanMode] = useState(false);
   const isPanningRef = useRef(false);
   const lastPanPoint = useRef<{ x: number; y: number } | null>(null);
   const frontWrapRef = useRef<HTMLDivElement>(null);
@@ -399,26 +400,24 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const activeZoom = activeView === 'front' ? frontZoom : backZoom;
   const setActiveZoom = activeView === 'front' ? setFrontZoom : setBackZoom;
 
-  // Apply zoom — keep content centered via scroll, not viewport transform
+  // Apply zoom — keep canvas at fixed size, use viewport transform to zoom+center
   useEffect(() => {
     const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
-    const container = mobileCanvasContainerRef.current;
     if (!canvas) return;
     const zoom = activeView === 'front' ? frontZoom : backZoom;
-    // Reset viewport transform to identity so content stays at origin
-    canvas.setViewportTransform([zoom, 0, 0, zoom, 0, 0]);
-    canvas.setDimensions({ width: CANVAS_WIDTH * zoom, height: CANVAS_HEIGHT * zoom });
+    const vpt = canvas.viewportTransform!;
+    // Center the zoomed content within the fixed canvas
+    const offsetX = (CANVAS_WIDTH - CANVAS_WIDTH * zoom) / 2;
+    const offsetY = (CANVAS_HEIGHT - CANVAS_HEIGHT * zoom) / 2;
+    canvas.setViewportTransform([zoom, 0, 0, zoom, offsetX, offsetY]);
     canvas.requestRenderAll();
-    // Center scroll position
-    if (container) {
-      const scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
-      const scrollTop = (container.scrollHeight - container.clientHeight) / 2;
-      container.scrollLeft = scrollLeft;
-      container.scrollTop = scrollTop;
+    // Enable pan mode automatically when zoomed in on mobile
+    if (zoom > 1) {
+      setPanMode(true);
     }
   }, [frontZoom, backZoom, activeView]);
 
-  // Pan + wheel zoom
+  // Pan + wheel zoom + touch pan (mobile)
   useEffect(() => {
     const front = frontFabricRef.current;
     const back = backFabricRef.current;
@@ -426,36 +425,41 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
     const setupPan = (canvas: Canvas, side: 'front' | 'back') => {
       canvas.on('mouse:down', (opt) => {
-        const evt = opt.e as MouseEvent;
-        if (evt.altKey || evt.button === 1) {
+        const evt = opt.e as any;
+        const isTouch = evt.type?.startsWith('touch');
+        // Desktop: alt+click or middle click. Mobile: panMode active (always pans)
+        if (evt.altKey || evt.button === 1 || (isTouch && panMode)) {
           isPanningRef.current = true;
-          lastPanPoint.current = { x: evt.clientX, y: evt.clientY };
+          const clientX = isTouch ? evt.touches[0].clientX : evt.clientX;
+          const clientY = isTouch ? evt.touches[0].clientY : evt.clientY;
+          lastPanPoint.current = { x: clientX, y: clientY };
           canvas.selection = false;
           evt.preventDefault(); evt.stopPropagation();
         }
       });
       canvas.on('mouse:move', (opt) => {
         if (!isPanningRef.current || !lastPanPoint.current) return;
-        const evt = opt.e as MouseEvent;
+        const evt = opt.e as any;
+        const isTouch = evt.type?.startsWith('touch');
+        const clientX = isTouch ? evt.touches[0].clientX : evt.clientX;
+        const clientY = isTouch ? evt.touches[0].clientY : evt.clientY;
         const vpt = canvas.viewportTransform!;
-        vpt[4] += evt.clientX - lastPanPoint.current.x;
-        vpt[5] += evt.clientY - lastPanPoint.current.y;
-        lastPanPoint.current = { x: evt.clientX, y: evt.clientY };
+        vpt[4] += clientX - lastPanPoint.current.x;
+        vpt[5] += clientY - lastPanPoint.current.y;
+        lastPanPoint.current = { x: clientX, y: clientY };
         canvas.requestRenderAll();
       });
       canvas.on('mouse:up', () => {
         if (isPanningRef.current) {
-          isPanningRef.current = false; lastPanPoint.current = null; canvas.selection = true;
+          isPanningRef.current = false; lastPanPoint.current = null;
+          if (!panMode) canvas.selection = true;
         }
       });
       canvas.on('mouse:wheel', (opt) => {
         const evt = opt.e as WheelEvent;
         evt.preventDefault(); evt.stopPropagation();
-        const pointer = canvas.getViewportPoint(evt);
         let newZoom = canvas.getZoom() * (1 - evt.deltaY / 400);
         newZoom = Math.max(0.3, Math.min(2.5, newZoom));
-        canvas.zoomToPoint(pointer, newZoom);
-        canvas.setDimensions({ width: CANVAS_WIDTH * newZoom, height: CANVAS_HEIGHT * newZoom });
         if (side === 'front') setFrontZoom(newZoom); else setBackZoom(newZoom);
       });
     };
@@ -465,7 +469,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       front.off('mouse:down'); front.off('mouse:move'); front.off('mouse:up'); front.off('mouse:wheel');
       back.off('mouse:down'); back.off('mouse:move'); back.off('mouse:up'); back.off('mouse:wheel');
     };
-  }, [selectedTemplate]);
+  }, [selectedTemplate, panMode]);
 
   // Auto-scroll to active canvas
   useEffect(() => {
@@ -1558,7 +1562,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActiveZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }} title="Resetar zoom"><RotateCcw className="h-3.5 w-3.5" /></Button>
             </div>
             {/* Canvas container — single render, responsive display */}
-            <div ref={mobileCanvasContainerRef} className="flex-1 overflow-auto editor-scroll p-0 lg:p-4 flex items-center justify-center">
+            <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
               <div className="relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center"
                 style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
                 <div ref={frontWrapRef}
@@ -1574,11 +1578,40 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <div className="rounded-xl overflow-hidden"><canvas ref={backCanvasRef} /></div>
                 </div>
               </div>
-              {/* Move hint when zoomed on mobile */}
+              {/* Floating pan mode button — big and obvious for mobile users */}
               {activeZoom > 1 && (
-                <div className="lg:hidden absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-sidebar/80 backdrop-blur-sm text-sidebar-foreground px-3 py-1.5 rounded-full shadow-lg text-xs font-medium pointer-events-none animate-pulse z-10">
-                  <MapPin className="h-3.5 w-3.5" />
-                  Arraste para mover
+                <div className="lg:hidden absolute bottom-3 right-3 flex flex-col items-center gap-2 z-20">
+                  <button
+                    onClick={() => {
+                      setPanMode(prev => !prev);
+                      // Deselect objects when entering pan mode
+                      const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+                      if (!panMode && canvas) { canvas.discardActiveObject(); canvas.requestRenderAll(); }
+                    }}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-xl text-sm font-bold transition-all active:scale-95 ${
+                      panMode
+                        ? 'bg-accent text-accent-foreground ring-2 ring-accent ring-offset-2'
+                        : 'bg-sidebar text-sidebar-foreground'
+                    }`}
+                  >
+                    <Hand className="h-5 w-5" />
+                    {panMode ? 'Movendo ✓' : 'Mover Camisa'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveZoom(1);
+                      setPanMode(false);
+                      const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+                      if (canvas) {
+                        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+                        canvas.requestRenderAll();
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-destructive/90 text-destructive-foreground shadow-lg text-xs font-medium active:scale-95"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Resetar
+                  </button>
                 </div>
               )}
             </div>
@@ -1596,8 +1629,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           ))}
         </div>
       </div>
-
-
 
       {/* Patch side + zone picker modal */}
       {pendingPatch && (
