@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -15,6 +15,8 @@ serve(async (req) => {
     const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
     if (!STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY not configured');
 
+    console.log('STRIPE_SECRET_KEY prefix:', STRIPE_SECRET_KEY.substring(0, 7));
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header');
 
@@ -25,16 +27,25 @@ serve(async (req) => {
     );
 
     const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user) throw new Error('Unauthorized');
+    if (userError || !userData?.user) throw new Error('Unauthorized: ' + (userError?.message || 'no user'));
     const userId = userData.user.id;
     const email = userData.user.email;
 
+    console.log('User:', userId, email);
+
     const { priceId, successUrl, cancelUrl } = await req.json();
+    console.log('PriceId:', priceId);
 
     // Check if user already has a Stripe customer
-    const { data: sub } = await supabase.from('subscriptions').select('stripe_customer_id').eq('user_id', userId).single();
+    const adminSupabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: sub } = await adminSupabase.from('subscriptions').select('stripe_customer_id').eq('user_id', userId).single();
 
     let customerId = sub?.stripe_customer_id;
+    console.log('Existing customer:', customerId);
 
     if (!customerId) {
       // Create Stripe customer
@@ -46,33 +57,30 @@ serve(async (req) => {
         },
         body: new URLSearchParams({ email: email || '', 'metadata[user_id]': userId }),
       });
-      const customer = await customerRes.json();
-      if (!customerRes.ok) throw new Error(`Stripe customer error: ${JSON.stringify(customer)}`);
+      const customerText = await customerRes.text();
+      console.log('Stripe customer response:', customerRes.status, customerText);
+      
+      if (!customerRes.ok) throw new Error(`Stripe customer error: ${customerText}`);
+      
+      const customer = JSON.parse(customerText);
       customerId = customer.id;
 
-      // Update subscription record
-      const adminSupabase = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-      );
       await adminSupabase.from('subscriptions').update({ stripe_customer_id: customerId }).eq('user_id', userId);
     }
 
-    // Create checkout session with multiple payment methods
+    // Create checkout session
     const params = new URLSearchParams({
       'customer': customerId,
       'mode': 'subscription',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
       'success_url': successUrl || `${req.headers.get('origin')}/configuracoes?payment=success`,
-      'cancel_url': cancelUrl || `${req.headers.get('origin')}/configuracoes?payment=cancelled`,
+      'cancel_url': cancelUrl || `${req.headers.get('origin')}/assinatura?payment=cancelled`,
       'subscription_data[trial_period_days]': '7',
       'metadata[user_id]': userId,
-      'payment_method_types[0]': 'card',
-      'payment_method_types[1]': 'boleto',
-      'payment_method_types[2]': 'pix',
     });
 
+    console.log('Creating checkout session...');
     const sessionRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
@@ -81,14 +89,19 @@ serve(async (req) => {
       },
       body: params,
     });
-    const session = await sessionRes.json();
-    if (!sessionRes.ok) throw new Error(`Stripe session error: ${JSON.stringify(session)}`);
+    const sessionText = await sessionRes.text();
+    console.log('Stripe session response:', sessionRes.status, sessionText);
+
+    if (!sessionRes.ok) throw new Error(`Stripe session error: ${sessionText}`);
+
+    const session = JSON.parse(sessionText);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('create-checkout error:', msg);
     return new Response(JSON.stringify({ error: msg }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
