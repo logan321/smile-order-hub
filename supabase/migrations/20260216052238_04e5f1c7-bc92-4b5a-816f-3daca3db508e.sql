@@ -1,0 +1,1 @@
+ALTER TABLE public.niches ADD COLUMN cover_image_url text NOT NULL DEFAULT '';
