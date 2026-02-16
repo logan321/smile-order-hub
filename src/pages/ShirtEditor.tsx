@@ -1091,21 +1091,21 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // ─── Editor screen ────────────────────────────────────────────
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
-      {/* Top header — compact on mobile */}
-      <header className="border-b border-border bg-card px-3 py-2 flex items-center justify-between shrink-0">
+      {/* Top header — dark, vibrant */}
+      <header className="bg-sidebar px-3 py-2.5 flex items-center justify-between shrink-0 shadow-md">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-sidebar-foreground hover:bg-sidebar-accent">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline ml-1">Voltar</span>
           </Button>
-          <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">{selectedTemplate.name}</span>
+          <span className="text-sm font-semibold text-sidebar-foreground truncate max-w-[140px] sm:max-w-none">{selectedTemplate.name}</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Button variant="outline" size="sm" onClick={handleWhatsAppQuote} className="gap-1.5 text-green-600 border-green-500/40 hover:bg-green-500/10 h-9 px-3">
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={handleWhatsAppQuote} className="gap-1.5 bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,38%)] text-white h-9 px-3 rounded-full shadow-sm">
             <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             <span className="hidden sm:inline">Orçamento</span>
           </Button>
-          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-1 h-8 px-2 sm:px-3">
+          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-1 h-9 px-3 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full shadow-sm">
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">{downloading ? 'Baixando...' : 'Baixar'}</span>
           </Button>
@@ -1115,32 +1115,34 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       {/* Unified responsive layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Top toolbar — tabs + view toggle + zoom */}
-        <div className="border-b border-border bg-card shrink-0">
+        <div className="border-b border-border bg-card/90 backdrop-blur-sm shrink-0">
           {/* Desktop: horizontal tab bar */}
           <div className="hidden lg:flex items-center justify-center gap-1 px-2">
             {toolbarTabs.map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
-                className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide transition-colors border-b-2 ${activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+                className={`flex flex-col items-center gap-0.5 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wide transition-all border-b-3 ${activeTab === tab.id ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
                 {tab.icon}
                 {tab.label}
               </button>
             ))}
             <div className="ml-auto flex items-center gap-1 pr-2">
-              <Button variant={activeView === 'front' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3" onClick={() => setActiveView('front')}>Frente</Button>
-              <Button variant={activeView === 'back' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3" onClick={() => setActiveView('back')}>Costas</Button>
+              <div className="flex items-center rounded-full overflow-hidden shadow-sm border-2 border-accent/40">
+                <Button variant={activeView === 'front' ? 'default' : 'ghost'} size="sm" className={`h-8 text-xs px-4 rounded-full ${activeView === 'front' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => setActiveView('front')}>Frente</Button>
+                <Button variant={activeView === 'back' ? 'default' : 'ghost'} size="sm" className={`h-8 text-xs px-4 rounded-full ${activeView === 'back' ? 'bg-primary text-primary-foreground' : ''}`} onClick={() => setActiveView('back')}>Costas</Button>
+              </div>
             </div>
           </div>
-          {/* Mobile: view toggle + zoom */}
-          <div className="lg:hidden flex items-center justify-between px-3 py-2">
-            <div className="flex items-center rounded-lg overflow-hidden border border-border">
-              <button onClick={() => setActiveView('front')} className={`px-5 py-1.5 text-sm font-semibold transition-colors ${activeView === 'front' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Frente</button>
-              <button onClick={() => setActiveView('back')} className={`px-5 py-1.5 text-sm font-semibold transition-colors ${activeView === 'back' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Costas</button>
+          {/* Mobile: view toggle + zoom — vibrant style */}
+          <div className="lg:hidden flex items-center justify-between px-3 py-2.5 bg-sidebar/5">
+            <div className="flex items-center rounded-full overflow-hidden shadow-sm border-2 border-accent/50">
+              <button onClick={() => setActiveView('front')} className={`px-6 py-2 text-sm font-bold transition-all ${activeView === 'front' ? 'bg-accent text-accent-foreground shadow-inner' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Frente</button>
+              <button onClick={() => setActiveView('back')} className={`px-6 py-2 text-sm font-bold transition-all ${activeView === 'back' ? 'bg-primary text-primary-foreground shadow-inner' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Costas</button>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-3.5 w-3.5" /></Button>
-              <span className="text-[10px] font-medium text-muted-foreground w-8 text-center">{Math.round(activeZoom * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-3.5 w-3.5" /></Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActiveZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }}><RotateCcw className="h-3.5 w-3.5" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-4 w-4" /></Button>
+              <span className="text-xs font-bold text-muted-foreground w-10 text-center">{Math.round(activeZoom * 100)}%</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setActiveZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }}><RotateCcw className="h-4 w-4" /></Button>
             </div>
           </div>
         </div>
@@ -1217,12 +1219,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
           {/* Mobile overlay panel — opens on top of canvas */}
           {activeTab && (
-            <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t border-border rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] max-h-[45vh] flex flex-col animate-fade-in">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50">
-                <p className="text-sm font-semibold text-foreground">
-                  {activeTab === 'stamps' ? 'Estampas' : activeTab === 'patches' ? 'Peixes' : activeTab === 'text' ? 'Texto' : 'Logo / Imagem'}
+            <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t-2 border-accent rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-h-[45vh] flex flex-col animate-fade-in">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+                <p className="text-sm font-bold text-foreground">
+                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? '🐟 Peixes' : activeTab === 'text' ? '✏️ Texto' : '📤 Logo / Imagem'}
                 </p>
-                <button onClick={() => setActiveTab(null)} className="p-1.5 rounded-full hover:bg-muted transition-colors">
+                <button onClick={() => setActiveTab(null)} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors">
                   <X className="h-5 w-5 text-muted-foreground" />
                 </button>
               </div>
@@ -1290,7 +1292,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           )}
 
           {/* Canvas area */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-muted/30 min-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-muted/50 to-muted/20 min-h-0">
             {/* Desktop zoom bar */}
             <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
               <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
@@ -1321,13 +1323,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-        {/* Mobile bottom tab bar — always visible */}
-        <div className="lg:hidden border-t-2 border-border bg-card flex items-stretch shadow-[0_-2px_8px_rgba(0,0,0,0.08)] shrink-0">
+        {/* Mobile bottom tab bar — vibrant, large icons like Jumptec */}
+        <div className="lg:hidden border-t-2 border-sidebar bg-sidebar flex items-stretch shadow-[0_-4px_16px_rgba(0,0,0,0.2)] shrink-0">
           {toolbarTabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-semibold transition-colors ${activeTab === tab.id ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}>
-              <span className="[&_svg]:h-6 [&_svg]:w-6">{tab.icon}</span>
-              {tab.label}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-all ${activeTab === tab.id ? 'text-accent bg-sidebar-accent' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'}`}>
+              <span className={`[&_svg]:h-7 [&_svg]:w-7 p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-accent text-accent-foreground shadow-md scale-110' : ''}`}>{tab.icon}</span>
+              <span className="text-[11px]">{tab.label}</span>
             </button>
           ))}
         </div>
