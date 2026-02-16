@@ -399,14 +399,23 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const activeZoom = activeView === 'front' ? frontZoom : backZoom;
   const setActiveZoom = activeView === 'front' ? setFrontZoom : setBackZoom;
 
-  // Apply zoom
+  // Apply zoom — keep content centered via scroll, not viewport transform
   useEffect(() => {
     const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+    const container = mobileCanvasContainerRef.current;
     if (!canvas) return;
     const zoom = activeView === 'front' ? frontZoom : backZoom;
-    canvas.zoomToPoint(new Point(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2), zoom);
+    // Reset viewport transform to identity so content stays at origin
+    canvas.setViewportTransform([zoom, 0, 0, zoom, 0, 0]);
     canvas.setDimensions({ width: CANVAS_WIDTH * zoom, height: CANVAS_HEIGHT * zoom });
     canvas.requestRenderAll();
+    // Center scroll position
+    if (container) {
+      const scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+      const scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+      container.scrollLeft = scrollLeft;
+      container.scrollTop = scrollTop;
+    }
   }, [frontZoom, backZoom, activeView]);
 
   // Pan + wheel zoom
@@ -1565,6 +1574,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <div className="rounded-xl overflow-hidden"><canvas ref={backCanvasRef} /></div>
                 </div>
               </div>
+              {/* Move hint when zoomed on mobile */}
+              {activeZoom > 1 && (
+                <div className="lg:hidden absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-sidebar/80 backdrop-blur-sm text-sidebar-foreground px-3 py-1.5 rounded-full shadow-lg text-xs font-medium pointer-events-none animate-pulse z-10">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Arraste para mover
+                </div>
+              )}
             </div>
           </div>
         </div>
