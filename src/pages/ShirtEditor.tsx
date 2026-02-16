@@ -172,8 +172,8 @@ FabricObject.ownDefaults = {
   borderDashArray: [6, 3],
 };
 
-// Override the default rotation control with custom icon
-FabricObject.prototype.controls.mtr = new Control({
+// Custom mtr control — applied to each canvas object after creation
+const customMtrControl = new Control({
   x: 0,
   y: -0.5,
   offsetY: -40,
@@ -396,43 +396,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           borderDashArray: [6, 3],
         });
 
-        // Make rotation control more prominent
-        const mtr = obj.controls?.mtr;
-        if (mtr) {
-          mtr.offsetY = -30;
-          mtr.sizeX = 22;
-          mtr.sizeY = 22;
-          mtr.render = (ctx: CanvasRenderingContext2D, left: number, top: number, _styleOverride: any, fabricObject: any) => {
-            const size = 22;
-            ctx.save();
-            ctx.translate(left, top);
-            ctx.beginPath();
-            ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#2563eb';
-            ctx.fill();
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(0, 0, size / 4, -Math.PI * 0.8, Math.PI * 0.5);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-            const tipAngle = Math.PI * 0.5;
-            const tipX = Math.cos(tipAngle) * size / 4;
-            const tipY = Math.sin(tipAngle) * size / 4;
-            ctx.beginPath();
-            ctx.moveTo(tipX - 3, tipY - 4);
-            ctx.lineTo(tipX, tipY);
-            ctx.lineTo(tipX + 4, tipY - 3);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-            ctx.restore();
-          };
-        }
+        // Replace rotation control with custom prominent one
+        obj.controls.mtr = customMtrControl;
       });
     };
 
