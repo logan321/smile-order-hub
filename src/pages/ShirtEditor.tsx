@@ -311,13 +311,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     if (frontFabricRef.current) return;
 
     const frontCanvas = new Canvas(frontCanvasRef.current, {
-      width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: '#f5f5f5',
+      width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: 'transparent',
       selection: true, enableRetinaScaling: true, imageSmoothingEnabled: true,
     });
     frontFabricRef.current = frontCanvas;
 
     const backCanvas = new Canvas(backCanvasRef.current, {
-      width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: '#f5f5f5',
+      width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: 'transparent',
       selection: true, enableRetinaScaling: true, imageSmoothingEnabled: true,
     });
     backFabricRef.current = backCanvas;
@@ -1556,13 +1556,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
                   onClick={() => setActiveView('front')}>
                   <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider hidden lg:block">Frente</p>
-                  <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background"><canvas ref={frontCanvasRef} /></div>
+                  <div className="rounded-xl overflow-hidden"><canvas ref={frontCanvasRef} /></div>
                 </div>
                 <div ref={backWrapRef}
                   className={`${activeView === 'back' ? 'block' : 'hidden lg:block'} ${activeView !== 'back' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
                   onClick={() => setActiveView('back')}>
                   <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider hidden lg:block">Costas</p>
-                  <div className="rounded-xl border border-border/50 shadow-lg overflow-hidden bg-background"><canvas ref={backCanvasRef} /></div>
+                  <div className="rounded-xl overflow-hidden"><canvas ref={backCanvasRef} /></div>
                 </div>
               </div>
             </div>
