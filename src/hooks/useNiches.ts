@@ -7,6 +7,7 @@ export interface Niche {
   icon: string;
   patchLabel: string;
   coverImageUrl: string;
+  backgroundImageUrl: string;
   position: number;
   createdAt: string;
 }
@@ -30,6 +31,7 @@ export function useNiches(targetUserId?: string) {
       icon: n.icon,
       patchLabel: n.patch_label,
       coverImageUrl: n.cover_image_url || '',
+      backgroundImageUrl: n.background_image_url || '',
       position: n.position,
       createdAt: n.created_at,
     })) ?? []);
@@ -82,5 +84,19 @@ export function useNiches(targetUserId?: string) {
     return urlData.publicUrl;
   }, [fetchNiches, targetUserId]);
 
-  return { niches, loading, addNiche, updateNiche, deleteNiche, uploadCoverImage, refetch: fetchNiches };
+  const uploadBackgroundImage = useCallback(async (nicheId: string, file: File) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = targetUserId || session.user.id;
+    const ext = file.name.split('.').pop();
+    const path = `${userId}/niche-backgrounds/${nicheId}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('shirt-templates').upload(path, file, { upsert: true });
+    if (uploadError) throw uploadError;
+    const { data: urlData } = supabase.storage.from('shirt-templates').getPublicUrl(path);
+    await supabase.from('niches').update({ background_image_url: urlData.publicUrl } as any).eq('id', nicheId);
+    await fetchNiches();
+    return urlData.publicUrl;
+  }, [fetchNiches, targetUserId]);
+
+  return { niches, loading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage, refetch: fetchNiches };
 }

@@ -73,6 +73,7 @@ export type Database = {
       }
       niches: {
         Row: {
+          background_image_url: string
           cover_image_url: string
           created_at: string
           icon: string
@@ -83,6 +84,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          background_image_url?: string
           cover_image_url?: string
           created_at?: string
           icon?: string
@@ -93,6 +95,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          background_image_url?: string
           cover_image_url?: string
           created_at?: string
           icon?: string

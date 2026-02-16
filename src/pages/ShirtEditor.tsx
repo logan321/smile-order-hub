@@ -90,6 +90,7 @@ interface Niche {
   icon: string;
   patchLabel: string;
   coverImageUrl: string;
+  backgroundImageUrl: string;
 }
 
 interface Template {
@@ -276,7 +277,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
       })) ?? []);
       setNiches((nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '',
+        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
       })) ?? []);
       setLoading(false);
     };
@@ -1528,7 +1529,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           )}
 
           {/* Canvas area */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-muted/50 to-muted/20 min-h-0">
+            <div className={`flex-1 flex flex-col overflow-hidden min-h-0 relative ${!selectedNiche?.backgroundImageUrl ? 'bg-gradient-to-b from-muted/50 to-muted/20' : ''}`}
+              style={selectedNiche?.backgroundImageUrl ? {
+                backgroundImage: `url(${selectedNiche.backgroundImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              } : undefined}>
+              {selectedNiche?.backgroundImageUrl && (
+                <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px] pointer-events-none z-0" />
+              )}
             {/* Desktop zoom bar */}
             <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
               <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
