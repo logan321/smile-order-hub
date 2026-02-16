@@ -12,7 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
-import { toProxyUrl } from '@/lib/imageProxy';
+
 
 interface ShirtEditorProps {
   useOwnAssets?: boolean;
@@ -314,25 +314,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
       ]);
       const allT = (templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: toProxyUrl(t.front_image_url), backImageUrl: toProxyUrl(t.back_image_url), userId: t.user_id, nicheId: t.niche_id ?? null,
+        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
       setAllTemplates(allT);
       setTemplates(allT);
       const allS = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: toProxyUrl(s.image_url), backImageUrl: s.back_image_url ? toProxyUrl(s.back_image_url) : null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
       })) ?? [];
       setAllStamps(allS);
       setStamps(allS);
       const allP = (patchesRes.data as any[])?.map(p => ({
-        id: p.id, name: p.name, imageUrl: toProxyUrl(p.image_url), targetZoneName: p.target_zone_name, nicheId: p.niche_id ?? null,
+        id: p.id, name: p.name, imageUrl: p.image_url, targetZoneName: p.target_zone_name, nicheId: p.niche_id ?? null,
       })) ?? [];
       setAllPatches(allP);
       setPatches(allP);
       setTextStyles((textStylesRes.data as any[])?.map(ts => ({
-        id: ts.id, name: ts.name, category: ts.category, imageUrl: toProxyUrl(ts.image_url),
+        id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
       })) ?? []);
       setNiches((nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: toProxyUrl(n.cover_image_url || ''), backgroundImageUrl: toProxyUrl(n.background_image_url || ''),
+        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
       })) ?? []);
       setLoading(false);
     };
