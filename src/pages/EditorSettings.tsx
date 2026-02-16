@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle, Plus, Trash2, Save } from 'lucide-react';
+import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Fish, MessageCircle, Plus, Trash2, Save, Link, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
@@ -19,6 +19,31 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
+
+  // Public editor link
+  const [editorUserId, setEditorUserId] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  useEffect(() => {
+    if (targetUserId) {
+      setEditorUserId(targetUserId);
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setEditorUserId(session?.user?.id ?? null);
+      });
+    }
+  }, [targetUserId]);
+
+  const publicEditorLink = editorUserId
+    ? `${window.location.origin}/editor/${editorUserId}`
+    : '';
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(publicEditorLink);
+    setLinkCopied(true);
+    toast.success('Link copiado!');
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   // WhatsApp
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -136,6 +161,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
             : 'Gerencie templates, estampas, peixes e WhatsApp do seu editor de camisas'}
         </p>
       </div>
+
+      {/* Public editor link card */}
+      {publicEditorLink && (
+        <div className="max-w-3xl mb-6 bg-card rounded-xl border border-border/50 shadow-sm p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-9 w-9 rounded-lg bg-accent/20 flex items-center justify-center">
+              <Link className="h-4 w-4 text-accent" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold">Link público do seu editor</h3>
+              <p className="text-xs text-muted-foreground">Compartilhe este link com seus clientes para personalizarem camisas</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Input value={publicEditorLink} readOnly className="text-xs bg-muted/30 flex-1" />
+            <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={handleCopyLink}>
+              {linkCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              {linkCopied ? 'Copiado!' : 'Copiar'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Tabs defaultValue="templates" className="max-w-3xl">
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
