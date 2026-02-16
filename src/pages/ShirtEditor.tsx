@@ -1570,7 +1570,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 backgroundRepeat: 'no-repeat',
               } : undefined}>
               {selectedNiche?.backgroundImageUrl && (
-                <div className="absolute inset-0 bg-background/30 pointer-events-none -z-10" />
+                <div className="absolute inset-0 bg-background/50 pointer-events-none z-0" />
               )}
             {/* Desktop zoom bar */}
             <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
