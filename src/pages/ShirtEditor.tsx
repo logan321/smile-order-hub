@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon } from 'fabric';
+import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,6 +77,21 @@ type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
+
+// Configure Fabric.js selection controls globally — large, high-contrast circles for mobile touch
+FabricObject.ownDefaults = {
+  ...FabricObject.ownDefaults,
+  cornerSize: 16,
+  touchCornerSize: 44,
+  cornerStyle: 'circle' as const,
+  cornerColor: '#ffffff',
+  cornerStrokeColor: '#2563eb',
+  transparentCorners: false,
+  borderColor: '#2563eb',
+  borderScaleFactor: 2.5,
+  padding: 8,
+  borderDashArray: [6, 3],
+};
 
 const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const { userId: urlUserId } = useParams<{ userId: string }>();
@@ -243,6 +258,57 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       selection: true, enableRetinaScaling: true, imageSmoothingEnabled: true,
     });
     backFabricRef.current = backCanvas;
+
+    // Custom render for the rotation control — draw a visible circle with rotation icon
+    const customizeControls = (canvas: Canvas) => {
+      canvas.on('object:added', (e) => {
+        const obj = e.target;
+        if (!obj || (obj as any)._isBackground) return;
+        // Make rotation control more prominent
+        const mtr = obj.controls?.mtr;
+        if (mtr) {
+          mtr.offsetY = -30;
+          mtr.sizeX = 22;
+          mtr.sizeY = 22;
+          mtr.render = (ctx: CanvasRenderingContext2D, left: number, top: number, _styleOverride: any, fabricObject: any) => {
+            const size = 22;
+            ctx.save();
+            ctx.translate(left, top);
+            // Draw circle
+            ctx.beginPath();
+            ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#2563eb';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Draw rotation arrow icon
+            ctx.beginPath();
+            ctx.arc(0, 0, size / 4, -Math.PI * 0.8, Math.PI * 0.5);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            // Arrow tip
+            const tipAngle = Math.PI * 0.5;
+            const tipX = Math.cos(tipAngle) * size / 4;
+            const tipY = Math.sin(tipAngle) * size / 4;
+            ctx.beginPath();
+            ctx.moveTo(tipX - 3, tipY - 4);
+            ctx.lineTo(tipX, tipY);
+            ctx.lineTo(tipX + 4, tipY - 3);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.restore();
+          };
+        }
+      });
+    };
+
+    customizeControls(frontCanvas);
+    customizeControls(backCanvas);
 
     loadBackground(frontCanvas, selectedTemplate.frontImageUrl, 'front');
     loadBackground(backCanvas, selectedTemplate.backImageUrl, 'back');
@@ -1151,7 +1217,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
           {/* Mobile overlay panel — opens on top of canvas */}
           {activeTab && (
-            <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t border-border rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] max-h-[55vh] flex flex-col animate-fade-in">
+            <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t border-border rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] max-h-[45vh] flex flex-col animate-fade-in">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50">
                 <p className="text-sm font-semibold text-foreground">
                   {activeTab === 'stamps' ? 'Estampas' : activeTab === 'patches' ? 'Peixes' : activeTab === 'text' ? 'Texto' : 'Logo / Imagem'}
