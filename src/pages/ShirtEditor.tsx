@@ -39,20 +39,58 @@ const FONT_OPTIONS = [
   { label: 'Press Start 2P', value: 'Press Start 2P', google: true },
 ];
 
-// Load Google Fonts on demand
+// Load Google Fonts on demand — uses FontFace API for reliable canvas rendering
 const loadedFonts = new Set<string>();
 const loadGoogleFont = (fontName: string): Promise<void> => {
   if (loadedFonts.has(fontName)) return Promise.resolve();
   return new Promise((resolve) => {
+    // Add stylesheet link for CSS usage
     const link = document.createElement('link');
     link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')}&display=swap`;
     link.rel = 'stylesheet';
-    link.onload = () => {
-      loadedFonts.add(fontName);
-      document.fonts.ready.then(() => resolve());
-    };
-    link.onerror = () => resolve();
     document.head.appendChild(link);
+
+    // Use FontFace API to ensure font is actually loaded for canvas
+    const checkFont = () => {
+      return document.fonts.check(`16px "${fontName}"`);
+    };
+
+    // Poll until font is ready (mobile sometimes needs extra time)
+    let attempts = 0;
+    const poll = () => {
+      if (checkFont() || attempts > 50) {
+        loadedFonts.add(fontName);
+        resolve();
+        return;
+      }
+      attempts++;
+      setTimeout(poll, 100);
+    };
+
+    // Start checking after stylesheet starts loading
+    link.onload = () => {
+      document.fonts.ready.then(() => {
+        if (checkFont()) {
+          loadedFonts.add(fontName);
+          resolve();
+        } else {
+          poll();
+        }
+      });
+    };
+    link.onerror = () => {
+      // Fallback: try loading via FontFace API directly
+      try {
+        const face = new FontFace(fontName, `url(https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, '+')})`);
+        document.fonts.add(face);
+        face.load().then(() => {
+          loadedFonts.add(fontName);
+          resolve();
+        }).catch(() => resolve());
+      } catch {
+        resolve();
+      }
+    };
   });
 };
 
@@ -866,7 +904,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           strokeWidth: strokeWidth > 0 ? strokeWidth : 0, fontSize, fontFamily,
         });
         (active as any)._fontName = fontFamily;
-        canvas.renderAll();
+        // Force Fabric to recalculate text dimensions with new font
+        if ('initDimensions' in active && typeof (active as any).initDimensions === 'function') {
+          (active as any).initDimensions();
+        }
+        active.dirty = true;
+        active.setCoords();
+        canvas.requestRenderAll();
       };
       applyFont();
     }
