@@ -1,0 +1,1 @@
+ALTER TABLE public.niches ADD COLUMN background_image_url text NOT NULL DEFAULT '';

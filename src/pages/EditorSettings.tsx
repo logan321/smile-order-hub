@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil } from 'lucide-react';
+import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
@@ -22,7 +22,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
-  const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage } = useNiches(targetUserId);
+  const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
 
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
@@ -388,8 +388,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold">{n.name}</p>
                               <p className="text-[10px] text-muted-foreground">Emblemas: "{n.patchLabel}"</p>
+                              {n.backgroundImageUrl && <p className="text-[10px] text-green-600">✓ Background definido</p>}
                             </div>
-                            <label className="cursor-pointer">
+                            <label className="cursor-pointer" title="Imagem de capa">
                               <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
@@ -399,8 +400,22 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 } catch { toast.error('Erro ao enviar imagem'); }
                                 e.target.value = '';
                               }} />
-                              <div className="h-7 w-7 rounded flex items-center justify-center hover:bg-muted transition-colors" title="Importar imagem de capa">
+                              <div className="h-7 w-7 rounded flex items-center justify-center hover:bg-muted transition-colors" title="Imagem de capa">
                                 <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                            </label>
+                            <label className="cursor-pointer" title="Background do editor">
+                              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                try {
+                                  await uploadBackgroundImage(n.id, file);
+                                  toast.success('Background do editor atualizado!');
+                                } catch { toast.error('Erro ao enviar background'); }
+                                e.target.value = '';
+                              }} />
+                              <div className="h-7 w-7 rounded flex items-center justify-center hover:bg-muted transition-colors" title="Background do editor">
+                                <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
                               </div>
                             </label>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditNiche(n)}>
