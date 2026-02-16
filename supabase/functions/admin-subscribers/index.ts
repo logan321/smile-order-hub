@@ -43,7 +43,12 @@ serve(async (req) => {
 
     // Handle POST for toggling editor_enabled
     if (req.method === 'POST') {
-      const body = await req.json();
+      let body: any = {};
+      try {
+        body = await req.json();
+      } catch {
+        // No body or invalid JSON — treat as a GET-like request
+      }
       if (body.action === 'toggle_editor') {
         const { error: updateError } = await adminSupabase
           .from('subscriptions')
