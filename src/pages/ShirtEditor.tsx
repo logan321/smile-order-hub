@@ -89,6 +89,7 @@ interface Niche {
   name: string;
   icon: string;
   patchLabel: string;
+  coverImageUrl: string;
 }
 
 interface Template {
@@ -275,7 +276,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
       })) ?? []);
       setNiches((nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label,
+        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '',
       })) ?? []);
       setLoading(false);
     };
@@ -1182,7 +1183,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
               {niches.map(n => {
                 const nicheTemplates = allTemplates.filter(t => t.nicheId === n.id);
-                const coverImage = nicheTemplates[0]?.frontImageUrl;
+                const coverImage = n.coverImageUrl || nicheTemplates[0]?.frontImageUrl;
                 return (
                   <button
                     key={n.id}
