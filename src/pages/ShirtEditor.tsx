@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject } from 'fabric';
+import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject, Control, controlsUtils } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,6 +116,47 @@ type PatchSideChoice = 'front' | 'back' | 'both' | null;
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
 
+// Custom rotation icon renderer — draws a circular arrow that's unmistakable
+const renderRotateIcon = (ctx: CanvasRenderingContext2D, left: number, top: number, _styleOverride: any, fabricObject: any) => {
+  const size = 28;
+  ctx.save();
+  ctx.translate(left, top);
+  ctx.rotate((fabricObject.angle * Math.PI) / 180);
+
+  // Background circle
+  ctx.beginPath();
+  ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fill();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Circular arrow
+  ctx.beginPath();
+  ctx.arc(0, 0, size / 4, -Math.PI * 0.8, Math.PI * 0.6);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Arrow head
+  const arrowAngle = Math.PI * 0.6;
+  const arrowX = (size / 4) * Math.cos(arrowAngle);
+  const arrowY = (size / 4) * Math.sin(arrowAngle);
+  ctx.beginPath();
+  ctx.moveTo(arrowX - 4, arrowY - 5);
+  ctx.lineTo(arrowX, arrowY);
+  ctx.lineTo(arrowX + 5, arrowY - 3);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  ctx.restore();
+};
+
 // Configure Fabric.js selection controls globally — large, high-contrast circles for mobile touch
 FabricObject.ownDefaults = {
   ...FabricObject.ownDefaults,
@@ -130,6 +171,18 @@ FabricObject.ownDefaults = {
   padding: 10,
   borderDashArray: [6, 3],
 };
+
+// Override the default rotation control with custom icon
+FabricObject.prototype.controls.mtr = new Control({
+  x: 0,
+  y: -0.5,
+  offsetY: -40,
+  actionHandler: controlsUtils.rotationWithSnapping,
+  cursorStyleHandler: controlsUtils.rotationStyleHandler,
+  withConnection: true,
+  actionName: 'rotate',
+  render: renderRotateIcon,
+});
 
 const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const { userId: urlUserId } = useParams<{ userId: string }>();
