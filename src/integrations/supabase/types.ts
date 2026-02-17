@@ -662,6 +662,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          tracking_slug: string
           updated_at: string
           user_id: string
           whatsapp_number: string
@@ -669,6 +670,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          tracking_slug?: string
           updated_at?: string
           user_id: string
           whatsapp_number?: string
@@ -676,6 +678,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          tracking_slug?: string
           updated_at?: string
           user_id?: string
           whatsapp_number?: string

@@ -93,7 +93,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Auth />} />
-            <Route path="/rastreio" element={<TrackOrder />} />
+            <Route path="/rastreio/:slug" element={<TrackOrder />} />
             <Route path="/editor/:userId" element={<ShirtEditor />} />
 
             {/* Protected + subscription required routes */}
