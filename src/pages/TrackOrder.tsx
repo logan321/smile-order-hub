@@ -50,7 +50,7 @@ const TrackOrder = () => {
       const { data } = await supabase
         .from('user_settings')
         .select('user_id')
-        .eq('tracking_slug', slug)
+        .eq('tracking_slug', slug.toLowerCase())
         .maybeSingle();
       if (data) {
         setOwnerUserId(data.user_id);
