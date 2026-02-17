@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield, Shirt, Palette } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield, Shirt, Palette, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ const navItems = [
   { label: 'Clientes', to: '/clientes', icon: Users },
   { label: 'Pedidos', to: '/pedidos', icon: ShoppingCart },
   { label: 'Serviços', to: '/servicos', icon: Wrench },
+  { label: 'Orçamentos', to: '/orcamentos', icon: Calculator },
   { label: 'Relatórios', to: '/relatorios', icon: FileText },
   { label: 'Configurações', to: '/configuracoes', icon: Settings },
 ];

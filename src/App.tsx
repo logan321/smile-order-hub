@@ -21,6 +21,7 @@ import SubscriptionPage from "./pages/Subscription";
 import ShirtEditor from "./pages/ShirtEditor";
 import EditorSettings from "./pages/EditorSettings";
 import AdminEditorConfig from "./pages/AdminEditorConfig";
+import Budgets from "./pages/Budgets";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="/clientes" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Clients /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/pedidos" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Orders /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/servicos" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Services /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
+            <Route path="/orcamentos" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Budgets /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/relatorios" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Reports /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute><SubscriptionGuard><AppLayout><SettingsPage /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
             <Route path="/config-editor" element={<ProtectedRoute><SubscriptionGuard><AppLayout><EditorSettings /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
