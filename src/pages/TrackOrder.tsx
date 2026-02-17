@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
@@ -33,16 +34,38 @@ interface OrderResult {
 }
 
 const TrackOrder = () => {
+  const { slug } = useParams<{ slug: string }>();
   const [trackingId, setTrackingId] = useState('');
   const [order, setOrder] = useState<OrderResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [statusSteps, setStatusSteps] = useState<StageStep[]>(DEFAULT_STATUS_STEPS);
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [slugValid, setSlugValid] = useState<boolean | null>(null);
+
+  // Resolve slug to user_id
+  useEffect(() => {
+    if (!slug) { setSlugValid(false); return; }
+    const resolve = async () => {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('user_id')
+        .eq('tracking_slug', slug)
+        .maybeSingle();
+      if (data) {
+        setOwnerUserId(data.user_id);
+        setSlugValid(true);
+      } else {
+        setSlugValid(false);
+      }
+    };
+    resolve();
+  }, [slug]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const id = trackingId.trim().toUpperCase();
-    if (!id) return;
+    if (!id || !ownerUserId) return;
 
     setLoading(true);
     setSearched(true);
@@ -53,6 +76,7 @@ const TrackOrder = () => {
         .from('orders')
         .select('id, tracking_id, status, date, created_at, user_id, order_type, delivery_date')
         .eq('tracking_id', id)
+        .eq('user_id', ownerUserId)
         .maybeSingle();
 
       if (error) throw error;
@@ -122,6 +146,26 @@ const TrackOrder = () => {
   };
 
   const currentStepIndex = order ? statusSteps.findIndex(s => s.key === order.status) : -1;
+
+  if (slugValid === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (slugValid === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-30" />
+          <p className="text-lg font-medium">Link de rastreio inválido</p>
+          <p className="text-sm text-muted-foreground mt-1">Verifique o link e tente novamente</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

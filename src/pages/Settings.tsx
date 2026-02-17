@@ -1,20 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BusinessConfig, loadBusinessConfig, saveBusinessConfig } from '@/lib/businessConfig';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import { Settings as SettingsIcon, Save, ListOrdered, FileText, Plus, Trash2, Pencil, GripVertical, ArrowUp, ArrowDown, Download, Link, Copy, Check } from 'lucide-react';
 import { generateUserManualPDF } from '@/lib/generateManualPDF';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useOrderStages } from '@/hooks/useOrderStages';
 import { useCustomFields } from '@/hooks/useCustomFields';
+import { supabase } from '@/integrations/supabase/client';
 
 const Settings = () => {
   const [config, setConfig] = useState<BusinessConfig>(loadBusinessConfig);
   const { stages, loading: stagesLoading, addStage, updateStage, deleteStage, reorderStages, initDefaults } = useOrderStages();
   const { fields, loading: fieldsLoading, addField, updateField, deleteField } = useCustomFields();
+
+  // Tracking slug state
+  const [trackingSlug, setTrackingSlug] = useState('');
+  const [slugLoading, setSlugLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const loadSlug = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase
+        .from('user_settings')
+        .select('tracking_slug')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      if (data) setTrackingSlug((data as any).tracking_slug ?? '');
+      setSlugLoading(false);
+    };
+    loadSlug();
+  }, []);
+
+  const handleSaveSlug = async () => {
+    const slug = trackingSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!slug) { toast.error('Digite um slug válido'); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
+    // Upsert user_settings
+    const { data: existing } = await supabase.from('user_settings').select('id').eq('user_id', session.user.id).maybeSingle();
+    if (existing) {
+      const { error } = await supabase.from('user_settings').update({ tracking_slug: slug } as any).eq('user_id', session.user.id);
+      if (error) { toast.error(error.message.includes('idx_user_settings_tracking_slug') ? 'Este slug já está em uso' : 'Erro ao salvar'); return; }
+    } else {
+      const { error } = await supabase.from('user_settings').insert({ user_id: session.user.id, tracking_slug: slug } as any);
+      if (error) { toast.error(error.message.includes('idx_user_settings_tracking_slug') ? 'Este slug já está em uso' : 'Erro ao salvar'); return; }
+    }
+    setTrackingSlug(slug);
+    toast.success('Link de rastreio salvo!');
+  };
+
+  const trackingUrl = trackingSlug ? `${window.location.origin}/rastreio/${trackingSlug}` : '';
+
+  const handleCopy = () => {
+    if (!trackingUrl) return;
+    navigator.clipboard.writeText(trackingUrl);
+    setCopied(true);
+    toast.success('Link copiado!');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Payment settings
   const update = (field: keyof BusinessConfig, value: string) => {
@@ -123,8 +173,12 @@ const Settings = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="payment" className="max-w-3xl">
+      <Tabs defaultValue="tracking" className="max-w-3xl">
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
+          <TabsTrigger value="tracking" className="gap-2">
+            <Link className="h-4 w-4" />
+            Link de Rastreio
+          </TabsTrigger>
           <TabsTrigger value="payment" className="gap-2">
             <SettingsIcon className="h-4 w-4" />
             Relatório
@@ -138,6 +192,60 @@ const Settings = () => {
             Campos
           </TabsTrigger>
         </TabsList>
+
+        {/* Tab 0: Tracking Link */}
+        <TabsContent value="tracking">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Link className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">Link de Rastreio</h2>
+                <p className="text-sm text-muted-foreground">Crie seu link exclusivo para seus clientes consultarem pedidos</p>
+              </div>
+            </div>
+
+            {slugLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando...</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Slug do link</label>
+                  <p className="text-xs text-muted-foreground mb-2">Use letras minúsculas, números e hífens. Ex: minha-empresa</p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={trackingSlug}
+                      onChange={e => setTrackingSlug(e.target.value)}
+                      placeholder="minha-empresa"
+                    />
+                    <Button onClick={handleSaveSlug}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar
+                    </Button>
+                  </div>
+                </div>
+
+                {trackingUrl && (
+                  <div className="bg-muted/30 rounded-lg border border-border/50 p-4">
+                    <label className="text-sm font-medium mb-2 block">Seu link de rastreio:</label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-sm bg-background px-3 py-2 rounded border border-border truncate">
+                        {trackingUrl}
+                      </code>
+                      <Button variant="outline" size="icon" onClick={handleCopy}>
+                        {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Envie este link para seus clientes. Eles poderão consultar pedidos usando o ID de rastreio.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </TabsContent>
 
         {/* Tab 1: Payment / Report data */}
         <TabsContent value="payment">
