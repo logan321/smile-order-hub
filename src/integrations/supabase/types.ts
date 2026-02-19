@@ -551,6 +551,50 @@ export type Database = {
           },
         ]
       }
+      stamp_colors: {
+        Row: {
+          back_image_url: string | null
+          color_hex: string
+          color_name: string
+          created_at: string
+          id: string
+          image_url: string
+          position: number
+          stamp_id: string
+          user_id: string
+        }
+        Insert: {
+          back_image_url?: string | null
+          color_hex?: string
+          color_name: string
+          created_at?: string
+          id?: string
+          image_url: string
+          position?: number
+          stamp_id: string
+          user_id: string
+        }
+        Update: {
+          back_image_url?: string | null
+          color_hex?: string
+          color_name?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          position?: number
+          stamp_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stamp_colors_stamp_id_fkey"
+            columns: ["stamp_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           blocked: boolean

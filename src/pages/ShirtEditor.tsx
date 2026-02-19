@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
+import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 
 
 interface ShirtEditorProps {
@@ -217,6 +218,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [shadowBlur, setShadowBlur] = useState(4);
   const [textStyles, setTextStyles] = useState<{ id: string; name: string; category: string; imageUrl: string }[]>([]);
   const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
+  const [stampColors, setStampColors] = useState<StampColor[]>([]);
+  const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
+  const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
   const [showTextStylesOverlay, setShowTextStylesOverlay] = useState(false);
@@ -335,6 +339,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setNiches((nichesRes.data as any[])?.map(n => ({
         id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: toProxyUrl(n.cover_image_url || ''), backgroundImageUrl: toProxyUrl(n.background_image_url || ''),
       })) ?? []);
+      // Fetch stamp colors
+      fetchAllStampColors(ownerUserId).then(setStampColors);
       setLoading(false);
     };
     fetchData();
@@ -694,11 +700,51 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       backCanvas.getObjects().forEach((obj: any) => {
         if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
       });
+      setAppliedStamp(stamp);
+      setActiveStampColorId(null);
     } catch (err) {
       console.error('Erro ao aplicar estampa:', err);
       toast.error('Erro ao aplicar estampa');
     }
   };
+
+  // Switch stamp to a color variant
+  const switchStampColor = async (color: StampColor) => {
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas) return;
+    const backUrl = color.backImageUrl ? toProxyUrl(color.backImageUrl) : toProxyUrl(color.imageUrl);
+    try {
+      await Promise.all([
+        applyStampToCanvas(frontCanvas, toProxyUrl(color.imageUrl), 'front'),
+        applyStampToCanvas(backCanvas, backUrl, 'back'),
+      ]);
+      setActiveStampColorId(color.id);
+    } catch {
+      toast.error('Erro ao trocar cor');
+    }
+  };
+
+  // Switch back to original stamp images
+  const switchToOriginalStamp = async () => {
+    if (!appliedStamp) return;
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas) return;
+    const backUrl = appliedStamp.backImageUrl || appliedStamp.imageUrl;
+    try {
+      await Promise.all([
+        applyStampToCanvas(frontCanvas, appliedStamp.imageUrl, 'front'),
+        applyStampToCanvas(backCanvas, backUrl, 'back'),
+      ]);
+      setActiveStampColorId(null);
+    } catch {
+      toast.error('Erro ao restaurar estampa');
+    }
+  };
+
+  // Get colors for the currently applied stamp
+  const appliedStampColors = appliedStamp ? stampColors.filter(c => c.stampId === appliedStamp.id) : [];
 
   // Helper to get zone coords for a specific side
   const getZoneCoordsForSide = (zone: TemplateZone, side: 'front' | 'back') => {
@@ -1390,6 +1436,30 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       ))}
                     </div>
                   )}
+                  {/* Color variants for applied stamp - Desktop */}
+                  {appliedStampColors.length > 0 && (
+                    <div className="mt-3 pt-2 border-t border-border/30">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={switchToOriginalStamp}
+                          className={`h-8 w-8 rounded-full border-2 transition-all overflow-hidden ${!activeStampColorId ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
+                          title="Original"
+                        >
+                          <img src={appliedStamp?.imageUrl} alt="Original" className="h-full w-full object-cover" />
+                        </button>
+                        {appliedStampColors.map(c => (
+                          <button
+                            key={c.id}
+                            onClick={() => switchStampColor(c)}
+                            className={`h-8 w-8 rounded-full border-2 transition-all ${activeStampColorId === c.id ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
+                            style={{ backgroundColor: c.colorHex }}
+                            title={c.colorName}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === 'patches' && (
@@ -1482,11 +1552,35 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
                       <div className="grid grid-cols-4 gap-2">
                         {stamps.map(s => (
-                          <button key={s.id} onClick={() => { addStamp(s); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
+                          <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                             <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
+                      </div>
+                    )}
+                    {/* Color variants for applied stamp - Mobile */}
+                    {appliedStampColors.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-border/30">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => { switchToOriginalStamp(); }}
+                            className={`h-9 w-9 rounded-full border-2 transition-all overflow-hidden ${!activeStampColorId ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
+                            title="Original"
+                          >
+                            <img src={appliedStamp?.imageUrl} alt="Original" className="h-full w-full object-cover" />
+                          </button>
+                          {appliedStampColors.map(c => (
+                            <button
+                              key={c.id}
+                              onClick={() => { switchStampColor(c); }}
+                              className={`h-9 w-9 rounded-full border-2 transition-all ${activeStampColorId === c.id ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
+                              style={{ backgroundColor: c.colorHex }}
+                              title={c.colorName}
+                            />
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
