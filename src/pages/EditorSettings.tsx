@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil, ImageIcon } from 'lucide-react';
+import StampColorManager from '@/components/StampColorManager';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
@@ -615,6 +616,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
                               </SelectContent>
                             </Select>
+                            <StampColorManager stampId={s.id} stampName={s.name} targetUserId={effectiveUserId} />
                             <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover estampa?')) deleteStamp(s.id); }}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
