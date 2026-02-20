@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Pipette, Paintbrush } from 'lucide-react';
 import { Shadow } from 'fabric';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
@@ -14,6 +14,8 @@ import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
+import { ColorMask, hexToRgb, applyColorMasks, rgbToHex } from '@/lib/colorMasking';
+import ColorMaskPanel from '@/components/ColorMaskPanel';
 
 
 interface ShirtEditorProps {
@@ -222,6 +224,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  // Color masking state
+  const [colorMaskMode, setColorMaskMode] = useState(false);
+  const [eyedropperActive, setEyedropperActive] = useState(false);
+  const [colorMasks, setColorMasks] = useState<ColorMask[]>([]);
+  const [currentMaskSource, setCurrentMaskSource] = useState('#000000');
+  const [currentMaskTarget, setCurrentMaskTarget] = useState('#ff0000');
+  const [currentMaskTolerance, setCurrentMaskTolerance] = useState(25);
+  const [originalFrontImageData, setOriginalFrontImageData] = useState<ImageData | null>(null);
+  const [originalBackImageData, setOriginalBackImageData] = useState<ImageData | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
   const [showTextStylesOverlay, setShowTextStylesOverlay] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -745,6 +756,212 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   // Get colors for the currently applied stamp
   const appliedStampColors = appliedStamp ? stampColors.filter(c => c.stampId === appliedStamp.id) : [];
+
+  // ── Color masking logic ──────────────────────────────────────
+
+  // Capture original background image data for color masking
+  const captureOriginalImageData = useCallback(() => {
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas) return;
+
+    const captureFromCanvas = (canvas: Canvas): ImageData | null => {
+      const bgObj = canvas.getObjects().find((o: any) => o._isBackground) as FabricImage | undefined;
+      if (!bgObj) return null;
+      const el = (bgObj as any)._element || (bgObj as any).getElement?.();
+      if (!el) return null;
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = CANVAS_WIDTH;
+      tempCanvas.height = CANVAS_HEIGHT;
+      const ctx = tempCanvas.getContext('2d')!;
+      const sx = bgObj.scaleX || 1;
+      const sy = bgObj.scaleY || 1;
+      ctx.drawImage(el, bgObj.left || 0, bgObj.top || 0, el.width * sx, el.height * sy);
+      return ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    };
+
+    setOriginalFrontImageData(captureFromCanvas(frontCanvas));
+    setOriginalBackImageData(captureFromCanvas(backCanvas));
+  }, []);
+
+  // Apply color masks to both canvases
+  const applyColorMasksToCanvases = useCallback((masks: ColorMask[]) => {
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas || !originalFrontImageData || !originalBackImageData) return;
+
+    const applyToCanvas = (canvas: Canvas, origData: ImageData, side: 'front' | 'back') => {
+      const bgObj = canvas.getObjects().find((o: any) => o._isBackground) as FabricImage | undefined;
+      if (!bgObj) return;
+
+      // Create a copy of original data
+      const newData = new ImageData(
+        new Uint8ClampedArray(origData.data),
+        origData.width,
+        origData.height
+      );
+
+      if (masks.length > 0) {
+        applyColorMasks(newData, masks);
+      }
+
+      // Draw to temp canvas and create new fabric image
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = CANVAS_WIDTH;
+      tempCanvas.height = CANVAS_HEIGHT;
+      const ctx = tempCanvas.getContext('2d')!;
+      ctx.putImageData(newData, 0, 0);
+
+      // Replace background with masked version
+      const dataUrl = tempCanvas.toDataURL('image/png');
+      FabricImage.fromURL(dataUrl).then(img => {
+        canvas.remove(bgObj);
+        img.set({
+          left: 0, top: 0,
+          scaleX: 1, scaleY: 1,
+          selectable: false, evented: false,
+        });
+        (img as any)._isBackground = true;
+        // Copy stamp metadata
+        (img as any)._stampName = (bgObj as any)._stampName;
+        (img as any)._stampCategory = (bgObj as any)._stampCategory;
+        canvas.insertAt(0, img);
+
+        // Update clip path — create a second image from the same data URL
+        FabricImage.fromURL(dataUrl).then(clipImg => {
+          clipImg.set({ left: 0, top: 0, scaleX: 1, scaleY: 1, absolutePositioned: true });
+          if (side === 'front') frontClipRef.current = clipImg;
+          else backClipRef.current = clipImg;
+
+          // Update clip paths on user elements
+          canvas.getObjects().forEach((obj: any) => {
+            if (obj._userElement && !obj._isBackground) {
+              if (obj._zoneClipData && obj._zoneClipData.length >= 3) {
+                const polyPoints = obj._zoneClipData.map((p: { x: number; y: number }) => ({
+                  x: (p.x / 100) * CANVAS_WIDTH,
+                  y: (p.y / 100) * CANVAS_HEIGHT,
+                }));
+                obj.set({ clipPath: new Polygon(polyPoints, { absolutePositioned: true, inverted: false }) });
+              } else {
+                obj.set({ clipPath: clipImg });
+              }
+            }
+          });
+          canvas.renderAll();
+        });
+      });
+    };
+
+    applyToCanvas(frontCanvas, originalFrontImageData, 'front');
+    applyToCanvas(backCanvas, originalBackImageData, 'back');
+  }, [originalFrontImageData, originalBackImageData]);
+
+  // Eyedropper: capture color from canvas click
+  useEffect(() => {
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas || !eyedropperActive) return;
+
+    const handler = (canvas: Canvas) => (opt: any) => {
+      const pointer = canvas.getScenePoint(opt.e);
+      const bgObj = canvas.getObjects().find((o: any) => o._isBackground) as FabricImage | undefined;
+      if (!bgObj) return;
+
+      const el = (bgObj as any)._element || (bgObj as any).getElement?.();
+      if (!el) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = CANVAS_WIDTH;
+      tempCanvas.height = CANVAS_HEIGHT;
+      const ctx = tempCanvas.getContext('2d')!;
+      const sx = bgObj.scaleX || 1;
+      const sy = bgObj.scaleY || 1;
+      ctx.drawImage(el, bgObj.left || 0, bgObj.top || 0, el.width * sx, el.height * sy);
+
+      const px = Math.round(pointer.x);
+      const py = Math.round(pointer.y);
+      if (px < 0 || py < 0 || px >= CANVAS_WIDTH || py >= CANVAS_HEIGHT) return;
+
+      const pixel = ctx.getImageData(px, py, 1, 1).data;
+      if (pixel[3] === 0) return; // transparent
+
+      const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+      setCurrentMaskSource(hex);
+      setEyedropperActive(false);
+      canvas.defaultCursor = 'default';
+      canvas.selection = true;
+    };
+
+    const frontHandler = handler(frontCanvas);
+    const backHandler = handler(backCanvas);
+
+    frontCanvas.defaultCursor = 'crosshair';
+    backCanvas.defaultCursor = 'crosshair';
+    frontCanvas.selection = false;
+    backCanvas.selection = false;
+
+    frontCanvas.on('mouse:down', frontHandler);
+    backCanvas.on('mouse:down', backHandler);
+
+    return () => {
+      frontCanvas.off('mouse:down', frontHandler);
+      backCanvas.off('mouse:down', backHandler);
+      frontCanvas.defaultCursor = 'default';
+      backCanvas.defaultCursor = 'default';
+      frontCanvas.selection = true;
+      backCanvas.selection = true;
+    };
+  }, [eyedropperActive]);
+
+  // Capture original image data when stamp is applied
+  useEffect(() => {
+    if (appliedStamp && colorMaskMode) {
+      // Small delay to ensure background is loaded
+      setTimeout(captureOriginalImageData, 500);
+    }
+  }, [appliedStamp, colorMaskMode, captureOriginalImageData]);
+
+  const handleAddColorMask = () => {
+    if (!originalFrontImageData) {
+      captureOriginalImageData();
+    }
+    const newMask: ColorMask = {
+      sourceColor: hexToRgb(currentMaskSource),
+      targetColor: hexToRgb(currentMaskTarget),
+      tolerance: currentMaskTolerance,
+    };
+    const updated = [...colorMasks, newMask];
+    setColorMasks(updated);
+    // Apply after a tick to ensure original data is captured
+    setTimeout(() => applyColorMasksToCanvases(updated), 100);
+  };
+
+  const handleRemoveColorMask = (index: number) => {
+    const updated = colorMasks.filter((_, i) => i !== index);
+    setColorMasks(updated);
+    applyColorMasksToCanvases(updated);
+  };
+
+  const handleClearAllMasks = () => {
+    setColorMasks([]);
+    applyColorMasksToCanvases([]);
+  };
+
+  const toggleColorMaskMode = () => {
+    const next = !colorMaskMode;
+    setColorMaskMode(next);
+    if (next && appliedStamp) {
+      setTimeout(captureOriginalImageData, 300);
+    }
+    if (!next) {
+      setEyedropperActive(false);
+      setColorMasks([]);
+      // Restore original
+      if (originalFrontImageData && originalBackImageData) {
+        applyColorMasksToCanvases([]);
+      }
+    }
+  };
 
   // Helper to get zone coords for a specific side
   const getZoneCoordsForSide = (zone: TemplateZone, side: 'front' | 'back') => {
@@ -1460,6 +1677,24 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     </div>
                   )}
+                  {/* Color masking controls - Desktop */}
+                  <ColorMaskPanel
+                    colorMaskMode={colorMaskMode}
+                    onToggleMode={toggleColorMaskMode}
+                    eyedropperActive={eyedropperActive}
+                    onToggleEyedropper={() => setEyedropperActive(!eyedropperActive)}
+                    currentMaskSource={currentMaskSource}
+                    onSourceChange={setCurrentMaskSource}
+                    currentMaskTarget={currentMaskTarget}
+                    onTargetChange={setCurrentMaskTarget}
+                    currentMaskTolerance={currentMaskTolerance}
+                    onToleranceChange={setCurrentMaskTolerance}
+                    colorMasks={colorMasks}
+                    onAddMask={handleAddColorMask}
+                    onRemoveMask={handleRemoveColorMask}
+                    onClearAll={handleClearAllMasks}
+                    hasAppliedStamp={!!appliedStamp}
+                  />
                 </div>
               )}
               {activeTab === 'patches' && (
@@ -1583,6 +1818,24 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         </div>
                       </div>
                     )}
+                    {/* Color masking controls - Mobile */}
+                    <ColorMaskPanel
+                      colorMaskMode={colorMaskMode}
+                      onToggleMode={toggleColorMaskMode}
+                      eyedropperActive={eyedropperActive}
+                      onToggleEyedropper={() => setEyedropperActive(!eyedropperActive)}
+                      currentMaskSource={currentMaskSource}
+                      onSourceChange={setCurrentMaskSource}
+                      currentMaskTarget={currentMaskTarget}
+                      onTargetChange={setCurrentMaskTarget}
+                      currentMaskTolerance={currentMaskTolerance}
+                      onToleranceChange={setCurrentMaskTolerance}
+                      colorMasks={colorMasks}
+                      onAddMask={handleAddColorMask}
+                      onRemoveMask={handleRemoveColorMask}
+                      onClearAll={handleClearAllMasks}
+                      hasAppliedStamp={!!appliedStamp}
+                    />
                   </div>
                 )}
                 {activeTab === 'patches' && (
