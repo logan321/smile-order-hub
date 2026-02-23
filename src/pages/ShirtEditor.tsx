@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand } from 'lucide-react';
+import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
@@ -239,6 +240,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const mobileCanvasContainerRef = useRef<HTMLDivElement>(null);
   const [mobileScale, setMobileScale] = useState(1);
+
+  // ─── Interactive Guide State ──────────────────────────────
+  const [guideStep, setGuideStep] = useState<GuideStep>('niche');
+  const [guideEnabled, setGuideEnabled] = useState(() => {
+    try { return localStorage.getItem('editor-guide-dismissed') !== 'true'; }
+    catch { return true; }
+  });
+
+  const advanceGuide = useCallback((from: GuideStep, to: GuideStep) => {
+    if (!guideEnabled) return;
+    setGuideStep(prev => prev === from ? to : prev);
+  }, [guideEnabled]);
+
+  const skipGuideStep = useCallback(() => {
+    setGuideStep(prev => {
+      const order: GuideStep[] = ['niche', 'template', 'stamps-tab', 'stamp-pick', 'stamp-color', 'text-tab', 'text-pick', 'logo-tab', 'done'];
+      const idx = order.indexOf(prev);
+      return order[Math.min(idx + 1, order.length - 1)];
+    });
+  }, []);
+
+  const dismissGuide = useCallback(() => {
+    setGuideEnabled(false);
+    setGuideStep('done');
+    try { localStorage.setItem('editor-guide-dismissed', 'true'); } catch {}
+  }, []);
 
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
 
@@ -526,6 +553,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   }, [selectedTemplate]);
 
   const handleSelectTemplate = (template: Template) => {
+    advanceGuide('template', 'stamps-tab');
     if (frontFabricRef.current) { frontFabricRef.current.dispose(); frontFabricRef.current = null; }
     if (backFabricRef.current) { backFabricRef.current.dispose(); backFabricRef.current = null; }
     frontStampRef.current = null; backStampRef.current = null;
@@ -702,6 +730,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       });
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
+      advanceGuide('stamp-pick', 'stamp-color');
+      // Auto-advance to text-tab if no colors available
+      const hasColors = stampColors.some(c => c.stampId === stamp.id);
+      if (!hasColors) advanceGuide('stamp-color', 'text-tab');
     } catch (err) {
       console.error('Erro ao aplicar estampa:', err);
       toast.error('Erro ao aplicar estampa');
@@ -720,6 +752,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       setActiveStampColorId(color.id);
+      advanceGuide('stamp-color', 'text-tab');
     } catch {
       toast.error('Erro ao trocar cor');
     }
@@ -1237,6 +1270,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     setTemplates(allTemplates.filter(t => t.nicheId === niche.id || !t.nicheId));
     setStamps(allStamps.filter((s: any) => s.nicheId === niche.id || !s.nicheId));
     setPatches(allPatches.filter((p: any) => p.nicheId === niche.id || !p.nicheId));
+    advanceGuide('niche', 'template');
   };
 
   const handleBackToNiches = () => {
@@ -1248,6 +1282,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   // Get current niche's patch label
   const currentPatchLabel = selectedNiche?.patchLabel || 'Emblemas';
+
+  // Auto-adjust guide if no niches exist
+  useEffect(() => {
+    if (!loading && niches.length === 0 && guideStep === 'niche') {
+      setGuideStep('template');
+    }
+  }, [loading, niches.length, guideStep]);
 
   // ─── Niche selection screen ────────────────────────────────
   if (!selectedTemplate && !selectedNiche && niches.length > 0) {
@@ -1271,6 +1312,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <button
                     key={n.id}
                     onClick={() => handleSelectNiche(n)}
+                    data-guide="niche"
                     className="group rounded-2xl border-2 border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all flex flex-col items-center"
                   >
                     {coverImage ? (
@@ -1292,6 +1334,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
           )}
         </div>
+        {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
       </div>
     );
   }
@@ -1330,6 +1373,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <button
                   key={t.id}
                   onClick={() => handleSelectTemplate(t)}
+                  data-guide="template"
                   className="group rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-md transition-all"
                 >
                   <div className="grid grid-cols-2 gap-1 p-2">
@@ -1345,6 +1389,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
           )}
         </div>
+        {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
       </div>
     );
   }
@@ -1394,7 +1439,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           {/* Desktop: horizontal tab bar */}
           <div className="hidden lg:flex items-center justify-center gap-1 px-2">
             {toolbarTabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
+              <button key={tab.id} onClick={() => {
+                  setActiveTab(activeTab === tab.id ? null : tab.id);
+                  if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
+                  if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
+                  if (tab.id === 'logo') advanceGuide('logo-tab', 'done');
+                }}
+                data-guide={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wide transition-all border-b-3 ${activeTab === tab.id ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
                 {tab.icon}
                 {tab.label}
@@ -1430,7 +1481,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2" data-guide="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                           <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1 protected-img" />
@@ -1441,7 +1492,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   )}
                   {/* Color variants for applied stamp - Desktop */}
                   {appliedStampColors.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-border/30">
+                    <div className="mt-3 pt-2 border-t border-border/30" data-guide="stamp-color">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -1738,7 +1789,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         {/* Mobile bottom tab bar — vibrant, large icons like Jumptec */}
         <div className="lg:hidden border-t-2 border-sidebar bg-sidebar flex items-stretch shadow-[0_-4px_16px_rgba(0,0,0,0.2)] shrink-0">
           {toolbarTabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id)}
+            <button key={tab.id} onClick={() => {
+                setActiveTab(activeTab === tab.id ? null : tab.id);
+                if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
+                if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
+                if (tab.id === 'logo') advanceGuide('logo-tab', 'done');
+              }}
+              data-guide={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-all ${activeTab === tab.id ? 'text-accent bg-sidebar-accent' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'}`}>
               <span className={`[&_svg]:h-7 [&_svg]:w-7 p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-accent text-accent-foreground shadow-md scale-110' : ''}`}>{tab.icon}</span>
               <span className="text-[11px]">{tab.label}</span>
@@ -1880,6 +1937,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
       )}
+      {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
     </div>
   );
 };
