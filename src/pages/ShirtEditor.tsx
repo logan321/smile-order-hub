@@ -1446,7 +1446,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
                   if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
                 }}
-                data-guide={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
+                data-guide-desktop={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wide transition-all border-b-3 ${activeTab === tab.id ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
                 {tab.icon}
                 {tab.label}
@@ -1482,7 +1482,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2" data-guide="stamp-pick">
+                    <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                           <img src={s.imageUrl} alt={s.name} loading="lazy" className="w-full aspect-[3/4] object-contain p-1 protected-img" />
@@ -1493,7 +1493,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   )}
                   {/* Color variants for applied stamp - Desktop */}
                   {appliedStampColors.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-border/30" data-guide="stamp-color">
+                    <div className="mt-3 pt-2 border-t border-border/30" data-guide-desktop="stamp-color">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -1605,7 +1605,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 {activeTab === 'stamps' && (
                   <div>
                     {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                             <img src={s.imageUrl} alt={s.name} loading="lazy" className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
@@ -1616,7 +1616,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     )}
                     {/* Color variants for applied stamp - Mobile */}
                     {appliedStampColors.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-border/30">
+                      <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
                         <div className="flex flex-wrap gap-2">
                           <button
@@ -1796,7 +1796,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
                 if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
               }}
-              data-guide={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
+              data-guide-mobile={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-all ${activeTab === tab.id ? 'text-accent bg-sidebar-accent' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'}`}>
               <span className={`[&_svg]:h-7 [&_svg]:w-7 p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-accent text-accent-foreground shadow-md scale-110' : ''}`}>{tab.icon}</span>
               <span className="text-[11px]">{tab.label}</span>
