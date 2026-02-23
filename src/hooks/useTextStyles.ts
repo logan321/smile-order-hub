@@ -51,6 +51,31 @@ export function useTextStyles(userId?: string) {
     fetchStyles();
   };
 
+  const addMultipleStyles = async (category: string, files: File[]) => {
+    if (!userId || files.length === 0) return;
+    let success = 0;
+    for (const file of files) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('text-styles')
+        .upload(path, file, { contentType: file.type });
+      if (uploadError) { console.error(uploadError); continue; }
+      const { data: urlData } = supabase.storage.from('text-styles').getPublicUrl(path);
+      const { error } = await supabase.from('text_styles').insert({
+        user_id: userId, name: nameWithoutExt, category, image_url: urlData.publicUrl,
+      });
+      if (!error) success++;
+    }
+    if (success > 0) {
+      toast.success(`${success} estilo(s) adicionado(s)!`);
+      fetchStyles();
+    } else {
+      toast.error('Erro ao enviar estilos');
+    }
+  };
+
   const deleteStyle = async (id: string) => {
     const style = styles.find(s => s.id === id);
     if (style) {
@@ -72,5 +97,5 @@ export function useTextStyles(userId?: string) {
     fetchStyles();
   };
 
-  return { styles, loading, addStyle, deleteStyle, toggleActive };
+  return { styles, loading, addStyle, addMultipleStyles, deleteStyle, toggleActive };
 }

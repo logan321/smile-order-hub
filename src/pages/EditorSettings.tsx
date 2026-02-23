@@ -40,19 +40,21 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   }, [targetUserId]);
 
   const effectiveUserId = targetUserId || editorUserId || undefined;
-  const { styles: textStyles, loading: textStylesLoading, addStyle: addTextStyle, deleteStyle: deleteTextStyle } = useTextStyles(effectiveUserId);
+  const { styles: textStyles, loading: textStylesLoading, addStyle: addTextStyle, addMultipleStyles: addMultipleTextStyles, deleteStyle: deleteTextStyle } = useTextStyles(effectiveUserId);
 
   // Text style form
-  const [newStyleName, setNewStyleName] = useState('');
   const [newStyleCategory, setNewStyleCategory] = useState('Geral');
   const textStyleFileRef = useRef<HTMLInputElement>(null);
-  const [textStyleFile, setTextStyleFile] = useState<File | null>(null);
+  const [textStyleFiles, setTextStyleFiles] = useState<File[]>([]);
+  const [uploadingStyles, setUploadingStyles] = useState(false);
 
-  const handleAddTextStyle = async () => {
-    if (!newStyleName.trim() || !textStyleFile) { toast.error('Nome e imagem são obrigatórios'); return; }
-    await addTextStyle(newStyleName.trim(), newStyleCategory.trim() || 'Geral', textStyleFile);
-    setNewStyleName(''); setNewStyleCategory('Geral'); setTextStyleFile(null);
+  const handleAddTextStyles = async () => {
+    if (textStyleFiles.length === 0) { toast.error('Selecione ao menos uma imagem'); return; }
+    setUploadingStyles(true);
+    await addMultipleTextStyles(newStyleCategory.trim() || 'Geral', textStyleFiles);
+    setNewStyleCategory('Geral'); setTextStyleFiles([]);
     if (textStyleFileRef.current) textStyleFileRef.current.value = '';
+    setUploadingStyles(false);
   };
 
   const publicEditorLink = editorUserId
@@ -819,16 +821,37 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               </div>
             </div>
 
-            {/* Add new style */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 p-4 rounded-lg border border-border/50 bg-muted/20">
-              <Input value={newStyleName} onChange={e => setNewStyleName(e.target.value)} placeholder="Nome do estilo" />
+            {/* Add new styles - multi-file */}
+            <div className="space-y-3 mb-6 p-4 rounded-lg border border-border/50 bg-muted/20">
+              <p className="text-sm font-medium">Importar estilos de texto</p>
               <Input value={newStyleCategory} onChange={e => setNewStyleCategory(e.target.value)} placeholder="Categoria (ex: Nomes, Frases)" />
-              <div className="flex gap-2">
-                <input ref={textStyleFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setTextStyleFile(e.target.files?.[0] || null)} className="text-xs file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary w-full" />
-                <Button size="sm" onClick={handleAddTextStyle} disabled={!newStyleName.trim() || !textStyleFile} className="shrink-0">
-                  <Plus className="h-4 w-4" />
-                </Button>
+              <div className="border border-dashed border-border rounded-lg p-4">
+                <label className="flex flex-col items-center gap-2 cursor-pointer text-center">
+                  <Upload className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {textStyleFiles.length > 0
+                      ? `${textStyleFiles.length} arquivo(s) selecionado(s)`
+                      : 'Clique para selecionar imagens (múltiplas)'}
+                  </span>
+                  <input
+                    ref={textStyleFileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    multiple
+                    onChange={e => setTextStyleFiles(e.target.files ? Array.from(e.target.files) : [])}
+                    className="hidden"
+                  />
+                </label>
               </div>
+              {textStyleFiles.length > 0 && (
+                <p className="text-[10px] text-muted-foreground">
+                  📝 O nome de cada arquivo será usado como nome do estilo. Você pode renomear depois.
+                </p>
+              )}
+              <Button onClick={handleAddTextStyles} disabled={uploadingStyles || textStyleFiles.length === 0} className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                {uploadingStyles ? 'Enviando...' : `Importar ${textStyleFiles.length > 0 ? textStyleFiles.length + ' estilo(s)' : 'Estilos'}`}
+              </Button>
             </div>
 
             <p className="text-xs text-muted-foreground mb-4">
