@@ -1377,8 +1377,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   className="group rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-md transition-all"
                 >
                   <div className="grid grid-cols-2 gap-1 p-2">
-                    <img src={t.frontImageUrl} alt="Frente" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
-                    <img src={t.backImageUrl} alt="Costas" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
+                    <img src={t.frontImageUrl} alt="Frente" loading="lazy" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
+                    <img src={t.backImageUrl} alt="Costas" loading="lazy" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
                   </div>
                   <div className="px-3 py-2.5 border-t border-border/30">
                     <p className="text-sm font-semibold group-hover:text-primary transition-colors">{t.name}</p>
@@ -1484,7 +1484,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="grid grid-cols-3 gap-2" data-guide="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-1 protected-img" />
+                          <img src={s.imageUrl} alt={s.name} loading="lazy" className="w-full aspect-[3/4] object-contain p-1 protected-img" />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
@@ -1607,7 +1607,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="grid grid-cols-4 gap-2">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <img src={s.imageUrl} alt={s.name} className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
+                            <img src={s.imageUrl} alt={s.name} loading="lazy" className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
