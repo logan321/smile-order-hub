@@ -26,20 +26,48 @@ const GUIDE_MESSAGES: Record<GuideStep, string> = {
   done: '',
 };
 
-const GUIDE_TARGETS: Record<GuideStep, string> = {
-  niche: '[data-guide="niche"]',
-  template: '[data-guide="template"]',
-  'stamps-tab': '[data-guide="stamps-tab"]',
-  'stamp-pick': '[data-guide="stamp-pick"]',
-  'stamp-color': '[data-guide="stamp-color"]',
-  'text-tab': '[data-guide="text-tab"]',
-  'text-pick': '[data-guide="text-pick"]',
-  'logo-tab': '[data-guide="logo-tab"]',
-  budget: '[data-guide="budget"]',
+const GUIDE_KEY: Record<GuideStep, string> = {
+  niche: 'niche',
+  template: 'template',
+  'stamps-tab': 'stamps-tab',
+  'stamp-pick': 'stamp-pick',
+  'stamp-color': 'stamp-color',
+  'text-tab': 'text-tab',
+  'text-pick': 'text-pick',
+  'logo-tab': 'logo-tab',
+  budget: 'budget',
   done: '',
 };
 
-const DIALOG_HEIGHT = 110; // approximate dialog box height in px
+const DIALOG_HEIGHT = 110;
+
+/** Find the guide target element, preferring the visible one on the current device */
+function findGuideElement(key: string, isMobile: boolean): Element | null {
+  if (!key) return null;
+
+  // 1. For tabs that have separate mobile/desktop elements, use the right one
+  if (isMobile) {
+    const mobileEl = document.querySelector(`[data-guide-mobile="${key}"]`);
+    if (mobileEl) return mobileEl;
+  } else {
+    const desktopEl = document.querySelector(`[data-guide-desktop="${key}"]`);
+    if (desktopEl) return desktopEl;
+  }
+
+  // 2. Fall back to generic data-guide (for shared elements like niche, template, budget)
+  const allEls = document.querySelectorAll(`[data-guide="${key}"]`);
+  
+  // If multiple matches, find the one that's actually visible on screen
+  for (const el of allEls) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0) {
+      return el;
+    }
+  }
+
+  // Last resort: return first match
+  return allEls[0] || null;
+}
 
 interface EditorGuideProps {
   step: GuideStep;
@@ -54,7 +82,6 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const rafRef = useRef<number>(0);
 
-  // Track mobile vs desktop
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener('resize', onResize);
@@ -63,9 +90,9 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
 
   const updatePosition = useCallback(() => {
     if (step === 'done') return;
-    const selector = GUIDE_TARGETS[step];
-    if (!selector) return;
-    const el = document.querySelector(selector);
+    const key = GUIDE_KEY[step];
+    if (!key) return;
+    const el = findGuideElement(key, isMobile);
     if (el) {
       const rect = el.getBoundingClientRect();
       setPos({
@@ -79,7 +106,7 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
       setPos(p => ({ ...p, found: false }));
     }
     rafRef.current = requestAnimationFrame(updatePosition);
-  }, [step]);
+  }, [step, isMobile]);
 
   useEffect(() => {
     if (step === 'done') return;
@@ -92,41 +119,20 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
   const message = GUIDE_MESSAGES[step];
   const vh = window.innerHeight;
 
-  // Smart positioning: place dialog where there's most space, away from the target
-  // Check how much space is above vs below the target
   const spaceAbove = pos.top;
   const spaceBelow = vh - pos.bottom;
 
   let dialogStyle: React.CSSProperties;
 
   if (spaceBelow >= DIALOG_HEIGHT + 20) {
-    // Enough space below target — put dialog below
-    dialogStyle = {
-      top: pos.bottom + 12,
-      left: '50%',
-      transform: 'translateX(-50%)',
-    };
+    dialogStyle = { top: pos.bottom + 12, left: '50%', transform: 'translateX(-50%)' };
   } else if (spaceAbove >= DIALOG_HEIGHT + 20) {
-    // Enough space above target — put dialog above
-    dialogStyle = {
-      top: pos.top - DIALOG_HEIGHT - 12,
-      left: '50%',
-      transform: 'translateX(-50%)',
-    };
+    dialogStyle = { top: pos.top - DIALOG_HEIGHT - 12, left: '50%', transform: 'translateX(-50%)' };
   } else {
-    // Not enough space on either side — place in the middle of the larger gap
     if (spaceAbove > spaceBelow) {
-      dialogStyle = {
-        top: Math.max(8, spaceAbove / 2 - DIALOG_HEIGHT / 2),
-        left: '50%',
-        transform: 'translateX(-50%)',
-      };
+      dialogStyle = { top: Math.max(8, spaceAbove / 2 - DIALOG_HEIGHT / 2), left: '50%', transform: 'translateX(-50%)' };
     } else {
-      dialogStyle = {
-        top: Math.min(vh - DIALOG_HEIGHT - 8, pos.bottom + (spaceBelow / 2) - DIALOG_HEIGHT / 2),
-        left: '50%',
-        transform: 'translateX(-50%)',
-      };
+      dialogStyle = { top: Math.min(vh - DIALOG_HEIGHT - 8, pos.bottom + spaceBelow / 2 - DIALOG_HEIGHT / 2), left: '50%', transform: 'translateX(-50%)' };
     }
   }
 
@@ -135,18 +141,14 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
       {/* Small animated hand — precisely on target center */}
       <div
         className="absolute pointer-events-none transition-all duration-300 ease-out"
-        style={{
-          left: pos.x - 10,
-          top: pos.y - 10,
-          zIndex: 101,
-        }}
+        style={{ left: pos.x - 10, top: pos.y - 10, zIndex: 101 }}
       >
         <div className="animate-guide-hand">
           <Hand className="h-5 w-5 text-accent drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] -rotate-12" fill="hsl(var(--accent))" />
         </div>
       </div>
 
-      {/* Dialog — positioned intelligently based on available space */}
+      {/* Dialog — positioned based on available space */}
       <div
         className="absolute pointer-events-auto"
         style={{ ...dialogStyle, zIndex: 102, maxWidth: 'calc(100vw - 24px)', width: 280 }}
