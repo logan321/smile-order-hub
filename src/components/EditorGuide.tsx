@@ -10,6 +10,7 @@ export type GuideStep =
   | 'text-tab'
   | 'text-pick'
   | 'logo-tab'
+  | 'budget'
   | 'done';
 
 const GUIDE_MESSAGES: Record<GuideStep, string> = {
@@ -21,6 +22,7 @@ const GUIDE_MESSAGES: Record<GuideStep, string> = {
   'text-tab': '👆 Clique aqui para adicionar texto na camisa',
   'text-pick': '✏️ Digite seu texto e clique em Adicionar',
   'logo-tab': '👆 Clique aqui para enviar sua logo ou imagem',
+  budget: '👆 Quando terminar, clique aqui para enviar o orçamento!',
   done: '',
 };
 
@@ -33,11 +35,9 @@ const GUIDE_TARGETS: Record<GuideStep, string> = {
   'text-tab': '[data-guide="text-tab"]',
   'text-pick': '[data-guide="text-pick"]',
   'logo-tab': '[data-guide="logo-tab"]',
+  budget: '[data-guide="budget"]',
   done: '',
 };
-
-// Steps where the target is at the bottom of the screen (tab bar)
-const BOTTOM_TARGETS = new Set<GuideStep>(['stamps-tab', 'text-tab', 'logo-tab']);
 
 interface EditorGuideProps {
   step: GuideStep;
@@ -46,7 +46,7 @@ interface EditorGuideProps {
 }
 
 const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
-  const [pos, setPos] = useState<{ x: number; y: number; found: boolean }>({ x: 0, y: 0, found: false });
+  const [pos, setPos] = useState<{ x: number; y: number; found: boolean; targetBottom: number }>({ x: 0, y: 0, found: false, targetBottom: 0 });
   const rafRef = useRef<number>(0);
 
   const updatePosition = useCallback(() => {
@@ -59,6 +59,7 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
       setPos({
         x: rect.left + rect.width / 2,
         y: rect.top + rect.height / 2,
+        targetBottom: rect.bottom,
         found: true,
       });
     } else {
@@ -76,18 +77,21 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
   if (step === 'done' || !pos.found) return null;
 
   const message = GUIDE_MESSAGES[step];
-  const isBottomTarget = BOTTOM_TARGETS.has(step);
-
-  // Dialog is positioned in a safe area: 
-  // - If target is at bottom (tab bar), dialog goes to top-center
-  // - Otherwise, dialog goes to bottom-center
-  const dialogStyle: React.CSSProperties = isBottomTarget
-    ? { top: 16, left: '50%', transform: 'translateX(-50%)' }
-    : { bottom: 80, left: '50%', transform: 'translateX(-50%)' };
+  const vh = window.innerHeight;
+  
+  // Determine if target is in the bottom half of the screen
+  const targetInBottomHalf = pos.y > vh / 2;
+  
+  // Dialog positioned opposite to the target:
+  // - Target in bottom half → dialog at top area
+  // - Target in top half → dialog below the target
+  const dialogStyle: React.CSSProperties = targetInBottomHalf
+    ? { top: 12, left: '50%', transform: 'translateX(-50%)' }
+    : { top: Math.min(pos.targetBottom + 12, vh - 140), left: '50%', transform: 'translateX(-50%)' };
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none" aria-live="polite">
-      {/* Small animated hand pointer — precisely on target, small so it doesn't block clicks */}
+      {/* Small animated hand — precisely on target center */}
       <div
         className="absolute pointer-events-none transition-all duration-300 ease-out"
         style={{
@@ -101,7 +105,7 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
         </div>
       </div>
 
-      {/* Dialog box — fixed in safe zone, away from clickable elements */}
+      {/* Dialog — always in the opposite half from the target */}
       <div
         className="absolute pointer-events-auto"
         style={{ ...dialogStyle, zIndex: 102, maxWidth: 'calc(100vw - 24px)', width: 280 }}
