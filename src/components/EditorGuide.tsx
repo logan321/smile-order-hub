@@ -39,6 +39,8 @@ const GUIDE_TARGETS: Record<GuideStep, string> = {
   done: '',
 };
 
+const DIALOG_HEIGHT = 110; // approximate dialog box height in px
+
 interface EditorGuideProps {
   step: GuideStep;
   onSkip: () => void;
@@ -46,8 +48,18 @@ interface EditorGuideProps {
 }
 
 const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
-  const [pos, setPos] = useState<{ x: number; y: number; found: boolean; targetBottom: number }>({ x: 0, y: 0, found: false, targetBottom: 0 });
+  const [pos, setPos] = useState<{ x: number; y: number; top: number; bottom: number; found: boolean }>({
+    x: 0, y: 0, top: 0, bottom: 0, found: false,
+  });
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const rafRef = useRef<number>(0);
+
+  // Track mobile vs desktop
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const updatePosition = useCallback(() => {
     if (step === 'done') return;
@@ -59,7 +71,8 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
       setPos({
         x: rect.left + rect.width / 2,
         y: rect.top + rect.height / 2,
-        targetBottom: rect.bottom,
+        top: rect.top,
+        bottom: rect.bottom,
         found: true,
       });
     } else {
@@ -78,16 +91,44 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
 
   const message = GUIDE_MESSAGES[step];
   const vh = window.innerHeight;
-  
-  // Determine if target is in the bottom half of the screen
-  const targetInBottomHalf = pos.y > vh / 2;
-  
-  // Dialog positioned opposite to the target:
-  // - Target in bottom half → dialog at top area
-  // - Target in top half → dialog below the target
-  const dialogStyle: React.CSSProperties = targetInBottomHalf
-    ? { top: 12, left: '50%', transform: 'translateX(-50%)' }
-    : { top: Math.min(pos.targetBottom + 12, vh - 140), left: '50%', transform: 'translateX(-50%)' };
+
+  // Smart positioning: place dialog where there's most space, away from the target
+  // Check how much space is above vs below the target
+  const spaceAbove = pos.top;
+  const spaceBelow = vh - pos.bottom;
+
+  let dialogStyle: React.CSSProperties;
+
+  if (spaceBelow >= DIALOG_HEIGHT + 20) {
+    // Enough space below target — put dialog below
+    dialogStyle = {
+      top: pos.bottom + 12,
+      left: '50%',
+      transform: 'translateX(-50%)',
+    };
+  } else if (spaceAbove >= DIALOG_HEIGHT + 20) {
+    // Enough space above target — put dialog above
+    dialogStyle = {
+      top: pos.top - DIALOG_HEIGHT - 12,
+      left: '50%',
+      transform: 'translateX(-50%)',
+    };
+  } else {
+    // Not enough space on either side — place in the middle of the larger gap
+    if (spaceAbove > spaceBelow) {
+      dialogStyle = {
+        top: Math.max(8, spaceAbove / 2 - DIALOG_HEIGHT / 2),
+        left: '50%',
+        transform: 'translateX(-50%)',
+      };
+    } else {
+      dialogStyle = {
+        top: Math.min(vh - DIALOG_HEIGHT - 8, pos.bottom + (spaceBelow / 2) - DIALOG_HEIGHT / 2),
+        left: '50%',
+        transform: 'translateX(-50%)',
+      };
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none" aria-live="polite">
@@ -105,7 +146,7 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
         </div>
       </div>
 
-      {/* Dialog — always in the opposite half from the target */}
+      {/* Dialog — positioned intelligently based on available space */}
       <div
         className="absolute pointer-events-auto"
         style={{ ...dialogStyle, zIndex: 102, maxWidth: 'calc(100vw - 24px)', width: 280 }}
