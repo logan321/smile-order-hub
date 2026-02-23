@@ -184,36 +184,36 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
         newX = origX + dx;
         newY = origY + dy;
       } else if (mode === 'resize-br') {
-        newW = Math.max(5, origW + dx);
-        newH = Math.max(5, origH + dy);
+        newW = Math.max(1, origW + dx);
+        newH = Math.max(1, origH + dy);
       } else if (mode === 'resize-r') {
-        newW = Math.max(5, origW + dx);
+        newW = Math.max(1, origW + dx);
       } else if (mode === 'resize-b') {
-        newH = Math.max(5, origH + dy);
+        newH = Math.max(1, origH + dy);
       } else if (mode === 'resize-bl') {
         newX = origX + dx;
-        newW = Math.max(5, origW - dx);
-        if (newW <= 5) newX = origX + origW - 5;
+        newW = Math.max(1, origW - dx);
+        if (newW <= 1) newX = origX + origW - 1;
       } else if (mode === 'resize-l') {
         newX = origX + dx;
-        newW = Math.max(5, origW - dx);
-        if (newW <= 5) newX = origX + origW - 5;
+        newW = Math.max(1, origW - dx);
+        if (newW <= 1) newX = origX + origW - 1;
       } else if (mode === 'resize-tr') {
         newY = origY + dy;
-        newW = Math.max(5, origW + dx);
-        newH = Math.max(5, origH - dy);
-        if (newH <= 5) newY = origY + origH - 5;
+        newW = Math.max(1, origW + dx);
+        newH = Math.max(1, origH - dy);
+        if (newH <= 1) newY = origY + origH - 1;
       } else if (mode === 'resize-tl') {
         newX = origX + dx;
         newY = origY + dy;
-        newW = Math.max(5, origW - dx);
-        newH = Math.max(5, origH - dy);
-        if (newW <= 5) newX = origX + origW - 5;
-        if (newH <= 5) newY = origY + origH - 5;
+        newW = Math.max(1, origW - dx);
+        newH = Math.max(1, origH - dy);
+        if (newW <= 1) newX = origX + origW - 1;
+        if (newH <= 1) newY = origY + origH - 1;
       } else if (mode === 'resize-t') {
         newY = origY + dy;
-        newH = Math.max(5, origH - dy);
-        if (newH <= 5) newY = origY + origH - 5;
+        newH = Math.max(1, origH - dy);
+        if (newH <= 1) newY = origY + origH - 1;
       }
 
       setLocalOverrides(prev => ({
