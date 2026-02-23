@@ -150,6 +150,15 @@ canvas.upper-canvas {
   image-rendering: high-quality;
 }
 
+/* Guide hand animation */
+@keyframes guide-hand-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(10px) scale(1.1); }
+}
+.animate-guide-hand {
+  animation: guide-hand-bounce 1s ease-in-out infinite;
+}
+
 /* Protected images - prevent easy download */
 .protected-img {
   -webkit-user-select: none;
