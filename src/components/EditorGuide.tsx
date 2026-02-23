@@ -36,6 +36,9 @@ const GUIDE_TARGETS: Record<GuideStep, string> = {
   done: '',
 };
 
+// Steps where the target is at the bottom of the screen (tab bar)
+const BOTTOM_TARGETS = new Set<GuideStep>(['stamps-tab', 'text-tab', 'logo-tab']);
+
 interface EditorGuideProps {
   step: GuideStep;
   onSkip: () => void;
@@ -55,7 +58,7 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
       const rect = el.getBoundingClientRect();
       setPos({
         x: rect.left + rect.width / 2,
-        y: rect.top + rect.height * 0.3,
+        y: rect.top + rect.height / 2,
         found: true,
       });
     } else {
@@ -73,49 +76,51 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
   if (step === 'done' || !pos.found) return null;
 
   const message = GUIDE_MESSAGES[step];
+  const isBottomTarget = BOTTOM_TARGETS.has(step);
+
+  // Dialog is positioned in a safe area: 
+  // - If target is at bottom (tab bar), dialog goes to top-center
+  // - Otherwise, dialog goes to bottom-center
+  const dialogStyle: React.CSSProperties = isBottomTarget
+    ? { top: 16, left: '50%', transform: 'translateX(-50%)' }
+    : { bottom: 80, left: '50%', transform: 'translateX(-50%)' };
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none" aria-live="polite">
-      {/* Semi-transparent overlay — allow clicks through */}
-      
-      {/* Animated pointing hand */}
+      {/* Small animated hand pointer — precisely on target, small so it doesn't block clicks */}
       <div
-        className="absolute pointer-events-none transition-all duration-500 ease-out"
+        className="absolute pointer-events-none transition-all duration-300 ease-out"
         style={{
-          left: pos.x - 16,
-          top: pos.y - 8,
+          left: pos.x - 10,
+          top: pos.y - 10,
           zIndex: 101,
         }}
       >
         <div className="animate-guide-hand">
-          <Hand className="h-10 w-10 text-accent drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] -rotate-12" fill="hsl(var(--accent))" />
+          <Hand className="h-5 w-5 text-accent drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] -rotate-12" fill="hsl(var(--accent))" />
         </div>
       </div>
 
-      {/* Dialog box */}
+      {/* Dialog box — fixed in safe zone, away from clickable elements */}
       <div
-        className="absolute pointer-events-auto transition-all duration-500 ease-out"
-        style={{
-          left: Math.min(Math.max(pos.x - 140, 12), window.innerWidth - 300),
-          top: Math.max(pos.y - 100, 12),
-          zIndex: 102,
-        }}
+        className="absolute pointer-events-auto"
+        style={{ ...dialogStyle, zIndex: 102, maxWidth: 'calc(100vw - 24px)', width: 280 }}
       >
-        <div className="bg-card border-2 border-accent rounded-2xl shadow-2xl px-4 py-3 max-w-[280px] relative">
+        <div className="bg-card border-2 border-accent rounded-2xl shadow-2xl px-4 py-3 relative">
           <button
             onClick={onSkip}
-            className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
             title="Pular esta etapa"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
-          <p className="text-sm font-semibold text-foreground leading-snug pr-4">
+          <p className="text-sm font-semibold text-foreground leading-snug pr-5">
             {message}
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1.5 leading-tight">
+          <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
             Caso não vá editar essa parte, aperte no <strong className="text-destructive">X</strong>
           </p>
-          <div className="flex justify-end mt-2">
+          <div className="flex justify-end mt-1.5">
             <button
               onClick={onDismissAll}
               className="text-[10px] text-muted-foreground hover:text-foreground underline"
