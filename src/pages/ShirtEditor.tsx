@@ -346,25 +346,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
       ]);
       const allT = (templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: toProxyUrl(t.front_image_url), backImageUrl: toProxyUrl(t.back_image_url), userId: t.user_id, nicheId: t.niche_id ?? null,
+        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
       setAllTemplates(allT);
       setTemplates(allT);
       const allS = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: toProxyUrl(s.image_url), backImageUrl: s.back_image_url ? toProxyUrl(s.back_image_url) : null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
       })) ?? [];
       setAllStamps(allS);
       setStamps(allS);
       const allP = (patchesRes.data as any[])?.map(p => ({
-        id: p.id, name: p.name, imageUrl: toProxyUrl(p.image_url), targetZoneName: p.target_zone_name, nicheId: p.niche_id ?? null,
+        id: p.id, name: p.name, imageUrl: p.image_url, targetZoneName: p.target_zone_name, nicheId: p.niche_id ?? null,
       })) ?? [];
       setAllPatches(allP);
       setPatches(allP);
       setTextStyles((textStylesRes.data as any[])?.map(ts => ({
-        id: ts.id, name: ts.name, category: ts.category, imageUrl: toProxyUrl(ts.image_url),
+        id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
       })) ?? []);
       setNiches((nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: toProxyUrl(n.cover_image_url || ''), backgroundImageUrl: toProxyUrl(n.background_image_url || ''),
+        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
       })) ?? []);
       // Fetch stamp colors
       fetchAllStampColors(ownerUserId).then(setStampColors);
@@ -439,8 +439,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     customizeControls(frontCanvas);
     customizeControls(backCanvas);
 
-    loadBackground(frontCanvas, selectedTemplate.frontImageUrl, 'front');
-    loadBackground(backCanvas, selectedTemplate.backImageUrl, 'back');
+    loadBackground(frontCanvas, toProxyUrl(selectedTemplate.frontImageUrl), 'front');
+    loadBackground(backCanvas, toProxyUrl(selectedTemplate.backImageUrl), 'back');
 
     return () => {
       frontCanvas.dispose(); backCanvas.dispose();
@@ -718,8 +718,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const backUrl = stamp.backImageUrl || stamp.imageUrl;
     try {
       await Promise.all([
-        applyStampToCanvas(frontCanvas, stamp.imageUrl, 'front'),
-        applyStampToCanvas(backCanvas, backUrl, 'back'),
+        applyStampToCanvas(frontCanvas, toProxyUrl(stamp.imageUrl), 'front'),
+        applyStampToCanvas(backCanvas, toProxyUrl(backUrl), 'back'),
       ]);
       // stamp applied silently
       // Tag stamp metadata on front canvas objects
@@ -912,7 +912,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
     const coords = getZoneCoordsForSide(zone, side);
     try {
-      const img = await FabricImage.fromURL(patch.imageUrl, { crossOrigin: 'anonymous' });
+      const img = await FabricImage.fromURL(toProxyUrl(patch.imageUrl), { crossOrigin: 'anonymous' });
       const zoneX = (coords.xPercent / 100) * CANVAS_WIDTH;
       const zoneY = (coords.yPercent / 100) * CANVAS_HEIGHT;
       const zoneW = (coords.widthPercent / 100) * CANVAS_WIDTH;
@@ -1378,8 +1378,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   className="group rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/50 hover:shadow-md transition-all"
                 >
                   <div className="grid grid-cols-2 gap-1 p-2">
-                    <img src={t.frontImageUrl} alt="Frente" loading="lazy" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
-                    <img src={t.backImageUrl} alt="Costas" loading="lazy" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
+                    <img src={t.frontImageUrl} alt="Frente" loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
+                    <img src={t.backImageUrl} alt="Costas" loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain rounded bg-muted/30 protected-img" />
                   </div>
                   <div className="px-3 py-2.5 border-t border-border/30">
                     <p className="text-sm font-semibold group-hover:text-primary transition-colors">{t.name}</p>
@@ -1485,7 +1485,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <img src={s.imageUrl} alt={s.name} loading="lazy" className="w-full aspect-[3/4] object-contain p-1 protected-img" />
+                          <img src={s.imageUrl} alt={s.name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-1 protected-img" />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
@@ -1608,7 +1608,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <img src={s.imageUrl} alt={s.name} loading="lazy" className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
+                            <img src={s.imageUrl} alt={s.name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
