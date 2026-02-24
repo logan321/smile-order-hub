@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.r]
 verify_jwt = false
+
+[functions.validate-signup]
+verify_jwt = false

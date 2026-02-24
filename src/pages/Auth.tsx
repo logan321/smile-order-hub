@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { LogIn, UserPlus, Search } from 'lucide-react';
+import { getDeviceFingerprint } from '@/lib/fingerprint';
+
+const ALLOWED_DOMAINS = ['gmail.com', 'hotmail.com', 'hotmail.com.br', 'outlook.com', 'outlook.com.br', 'live.com', 'msn.com'];
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -23,6 +26,11 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const validateEmailDomain = (email: string): boolean => {
+    const domain = email.split('@')[1]?.toLowerCase();
+    return !!domain && ALLOWED_DOMAINS.includes(domain);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -32,6 +40,26 @@ const Auth = () => {
         if (error) throw error;
         toast.success('Login realizado!');
       } else {
+        // Client-side domain check
+        if (!validateEmailDomain(email)) {
+          toast.error('Utilize um e-mail Gmail, Hotmail ou Outlook para se cadastrar.');
+          setLoading(false);
+          return;
+        }
+
+        // Server-side validation + fingerprint check
+        const fingerprint = await getDeviceFingerprint();
+        const { data, error: fnError } = await supabase.functions.invoke('validate-signup', {
+          body: { email, fingerprint },
+        });
+
+        if (fnError) throw fnError;
+        if (!data?.allowed) {
+          toast.error(data?.reason || 'Cadastro não permitido.');
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -67,9 +95,14 @@ const Auth = () => {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="seu@email.com"
+                placeholder="seu@gmail.com"
                 required
               />
+              {!isLogin && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aceito: Gmail, Hotmail ou Outlook
+                </p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Senha</label>
