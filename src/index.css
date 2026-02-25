@@ -152,11 +152,11 @@ canvas.upper-canvas {
 
 /* Guide hand animation */
 @keyframes guide-hand-bounce {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(10px) scale(1.1); }
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 6px rgba(220,38,38,0.8)); }
+  50% { transform: translateY(10px) scale(1.2); filter: drop-shadow(0 0 12px rgba(220,38,38,1)); }
 }
 .animate-guide-hand {
-  animation: guide-hand-bounce 1s ease-in-out infinite;
+  animation: guide-hand-bounce 0.8s ease-in-out infinite;
 }
 
 /* Protected images - prevent easy download */
