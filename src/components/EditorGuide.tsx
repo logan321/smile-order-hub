@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Hand } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export type GuideStep =
   | 'niche'
@@ -144,7 +144,7 @@ const EditorGuide = ({ step, onSkip, onDismissAll }: EditorGuideProps) => {
         style={{ left: pos.x - 10, top: pos.y - 10, zIndex: 101 }}
       >
         <div className="animate-guide-hand">
-          <Hand className="h-5 w-5 text-accent drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] -rotate-12" fill="hsl(var(--accent))" />
+          <span className="text-2xl drop-shadow-[0_2px_6px_rgba(220,38,38,0.7)]" style={{ display: 'inline-block', transform: 'rotate(0deg)' }}>👆</span>
         </div>
       </div>
 
