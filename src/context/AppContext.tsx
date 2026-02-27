@@ -4,6 +4,9 @@ import { Client, Order, Service, OrderItem } from '@/types';
 
 /** Helper to get total price from an order */
 export function getOrderTotal(order: Order): number {
+  if (order.orderType === 'confeccao' && order.confectionPrice > 0) {
+    return order.confectionPrice;
+  }
   if (order.items && order.items.length > 0) {
     return order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   }
@@ -101,7 +104,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         name: o.name ?? '',
         items: itemsMap[o.id] ?? [], date: o.date, paid: o.paid,
         status: o.status, orderType: o.order_type ?? 'designer',
-        deliveryDate: o.delivery_date ?? null, createdAt: o.created_at,
+        deliveryDate: o.delivery_date ?? null,
+        confectionPrice: Number(o.confection_price ?? 0),
+        createdAt: o.created_at,
       }));
 
       setClients(dbClients);

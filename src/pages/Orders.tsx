@@ -356,7 +356,7 @@ const Orders = () => {
     } catch { toast.error('Erro ao cadastrar pedido'); }
   };
 
-  const handleConfectionAdd = async (data: { clientId: string; name: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[]; items: OrderItem[] }) => {
+  const handleConfectionAdd = async (data: { clientId: string; name: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[]; price: number }) => {
     try {
       const { data: orderData, error } = await supabase.from('orders').insert({
         user_id: (await supabase.auth.getSession()).data.session!.user.id,
@@ -367,20 +367,9 @@ const Orders = () => {
         tracking_id: '',
         order_type: 'confeccao',
         delivery_date: data.deliveryDate || null,
+        confection_price: data.price,
       }).select('id').single();
       if (error) throw error;
-
-      // Save order items
-      if (data.items.length > 0) {
-        await supabase.from('order_items').insert(
-          data.items.map(item => ({
-            order_id: orderData.id,
-            service_id: item.serviceId,
-            quantity: item.quantity,
-            unit_price: item.unitPrice,
-          }))
-        );
-      }
 
       // Save custom field values
       const customEntries = Object.entries(data.customValues).filter(([, v]) => v.trim());

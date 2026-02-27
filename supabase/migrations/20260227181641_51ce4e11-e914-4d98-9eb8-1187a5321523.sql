@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN confection_price numeric NOT NULL DEFAULT 0;
