@@ -21,12 +21,13 @@ import { useOrderStages } from '@/hooks/useOrderStages';
 import { useCustomFields, CustomField } from '@/hooks/useCustomFields';
 import { supabase } from '@/integrations/supabase/client';
 
-interface OrderFormOutput { clientId: string; items: OrderItem[]; date: string; paid: boolean; }
+interface OrderFormOutput { clientId: string; items: OrderItem[]; date: string; paid: boolean; name: string; }
 
 /* ─── Designer Order Form (existing) ─── */
-const DesignerOrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit: (data: OrderFormOutput) => void; onCancel: () => void }) => {
+const DesignerOrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; onSubmit: (data: OrderFormOutput & { name: string }) => void; onCancel: () => void }) => {
   const { clients, services } = useApp();
   const [clientId, setClientId] = useState(initial?.clientId ?? '');
+  const [orderName, setOrderName] = useState(initial?.name ?? '');
   const [date, setDate] = useState<Date | undefined>(initial ? new Date(initial.date) : new Date());
 
   const buildInitialItems = (): Record<string, number> => {
@@ -66,7 +67,7 @@ const DesignerOrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; o
       return { serviceId, quantity, unitPrice: svc?.price ?? 0 };
     });
 
-    onSubmit({ clientId, items, date: date.toISOString(), paid: false });
+    onSubmit({ clientId, items, date: date.toISOString(), paid: false, name: orderName });
   };
 
   return (
@@ -80,6 +81,11 @@ const DesignerOrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; o
           </SelectContent>
         </Select>
         {clients.length === 0 && <p className="text-xs text-destructive mt-1">Cadastre um cliente primeiro</p>}
+      </div>
+
+      <div>
+        <label className="text-sm font-medium mb-1.5 block">Nome do Pedido</label>
+        <Input value={orderName} onChange={e => setOrderName(e.target.value)} placeholder="Ex: Arte logo empresa XYZ" />
       </div>
 
       <div>
@@ -149,15 +155,35 @@ const DesignerOrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; o
 /* ─── Confection Order Form (new) ─── */
 const ConfectionOrderForm = ({ customFields, onSubmit, onCancel }: {
   customFields: CustomField[];
-  onSubmit: (data: { clientId: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[] }) => void;
+  onSubmit: (data: { clientId: string; name: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[]; items: OrderItem[] }) => void;
   onCancel: () => void;
 }) => {
-  const { clients } = useApp();
+  const { clients, services } = useApp();
   const [clientId, setClientId] = useState('');
+  const [orderName, setOrderName] = useState('');
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
+
+  const toggleService = (serviceId: string) => {
+    setSelectedItems(prev => {
+      const next = { ...prev };
+      if (next[serviceId]) { delete next[serviceId]; } else { next[serviceId] = 1; }
+      return next;
+    });
+  };
+
+  const setQuantity = (serviceId: string, qty: number) => {
+    if (qty < 1) return;
+    setSelectedItems(prev => ({ ...prev, [serviceId]: qty }));
+  };
+
+  const totalPrice = Object.entries(selectedItems).reduce((sum, [svcId, qty]) => {
+    const svc = services.find(s => s.id === svcId);
+    return sum + (svc?.price ?? 0) * qty;
+  }, 0);
 
   const updateCustom = (fieldId: string, value: string) => {
     setCustomValues(prev => ({ ...prev, [fieldId]: value }));
@@ -177,12 +203,20 @@ const ConfectionOrderForm = ({ customFields, onSubmit, onCancel }: {
     e.preventDefault();
     if (!clientId) { toast.error('Selecione um cliente'); return; }
     if (!date) { toast.error('Selecione a data de emissão'); return; }
+
+    const items: OrderItem[] = Object.entries(selectedItems).map(([serviceId, quantity]) => {
+      const svc = services.find(s => s.id === serviceId);
+      return { serviceId, quantity, unitPrice: svc?.price ?? 0 };
+    });
+
     onSubmit({
       clientId,
+      name: orderName,
       date: date.toISOString(),
       deliveryDate: deliveryDate?.toISOString() ?? '',
       customValues,
       files,
+      items,
     });
   };
 
@@ -197,6 +231,49 @@ const ConfectionOrderForm = ({ customFields, onSubmit, onCancel }: {
           </SelectContent>
         </Select>
       </div>
+
+      <div>
+        <label className="text-sm font-medium mb-1.5 block">Nome do Pedido</label>
+        <Input value={orderName} onChange={e => setOrderName(e.target.value)} placeholder="Ex: Camisetas time ABC" />
+      </div>
+
+      {/* Services / Values */}
+      {services.length > 0 && (
+        <div>
+          <label className="text-sm font-medium mb-1.5 block">Serviços / Valores</label>
+          <div className="space-y-2 max-h-40 overflow-y-auto border border-border/50 rounded-lg p-3">
+            {services.map(svc => {
+              const isSelected = !!selectedItems[svc.id];
+              return (
+                <div key={svc.id} className={cn("flex items-center gap-3 p-2 rounded-lg transition-colors", isSelected && "bg-primary/5")}>
+                  <Checkbox checked={isSelected} onCheckedChange={() => toggleService(svc.id)} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{svc.name}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-success whitespace-nowrap">R$ {svc.price.toFixed(2)}</span>
+                  {isSelected && (
+                    <div className="flex items-center gap-1">
+                      <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => setQuantity(svc.id, (selectedItems[svc.id] ?? 1) - 1)}>
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="text-sm w-6 text-center">{selectedItems[svc.id]}</span>
+                      <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => setQuantity(svc.id, (selectedItems[svc.id] ?? 1) + 1)}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {Object.keys(selectedItems).length > 0 && (
+            <div className="bg-muted/30 rounded-lg p-3 mt-2 flex items-center justify-between">
+              <span className="text-sm font-medium">Total</span>
+              <span className="text-lg font-bold text-success">R$ {totalPrice.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Layout files upload */}
       <div>
@@ -324,7 +401,7 @@ const Orders = () => {
     const client = clients.find(c => c.id === o.clientId);
     const desc = getOrderDescription(o, services);
     const term = search.toLowerCase();
-    return desc.toLowerCase().includes(term) || (client?.name.toLowerCase().includes(term) ?? false) || o.trackingId.toLowerCase().includes(term);
+    return desc.toLowerCase().includes(term) || (client?.name.toLowerCase().includes(term) ?? false) || o.trackingId.toLowerCase().includes(term) || (o.name ?? '').toLowerCase().includes(term);
   });
 
   const handleAdd = async (data: OrderFormOutput) => {
@@ -335,12 +412,12 @@ const Orders = () => {
     } catch { toast.error('Erro ao cadastrar pedido'); }
   };
 
-  const handleConfectionAdd = async (data: { clientId: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[] }) => {
+  const handleConfectionAdd = async (data: { clientId: string; name: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[]; items: OrderItem[] }) => {
     try {
-      // Create the order with type confeccao
       const { data: orderData, error } = await supabase.from('orders').insert({
         user_id: (await supabase.auth.getSession()).data.session!.user.id,
         client_id: data.clientId,
+        name: data.name,
         date: data.date,
         paid: false,
         tracking_id: '',
@@ -348,6 +425,18 @@ const Orders = () => {
         delivery_date: data.deliveryDate || null,
       }).select('id').single();
       if (error) throw error;
+
+      // Save order items
+      if (data.items.length > 0) {
+        await supabase.from('order_items').insert(
+          data.items.map(item => ({
+            order_id: orderData.id,
+            service_id: item.serviceId,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+          }))
+        );
+      }
 
       // Save custom field values
       const customEntries = Object.entries(data.customValues).filter(([, v]) => v.trim());
@@ -376,7 +465,6 @@ const Orders = () => {
 
       setConfectionDialogOpen(false);
       toast.success('Pedido de confecção cadastrado!');
-      // Refresh data via context
       await refreshData();
     } catch (err) {
       console.error(err);
@@ -475,6 +563,7 @@ const Orders = () => {
                       <span className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</span>
                       {order.paid && <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">Pago</span>}
                     </div>
+                    {order.name && <p className="text-sm font-medium text-foreground">{order.name}</p>}
                     {desc && <p className="text-sm text-muted-foreground truncate">{desc}</p>}
                     <div className="mt-2">
                       <Select value={order.status} onValueChange={(val) => updateOrderStatus(order.id, val)}>

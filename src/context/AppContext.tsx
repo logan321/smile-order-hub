@@ -13,11 +13,12 @@ export function getOrderTotal(order: Order): number {
 /** Helper to get display description from an order */
 export function getOrderDescription(order: Order, services: Service[]): string {
   if (order.items && order.items.length > 0) {
-    return order.items.map(item => {
+    const itemsDesc = order.items.map(item => {
       const svc = services.find(s => s.id === item.serviceId);
       const name = svc?.name ?? 'Serviço removido';
       return item.quantity > 1 ? `${name} (x${item.quantity})` : name;
     }).join(', ');
+    return itemsDesc;
   }
   return '';
 }
@@ -30,8 +31,8 @@ interface AppContextType {
   addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
   updateClient: (id: string, client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
-  addOrder: (order: { clientId: string; items: OrderItem[]; date: string; paid: boolean }) => Promise<void>;
-  updateOrder: (id: string, order: { clientId: string; items: OrderItem[]; date: string; paid: boolean }) => Promise<void>;
+  addOrder: (order: { clientId: string; items: OrderItem[]; date: string; paid: boolean; name?: string }) => Promise<void>;
+  updateOrder: (id: string, order: { clientId: string; items: OrderItem[]; date: string; paid: boolean; name?: string }) => Promise<void>;
   toggleOrderPaid: (id: string) => Promise<void>;
   updateOrderStatus: (id: string, status: string) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
@@ -97,6 +98,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const dbOrders = (ordersRes.data ?? []).map((o: any) => ({
         id: o.id, clientId: o.client_id, trackingId: o.tracking_id,
+        name: o.name ?? '',
         items: itemsMap[o.id] ?? [], date: o.date, paid: o.paid,
         status: o.status, orderType: o.order_type ?? 'designer',
         deliveryDate: o.delivery_date ?? null, createdAt: o.created_at,
@@ -134,9 +136,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [fetchData]);
 
   // --- Orders ---
-  const addOrder = useCallback(async (data: { clientId: string; items: OrderItem[]; date: string; paid: boolean }) => {
+  const addOrder = useCallback(async (data: { clientId: string; items: OrderItem[]; date: string; paid: boolean; name?: string }) => {
     const { data: orderData, error } = await supabase.from('orders').insert({
       user_id: userId!, client_id: data.clientId, date: data.date, paid: data.paid, tracking_id: '',
+      name: data.name ?? '',
     }).select('id').single();
     if (error) throw error;
 
@@ -152,9 +155,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await fetchData();
   }, [userId, fetchData]);
 
-  const updateOrder = useCallback(async (id: string, data: { clientId: string; items: OrderItem[]; date: string; paid: boolean }) => {
+  const updateOrder = useCallback(async (id: string, data: { clientId: string; items: OrderItem[]; date: string; paid: boolean; name?: string }) => {
     const { error } = await supabase.from('orders').update({
       client_id: data.clientId, date: data.date, paid: data.paid,
+      name: data.name ?? '',
     }).eq('id', id);
     if (error) throw error;
 
