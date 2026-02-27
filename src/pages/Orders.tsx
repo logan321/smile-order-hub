@@ -155,35 +155,17 @@ const DesignerOrderForm = ({ initial, onSubmit, onCancel }: { initial?: Order; o
 /* ─── Confection Order Form (new) ─── */
 const ConfectionOrderForm = ({ customFields, onSubmit, onCancel }: {
   customFields: CustomField[];
-  onSubmit: (data: { clientId: string; name: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[]; items: OrderItem[] }) => void;
+  onSubmit: (data: { clientId: string; name: string; date: string; deliveryDate: string; customValues: Record<string, string>; files: File[]; price: number }) => void;
   onCancel: () => void;
 }) => {
-  const { clients, services } = useApp();
+  const { clients } = useApp();
   const [clientId, setClientId] = useState('');
   const [orderName, setOrderName] = useState('');
+  const [price, setPrice] = useState('');
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
-  const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
-
-  const toggleService = (serviceId: string) => {
-    setSelectedItems(prev => {
-      const next = { ...prev };
-      if (next[serviceId]) { delete next[serviceId]; } else { next[serviceId] = 1; }
-      return next;
-    });
-  };
-
-  const setQuantity = (serviceId: string, qty: number) => {
-    if (qty < 1) return;
-    setSelectedItems(prev => ({ ...prev, [serviceId]: qty }));
-  };
-
-  const totalPrice = Object.entries(selectedItems).reduce((sum, [svcId, qty]) => {
-    const svc = services.find(s => s.id === svcId);
-    return sum + (svc?.price ?? 0) * qty;
-  }, 0);
 
   const updateCustom = (fieldId: string, value: string) => {
     setCustomValues(prev => ({ ...prev, [fieldId]: value }));
@@ -204,11 +186,6 @@ const ConfectionOrderForm = ({ customFields, onSubmit, onCancel }: {
     if (!clientId) { toast.error('Selecione um cliente'); return; }
     if (!date) { toast.error('Selecione a data de emissão'); return; }
 
-    const items: OrderItem[] = Object.entries(selectedItems).map(([serviceId, quantity]) => {
-      const svc = services.find(s => s.id === serviceId);
-      return { serviceId, quantity, unitPrice: svc?.price ?? 0 };
-    });
-
     onSubmit({
       clientId,
       name: orderName,
@@ -216,7 +193,7 @@ const ConfectionOrderForm = ({ customFields, onSubmit, onCancel }: {
       deliveryDate: deliveryDate?.toISOString() ?? '',
       customValues,
       files,
-      items,
+      price: parseFloat(price) || 0,
     });
   };
 
@@ -237,43 +214,10 @@ const ConfectionOrderForm = ({ customFields, onSubmit, onCancel }: {
         <Input value={orderName} onChange={e => setOrderName(e.target.value)} placeholder="Ex: Camisetas time ABC" />
       </div>
 
-      {/* Services / Values */}
-      {services.length > 0 && (
-        <div>
-          <label className="text-sm font-medium mb-1.5 block">Serviços / Valores</label>
-          <div className="space-y-2 max-h-40 overflow-y-auto border border-border/50 rounded-lg p-3">
-            {services.map(svc => {
-              const isSelected = !!selectedItems[svc.id];
-              return (
-                <div key={svc.id} className={cn("flex items-center gap-3 p-2 rounded-lg transition-colors", isSelected && "bg-primary/5")}>
-                  <Checkbox checked={isSelected} onCheckedChange={() => toggleService(svc.id)} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{svc.name}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-success whitespace-nowrap">R$ {svc.price.toFixed(2)}</span>
-                  {isSelected && (
-                    <div className="flex items-center gap-1">
-                      <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => setQuantity(svc.id, (selectedItems[svc.id] ?? 1) - 1)}>
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="text-sm w-6 text-center">{selectedItems[svc.id]}</span>
-                      <Button type="button" variant="outline" size="icon" className="h-6 w-6" onClick={() => setQuantity(svc.id, (selectedItems[svc.id] ?? 1) + 1)}>
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {Object.keys(selectedItems).length > 0 && (
-            <div className="bg-muted/30 rounded-lg p-3 mt-2 flex items-center justify-between">
-              <span className="text-sm font-medium">Total</span>
-              <span className="text-lg font-bold text-success">R$ {totalPrice.toFixed(2)}</span>
-            </div>
-          )}
-        </div>
-      )}
+      <div>
+        <label className="text-sm font-medium mb-1.5 block">Valor do Pedido (R$)</label>
+        <Input value={price} onChange={e => setPrice(e.target.value)} placeholder="0,00" type="number" step="0.01" min="0" />
+      </div>
 
       {/* Layout files upload */}
       <div>
