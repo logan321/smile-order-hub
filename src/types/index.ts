@@ -24,6 +24,7 @@ export interface Order {
   id: string;
   clientId: string;
   trackingId: string;
+  name: string;
   items: OrderItem[];
   date: string;
   paid: boolean;

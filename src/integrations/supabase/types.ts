@@ -314,6 +314,7 @@ export type Database = {
           date: string
           delivery_date: string | null
           id: string
+          name: string
           order_type: string
           paid: boolean
           status: string
@@ -326,6 +327,7 @@ export type Database = {
           date?: string
           delivery_date?: string | null
           id?: string
+          name?: string
           order_type?: string
           paid?: boolean
           status?: string
@@ -338,6 +340,7 @@ export type Database = {
           date?: string
           delivery_date?: string | null
           id?: string
+          name?: string
           order_type?: string
           paid?: boolean
           status?: string
