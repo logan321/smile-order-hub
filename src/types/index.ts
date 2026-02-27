@@ -31,6 +31,7 @@ export interface Order {
   status: string;
   orderType: string;
   deliveryDate: string | null;
+  confectionPrice: number;
   createdAt: string;
 }
 
