@@ -244,7 +244,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // ─── Interactive Guide State ──────────────────────────────
   const [guideStep, setGuideStep] = useState<GuideStep>('niche');
   const [guideEnabled, setGuideEnabled] = useState(() => {
-    try { return localStorage.getItem('editor-guide-dismissed') !== 'true'; }
+    try { return sessionStorage.getItem('editor-guide-dismissed') !== 'true'; }
     catch { return true; }
   });
 
@@ -264,7 +264,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const dismissGuide = useCallback(() => {
     setGuideEnabled(false);
     setGuideStep('done');
-    try { localStorage.setItem('editor-guide-dismissed', 'true'); } catch {}
+    try { sessionStorage.setItem('editor-guide-dismissed', 'true'); } catch {}
   }, []);
 
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
