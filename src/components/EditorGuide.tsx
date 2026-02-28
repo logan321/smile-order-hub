@@ -7,6 +7,8 @@ export type GuideStep =
   | 'stamps-tab'
   | 'stamp-pick'
   | 'stamp-color'
+  | 'patches-tab'
+  | 'patch-pick'
   | 'text-tab'
   | 'text-pick'
   | 'logo-tab'
@@ -19,6 +21,8 @@ const GUIDE_MESSAGES: Record<GuideStep, string> = {
   'stamps-tab': '👆 Clique aqui para escolher uma estampa',
   'stamp-pick': '👆 Agora escolha a estampa que deseja aplicar',
   'stamp-color': '👆 Escolha a cor da estampa que preferir',
+  'patches-tab': '👆 Clique aqui para escolher um emblema',
+  'patch-pick': '👆 Agora escolha o emblema que deseja aplicar',
   'text-tab': '👆 Clique aqui para adicionar texto na camisa',
   'text-pick': '✏️ Digite seu texto e clique em Adicionar',
   'logo-tab': '👆 Clique aqui para enviar sua logo ou imagem',
@@ -32,6 +36,8 @@ const GUIDE_KEY: Record<GuideStep, string> = {
   'stamps-tab': 'stamps-tab',
   'stamp-pick': 'stamp-pick',
   'stamp-color': 'stamp-color',
+  'patches-tab': 'patches-tab',
+  'patch-pick': 'patch-pick',
   'text-tab': 'text-tab',
   'text-pick': 'text-pick',
   'logo-tab': 'logo-tab',

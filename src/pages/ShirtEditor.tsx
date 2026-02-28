@@ -255,7 +255,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   const skipGuideStep = useCallback(() => {
     setGuideStep(prev => {
-      const order: GuideStep[] = ['niche', 'template', 'stamps-tab', 'stamp-pick', 'stamp-color', 'text-tab', 'text-pick', 'logo-tab', 'budget', 'done'];
+      const order: GuideStep[] = ['niche', 'template', 'stamps-tab', 'stamp-pick', 'stamp-color', 'patches-tab', 'patch-pick', 'text-tab', 'text-pick', 'logo-tab', 'budget', 'done'];
       const idx = order.indexOf(prev);
       return order[Math.min(idx + 1, order.length - 1)];
     });
@@ -734,7 +734,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       advanceGuide('stamp-pick', 'stamp-color');
       // Auto-advance to text-tab if no colors available
       const hasColors = stampColors.some(c => c.stampId === stamp.id);
-      if (!hasColors) advanceGuide('stamp-color', 'text-tab');
+      if (!hasColors) advanceGuide('stamp-color', 'patches-tab');
     } catch (err) {
       console.error('Erro ao aplicar estampa:', err);
       toast.error('Erro ao aplicar estampa');
@@ -753,7 +753,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       setActiveStampColorId(color.id);
-      advanceGuide('stamp-color', 'text-tab');
+      advanceGuide('stamp-color', 'patches-tab');
     } catch {
       toast.error('Erro ao trocar cor');
     }
@@ -847,6 +847,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   };
 
   const handlePatchClick = (patch: { id: string; name: string; imageUrl: string; targetZoneName: string }) => {
+    advanceGuide('patch-pick', 'text-tab');
     setPendingPatch(patch);
     setPatchSideChoice(null);
   };
@@ -1443,10 +1444,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               <button key={tab.id} onClick={() => {
                   setActiveTab(activeTab === tab.id ? null : tab.id);
                   if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
+                  if (tab.id === 'patches') advanceGuide('patches-tab', 'patch-pick');
                   if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
                   if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
                 }}
-                data-guide-desktop={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
+                data-guide-desktop={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'patches' ? 'patches-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wide transition-all border-b-3 ${activeTab === tab.id ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
                 {tab.icon}
                 {tab.label}
@@ -1793,10 +1795,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <button key={tab.id} onClick={() => {
                 setActiveTab(activeTab === tab.id ? null : tab.id);
                 if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
+                if (tab.id === 'patches') advanceGuide('patches-tab', 'patch-pick');
                 if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
                 if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
               }}
-              data-guide-mobile={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
+              data-guide-mobile={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'patches' ? 'patches-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-all ${activeTab === tab.id ? 'text-accent bg-sidebar-accent' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'}`}>
               <span className={`[&_svg]:h-7 [&_svg]:w-7 p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-accent text-accent-foreground shadow-md scale-110' : ''}`}>{tab.icon}</span>
               <span className="text-[11px]">{tab.label}</span>
