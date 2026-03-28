@@ -69,12 +69,11 @@ export function generateClientReportPDF(
       ]);
       rowNum++;
     } else if (order.items && order.items.length > 0) {
-      order.items.forEach((item, idx) => {
+      order.items.forEach((item) => {
         const svc = services.find(s => s.id === item.serviceId);
         const svcName = svc?.name ?? 'Serviço removido';
-        // Show order name on the first item row
-        const displayName = idx === 0 && orderLabel
-          ? `${orderLabel} — ${svcName}`
+        const displayName = orderLabel
+          ? `${orderLabel}\n${svcName}`
           : svcName;
         tableData.push([
           rowNum.toString(),
