@@ -55,13 +55,30 @@ export function generateClientReportPDF(
   const tableData: string[][] = [];
   let rowNum = 1;
   orders.forEach((order) => {
-    if (order.items && order.items.length > 0) {
-      order.items.forEach(item => {
+    const orderLabel = order.name ? order.name : '';
+
+    if (order.orderType === 'confeccao') {
+      const total = getOrderTotal(order);
+      tableData.push([
+        rowNum.toString(),
+        orderLabel || 'Confecção',
+        format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR }),
+        '1',
+        `R$ ${total.toFixed(2)}`,
+        `R$ ${total.toFixed(2)}`
+      ]);
+      rowNum++;
+    } else if (order.items && order.items.length > 0) {
+      order.items.forEach((item, idx) => {
         const svc = services.find(s => s.id === item.serviceId);
-        const name = svc?.name ?? 'Serviço removido';
+        const svcName = svc?.name ?? 'Serviço removido';
+        // Show order name on the first item row
+        const displayName = idx === 0 && orderLabel
+          ? `${orderLabel} — ${svcName}`
+          : svcName;
         tableData.push([
           rowNum.toString(),
-          name,
+          displayName,
           format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR }),
           item.quantity.toString(),
           `R$ ${item.unitPrice.toFixed(2)}`,
@@ -72,11 +89,11 @@ export function generateClientReportPDF(
     } else {
       tableData.push([
         rowNum.toString(),
-        (order as any).service ?? '',
+        orderLabel || 'Pedido',
         format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR }),
         '1',
-        `R$ ${((order as any).price ?? 0).toFixed(2)}`,
-        `R$ ${((order as any).price ?? 0).toFixed(2)}`
+        'R$ 0.00',
+        'R$ 0.00'
       ]);
       rowNum++;
     }
