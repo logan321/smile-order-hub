@@ -254,17 +254,43 @@ const Reports = () => {
                           const desc = getOrderDescription(order, services);
                           const orderTotal = getOrderTotal(order);
                           return (
-                            <div key={order.id} className={`px-4 py-3 flex items-center justify-between ${order.paid ? 'opacity-50' : ''}`}>
-                              <div>
+                            <div key={order.id} className={`px-4 py-3 flex items-center justify-between gap-2 ${order.paid ? 'opacity-50' : ''}`}>
+                              <div className="flex-1 min-w-0">
                                 {order.name && <p className="text-sm font-medium">{order.name}</p>}
                                 <p className={`text-sm ${order.name ? 'text-muted-foreground' : 'font-medium'} ${order.paid ? 'line-through' : ''}`}>{desc || (order.orderType === 'confeccao' ? 'Confecção' : 'Pedido')}</p>
                                 <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</p>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 shrink-0">
                                 {order.paid && <span className="text-xs text-success font-semibold">Pago</span>}
                                 <span className={`text-sm font-semibold ${order.paid ? 'line-through text-muted-foreground' : ''}`}>
                                   {orderTotal > 0 ? `R$ ${orderTotal.toFixed(2)}` : '—'}
                                 </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => toggleOrderPaid(order.id)}
+                                  title={order.paid ? 'Marcar como pendente' : 'Marcar como pago'}
+                                >
+                                  <CheckCheck className={`h-4 w-4 ${order.paid ? 'text-success' : ''}`} />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Apagar pedido">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Apagar este pedido?</AlertDialogTitle>
+                                      <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => deleteOrder(order.id)}>Apagar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </div>
                             </div>
                           );
