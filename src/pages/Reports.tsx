@@ -295,9 +295,42 @@ const Reports = () => {
                             </div>
                           );
                         })}
-                        <div className="px-4 py-3 flex items-center justify-between bg-muted/40">
-                          <span className="text-sm font-semibold">Total Pendente</span>
-                          <span className="font-bold text-success">R$ {total.toFixed(2)}</span>
+                        <div className="px-4 py-3 flex items-center justify-between gap-3 bg-muted/40 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold">Total Pendente</span>
+                            <span className="font-bold text-success">R$ {total.toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleMarkAllPaid(clientOrders)}
+                              disabled={clientOrders.every(o => o.paid)}
+                            >
+                              <CheckCheck className="h-4 w-4 mr-1.5" />
+                              Marcar todos como pagos
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4 mr-1.5" />
+                                  Apagar todos
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Apagar todos os pedidos de {client.name}?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Isso vai remover {clientOrders.length} pedido{clientOrders.length !== 1 ? 's' : ''} permanentemente. Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteAll(clientOrders)}>Apagar tudo</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                       </div>
                     )}
