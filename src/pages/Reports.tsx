@@ -66,6 +66,22 @@ const Reports = () => {
     toast.success(`PDF gerado para ${report.client.name}`);
   };
 
+  const handleMarkAllPaid = async (clientOrders: Order[]) => {
+    const unpaid = clientOrders.filter(o => !o.paid);
+    if (unpaid.length === 0) {
+      toast.info('Nenhum pedido pendente');
+      return;
+    }
+    await Promise.all(unpaid.map(o => toggleOrderPaid(o.id)));
+    toast.success(`${unpaid.length} pedido${unpaid.length !== 1 ? 's' : ''} marcado${unpaid.length !== 1 ? 's' : ''} como pago${unpaid.length !== 1 ? 's' : ''}`);
+  };
+
+  const handleDeleteAll = async (clientOrders: Order[]) => {
+    if (clientOrders.length === 0) return;
+    await Promise.all(clientOrders.map(o => deleteOrder(o.id)));
+    toast.success(`${clientOrders.length} pedido${clientOrders.length !== 1 ? 's' : ''} removido${clientOrders.length !== 1 ? 's' : ''}`);
+  };
+
   const formatMonthLabel = (m: string) => {
     const [year, month] = m.split('-').map(Number);
     return format(new Date(year, month - 1, 1), "MMMM 'de' yyyy", { locale: ptBR });
