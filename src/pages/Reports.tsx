@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Reports = () => {
-  const { clients, orders, services } = useApp();
+  const { clients, orders, services, toggleOrderPaid, deleteOrder } = useApp();
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
 
   // ─── Monthly report state ───
