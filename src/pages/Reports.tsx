@@ -1,6 +1,10 @@
 import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
 import { ClientReport } from '@/types';
-import { FileText, ChevronDown, ChevronUp, Download, CalendarDays } from 'lucide-react';
+import { FileText, ChevronDown, ChevronUp, Download, CalendarDays, CheckCheck, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, subMonths, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useState, useMemo } from 'react';
