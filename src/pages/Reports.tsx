@@ -1,5 +1,5 @@
 import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
-import { ClientReport } from '@/types';
+import { ClientReport, Order } from '@/types';
 import { FileText, ChevronDown, ChevronUp, Download, CalendarDays, CheckCheck, Trash2 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
