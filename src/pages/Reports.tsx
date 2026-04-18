@@ -1,6 +1,10 @@
 import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
-import { ClientReport } from '@/types';
-import { FileText, ChevronDown, ChevronUp, Download, CalendarDays } from 'lucide-react';
+import { ClientReport, Order } from '@/types';
+import { FileText, ChevronDown, ChevronUp, Download, CalendarDays, CheckCheck, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format, startOfMonth, endOfMonth, subMonths, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useState, useMemo } from 'react';
@@ -12,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Reports = () => {
-  const { clients, orders, services } = useApp();
+  const { clients, orders, services, toggleOrderPaid, deleteOrder } = useApp();
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
 
   // ─── Monthly report state ───
@@ -60,6 +64,22 @@ const Reports = () => {
     const unpaidOrders = report.orders.filter(o => !o.paid);
     generateClientReportPDF(report.client, unpaidOrders, report.total, config, services);
     toast.success(`PDF gerado para ${report.client.name}`);
+  };
+
+  const handleMarkAllPaid = async (clientOrders: Order[]) => {
+    const unpaid = clientOrders.filter(o => !o.paid);
+    if (unpaid.length === 0) {
+      toast.info('Nenhum pedido pendente');
+      return;
+    }
+    await Promise.all(unpaid.map(o => toggleOrderPaid(o.id)));
+    toast.success(`${unpaid.length} pedido${unpaid.length !== 1 ? 's' : ''} marcado${unpaid.length !== 1 ? 's' : ''} como pago${unpaid.length !== 1 ? 's' : ''}`);
+  };
+
+  const handleDeleteAll = async (clientOrders: Order[]) => {
+    if (clientOrders.length === 0) return;
+    await Promise.all(clientOrders.map(o => deleteOrder(o.id)));
+    toast.success(`${clientOrders.length} pedido${clientOrders.length !== 1 ? 's' : ''} removido${clientOrders.length !== 1 ? 's' : ''}`);
   };
 
   const formatMonthLabel = (m: string) => {
@@ -234,24 +254,83 @@ const Reports = () => {
                           const desc = getOrderDescription(order, services);
                           const orderTotal = getOrderTotal(order);
                           return (
-                            <div key={order.id} className={`px-4 py-3 flex items-center justify-between ${order.paid ? 'opacity-50' : ''}`}>
-                              <div>
+                            <div key={order.id} className={`px-4 py-3 flex items-center justify-between gap-2 ${order.paid ? 'opacity-50' : ''}`}>
+                              <div className="flex-1 min-w-0">
                                 {order.name && <p className="text-sm font-medium">{order.name}</p>}
                                 <p className={`text-sm ${order.name ? 'text-muted-foreground' : 'font-medium'} ${order.paid ? 'line-through' : ''}`}>{desc || (order.orderType === 'confeccao' ? 'Confecção' : 'Pedido')}</p>
                                 <p className="text-xs text-muted-foreground">{format(new Date(order.date), "dd/MM/yyyy", { locale: ptBR })}</p>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 shrink-0">
                                 {order.paid && <span className="text-xs text-success font-semibold">Pago</span>}
                                 <span className={`text-sm font-semibold ${order.paid ? 'line-through text-muted-foreground' : ''}`}>
                                   {orderTotal > 0 ? `R$ ${orderTotal.toFixed(2)}` : '—'}
                                 </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => toggleOrderPaid(order.id)}
+                                  title={order.paid ? 'Marcar como pendente' : 'Marcar como pago'}
+                                >
+                                  <CheckCheck className={`h-4 w-4 ${order.paid ? 'text-success' : ''}`} />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Apagar pedido">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Apagar este pedido?</AlertDialogTitle>
+                                      <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => deleteOrder(order.id)}>Apagar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </div>
                             </div>
                           );
                         })}
-                        <div className="px-4 py-3 flex items-center justify-between bg-muted/40">
-                          <span className="text-sm font-semibold">Total Pendente</span>
-                          <span className="font-bold text-success">R$ {total.toFixed(2)}</span>
+                        <div className="px-4 py-3 flex items-center justify-between gap-3 bg-muted/40 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold">Total Pendente</span>
+                            <span className="font-bold text-success">R$ {total.toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleMarkAllPaid(clientOrders)}
+                              disabled={clientOrders.every(o => o.paid)}
+                            >
+                              <CheckCheck className="h-4 w-4 mr-1.5" />
+                              Marcar todos como pagos
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4 mr-1.5" />
+                                  Apagar todos
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Apagar todos os pedidos de {client.name}?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Isso vai remover {clientOrders.length} pedido{clientOrders.length !== 1 ? 's' : ''} permanentemente. Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteAll(clientOrders)}>Apagar tudo</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                       </div>
                     )}
