@@ -389,6 +389,94 @@ const Reports = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* ═══ EXPORT PDF DIALOG ═══ */}
+      <Dialog open={!!exportDialogClient} onOpenChange={(open) => !open && setExportDialogClient(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Exportar Relatório PDF</DialogTitle>
+            <DialogDescription>
+              {exportDialogClient?.client.name} — escolha o período
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <RadioGroup value={exportPeriod} onValueChange={(v) => setExportPeriod(v as any)}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="all" id="p-all" />
+                <Label htmlFor="p-all" className="cursor-pointer">Todo o período</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="daily" id="p-daily" />
+                <Label htmlFor="p-daily" className="cursor-pointer">Dia específico</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="range" id="p-range" />
+                <Label htmlFor="p-range" className="cursor-pointer">Intervalo de datas</Label>
+              </div>
+            </RadioGroup>
+
+            {exportPeriod === 'daily' && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !exportDay && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {exportDay ? format(exportDay, "dd/MM/yyyy", { locale: ptBR }) : 'Escolha o dia'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={exportDay} onSelect={setExportDay} initialFocus className={cn("p-3 pointer-events-auto")} locale={ptBR} />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {exportPeriod === 'range' && (
+              <div className="grid grid-cols-2 gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("justify-start text-left font-normal", !exportFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {exportFrom ? format(exportFrom, "dd/MM/yy", { locale: ptBR }) : 'De'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={exportFrom} onSelect={setExportFrom} initialFocus className={cn("p-3 pointer-events-auto")} locale={ptBR} />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("justify-start text-left font-normal", !exportTo && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {exportTo ? format(exportTo, "dd/MM/yy", { locale: ptBR }) : 'Até'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={exportTo} onSelect={setExportTo} initialFocus className={cn("p-3 pointer-events-auto")} locale={ptBR} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-2 pt-2 border-t border-border/50">
+              <input
+                type="checkbox"
+                id="only-unpaid"
+                checked={exportOnlyUnpaid}
+                onChange={(e) => setExportOnlyUnpaid(e.target.checked)}
+                className="h-4 w-4 cursor-pointer"
+              />
+              <Label htmlFor="only-unpaid" className="cursor-pointer text-sm">Apenas pendentes (não pagos)</Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogClient(null)}>Cancelar</Button>
+            <Button onClick={handleConfirmExport}>
+              <Download className="h-4 w-4 mr-1.5" /> Gerar PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
