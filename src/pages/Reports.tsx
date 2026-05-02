@@ -1,11 +1,11 @@
 import { useApp, getOrderTotal, getOrderDescription } from '@/context/AppContext';
 import { ClientReport, Order } from '@/types';
-import { FileText, ChevronDown, ChevronUp, Download, CalendarDays, CheckCheck, Trash2 } from 'lucide-react';
+import { FileText, ChevronDown, ChevronUp, Download, CalendarDays, CheckCheck, Trash2, CalendarIcon } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { format, startOfMonth, endOfMonth, subMonths, isSameMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, isSameMonth, isSameDay, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,24 @@ import { generateClientReportPDF } from '@/lib/generatePDF';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 const Reports = () => {
   const { clients, orders, services, toggleOrderPaid, deleteOrder } = useApp();
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [exportDialogClient, setExportDialogClient] = useState<ClientReport | null>(null);
+  const [exportPeriod, setExportPeriod] = useState<'all' | 'daily' | 'range'>('all');
+  const [exportDay, setExportDay] = useState<Date | undefined>(new Date());
+  const [exportFrom, setExportFrom] = useState<Date | undefined>(undefined);
+  const [exportTo, setExportTo] = useState<Date | undefined>(undefined);
+  const [exportOnlyUnpaid, setExportOnlyUnpaid] = useState(true);
 
   // ─── Monthly report state ───
   const availableMonths = useMemo(() => {
@@ -55,15 +69,49 @@ const Reports = () => {
 
   const grandTotal = reports.reduce((sum, r) => sum + r.total, 0);
 
-  const handleExportPDF = (report: ClientReport) => {
+  const openExportDialog = (report: ClientReport) => {
+    setExportDialogClient(report);
+    setExportPeriod('all');
+    setExportDay(new Date());
+    setExportFrom(undefined);
+    setExportTo(undefined);
+    setExportOnlyUnpaid(true);
+  };
+
+  const handleConfirmExport = () => {
+    if (!exportDialogClient) return;
     const config = loadBusinessConfig();
     if (!config.businessName && !config.ownerName) {
       toast.warning('Configure seus dados em Configurações antes de gerar o PDF');
       return;
     }
-    const unpaidOrders = report.orders.filter(o => !o.paid);
-    generateClientReportPDF(report.client, unpaidOrders, report.total, config, services);
-    toast.success(`PDF gerado para ${report.client.name}`);
+
+    let filtered = exportDialogClient.orders;
+
+    if (exportPeriod === 'daily') {
+      if (!exportDay) { toast.warning('Selecione um dia'); return; }
+      filtered = filtered.filter(o => isSameDay(new Date(o.date), exportDay));
+    } else if (exportPeriod === 'range') {
+      if (!exportFrom || !exportTo) { toast.warning('Selecione as datas inicial e final'); return; }
+      const from = startOfDay(exportFrom).getTime();
+      const to = endOfDay(exportTo).getTime();
+      filtered = filtered.filter(o => {
+        const t = new Date(o.date).getTime();
+        return t >= from && t <= to;
+      });
+    }
+
+    if (exportOnlyUnpaid) filtered = filtered.filter(o => !o.paid);
+
+    if (filtered.length === 0) {
+      toast.warning('Nenhum pedido no período selecionado');
+      return;
+    }
+
+    const total = filtered.reduce((s, o) => s + getOrderTotal(o), 0);
+    generateClientReportPDF(exportDialogClient.client, filtered, total, config, services);
+    toast.success(`PDF gerado para ${exportDialogClient.client.name}`);
+    setExportDialogClient(null);
   };
 
   const handleMarkAllPaid = async (clientOrders: Order[]) => {
@@ -242,7 +290,7 @@ const Reports = () => {
                         </div>
                       </button>
                       <div className="pr-3">
-                        <Button variant="ghost" size="icon" onClick={() => handleExportPDF(report)} title="Exportar PDF">
+                        <Button variant="ghost" size="icon" onClick={() => openExportDialog(report)} title="Exportar PDF">
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
