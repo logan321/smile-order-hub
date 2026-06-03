@@ -300,6 +300,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const bumpEdits = useCallback(() => setEditsVersion(v => v + 1), []);
+  // Universal UV fallback: the GLB is the same for every shirt, so any uv_map
+  // registered by the user can be used when a specific template/stamp doesn't
+  // have one linked yet. Without this, 3D used to stay blank for most templates.
+  const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
 
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
