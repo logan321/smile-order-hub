@@ -38,7 +38,7 @@ export function useShirtTemplates(targetUserId?: string) {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  const addTemplate = useCallback(async (name: string, frontFile: File, backFile: File, uvFile?: File | null) => {
+  const addTemplate = useCallback(async (name: string, frontFile: File, backFile: File, uvFile?: File | null, nicheId?: string | null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -71,6 +71,7 @@ export function useShirtTemplates(targetUserId?: string) {
       front_image_url: frontUrl.publicUrl,
       back_image_url: backUrl.publicUrl,
       uv_map_url: uvUrl,
+      niche_id: nicheId ?? null,
     } as any);
 
     await fetchTemplates();
