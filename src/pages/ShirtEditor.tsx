@@ -445,16 +445,35 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         supabase.from('patch_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('text_styles').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
-        supabase.from('uv_maps' as any).select('id, image_url').eq('user_id', ownerUserId),
+        supabase.from('uv_maps' as any).select('id, image_url, code, name').eq('user_id', ownerUserId),
       ]);
       const uvMapById = new Map<string, string>();
-      ((uvMapsRes.data as any[]) ?? []).forEach((u: any) => uvMapById.set(u.id, u.image_url));
-      const resolveUv = (uvId: string | null, legacyUrl: string | null) =>
-        (uvId && uvMapById.get(uvId)) || legacyUrl || null;
+      const uvMapByCode = new Map<string, { id: string; url: string }>();
+      ((uvMapsRes.data as any[]) ?? []).forEach((u: any) => {
+        uvMapById.set(u.id, u.image_url);
+        const norm = (s: string) => (s || '').toString().trim().toLowerCase();
+        if (u.code) uvMapByCode.set(norm(u.code), { id: u.id, url: u.image_url });
+        if (u.name) uvMapByCode.set(norm(u.name), { id: u.id, url: u.image_url });
+      });
+      const matchByName = (name: string | null | undefined) => {
+        if (!name) return null;
+        return uvMapByCode.get(name.trim().toLowerCase()) ?? null;
+      };
+      const resolveUv = (uvId: string | null, legacyUrl: string | null, name?: string | null) => {
+        if (uvId && uvMapById.get(uvId)) return uvMapById.get(uvId)!;
+        if (legacyUrl) return legacyUrl;
+        const m = matchByName(name);
+        return m?.url ?? null;
+      };
+      const resolveUvId = (uvId: string | null, name?: string | null) => {
+        if (uvId) return uvId;
+        const m = matchByName(name);
+        return m?.id ?? null;
+      };
       const rawTemplates = (templatesRes.data as any[])?.map(t => ({
         id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
-        uvMapId: t.uv_map_id ?? null,
-        uvMapUrl: resolveUv(t.uv_map_id ?? null, t.uv_map_url ?? null),
+        uvMapId: resolveUvId(t.uv_map_id ?? null, t.name),
+        uvMapUrl: resolveUv(t.uv_map_id ?? null, t.uv_map_url ?? null, t.name),
         userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
       const misplacedStampTemplates = rawTemplates.filter(isMisplacedStampTemplate);
@@ -463,8 +482,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setTemplates(allT);
       const catalogStamps = (stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
-        uvMapId: s.uv_map_id ?? null,
-        uvMapUrl: resolveUv(s.uv_map_id ?? null, s.uv_map_url ?? null),
+        uvMapId: resolveUvId(s.uv_map_id ?? null, s.name),
+        uvMapUrl: resolveUv(s.uv_map_id ?? null, s.uv_map_url ?? null, s.name),
         templateId: s.template_id ?? null,
         nicheId: s.niche_id ?? null,
       })).filter((s: any) => !/\/uv-library\//i.test(s.imageUrl || '')) ?? [];
