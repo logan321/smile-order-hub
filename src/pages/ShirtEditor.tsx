@@ -1823,7 +1823,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
             {/* Canvas container — single render, responsive display */}
             <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
-              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${selectedTemplate?.uvMapUrl && !show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
+              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${effectiveUvUrl && !show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
                 style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
                 <div ref={frontWrapRef}
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
