@@ -657,6 +657,18 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
                               <Stamp className="h-3.5 w-3.5 text-primary" />
                             </Button>
+                            {!t.uvMapId && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                title="Importar matriz UV (base p/ zonas compartilhadas)"
+                                disabled={uploadingMatriz}
+                                onClick={() => triggerMatrizUpload(t)}
+                              >
+                                <Upload className="h-3.5 w-3.5 text-primary" />
+                              </Button>
+                            )}
                             {t.uvMapId && (() => {
                               const uv = uvMaps.find(u => u.id === t.uvMapId);
                               if (!uv) return null;
