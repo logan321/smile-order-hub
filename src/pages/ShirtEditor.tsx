@@ -157,6 +157,7 @@ interface Template {
   frontImageUrl: string;
   backImageUrl: string;
   uvMapUrl: string | null;
+  uvMapId?: string | null;
   userId: string;
   nicheId: string | null;
 }
@@ -168,6 +169,7 @@ interface Stamp {
   imageUrl: string;
   backImageUrl: string | null;
   uvMapUrl?: string | null;
+  uvMapId?: string | null;
   nicheId?: string | null;
 }
 
