@@ -498,7 +498,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               </div>
               <div className="flex-1">
                 <h2 className="font-semibold font-display">Templates de Camisa</h2>
-                <p className="text-sm text-muted-foreground">Envie imagens de frente e costas das camisas em branco para o editor</p>
+                <p className="text-sm text-muted-foreground">Somente camisas em branco. Estampas prontas devem ser cadastradas na aba Estampas.</p>
               </div>
               <a href="/meu-editor" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm" className="gap-2">
@@ -589,6 +589,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
                 <div className="space-y-3 border-t border-border/50 pt-4">
                   <p className="text-sm font-medium">Adicionar novo template</p>
+                  <p className="text-xs text-muted-foreground">Use esta área apenas para o molde base da camisa sem arte. Para arte pronta com UV, use o Catálogo de Estampas.</p>
                   <div className="flex gap-2">
                     <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="Nome do modelo (ex: Gola O Manga Longa)" className="flex-1" />
                     <NicheSelector value={newTemplateNicheId || 'none'} onChange={v => setNewTemplateNicheId(v === 'none' ? '' : v)} label="Nicho" />
