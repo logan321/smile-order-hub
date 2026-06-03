@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,8 @@ import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import Shirt3DPreview from '@/components/Shirt3DPreview';
 
 
 interface ShirtEditorProps {
@@ -208,6 +210,23 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [show3D, setShow3D] = useState(false);
+  const [preview3D, setPreview3D] = useState<{ front: string; back: string } | null>(null);
+
+  const handleOpen3D = () => {
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas) return;
+    try {
+      const front = exportCanvas(frontCanvas);
+      const back = exportCanvas(backCanvas);
+      setPreview3D({ front, back });
+      setShow3D(true);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao gerar pré-visualização 3D');
+    }
+  };
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
   const [strokeColor, setStrokeColor] = useState('#FFFFFF');
@@ -1431,6 +1450,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">{downloading ? 'Baixando...' : 'Baixar'}</span>
           </Button>
+          <Button onClick={handleOpen3D} size="sm" variant="secondary" className="gap-1 h-9 px-3 rounded-full shadow-sm">
+            <Box className="h-4 w-4" />
+            <span className="hidden sm:inline">Ver 3D</span>
+          </Button>
         </div>
       </header>
 
@@ -1942,6 +1965,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         </div>
       )}
       {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
+
+      <Dialog open={show3D} onOpenChange={setShow3D}>
+        <DialogContent className="max-w-3xl w-[95vw] h-[85vh] p-4 flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-primary" />
+              Pré-visualização 3D
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {preview3D && (
+              <Shirt3DPreview frontImage={preview3D.front} backImage={preview3D.back} />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Arraste para girar · Use a roda do mouse / pinça para dar zoom
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
