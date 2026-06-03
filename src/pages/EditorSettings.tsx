@@ -21,7 +21,7 @@ interface EditorSettingsProps {
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap } = useShirtTemplates(targetUserId);
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
 
@@ -140,8 +140,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newStampNicheId, setNewStampNicheId] = useState<string>('');
   const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
   const [stampBackFile, setStampBackFile] = useState<File | null>(null);
+  const [stampUvFile, setStampUvFile] = useState<File | null>(null);
   const stampFrontRef = useRef<HTMLInputElement>(null);
   const stampBackRef = useRef<HTMLInputElement>(null);
+  const stampUvRef = useRef<HTMLInputElement>(null);
   const [uploadingStamp, setUploadingStamp] = useState(false);
 
   const handleAddStamp = async () => {
@@ -152,7 +154,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     setUploadingStamp(true);
     try {
       const nicheObj = niches.find(n => n.id === newStampNicheId);
-      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile);
+      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, stampUvFile);
       // Update niche_id
       if (newStampNicheId) {
         const { data: latestStamps } = await supabase.from('stamp_catalog').select('id').order('created_at', { ascending: false }).limit(1);
@@ -164,8 +166,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       setNewStampNicheId('');
       setStampFrontFile(null);
       setStampBackFile(null);
+      setStampUvFile(null);
       if (stampFrontRef.current) stampFrontRef.current.value = '';
       if (stampBackRef.current) stampBackRef.current.value = '';
+      if (stampUvRef.current) stampUvRef.current.value = '';
       toast.success('Estampa adicionada!');
     } catch { toast.error('Erro ao adicionar estampa'); }
     setUploadingStamp(false);
