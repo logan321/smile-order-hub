@@ -608,6 +608,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
                               <Stamp className="h-3.5 w-3.5 text-primary" />
                             </Button>
+                            {t.uvMapId && (() => {
+                              const uv = uvMaps.find(u => u.id === t.uvMapId);
+                              if (!uv) return null;
+                              return (
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar zonas do UV vinculado" onClick={() => setZoneEditorUv({ id: uv.id, imageUrl: uv.imageUrl, code: uv.code })}>
+                                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                              );
+                            })()}
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
                               {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
                             </Button>
@@ -670,7 +679,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">As zonas (frente, costas, mangas, gola) são definidas sobre o UV map na aba "Biblioteca de UVs".</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Depois de vincular, use o botão <MapPin className="h-3 w-3 inline" /> ao lado do template para editar as zonas (frente, costas, mangas, gola) sobre o UV. Todas as estampas que usarem este molde compartilham as mesmas zonas.</p>
                   </div>
                   <Button onClick={handleAddTemplate} disabled={uploadingTemplate || !newTemplateName.trim() || !frontFile || !backFile}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -919,7 +928,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               </div>
               <div>
                 <h2 className="font-semibold font-display">Biblioteca de UVs</h2>
-                <p className="text-sm text-muted-foreground">Faça upload dos mapas UV (frente, costas, manga...) e edite as zonas onde estampas serão aplicadas no 3D. Vincule códigos às estampas e templates pela aba correspondente.</p>
+                <p className="text-sm text-muted-foreground">Faça upload dos mapas UV (frente, costas, mangas, gola...). Vincule um UV a cada molde na aba "Camisas em Branco" — as zonas são editadas pelo botão de zonas do molde e valem para todas as estampas daquele molde.</p>
               </div>
             </div>
 
@@ -987,11 +996,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                               {uv.name && <p className="text-xs text-muted-foreground truncate">{uv.name}</p>}
                             </div>
                             <div className="flex gap-1">
-                              <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => setZoneEditorUv({ id: uv.id, imageUrl: uv.imageUrl, code: uv.code })}>
-                                <MapPin className="h-3 w-3 mr-1" /> Zonas
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditingUvId(uv.id); setEditUvCode(uv.code); setEditUvName(uv.name ?? ''); }}>
+                              <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => { setEditingUvId(uv.id); setEditUvCode(uv.code); setEditUvName(uv.name ?? ''); }}>
                                 <Pencil className="h-3.5 w-3.5" />
+                                <span className="ml-1">Editar</span>
                               </Button>
                               <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={async () => {
                                 if (!confirm(`Excluir UV ${uv.code}? As zonas associadas também serão removidas.`)) return;
