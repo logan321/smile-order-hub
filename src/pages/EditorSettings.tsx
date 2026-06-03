@@ -20,8 +20,8 @@ interface EditorSettingsProps {
 }
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap } = useShirtTemplates(targetUserId);
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv } = useStampCatalog(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap, fetchTemplates } = useShirtTemplates(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
 
@@ -133,6 +133,32 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       toast.success('Template adicionado!');
     } catch { toast.error('Erro ao adicionar template'); }
     setUploadingTemplate(false);
+  };
+
+  const moveTemplateToStamps = async (template: typeof templates[number]) => {
+    if (!confirm(`Mover "${template.name}" para o Catálogo de Estampas?`)) return;
+    if (!effectiveUserId) { toast.error('Usuário não identificado'); return; }
+    try {
+      const nicheId = templateNicheMap[template.id] || null;
+      const nicheObj = niches.find(n => n.id === nicheId);
+      const { error: insertError } = await supabase.from('stamp_catalog').insert({
+        user_id: effectiveUserId,
+        name: template.name,
+        category: nicheObj?.name || 'Geral',
+        image_url: template.frontImageUrl,
+        back_image_url: template.backImageUrl,
+        uv_map_url: template.uvMapUrl,
+        niche_id: nicheId,
+        active: true,
+      } as any);
+      if (insertError) throw insertError;
+      await supabase.from('shirt_templates').update({ active: false } as any).eq('id', template.id);
+      await Promise.all([fetchTemplates(), fetchStamps()]);
+      toast.success('Movido para Estampas!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao mover para Estampas');
+    }
   };
 
   // Stamps
@@ -472,7 +498,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               </div>
               <div className="flex-1">
                 <h2 className="font-semibold font-display">Templates de Camisa</h2>
-                <p className="text-sm text-muted-foreground">Envie imagens de frente e costas das camisas em branco para o editor</p>
+                <p className="text-sm text-muted-foreground">Somente camisas em branco. Estampas prontas devem ser cadastradas na aba Estampas.</p>
               </div>
               <a href="/meu-editor" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm" className="gap-2">
@@ -538,6 +564,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
                               <MapPin className="h-3.5 w-3.5 text-primary" />
                             </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
+                              <Stamp className="h-3.5 w-3.5 text-primary" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
                               {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
                             </Button>
@@ -560,6 +589,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
                 <div className="space-y-3 border-t border-border/50 pt-4">
                   <p className="text-sm font-medium">Adicionar novo template</p>
+                  <p className="text-xs text-muted-foreground">Use esta área apenas para o molde base da camisa sem arte. Para arte pronta com UV, use o Catálogo de Estampas.</p>
                   <div className="flex gap-2">
                     <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="Nome do modelo (ex: Gola O Manga Longa)" className="flex-1" />
                     <NicheSelector value={newTemplateNicheId || 'none'} onChange={v => setNewTemplateNicheId(v === 'none' ? '' : v)} label="Nicho" />

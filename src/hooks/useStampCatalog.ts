@@ -103,5 +103,5 @@ export function useStampCatalog(targetUserId?: string) {
     await fetchStamps();
   }, [fetchStamps, targetUserId]);
 
-  return { stamps, loading, addStamp, deleteStamp, updateStampUv };
+  return { stamps, loading, addStamp, deleteStamp, updateStampUv, fetchStamps };
 }

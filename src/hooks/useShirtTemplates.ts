@@ -34,7 +34,7 @@ export function useShirtTemplates(targetUserId?: string) {
       createdAt: t.created_at,
     })) ?? []);
     setLoading(false);
-  }, []);
+  }, [targetUserId]);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
@@ -74,7 +74,7 @@ export function useShirtTemplates(targetUserId?: string) {
     } as any);
 
     await fetchTemplates();
-  }, [fetchTemplates]);
+  }, [fetchTemplates, targetUserId]);
 
   const deleteTemplate = useCallback(async (id: string) => {
     // Remove dependent records first
@@ -82,12 +82,12 @@ export function useShirtTemplates(targetUserId?: string) {
     await supabase.from('template_zones').delete().eq('template_id', id);
     await supabase.from('shirt_templates').delete().eq('id', id);
     await fetchTemplates();
-  }, [fetchTemplates]);
+  }, [fetchTemplates, targetUserId]);
 
   const toggleActive = useCallback(async (id: string, active: boolean) => {
     await supabase.from('shirt_templates').update({ active }).eq('id', id);
     await fetchTemplates();
-  }, [fetchTemplates]);
+  }, [fetchTemplates, targetUserId]);
 
   const updateUvMap = useCallback(async (id: string, uvFile: File | null) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -103,7 +103,7 @@ export function useShirtTemplates(targetUserId?: string) {
     }
     await supabase.from('shirt_templates').update({ uv_map_url: uvUrl } as any).eq('id', id);
     await fetchTemplates();
-  }, [fetchTemplates]);
+  }, [fetchTemplates, targetUserId]);
 
-  return { templates, loading, addTemplate, deleteTemplate, toggleActive, updateUvMap };
+  return { templates, loading, addTemplate, deleteTemplate, toggleActive, updateUvMap, fetchTemplates };
 }
