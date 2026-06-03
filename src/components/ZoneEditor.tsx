@@ -7,9 +7,11 @@ import { toast } from 'sonner';
 import PolygonDrawer from '@/components/PolygonDrawer';
 
 interface ZoneEditorProps {
-  templateId: string;
-  frontImageUrl: string;
-  backImageUrl: string;
+  templateId?: string;
+  uvMapId?: string;
+  uvImageUrl?: string;
+  frontImageUrl?: string;
+  backImageUrl?: string;
   onClose: () => void;
 }
 
@@ -41,8 +43,9 @@ interface DragState {
   origRotation: number;
 }
 
-const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEditorProps) => {
-  const { zones, loading, addZone, updateZone, deleteZone } = useTemplateZones(templateId);
+const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageUrl, onClose }: ZoneEditorProps) => {
+  const uvMode = !!uvMapId;
+  const { zones, loading, addZone, updateZone, deleteZone } = useTemplateZones(templateId, uvMapId);
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [newZoneName, setNewZoneName] = useState('');
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -55,12 +58,15 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Show zones for active side + shared zones from the other side
-  const filteredZones = zones.filter(z => z.side === activeSide || z.shared);
-  const imageUrl = activeSide === 'front' ? frontImageUrl : backImageUrl;
+  // In UV mode, all zones are shown on the single UV map image (side stored only as label).
+  // In template mode, show zones for active side + shared zones from the other side.
+  const filteredZones = uvMode ? zones : zones.filter(z => z.side === activeSide || z.shared);
+  const imageUrl = uvMode
+    ? (uvImageUrl || '')
+    : (activeSide === 'front' ? (frontImageUrl || '') : (backImageUrl || ''));
 
   // Check if this zone is being shown on its opposite side (shared zone on the other side)
-  const isBackSideOfShared = (zone: TemplateZone) => zone.shared && zone.side !== activeSide;
+  const isBackSideOfShared = (zone: TemplateZone) => !uvMode && zone.shared && zone.side !== activeSide;
 
   // Merge DB zones with local drag overrides, using back_* coords when viewing back side of shared zone
   const getZoneDisplay = (zone: TemplateZone) => {
@@ -82,7 +88,8 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
 
   const handleAddZone = async () => {
     if (!newZoneName.trim()) return;
-    await addZone(newZoneName.trim(), activeSide);
+    // In UV mode every zone is "front" by convention (single image).
+    await addZone(newZoneName.trim(), uvMode ? 'front' : activeSide);
     setNewZoneName('');
     toast.success('Zona adicionada!');
   };
@@ -310,8 +317,14 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold font-display">Editor de Zonas</h2>
-            <p className="text-sm text-muted-foreground">Defina as áreas onde logos e textos serão posicionados</p>
+            <h2 className="text-lg font-semibold font-display">
+              {uvMode ? 'Zonas sobre o UV map' : 'Editor de Zonas'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {uvMode
+                ? 'Desenhe as zonas sobre o UV — frente, costas, mangas, gola — onde os elementos serão posicionados no 3D'
+                : 'Defina as áreas onde logos e textos serão posicionados'}
+            </p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -322,6 +335,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
           {/* Image preview with zones */}
           <div className="flex-1">
             {/* Side toggle */}
+            {!uvMode && (
             <div className="flex gap-2 mb-3">
               <Button
                 variant={activeSide === 'front' ? 'default' : 'outline'}
@@ -338,6 +352,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                 Costas
               </Button>
             </div>
+            )}
 
             {/* Zoom controls */}
             <div className="flex items-center gap-1 mb-2">
@@ -477,7 +492,9 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
           {/* Zone list + controls */}
           <div className="lg:w-64 space-y-3">
             <div>
-              <p className="text-sm font-semibold mb-2">Zonas ({activeSide === 'front' ? 'Frente' : 'Costas'})</p>
+              <p className="text-sm font-semibold mb-2">
+                {uvMode ? `Zonas (${zones.length})` : `Zonas (${activeSide === 'front' ? 'Frente' : 'Costas'})`}
+              </p>
 
               {loading ? (
                 <p className="text-xs text-muted-foreground">Carregando...</p>
@@ -517,6 +534,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                           >
                             <Fish className="h-3 w-3" />
                           </Button>
+                          {!uvMode && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -526,6 +544,7 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
                           >
                             <Link className="h-3 w-3" />
                           </Button>
+                          )}
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteZone(zone.id)}>
                             <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>

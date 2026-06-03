@@ -12,6 +12,7 @@ import { useStampCatalog } from '@/hooks/useStampCatalog';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
+import { useUvLibrary } from '@/hooks/useUvLibrary';
 import ZoneEditor from '@/components/ZoneEditor';
 
 interface EditorSettingsProps {
@@ -22,10 +23,35 @@ interface EditorSettingsProps {
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap, fetchTemplates } = useShirtTemplates(targetUserId);
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv, fetchStamps } = useStampCatalog(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, fetchTemplates } = useShirtTemplates(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
+  const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, deleteUvMap } = useUvLibrary(targetUserId);
+
+  // UV Library form state
+  const [newUvCode, setNewUvCode] = useState('');
+  const [newUvName, setNewUvName] = useState('');
+  const [newUvFile, setNewUvFile] = useState<File | null>(null);
+  const newUvFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingUv, setUploadingUv] = useState(false);
+  const [editingUvId, setEditingUvId] = useState<string | null>(null);
+  const [editUvCode, setEditUvCode] = useState('');
+  const [editUvName, setEditUvName] = useState('');
+
+  const handleAddUv = async () => {
+    if (!newUvCode.trim() || !newUvFile) { toast.error('Informe o código e selecione um arquivo'); return; }
+    setUploadingUv(true);
+    try {
+      await addUvMap(newUvCode, newUvName || null, newUvFile);
+      setNewUvCode(''); setNewUvName(''); setNewUvFile(null);
+      if (newUvFileRef.current) newUvFileRef.current.value = '';
+      toast.success('UV adicionado à biblioteca!');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erro ao salvar UV');
+    }
+    setUploadingUv(false);
+  };
 
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
@@ -102,12 +128,11 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newTemplateNicheId, setNewTemplateNicheId] = useState<string>('');
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
-  const [uvFile, setUvFile] = useState<File | null>(null);
+  const [newTemplateUvMapId, setNewTemplateUvMapId] = useState<string>('none');
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
-  const uvRef = useRef<HTMLInputElement>(null);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
-  const [zoneEditorTemplate, setZoneEditorTemplate] = useState<{ id: string; frontImageUrl: string; backImageUrl: string } | null>(null);
+  const [zoneEditorUv, setZoneEditorUv] = useState<{ id: string; imageUrl: string; code: string } | null>(null);
 
   const handleAddTemplate = async () => {
     if (!newTemplateName.trim() || !frontFile || !backFile) {
@@ -118,23 +143,35 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     try {
       const name = newTemplateName.trim();
       const templateNicheId = newTemplateNicheId && newTemplateNicheId !== 'all' && newTemplateNicheId !== 'none' ? newTemplateNicheId : null;
-      if (uvFile && isLikelyStampCode(name)) {
+      const uvMapId = newTemplateUvMapId && newTemplateUvMapId !== 'none' ? newTemplateUvMapId : null;
+      if (uvMapId && isLikelyStampCode(name)) {
         const nicheObj = niches.find(n => n.id === templateNicheId);
-        await addStamp(name, nicheObj?.name || 'Geral', frontFile, backFile, uvFile, templateNicheId);
+        await addStamp(name, nicheObj?.name || 'Geral', frontFile, backFile, null, templateNicheId, uvMapId);
         await Promise.all([fetchTemplates(), fetchStamps()]);
         toast.success('Código identificado: salvo no Catálogo de Estampas!');
       } else {
-        await addTemplate(name, frontFile, backFile, uvFile, templateNicheId);
+        await addTemplate(name, frontFile, backFile, null, templateNicheId);
+        // Link UV from library if selected — find newly created template by name+createdAt
+        if (uvMapId) {
+          await fetchTemplates();
+          const { data } = await supabase
+            .from('shirt_templates')
+            .select('id')
+            .eq('user_id', effectiveUserId!)
+            .eq('name', name)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (data?.[0]) await updateTemplateUvMapId(data[0].id, uvMapId);
+        }
         toast.success('Template adicionado!');
       }
       setNewTemplateName('');
       setNewTemplateNicheId('');
       setFrontFile(null);
       setBackFile(null);
-      setUvFile(null);
+      setNewTemplateUvMapId('none');
       if (frontRef.current) frontRef.current.value = '';
       if (backRef.current) backRef.current.value = '';
-      if (uvRef.current) uvRef.current.value = '';
     } catch { toast.error('Erro ao adicionar template'); }
     setUploadingTemplate(false);
   };
@@ -170,10 +207,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newStampNicheId, setNewStampNicheId] = useState<string>('');
   const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
   const [stampBackFile, setStampBackFile] = useState<File | null>(null);
-  const [stampUvFile, setStampUvFile] = useState<File | null>(null);
+  const [newStampUvMapId, setNewStampUvMapId] = useState<string>('none');
   const stampFrontRef = useRef<HTMLInputElement>(null);
   const stampBackRef = useRef<HTMLInputElement>(null);
-  const stampUvRef = useRef<HTMLInputElement>(null);
   const [uploadingStamp, setUploadingStamp] = useState(false);
 
   const handleAddStamp = async () => {
@@ -185,15 +221,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     try {
       const nicheObj = niches.find(n => n.id === newStampNicheId);
       const stampNicheId = newStampNicheId && newStampNicheId !== 'none' && newStampNicheId !== 'all' ? newStampNicheId : null;
-      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, stampUvFile, stampNicheId);
+      const uvMapId = newStampUvMapId && newStampUvMapId !== 'none' ? newStampUvMapId : null;
+      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, null, stampNicheId, uvMapId);
       setNewStampName('');
       setNewStampNicheId('');
       setStampFrontFile(null);
       setStampBackFile(null);
-      setStampUvFile(null);
+      setNewStampUvMapId('none');
       if (stampFrontRef.current) stampFrontRef.current.value = '';
       if (stampBackRef.current) stampBackRef.current.value = '';
-      if (stampUvRef.current) stampUvRef.current.value = '';
       toast.success('Estampa adicionada!');
     } catch { toast.error('Erro ao adicionar estampa'); }
     setUploadingStamp(false);
@@ -374,6 +410,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
             <Sparkles className="h-4 w-4" />
             Emblemas
           </TabsTrigger>
+          <TabsTrigger value="uvlib" className="gap-2">
+            <Box className="h-4 w-4" />
+            Biblioteca de UVs
+          </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
             Estilos de Texto
@@ -543,31 +583,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
                               </SelectContent>
                             </Select>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              title={t.uvMapUrl ? 'Trocar molde UV (3D)' : 'Enviar molde UV (3D)'}
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/png,image/jpeg,image/webp';
-                                input.onchange = async () => {
-                                  const f = input.files?.[0];
-                                  if (!f) return;
-                                  try {
-                                    await updateUvMap(t.id, f);
-                                    toast.success('Molde UV atualizado!');
-                                  } catch { toast.error('Erro ao enviar molde UV'); }
-                                };
-                                input.click();
+                            <Select
+                              value={t.uvMapId || 'none'}
+                              onValueChange={async v => {
+                                try {
+                                  await updateTemplateUvMapId(t.id, v === 'none' ? null : v);
+                                  toast.success('UV vinculado!');
+                                } catch { toast.error('Erro ao vincular UV'); }
                               }}
                             >
-                              <Box className={`h-3.5 w-3.5 ${t.uvMapUrl ? 'text-primary' : 'text-muted-foreground'}`} />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
-                              <MapPin className="h-3.5 w-3.5 text-primary" />
-                            </Button>
+                              <SelectTrigger className="h-7 w-24 text-[10px]">
+                                <div className="flex items-center gap-1">
+                                  <Box className={`h-3 w-3 ${t.uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="UV" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                                {uvMaps.map(u => (
+                                  <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
                               <Stamp className="h-3.5 w-3.5 text-primary" />
                             </Button>
@@ -622,16 +659,18 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> Molde UV completo (opcional — usado na pré-visualização 3D)
+                      <Box className="h-3 w-3" /> UV map da biblioteca (opcional — usado na pré-visualização 3D)
                     </label>
-                    <div className="border border-dashed border-border rounded-lg p-3">
-                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
-                        <Upload className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{uvFile ? uvFile.name : 'Selecionar molde UV (PNG)'}</span>
-                        <input ref={uvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setUvFile(e.target.files?.[0] ?? null)} className="hidden" />
-                      </label>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">Layout plano exportado do CLO3D (frente + costas + mangas + gola na mesma imagem). O cliente final não verá esta imagem — ela é usada apenas para projetar a estampa no 3D.</p>
+                    <Select value={newTemplateUvMapId} onValueChange={setNewTemplateUvMapId}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                        {uvMaps.map(u => (
+                          <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1">As zonas (frente, costas, mangas, gola) são definidas sobre o UV map na aba "Biblioteca de UVs".</p>
                   </div>
                   <Button onClick={handleAddTemplate} disabled={uploadingTemplate || !newTemplateName.trim() || !frontFile || !backFile}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -690,28 +729,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                               </SelectContent>
                             </Select>
                             <StampColorManager stampId={s.id} stampName={s.name} targetUserId={effectiveUserId} />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 flex-shrink-0"
-                              title={s.uvMapUrl ? 'Trocar molde UV (mockup completo)' : 'Enviar molde UV (mockup completo)'}
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/png,image/jpeg,image/webp';
-                                input.onchange = async () => {
-                                  const f = input.files?.[0];
-                                  if (!f) return;
-                                  try {
-                                    await updateStampUv(s.id, f);
-                                    toast.success('Molde UV da estampa atualizado!');
-                                  } catch { toast.error('Erro ao enviar molde UV'); }
-                                };
-                                input.click();
+                            <Select
+                              value={s.uvMapId || 'none'}
+                              onValueChange={async v => {
+                                try {
+                                  await updateStampUvMapId(s.id, v === 'none' ? null : v);
+                                  toast.success('UV vinculado!');
+                                } catch { toast.error('Erro ao vincular UV'); }
                               }}
                             >
-                              <Box className={`h-3.5 w-3.5 ${s.uvMapUrl ? 'text-primary' : 'text-muted-foreground'}`} />
-                            </Button>
+                              <SelectTrigger className="h-7 w-24 text-[10px] flex-shrink-0">
+                                <div className="flex items-center gap-1">
+                                  <Box className={`h-3 w-3 ${s.uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="UV" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                                {uvMaps.map(u => (
+                                  <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover estampa?')) deleteStamp(s.id); }}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
@@ -760,16 +799,18 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> UV desta estampa para o 3D (opcional)
+                      <Box className="h-3 w-3" /> UV map da biblioteca (opcional)
                     </label>
-                    <div className="border border-dashed border-border rounded-lg p-3">
-                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
-                        <Upload className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{stampUvFile ? stampUvFile.name : 'Selecionar molde UV (PNG)'}</span>
-                        <input ref={stampUvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampUvFile(e.target.files?.[0] ?? null)} className="hidden" />
-                      </label>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">Este arquivo não aparece na miniatura. Ele só é usado para trocar a textura do 3D quando o cliente escolher esta estampa.</p>
+                    <Select value={newStampUvMapId} onValueChange={setNewStampUvMapId}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                        {uvMaps.map(u => (
+                          <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1">Quando o cliente clicar nesta estampa, o 3D usa o UV vinculado. Cadastre UVs na aba "Biblioteca de UVs".</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -992,12 +1033,11 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       </Tabs>
 
       {/* Zone Editor Modal */}
-      {zoneEditorTemplate && (
+      {zoneEditorUv && (
         <ZoneEditor
-          templateId={zoneEditorTemplate.id}
-          frontImageUrl={zoneEditorTemplate.frontImageUrl}
-          backImageUrl={zoneEditorTemplate.backImageUrl}
-          onClose={() => setZoneEditorTemplate(null)}
+          uvMapId={zoneEditorUv.id}
+          uvImageUrl={zoneEditorUv.imageUrl}
+          onClose={() => setZoneEditorUv(null)}
         />
       )}
     </div>

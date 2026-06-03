@@ -482,6 +482,7 @@ export type Database = {
           name: string
           niche_id: string | null
           user_id: string
+          uv_map_id: string | null
           uv_map_url: string | null
         }
         Insert: {
@@ -493,6 +494,7 @@ export type Database = {
           name: string
           niche_id?: string | null
           user_id: string
+          uv_map_id?: string | null
           uv_map_url?: string | null
         }
         Update: {
@@ -504,6 +506,7 @@ export type Database = {
           name?: string
           niche_id?: string | null
           user_id?: string
+          uv_map_id?: string | null
           uv_map_url?: string | null
         }
         Relationships: [
@@ -512,6 +515,13 @@ export type Database = {
             columns: ["niche_id"]
             isOneToOne: false
             referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shirt_templates_uv_map_id_fkey"
+            columns: ["uv_map_id"]
+            isOneToOne: false
+            referencedRelation: "uv_maps"
             referencedColumns: ["id"]
           },
         ]
@@ -527,6 +537,7 @@ export type Database = {
           name: string
           niche_id: string | null
           user_id: string
+          uv_map_id: string | null
           uv_map_url: string | null
         }
         Insert: {
@@ -539,6 +550,7 @@ export type Database = {
           name: string
           niche_id?: string | null
           user_id: string
+          uv_map_id?: string | null
           uv_map_url?: string | null
         }
         Update: {
@@ -551,6 +563,7 @@ export type Database = {
           name?: string
           niche_id?: string | null
           user_id?: string
+          uv_map_id?: string | null
           uv_map_url?: string | null
         }
         Relationships: [
@@ -559,6 +572,13 @@ export type Database = {
             columns: ["niche_id"]
             isOneToOne: false
             referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stamp_catalog_uv_map_id_fkey"
+            columns: ["uv_map_id"]
+            isOneToOne: false
+            referencedRelation: "uv_maps"
             referencedColumns: ["id"]
           },
         ]
@@ -672,8 +692,9 @@ export type Database = {
           rotation: number
           shared: boolean
           side: string
-          template_id: string
+          template_id: string | null
           user_id: string
+          uv_map_id: string | null
           width_percent: number
           x_percent: number
           y_percent: number
@@ -694,8 +715,9 @@ export type Database = {
           rotation?: number
           shared?: boolean
           side?: string
-          template_id: string
+          template_id?: string | null
           user_id: string
+          uv_map_id?: string | null
           width_percent?: number
           x_percent?: number
           y_percent?: number
@@ -716,8 +738,9 @@ export type Database = {
           rotation?: number
           shared?: boolean
           side?: string
-          template_id?: string
+          template_id?: string | null
           user_id?: string
+          uv_map_id?: string | null
           width_percent?: number
           x_percent?: number
           y_percent?: number
@@ -728,6 +751,13 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "shirt_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_zones_uv_map_id_fkey"
+            columns: ["uv_map_id"]
+            isOneToOne: false
+            referencedRelation: "uv_maps"
             referencedColumns: ["id"]
           },
         ]
@@ -831,6 +861,36 @@ export type Database = {
           updated_at?: string
           user_id?: string
           whatsapp_number?: string
+        }
+        Relationships: []
+      }
+      uv_maps: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          image_url: string
+          name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          image_url: string
+          name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          name?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

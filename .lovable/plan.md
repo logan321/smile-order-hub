@@ -1,40 +1,69 @@
-## Objetivo
+# Biblioteca de UVs + Zonas sobre UV
 
-Replicar a experiência da imagem de referência (Jumptec): o cliente vê a camisa em 3D ocupando o centro da tela, e na lateral esquerda escolhe entre miniaturas que já mostram a camisa com a estampa aplicada (mockup 2D). Ao clicar numa miniatura, o 3D atualiza com a estampa escolhida.
+## 1. Nova biblioteca de UVs (independente)
 
-## Mudanças
+**Nova tabela `uv_maps`:**
+- `id`, `user_id`, `code` (único por usuário, ex: "UV-001"), `name` (opcional), `image_url`, `created_at`, `updated_at`
+- RLS: dono gerencia tudo; service_role full.
 
-### 1. Miniatura mockup 2D (composição automática)
-Criar um helper `composeShirtMockup(frontImageUrl, stampImageUrl)` que:
-- Desenha a frente da camisa do template num canvas off-screen
-- Sobrepõe a estampa centralizada (≈ 60% da largura)
-- Retorna um data URL para usar como `<img src>` da miniatura
+**Novo bucket** já existe (`stamp-catalog` reutilizado) — vamos usar um subpath `uv-library/` ou criar bucket `uv-maps`. Plano: reutilizar `stamp-catalog` com prefixo `uv-library/` pra evitar nova config.
 
-Usar esse helper para renderizar cada item do painel "Estampas". Sem mudança no banco — composição é feita em runtime e cacheada em memória por `templateId+stampId`.
+**Nova aba em `EditorSettings.tsx` → "Biblioteca de UVs":**
+- Listagem em grid: miniatura do UV + código + nome
+- Botões: upload novo UV (código + arquivo), editar código/nome, deletar
+- Hook novo: `useUvLibrary.ts` (fetch/add/update/delete)
 
-### 2. Layout do editor para o cliente
-No `src/pages/ShirtEditor.tsx`:
-- Adicionar um novo modo de visualização "3D principal" ativado por padrão quando o template tem `uvMapUrl` configurado
-- Centro da tela: `Shirt3DPreview` ocupando praticamente toda a área (canvas 2D Fabric continua existindo escondido para edição de texto/logo/escudo via modal)
-- Lateral esquerda: painéis existentes (Modelo, Cores, Estampas, etc.) — miniaturas de Estampas agora usam o mockup composto
-- Quando o cliente clica numa estampa, ela é aplicada ao canvas Fabric (como hoje) e o 3D re-renderiza com a textura UV atualizada
-- Botão "Ver 2D" abre modal com o canvas Fabric para ajustes finos
-- Templates sem `uvMapUrl` mantêm o fluxo 2D atual (fallback)
+## 2. Vincular estampa ao UV pelo código
 
-### 3. Re-geração da textura UV em tempo real
-O `Shirt3DPreview` hoje recebe `uvMapUrl` estático. Vamos passar um `uvCanvas` opcional: quando o cliente aplica uma estampa, geramos um canvas composto = UV base + estampa posicionada na região da frente do molde. Esse canvas vira textura do 3D. Sem isso o 3D não muda quando o cliente troca a estampa.
+**Alteração em `stamp_catalog`:**
+- Adicionar `uv_map_id uuid references uv_maps(id) on delete set null`
+- Manter `uv_map_url` por compatibilidade (legacy), mas UI nova usa só `uv_map_id`
+- No formulário de cadastro de estampa: trocar o upload de UV por um **select de UV** (lista os códigos da biblioteca). Mostra preview do UV escolhido.
 
-Para a v1, vamos posicionar a estampa numa região fixa pré-definida do UV (centro da frente) — futuramente o dono poderá ajustar a região no `EditorSettings`.
+**Em `ShirtEditor.tsx`:**
+- `effectiveUvUrl` passa a resolver via `stamp.uvMapId → uv_maps.image_url` (com fallback ao `uvMapUrl` legacy)
 
-## Detalhes técnicos
+## 3. Zonas sobre o UV map (substituindo template)
 
-- Novo arquivo: `src/lib/composeMockup.ts` — funções `composeShirtMockup` e `composeUvWithStamp` usando canvas 2D nativo
-- `Shirt3DPreview.tsx`: aceitar `uvCanvas?: HTMLCanvasElement | null` além de `uvMapUrl`, e usar `CanvasTexture` quando fornecido
-- `ShirtEditor.tsx`: novo state `mainView: '3d' | '2d'`, ref para o canvas UV composto, regenerar quando estampa muda
-- Layout mobile: 3D ocupa toda a tela; estampas em drawer/sheet por baixo (manter padrão mobile-first do projeto)
+**Alteração em `template_zones`:**
+- Adicionar `uv_map_id uuid references uv_maps(id) on delete cascade`
+- Tornar `template_id` opcional (nullable)
+- Zonas passam a ser vinculadas a um UV, não a um template
 
-## Fora de escopo
+**Hook `useTemplateZones.ts` → renomear conceitualmente:** aceita `uvMapId` em vez de `templateId`. Mantém mesma API. (Renomeio só de parâmetro; vou criar `useUvZones.ts` novo e manter o antigo só pra leitura legacy.)
 
-- Edição interativa da posição da estampa no UV (v1 = posição fixa no centro da frente)
-- Mockup para meião/calção (foco só na camisa)
-- Cachear mockups no banco (tudo em runtime por enquanto)
+**`ZoneEditor.tsx`:** já recebe `imageUrl` como prop — passa a receber a URL do UV em vez do template. Sem mudanças internas.
+
+**Em `EditorSettings.tsx`:**
+- Remover botão "Editar Zonas" do card de template
+- Adicionar botão "Editar Zonas" em cada UV da biblioteca → abre `ZoneEditor` com a imagem do UV
+
+**Em `ShirtEditor.tsx`:**
+- Zonas exibidas no editor passam a vir do UV ativo (da estampa selecionada ou do template)
+- As coordenadas % das zonas mapeiam sobre o UV (que é mapeado no 3D), garantindo posição correta no modelo
+
+## 4. Migração de dados existentes
+
+- Para cada template com `uv_map_url`: cria entrada em `uv_maps` (code = "TPL-" + 4 chars do id), seta `template.uv_map_id` (novo campo) e migra zonas antigas (`template_id` → `uv_map_id`).
+- Para cada stamp com `uv_map_url`: idem, cria UV na biblioteca e seta `stamp.uv_map_id`.
+
+## Arquivos
+
+**Novos:**
+- `src/hooks/useUvLibrary.ts`
+- Migration: criar `uv_maps`, adicionar colunas, migrar dados, atualizar trigger redirect.
+
+**Editados:**
+- `src/pages/EditorSettings.tsx` — nova aba "Biblioteca de UVs", remover botão zonas do template, adicionar nos UVs, trocar upload de UV por select nas estampas
+- `src/hooks/useStampCatalog.ts` — suportar `uvMapId`
+- `src/hooks/useShirtTemplates.ts` — suportar `uvMapId` (opcional, legacy)
+- `src/hooks/useTemplateZones.ts` — aceitar `uvMapId` além de `templateId`
+- `src/pages/ShirtEditor.tsx` — resolver UV via id, exibir zonas do UV ativo
+- `src/components/ZoneEditor.tsx` — só ajuste de label ("UV map" em vez de "template")
+- `src/integrations/supabase/types.ts` — regerado após migração
+
+## Notas técnicas
+
+- Manter compatibilidade: `uv_map_url` antigo continua funcionando, mas UI nova prioriza `uv_map_id`.
+- Trigger `redirect_stamp_like_template` continua válido (sem mudanças).
+- Zonas legadas amarradas a `template_id` continuam funcionando no ShirtEditor como fallback se o template não tiver UV vinculada ainda.
