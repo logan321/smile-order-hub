@@ -46,24 +46,28 @@ export function useShirtTemplates(targetUserId?: string) {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  const addTemplate = useCallback(async (name: string, frontFile: File, backFile: File, uvFile?: File | null, nicheId?: string | null) => {
+  const addTemplate = useCallback(async (name: string, frontFile: File | null, backFile: File | null, uvFile?: File | null, nicheId?: string | null, uvMapId?: string | null, fallbackUrl?: string | null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const userId = targetUserId || session.user.id;
     const ts = Date.now();
 
-    // Upload front
-    const frontPath = `${userId}/${ts}_front_${frontFile.name}`;
-    const { error: frontErr } = await supabase.storage.from('shirt-templates').upload(frontPath, frontFile);
-    if (frontErr) throw frontErr;
-    const { data: frontUrl } = supabase.storage.from('shirt-templates').getPublicUrl(frontPath);
+    let frontUrlStr: string | null = fallbackUrl ?? null;
+    if (frontFile) {
+      const frontPath = `${userId}/${ts}_front_${frontFile.name}`;
+      const { error: frontErr } = await supabase.storage.from('shirt-templates').upload(frontPath, frontFile);
+      if (frontErr) throw frontErr;
+      frontUrlStr = supabase.storage.from('shirt-templates').getPublicUrl(frontPath).data.publicUrl;
+    }
 
-    // Upload back
-    const backPath = `${userId}/${ts}_back_${backFile.name}`;
-    const { error: backErr } = await supabase.storage.from('shirt-templates').upload(backPath, backFile);
-    if (backErr) throw backErr;
-    const { data: backUrl } = supabase.storage.from('shirt-templates').getPublicUrl(backPath);
+    let backUrlStr: string | null = fallbackUrl ?? null;
+    if (backFile) {
+      const backPath = `${userId}/${ts}_back_${backFile.name}`;
+      const { error: backErr } = await supabase.storage.from('shirt-templates').upload(backPath, backFile);
+      if (backErr) throw backErr;
+      backUrlStr = supabase.storage.from('shirt-templates').getPublicUrl(backPath).data.publicUrl;
+    }
 
     let uvUrl: string | null = null;
     if (uvFile) {
@@ -73,12 +77,16 @@ export function useShirtTemplates(targetUserId?: string) {
       uvUrl = supabase.storage.from('shirt-templates').getPublicUrl(uvPath).data.publicUrl;
     }
 
+    if (!frontUrlStr) frontUrlStr = backUrlStr ?? '';
+    if (!backUrlStr) backUrlStr = frontUrlStr;
+
     await supabase.from('shirt_templates').insert({
       user_id: userId,
       name,
-      front_image_url: frontUrl.publicUrl,
-      back_image_url: backUrl.publicUrl,
+      front_image_url: frontUrlStr,
+      back_image_url: backUrlStr,
       uv_map_url: uvUrl,
+      uv_map_id: uvMapId ?? null,
       niche_id: nicheId ?? null,
     } as any);
 
