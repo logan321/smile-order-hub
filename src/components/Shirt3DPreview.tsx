@@ -11,39 +11,49 @@ interface Shirt3DPreviewProps {
   frontImage: string;
   backImage: string;
   uvMapUrl?: string | null;
+  uvCanvas?: HTMLCanvasElement | null;
   fabricColor?: string;
   autoRotate?: boolean;
 }
 
-function useUvTexture(url: string | null) {
+function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined) {
   return useMemo(() => {
+    if (canvas) {
+      const t = new THREE.CanvasTexture(canvas);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 16;
+      t.flipY = false;
+      t.needsUpdate = true;
+      return t;
+    }
     if (!url) return null;
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
     const t = loader.load(url);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 16;
-    // GLTF expects UVs without Y flip
     t.flipY = false;
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
     t.needsUpdate = true;
     return t;
-  }, [url]);
+  }, [url, canvas]);
 }
 
 function ShirtModel({
   uvImage,
+  uvCanvas,
   fabricColor,
 }: {
   uvImage: string | null;
+  uvCanvas: HTMLCanvasElement | null | undefined;
   fabricColor: string;
 }) {
   const gltf = useLoader(GLTFLoader, shirtModel.url, (loader) => {
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 
-  const uvTex = useUvTexture(uvImage);
+  const uvTex = useUvTexture(uvImage, uvCanvas);
 
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
@@ -90,11 +100,13 @@ export default function Shirt3DPreview({
   frontImage,
   backImage,
   uvMapUrl,
+  uvCanvas,
   fabricColor = '#ffffff',
   autoRotate = true,
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const uvImage = uvMapUrl ?? null;
+  const hasUv = !!uvImage || !!uvCanvas;
 
   return (
     <div className="w-full h-full bg-gradient-to-b from-muted/40 to-muted rounded-lg overflow-hidden relative">
@@ -109,7 +121,7 @@ export default function Shirt3DPreview({
         <directionalLight position={[3, 4, 5]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[-3, 2, -2]} intensity={0.4} />
         <Suspense fallback={null}>
-          <ShirtModel uvImage={uvImage} fabricColor={fabricColor} />
+          <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} fabricColor={fabricColor} />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
           <Environment preset="studio" />
         </Suspense>
@@ -135,7 +147,7 @@ export default function Shirt3DPreview({
         </Button>
       </div>
 
-      {!uvImage && (
+      {!hasUv && (
         <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur border rounded-lg p-3 shadow-lg text-xs text-center text-muted-foreground">
           Esta camisa ainda não tem um <strong>molde UV</strong> configurado. Peça ao administrador para enviar o molde UV deste template para visualizar a estampa aplicada perfeitamente em 3D.
         </div>
