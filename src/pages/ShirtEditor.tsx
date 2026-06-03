@@ -1556,7 +1556,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <img src={s.imageUrl} alt={s.name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-1 protected-img" />
+                          <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} name={s.name} />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
@@ -1679,7 +1679,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <img src={s.imageUrl} alt={s.name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
+                            <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} name={s.name} />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
