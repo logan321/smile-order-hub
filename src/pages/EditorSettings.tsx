@@ -29,6 +29,30 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
   const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, deleteUvMap } = useUvLibrary(targetUserId);
 
+  // UV Library form state
+  const [newUvCode, setNewUvCode] = useState('');
+  const [newUvName, setNewUvName] = useState('');
+  const [newUvFile, setNewUvFile] = useState<File | null>(null);
+  const newUvFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingUv, setUploadingUv] = useState(false);
+  const [editingUvId, setEditingUvId] = useState<string | null>(null);
+  const [editUvCode, setEditUvCode] = useState('');
+  const [editUvName, setEditUvName] = useState('');
+
+  const handleAddUv = async () => {
+    if (!newUvCode.trim() || !newUvFile) { toast.error('Informe o código e selecione um arquivo'); return; }
+    setUploadingUv(true);
+    try {
+      await addUvMap(newUvCode, newUvName || null, newUvFile);
+      setNewUvCode(''); setNewUvName(''); setNewUvFile(null);
+      if (newUvFileRef.current) newUvFileRef.current.value = '';
+      toast.success('UV adicionado à biblioteca!');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erro ao salvar UV');
+    }
+    setUploadingUv(false);
+  };
+
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
