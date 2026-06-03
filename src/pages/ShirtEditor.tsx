@@ -20,17 +20,19 @@ import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { composeShirtMockup, composeUvWithStamp } from '@/lib/composeMockup';
 
-// Small thumbnail that composes the shirt front + stamp into a single mockup image.
-function StampThumb({ shirtUrl, stampUrl, name }: { shirtUrl?: string; stampUrl: string; name: string }) {
-  const [src, setSrc] = useState<string>(stampUrl);
+// Thumbnail: prefer the stamp's own full UV mockup (already a finished preview).
+// Fallback: compose shirt-front + stamp on the fly. Last fallback: raw stamp image.
+function StampThumb({ shirtUrl, stampUrl, stampUvUrl, name }: { shirtUrl?: string; stampUrl: string; stampUvUrl?: string | null; name: string }) {
+  const [src, setSrc] = useState<string>(stampUvUrl || stampUrl);
   useEffect(() => {
     let alive = true;
+    if (stampUvUrl) { setSrc(stampUvUrl); return; }
     if (!shirtUrl) { setSrc(stampUrl); return; }
     composeShirtMockup(shirtUrl, stampUrl, 240)
       .then(url => { if (alive) setSrc(url); })
       .catch(() => { if (alive) setSrc(stampUrl); });
     return () => { alive = false; };
-  }, [shirtUrl, stampUrl]);
+  }, [shirtUrl, stampUrl, stampUvUrl]);
   return (
     <img src={src} alt={name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-1 protected-img bg-muted/10" />
   );
@@ -160,6 +162,7 @@ interface Stamp {
   category: string;
   imageUrl: string;
   backImageUrl: string | null;
+  uvMapUrl?: string | null;
 }
 
 type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | 'textStyles' | null;
