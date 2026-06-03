@@ -170,6 +170,7 @@ interface Stamp {
   backImageUrl: string | null;
   uvMapUrl?: string | null;
   uvMapId?: string | null;
+  templateId?: string | null;
   nicheId?: string | null;
 }
 
@@ -465,6 +466,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapId: s.uv_map_id ?? null,
         uvMapUrl: resolveUv(s.uv_map_id ?? null, s.uv_map_url ?? null),
+        templateId: s.template_id ?? null,
         nicheId: s.niche_id ?? null,
       })) ?? [];
       const recoveredStamps = misplacedStampTemplates.map(t => ({
