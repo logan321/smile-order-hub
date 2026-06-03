@@ -18,7 +18,7 @@ import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { composeUvWithStamp } from '@/lib/composeMockup';
+import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 
 // Thumbnail: show only the 2D front image uploaded for the stamp.
 // The UV is kept only for the 3D texture when the client clicks this stamp.
