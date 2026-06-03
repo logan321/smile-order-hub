@@ -27,7 +27,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
-  const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, deleteUvMap } = useUvLibrary(targetUserId);
+  const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, deleteUvMap, fetchUvMaps } = useUvLibrary(targetUserId);
 
   // UV Library form state
   const [newUvCode, setNewUvCode] = useState('');
@@ -133,6 +133,55 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const backRef = useRef<HTMLInputElement>(null);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [zoneEditorUv, setZoneEditorUv] = useState<{ id: string; imageUrl: string; code: string } | null>(null);
+
+  // Inline matriz UV upload per template
+  const matrizFileRef = useRef<HTMLInputElement>(null);
+  const [matrizTargetTemplate, setMatrizTargetTemplate] = useState<typeof templates[number] | null>(null);
+  const [uploadingMatriz, setUploadingMatriz] = useState(false);
+
+  const triggerMatrizUpload = (template: typeof templates[number]) => {
+    setMatrizTargetTemplate(template);
+    setTimeout(() => matrizFileRef.current?.click(), 0);
+  };
+
+  const handleMatrizFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    const template = matrizTargetTemplate;
+    setMatrizTargetTemplate(null);
+    if (!file || !template || !effectiveUserId) return;
+    setUploadingMatriz(true);
+    try {
+      const ts = Date.now();
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${effectiveUserId}/uv-library/${ts}_${safeName}`;
+      const { error: upErr } = await supabase.storage.from('stamp-catalog').upload(path, file);
+      if (upErr) throw upErr;
+      const imageUrl = supabase.storage.from('stamp-catalog').getPublicUrl(path).data.publicUrl;
+      const codeBase = template.name.replace(/\s+/g, '').slice(0, 8).toUpperCase() || 'TPL';
+      const code = `MTZ-${codeBase}-${ts.toString().slice(-4)}`;
+      const { data, error } = await supabase
+        .from('uv_maps' as any)
+        .insert({
+          user_id: effectiveUserId,
+          code,
+          name: `Matriz ${template.name}`,
+          image_url: imageUrl,
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      const newUv = data as any;
+      await updateTemplateUvMapId(template.id, newUv.id);
+      await fetchUvMaps();
+      setZoneEditorUv({ id: newUv.id, imageUrl: newUv.image_url, code: newUv.code });
+      toast.success('Matriz importada! Edite as zonas compartilhadas.');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'Erro ao importar matriz');
+    }
+    setUploadingMatriz(false);
+  };
 
   const handleAddTemplate = async () => {
     if (!newTemplateName.trim() || !frontFile || !backFile) {
@@ -608,6 +657,18 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
                               <Stamp className="h-3.5 w-3.5 text-primary" />
                             </Button>
+                            {!t.uvMapId && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                title="Importar matriz UV (base p/ zonas compartilhadas)"
+                                disabled={uploadingMatriz}
+                                onClick={() => triggerMatrizUpload(t)}
+                              >
+                                <Upload className="h-3.5 w-3.5 text-primary" />
+                              </Button>
+                            )}
                             {t.uvMapId && (() => {
                               const uv = uvMaps.find(u => u.id === t.uvMapId);
                               if (!uv) return null;
@@ -1149,6 +1210,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           onClose={() => setZoneEditorUv(null)}
         />
       )}
+
+      {/* Hidden file input for inline matriz upload */}
+      <input
+        ref={matrizFileRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={handleMatrizFileChange}
+      />
     </div>
   );
 };
