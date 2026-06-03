@@ -588,6 +588,19 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                       </div>
                     </div>
                   </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                      <Box className="h-3 w-3" /> Molde UV completo (opcional — usado na pré-visualização 3D)
+                    </label>
+                    <div className="border border-dashed border-border rounded-lg p-3">
+                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
+                        <Upload className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{uvFile ? uvFile.name : 'Selecionar molde UV (PNG)'}</span>
+                        <input ref={uvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setUvFile(e.target.files?.[0] ?? null)} className="hidden" />
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">Layout plano exportado do CLO3D (frente + costas + mangas + gola na mesma imagem). O cliente final não verá esta imagem — ela é usada apenas para projetar a estampa no 3D.</p>
+                  </div>
                   <Button onClick={handleAddTemplate} disabled={uploadingTemplate || !newTemplateName.trim() || !frontFile || !backFile}>
                     <Plus className="h-4 w-4 mr-2" />
                     {uploadingTemplate ? 'Enviando...' : 'Adicionar Template'}
