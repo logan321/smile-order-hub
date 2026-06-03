@@ -575,6 +575,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         // Replace rotation control with custom prominent one
         obj.controls.mtr = customMtrControl;
       });
+      canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
+      canvas.on('object:modified', () => bumpEdits());
+      canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
     };
 
     customizeControls(frontCanvas);
