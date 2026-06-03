@@ -527,6 +527,7 @@ export type Database = {
           name: string
           niche_id: string | null
           user_id: string
+          uv_map_url: string | null
         }
         Insert: {
           active?: boolean
@@ -538,6 +539,7 @@ export type Database = {
           name: string
           niche_id?: string | null
           user_id: string
+          uv_map_url?: string | null
         }
         Update: {
           active?: boolean
@@ -549,6 +551,7 @@ export type Database = {
           name?: string
           niche_id?: string | null
           user_id?: string
+          uv_map_url?: string | null
         }
         Relationships: [
           {

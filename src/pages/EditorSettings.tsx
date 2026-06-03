@@ -21,7 +21,7 @@ interface EditorSettingsProps {
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap } = useShirtTemplates(targetUserId);
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
 
@@ -140,8 +140,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newStampNicheId, setNewStampNicheId] = useState<string>('');
   const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
   const [stampBackFile, setStampBackFile] = useState<File | null>(null);
+  const [stampUvFile, setStampUvFile] = useState<File | null>(null);
   const stampFrontRef = useRef<HTMLInputElement>(null);
   const stampBackRef = useRef<HTMLInputElement>(null);
+  const stampUvRef = useRef<HTMLInputElement>(null);
   const [uploadingStamp, setUploadingStamp] = useState(false);
 
   const handleAddStamp = async () => {
@@ -152,7 +154,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     setUploadingStamp(true);
     try {
       const nicheObj = niches.find(n => n.id === newStampNicheId);
-      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile);
+      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, stampUvFile);
       // Update niche_id
       if (newStampNicheId) {
         const { data: latestStamps } = await supabase.from('stamp_catalog').select('id').order('created_at', { ascending: false }).limit(1);
@@ -164,8 +166,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       setNewStampNicheId('');
       setStampFrontFile(null);
       setStampBackFile(null);
+      setStampUvFile(null);
       if (stampFrontRef.current) stampFrontRef.current.value = '';
       if (stampBackRef.current) stampBackRef.current.value = '';
+      if (stampUvRef.current) stampUvRef.current.value = '';
       toast.success('Estampa adicionada!');
     } catch { toast.error('Erro ao adicionar estampa'); }
     setUploadingStamp(false);
@@ -658,6 +662,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                               </SelectContent>
                             </Select>
                             <StampColorManager stampId={s.id} stampName={s.name} targetUserId={effectiveUserId} />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 flex-shrink-0"
+                              title={s.uvMapUrl ? 'Trocar molde UV (mockup completo)' : 'Enviar molde UV (mockup completo)'}
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/png,image/jpeg,image/webp';
+                                input.onchange = async () => {
+                                  const f = input.files?.[0];
+                                  if (!f) return;
+                                  try {
+                                    await updateStampUv(s.id, f);
+                                    toast.success('Molde UV da estampa atualizado!');
+                                  } catch { toast.error('Erro ao enviar molde UV'); }
+                                };
+                                input.click();
+                              }}
+                            >
+                              <Box className={`h-3.5 w-3.5 ${s.uvMapUrl ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover estampa?')) deleteStamp(s.id); }}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
@@ -702,6 +728,19 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         </label>
                       </div>
                     </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                      <Box className="h-3 w-3" /> Molde UV completo da estampa (opcional — mockup pronto da camisa inteira com esta estampa)
+                    </label>
+                    <div className="border border-dashed border-border rounded-lg p-3">
+                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
+                        <Upload className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{stampUvFile ? stampUvFile.name : 'Selecionar molde UV (PNG)'}</span>
+                        <input ref={stampUvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampUvFile(e.target.files?.[0] ?? null)} className="hidden" />
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">Quando enviado, esta imagem é usada como miniatura da estampa e como textura 3D pronta, sem precisar compor nada.</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />

@@ -20,17 +20,19 @@ import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { composeShirtMockup, composeUvWithStamp } from '@/lib/composeMockup';
 
-// Small thumbnail that composes the shirt front + stamp into a single mockup image.
-function StampThumb({ shirtUrl, stampUrl, name }: { shirtUrl?: string; stampUrl: string; name: string }) {
-  const [src, setSrc] = useState<string>(stampUrl);
+// Thumbnail: prefer the stamp's own full UV mockup (already a finished preview).
+// Fallback: compose shirt-front + stamp on the fly. Last fallback: raw stamp image.
+function StampThumb({ shirtUrl, stampUrl, stampUvUrl, name }: { shirtUrl?: string; stampUrl: string; stampUvUrl?: string | null; name: string }) {
+  const [src, setSrc] = useState<string>(stampUvUrl || stampUrl);
   useEffect(() => {
     let alive = true;
+    if (stampUvUrl) { setSrc(stampUvUrl); return; }
     if (!shirtUrl) { setSrc(stampUrl); return; }
     composeShirtMockup(shirtUrl, stampUrl, 240)
       .then(url => { if (alive) setSrc(url); })
       .catch(() => { if (alive) setSrc(stampUrl); });
     return () => { alive = false; };
-  }, [shirtUrl, stampUrl]);
+  }, [shirtUrl, stampUrl, stampUvUrl]);
   return (
     <img src={src} alt={name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-1 protected-img bg-muted/10" />
   );
@@ -160,6 +162,7 @@ interface Stamp {
   category: string;
   imageUrl: string;
   backImageUrl: string | null;
+  uvMapUrl?: string | null;
 }
 
 type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | 'textStyles' | null;
@@ -336,8 +339,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
 
-  // Regenerate the UV texture composite whenever the stamp or template changes.
+  // 3D UV texture:
+  // 1) if the picked stamp has its own complete UV mockup → use it as-is (no compose)
+  // 2) else if the template has a base UV → compose it with the stamp image
+  // 3) else → no UV texture
   useEffect(() => {
+    if (appliedStamp?.uvMapUrl) { setUv3DCanvas(null); return; } // url path handled below
     const uv = selectedTemplate?.uvMapUrl;
     if (!uv) { setUv3DCanvas(null); return; }
     let alive = true;
@@ -345,7 +352,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       .then(c => { if (alive) setUv3DCanvas(c); })
       .catch(e => console.warn('UV compose failed', e));
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.imageUrl]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl]);
+
+  // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
+  const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
 
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
@@ -429,7 +439,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setAllTemplates(allT);
       setTemplates(allT);
       const allS = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null,
       })) ?? [];
       setAllStamps(allS);
       setStamps(allS);
@@ -1569,7 +1579,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} name={s.name} />
+                          <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} stampUvUrl={s.uvMapUrl} name={s.name} />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
@@ -1692,7 +1702,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} name={s.name} />
+                            <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} stampUvUrl={s.uvMapUrl} name={s.name} />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
@@ -1832,22 +1842,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               </div>
 
-              {/* 3D principal — quando o template tem UV configurado e o usuário não está editando 2D */}
-              {selectedTemplate?.uvMapUrl && !show2DEditor && (
+              {/* 3D principal — quando há UV (template ou estampa) e o usuário não está editando 2D */}
+              {effectiveUvUrl && !show2DEditor && (
                 <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
                   <div className="w-full h-full max-w-3xl">
                     <Shirt3DPreview
                       frontImage={selectedTemplate.frontImageUrl}
                       backImage={selectedTemplate.backImageUrl}
-                      uvMapUrl={selectedTemplate.uvMapUrl}
-                      uvCanvas={uv3DCanvas}
+                      uvMapUrl={effectiveUvUrl}
+                      uvCanvas={appliedStamp?.uvMapUrl ? null : uv3DCanvas}
                     />
                   </div>
                 </div>
               )}
 
               {/* Toggle 2D/3D — só aparece quando UV está configurado */}
-              {selectedTemplate?.uvMapUrl && (
+              {effectiveUvUrl && (
                 <button
                   onClick={() => setShow2DEditor(v => !v)}
                   className="absolute top-2 left-2 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border shadow-md text-xs font-bold text-foreground hover:bg-muted transition-all"
