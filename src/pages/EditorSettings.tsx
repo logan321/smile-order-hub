@@ -701,28 +701,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                               </SelectContent>
                             </Select>
                             <StampColorManager stampId={s.id} stampName={s.name} targetUserId={effectiveUserId} />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 flex-shrink-0"
-                              title={s.uvMapUrl ? 'Trocar molde UV (mockup completo)' : 'Enviar molde UV (mockup completo)'}
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/png,image/jpeg,image/webp';
-                                input.onchange = async () => {
-                                  const f = input.files?.[0];
-                                  if (!f) return;
-                                  try {
-                                    await updateStampUv(s.id, f);
-                                    toast.success('Molde UV da estampa atualizado!');
-                                  } catch { toast.error('Erro ao enviar molde UV'); }
-                                };
-                                input.click();
+                            <Select
+                              value={s.uvMapId || 'none'}
+                              onValueChange={async v => {
+                                try {
+                                  await updateStampUvMapId(s.id, v === 'none' ? null : v);
+                                  toast.success('UV vinculado!');
+                                } catch { toast.error('Erro ao vincular UV'); }
                               }}
                             >
-                              <Box className={`h-3.5 w-3.5 ${s.uvMapUrl ? 'text-primary' : 'text-muted-foreground'}`} />
-                            </Button>
+                              <SelectTrigger className="h-7 w-24 text-[10px] flex-shrink-0">
+                                <div className="flex items-center gap-1">
+                                  <Box className={`h-3 w-3 ${s.uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="UV" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                                {uvMaps.map(u => (
+                                  <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => { if (confirm('Remover estampa?')) deleteStamp(s.id); }}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
@@ -771,16 +771,18 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> UV desta estampa para o 3D (opcional)
+                      <Box className="h-3 w-3" /> UV map da biblioteca (opcional)
                     </label>
-                    <div className="border border-dashed border-border rounded-lg p-3">
-                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
-                        <Upload className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{stampUvFile ? stampUvFile.name : 'Selecionar molde UV (PNG)'}</span>
-                        <input ref={stampUvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampUvFile(e.target.files?.[0] ?? null)} className="hidden" />
-                      </label>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">Este arquivo não aparece na miniatura. Ele só é usado para trocar a textura do 3D quando o cliente escolher esta estampa.</p>
+                    <Select value={newStampUvMapId} onValueChange={setNewStampUvMapId}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                        {uvMaps.map(u => (
+                          <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1">Quando o cliente clicar nesta estampa, o 3D usa o UV vinculado. Cadastre UVs na aba "Biblioteca de UVs".</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
