@@ -1005,12 +1005,11 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       </Tabs>
 
       {/* Zone Editor Modal */}
-      {zoneEditorTemplate && (
+      {zoneEditorUv && (
         <ZoneEditor
-          templateId={zoneEditorTemplate.id}
-          frontImageUrl={zoneEditorTemplate.frontImageUrl}
-          backImageUrl={zoneEditorTemplate.backImageUrl}
-          onClose={() => setZoneEditorTemplate(null)}
+          uvMapId={zoneEditorUv.id}
+          uvImageUrl={zoneEditorUv.imageUrl}
+          onClose={() => setZoneEditorUv(null)}
         />
       )}
     </div>
