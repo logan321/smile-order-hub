@@ -14,6 +14,7 @@ import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
 import { useUvLibrary } from '@/hooks/useUvLibrary';
 import ZoneEditor from '@/components/ZoneEditor';
+import Zone3DEditor from '@/components/Zone3DEditor';
 
 interface EditorSettingsProps {
   targetUserId?: string;
