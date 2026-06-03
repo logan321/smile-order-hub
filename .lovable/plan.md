@@ -1,69 +1,87 @@
-# Biblioteca de UVs + Zonas sobre UV
+# Adotar mecânica de decals 3D (estilo Jumptec) no editor de camisas
 
-## 1. Nova biblioteca de UVs (independente)
+## O que muda na prática (visão do usuário)
 
-**Nova tabela `uv_maps`:**
-- `id`, `user_id`, `code` (único por usuário, ex: "UV-001"), `name` (opcional), `image_url`, `created_at`, `updated_at`
-- RLS: dono gerencia tudo; service_role full.
+Hoje:
+- Você marca uma "zona" no editor 2D (peito, costas, etc.)
+- O sistema tenta **pintar uma textura** com tudo dentro dessa zona e aplicar na camisa 3D
+- Qualquer descasamento entre o 2D e o UV map da camisa desloca o emblema → bug atual
 
-**Novo bucket** já existe (`stamp-catalog` reutilizado) — vamos usar um subpath `uv-library/` ou criar bucket `uv-maps`. Plano: reutilizar `stamp-catalog` com prefixo `uv-library/` pra evitar nova config.
+Novo:
+- Cada emblema/texto/logo vira um **adesivo (decal)** colado direto na superfície 3D da camisa
+- Você pode **clicar no 3D** para posicionar, e arrastar/girar/escalar o adesivo lá mesmo
+- Zonas pré-definidas continuam existindo (peito direito, costas, manga…) mas agora são **pontos salvos no modelo 3D**, não retângulos no 2D
+- Resultado: o emblema cai exatamente onde foi marcado, sempre — porque o decal "envelopa" a malha automaticamente
 
-**Nova aba em `EditorSettings.tsx` → "Biblioteca de UVs":**
-- Listagem em grid: miniatura do UV + código + nome
-- Botões: upload novo UV (código + arquivo), editar código/nome, deletar
-- Hook novo: `useUvLibrary.ts` (fetch/add/update/delete)
+## Por que isso resolve o bug
 
-## 2. Vincular estampa ao UV pelo código
+A Jumptec usa `THREE.DecalGeometry`. É o método oficial do Three.js para colar adesivos em modelo 3D arbitrário. Ele não depende de UV map nem de bake de textura — projeta direto na malha usando ponto + normal da superfície. Por isso nunca desloca.
 
-**Alteração em `stamp_catalog`:**
-- Adicionar `uv_map_id uuid references uv_maps(id) on delete set null`
-- Manter `uv_map_url` por compatibilidade (legacy), mas UI nova usa só `uv_map_id`
-- No formulário de cadastro de estampa: trocar o upload de UV por um **select de UV** (lista os códigos da biblioteca). Mostra preview do UV escolhido.
+## Etapas
 
-**Em `ShirtEditor.tsx`:**
-- `effectiveUvUrl` passa a resolver via `stamp.uvMapId → uv_maps.image_url` (com fallback ao `uvMapUrl` legacy)
+### 1. Novo componente `Shirt3DEditor` (substitui o `Shirt3DPreview` atual no editor)
+- Carrega o GLB já existente
+- Aceita uma lista de "decals": `{ id, textureUrl, position, normal, size, rotation }`
+- Renderiza cada decal com `DecalGeometry` por cima do mesh da camisa
+- Clique no 3D faz raycast → devolve `position + normal` para o editor
+- Decal selecionado mostra handles de mover/girar/escalar (gizmo)
+- Cor de tecido continua aplicada no material base do mesh
 
-## 3. Zonas sobre o UV map (substituindo template)
+### 2. Conversão de objeto Fabric → textura PNG individual
+- Cada texto/logo/patch é renderizado isoladamente em um canvas off-screen → `dataURL`
+- Essa imagem vira a textura do decal correspondente
+- Atualizar texto ou cor regera só a textura daquele decal (sem rebake do UV inteiro)
 
-**Alteração em `template_zones`:**
-- Adicionar `uv_map_id uuid references uv_maps(id) on delete cascade`
-- Tornar `template_id` opcional (nullable)
-- Zonas passam a ser vinculadas a um UV, não a um template
+### 3. Zonas como presets 3D
+- Nova tela em admin de templates: "Definir zonas no 3D"
+- Admin clica nos pontos da camisa 3D (peito direito, costas, manga esq…) e salva `position + normal + tamanho padrão` por zona
+- Migração: adicionar colunas `position_3d (jsonb)`, `normal_3d (jsonb)`, `default_size` em `template_zones`
+- Zonas 2D antigas continuam funcionando como fallback até o admin recadastrar
 
-**Hook `useTemplateZones.ts` → renomear conceitualmente:** aceita `uvMapId` em vez de `templateId`. Mantém mesma API. (Renomeio só de parâmetro; vou criar `useUvZones.ts` novo e manter o antigo só pra leitura legacy.)
+### 4. Editor (ShirtEditor.tsx)
+- Quando o usuário escolhe um emblema/texto/logo e seleciona uma zona, em vez de adicionar ao canvas Fabric da zona, criar um decal no `Shirt3DEditor` usando o preset 3D da zona
+- "Adicionar livre" (sem zona): usuário clica no 3D → cria decal naquele ponto
+- Painel lateral lista os decals atuais (excluir, duplicar, ajustar tamanho/rotação)
+- Modo 2D continua existindo para compatibilidade (e para o PDF de produção)
 
-**`ZoneEditor.tsx`:** já recebe `imageUrl` como prop — passa a receber a URL do UV em vez do template. Sem mudanças internas.
+### 5. Exportação
+- PDF/orçamento: render do canvas 3D para PNG (`gl.preserveDrawingBuffer` já está ligado)
+- Frente/costas: girar câmera para 0° e 180°, capturar cada vista
 
-**Em `EditorSettings.tsx`:**
-- Remover botão "Editar Zonas" do card de template
-- Adicionar botão "Editar Zonas" em cada UV da biblioteca → abre `ZoneEditor` com a imagem do UV
+## Detalhes técnicos
 
-**Em `ShirtEditor.tsx`:**
-- Zonas exibidas no editor passam a vir do UV ativo (da estampa selecionada ou do template)
-- As coordenadas % das zonas mapeiam sobre o UV (que é mapeado no 3D), garantindo posição correta no modelo
+- `import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js'`
+- Raycast: `new THREE.Raycaster()` em `onPointerDown` do `<Canvas>` do R3F
+- Material do decal: `MeshStandardMaterial({ map, transparent: true, polygonOffset: true, polygonOffsetFactor: -4, depthTest: true, depthWrite: false })`
+- Tamanho do decal: `new THREE.Vector3(w, h, depth)` — `depth` define até onde "envelopa" a malha
+- Rotação: euler em torno da normal
+- Para evitar z-fighting: `polygonOffsetFactor: -4` é padrão
 
-## 4. Migração de dados existentes
+## Arquivos afetados
 
-- Para cada template com `uv_map_url`: cria entrada em `uv_maps` (code = "TPL-" + 4 chars do id), seta `template.uv_map_id` (novo campo) e migra zonas antigas (`template_id` → `uv_map_id`).
-- Para cada stamp com `uv_map_url`: idem, cria UV na biblioteca e seta `stamp.uv_map_id`.
+- `src/components/Shirt3DPreview.tsx` — vira `Shirt3DEditor.tsx` (modo edit) + mantém leitura simples
+- `src/pages/ShirtEditor.tsx` — fluxo de adicionar texto/logo/patch passa a criar decals
+- `src/hooks/useTemplateZones.ts` — expor campos 3D quando existirem
+- Nova página/aba no admin para marcar zonas 3D
+- Migration Supabase: colunas 3D em `template_zones`
 
-## Arquivos
+## O que NÃO muda
 
-**Novos:**
-- `src/hooks/useUvLibrary.ts`
-- Migration: criar `uv_maps`, adicionar colunas, migrar dados, atualizar trigger redirect.
+- GLB existente, lista de zonas existentes, catálogo de stamps/patches, fluxo de orçamento, PDF
+- Modo 2D do editor continua funcionando — o 3D só vira a "verdade" visual
 
-**Editados:**
-- `src/pages/EditorSettings.tsx` — nova aba "Biblioteca de UVs", remover botão zonas do template, adicionar nos UVs, trocar upload de UV por select nas estampas
-- `src/hooks/useStampCatalog.ts` — suportar `uvMapId`
-- `src/hooks/useShirtTemplates.ts` — suportar `uvMapId` (opcional, legacy)
-- `src/hooks/useTemplateZones.ts` — aceitar `uvMapId` além de `templateId`
-- `src/pages/ShirtEditor.tsx` — resolver UV via id, exibir zonas do UV ativo
-- `src/components/ZoneEditor.tsx` — só ajuste de label ("UV map" em vez de "template")
-- `src/integrations/supabase/types.ts` — regerado após migração
+## Riscos
 
-## Notas técnicas
+- Refatoração grande: ~2 dias de trabalho equivalente. Vou em etapas com você testando cada uma.
+- Admin precisará **recadastrar zonas 3D** clicando no modelo (poucos cliques por template)
+- Até o admin recadastrar, a camisa daquele template usa fallback 2D (não piora vs. hoje)
 
-- Manter compatibilidade: `uv_map_url` antigo continua funcionando, mas UI nova prioriza `uv_map_id`.
-- Trigger `redirect_stamp_like_template` continua válido (sem mudanças).
-- Zonas legadas amarradas a `template_id` continuam funcionando no ShirtEditor como fallback se o template não tiver UV vinculada ainda.
+## Ordem de entrega sugerida
+
+1. Migration + componente `Shirt3DEditor` com decals controlados por props (sem UI ainda)
+2. Tela admin "Definir zonas 3D" + salvar no banco
+3. Ligar fluxo do editor: adicionar texto/logo/patch → decal 3D
+4. Gizmo de mover/girar/escalar no 3D
+5. Captura 3D para PDF
+
+Quer que eu siga nessa ordem?
