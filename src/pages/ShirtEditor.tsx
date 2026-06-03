@@ -300,6 +300,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const bumpEdits = useCallback(() => setEditsVersion(v => v + 1), []);
+  // Universal UV fallback: the GLB is the same for every shirt, so any uv_map
+  // registered by the user can be used when a specific template/stamp doesn't
+  // have one linked yet. Without this, 3D used to stay blank for most templates.
+  const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
 
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
@@ -387,7 +391,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // Always bake the front+back canvas user edits (text/logos) onto the UV at the
   // same percent coordinates the zones use, so anything the client edits shows in 3D.
   useEffect(() => {
-    const uv = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl;
+    const uv = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl;
     if (!uv) { setUv3DCanvas(null); return; }
     let alive = true;
     (async () => {
@@ -475,10 +479,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones, usingUvZones]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
-  const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
+  // Falls back to any registered UV map so 3D always has a texture to paint.
+  const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
 
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
@@ -565,6 +570,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         if (u.code) uvMapByCode.set(norm(u.code), { id: u.id, url: u.image_url });
         if (u.name) uvMapByCode.set(norm(u.name), { id: u.id, url: u.image_url });
       });
+      // Pick the first available UV map as the universal fallback for 3D.
+      const firstUv = ((uvMapsRes.data as any[]) ?? [])[0];
+      setFallbackUvUrl(firstUv?.image_url ?? null);
       const matchByName = (name: string | null | undefined) => {
         if (!name) return null;
         return uvMapByCode.get(name.trim().toLowerCase()) ?? null;
@@ -2001,7 +2009,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
             {/* Canvas container — single render, responsive display */}
             <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
-              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${effectiveUvUrl && !show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
+              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${!show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
                 style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
                 <div ref={frontWrapRef}
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
@@ -2017,8 +2025,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               </div>
 
-              {/* 3D principal — quando há UV (template ou estampa) e o usuário não está editando 2D */}
-              {effectiveUvUrl && !show2DEditor && (
+              {/* 3D principal — sempre que o usuário não está editando em 2D.
+                  Se não houver UV, mostra a camisa lisa (sem estampa). */}
+              {!show2DEditor && (
                 <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
                   <div className="w-full h-full max-w-3xl">
                     <Shirt3DPreview
@@ -2032,9 +2041,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               )}
 
-              {/* Toggle 2D/3D — só aparece quando UV está configurado */}
-              {effectiveUvUrl && (
-                <button
+              {/* Toggle 2D/3D — sempre disponível */}
+              <button
                   onClick={() => setShow2DEditor(v => !v)}
                   className="absolute top-2 left-2 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border shadow-md text-xs font-bold text-foreground hover:bg-muted transition-all"
                   title={show2DEditor ? 'Voltar para 3D' : 'Editar em 2D'}
@@ -2042,7 +2050,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   {show2DEditor ? <Box className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
                   {show2DEditor ? 'Ver 3D' : 'Editar 2D'}
                 </button>
-              )}
 
               {/* Floating pan mode button — big and obvious for mobile users */}
               {activeZoom > 1 && (
