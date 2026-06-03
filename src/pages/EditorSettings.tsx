@@ -1210,6 +1210,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           onClose={() => setZoneEditorUv(null)}
         />
       )}
+
+      {/* Hidden file input for inline matriz upload */}
+      <input
+        ref={matrizFileRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={handleMatrizFileChange}
+      />
     </div>
   );
 };
