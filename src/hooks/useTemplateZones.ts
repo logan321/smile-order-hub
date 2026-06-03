@@ -21,6 +21,13 @@ export interface TemplateZone {
   backHeightPercent: number;
   backRotation: number;
   backPathData: { x: number; y: number }[] | null;
+  // 3D placement (Jumptec-style decal projection on the GLB).
+  // When set, the editor places this zone as a decal at this point on the mesh
+  // instead of relying on the flat UV map.
+  position3d: [number, number, number] | null;
+  normal3d: [number, number, number] | null;
+  defaultSize3d: [number, number, number] | null;
+  rotation3d: number | null;
 }
 
 export function useTemplateZones(templateId?: string, uvMapId?: string) {
@@ -57,6 +64,10 @@ export function useTemplateZones(templateId?: string, uvMapId?: string) {
       backHeightPercent: Number(z.back_height_percent ?? z.height_percent),
       backRotation: Number(z.back_rotation ?? z.rotation ?? 0),
       backPathData: z.back_path_data as { x: number; y: number }[] | null,
+      position3d: (z.position_3d as [number, number, number] | null) ?? null,
+      normal3d: (z.normal_3d as [number, number, number] | null) ?? null,
+      defaultSize3d: (z.default_size_3d as [number, number, number] | null) ?? null,
+      rotation3d: z.rotation_3d != null ? Number(z.rotation_3d) : null,
     })) ?? []);
     setLoading(false);
   }, [templateId, uvMapId]);
@@ -85,7 +96,7 @@ export function useTemplateZones(templateId?: string, uvMapId?: string) {
     await fetchZones();
   }, [templateId, uvMapId, fetchZones]);
 
-  const updateZone = useCallback(async (id: string, updates: Partial<Pick<TemplateZone, 'name' | 'xPercent' | 'yPercent' | 'widthPercent' | 'heightPercent' | 'shared' | 'patchOnly' | 'pathData' | 'rotation' | 'backXPercent' | 'backYPercent' | 'backWidthPercent' | 'backHeightPercent' | 'backRotation' | 'backPathData'>>) => {
+  const updateZone = useCallback(async (id: string, updates: Partial<Pick<TemplateZone, 'name' | 'xPercent' | 'yPercent' | 'widthPercent' | 'heightPercent' | 'shared' | 'patchOnly' | 'pathData' | 'rotation' | 'backXPercent' | 'backYPercent' | 'backWidthPercent' | 'backHeightPercent' | 'backRotation' | 'backPathData' | 'position3d' | 'normal3d' | 'defaultSize3d' | 'rotation3d'>>) => {
     const mapped: Record<string, any> = {};
     if (updates.name !== undefined) mapped.name = updates.name;
     if (updates.xPercent !== undefined) mapped.x_percent = updates.xPercent;
@@ -102,6 +113,10 @@ export function useTemplateZones(templateId?: string, uvMapId?: string) {
     if (updates.backHeightPercent !== undefined) mapped.back_height_percent = updates.backHeightPercent;
     if (updates.backRotation !== undefined) mapped.back_rotation = updates.backRotation;
     if (updates.backPathData !== undefined) mapped.back_path_data = updates.backPathData;
+    if (updates.position3d !== undefined) mapped.position_3d = updates.position3d;
+    if (updates.normal3d !== undefined) mapped.normal_3d = updates.normal3d;
+    if (updates.defaultSize3d !== undefined) mapped.default_size_3d = updates.defaultSize3d;
+    if (updates.rotation3d !== undefined) mapped.rotation_3d = updates.rotation3d;
 
     // When enabling shared, initialize back positions from front if not set
     if (updates.shared === true) {
