@@ -270,6 +270,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show3D, setShow3D] = useState(false);
   const [preview3D, setPreview3D] = useState<{ front: string; back: string } | null>(null);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [uvTextureVersion, setUvTextureVersion] = useState(0);
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const bumpEdits = useCallback(() => setEditsVersion(v => v + 1), []);
@@ -375,30 +376,40 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           : await composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null);
 
         const ctx = base.getContext('2d')!;
-        const uvW = base.width;
-        const uvH = base.height;
 
         const bakeCanvas = (fc: Canvas | null) => {
           if (!fc) return;
-          const objs = fc.getObjects().filter((o: any) => !o._isBackground);
-          for (const obj of objs) {
-            try {
-              const b = obj.getBoundingRect();
-              const dx = (b.left / CANVAS_WIDTH) * uvW;
-              const dy = (b.top / CANVAS_HEIGHT) * uvH;
-              const dw = (b.width / CANVAS_WIDTH) * uvW;
-              const dh = (b.height / CANVAS_HEIGHT) * uvH;
-              const el = (obj as any).toCanvasElement({ multiplier: 2 }) as HTMLCanvasElement;
-              ctx.drawImage(el, dx, dy, dw, dh);
-            } catch (err) {
-              console.warn('bake obj failed', err);
-            }
+          const originalVpt = fc.viewportTransform ? ([...fc.viewportTransform] as typeof fc.viewportTransform) : undefined;
+          try {
+            // Render the whole edit layer instead of each object individually.
+            // This keeps absolute zone clips/polygon masks valid, which is what
+            // makes text/logos chosen inside marked zones appear on the UV/3D.
+            fc.discardActiveObject();
+            fc.setViewportTransform([1, 0, 0, 1, 0, 0]);
+            fc.setZoom(1);
+            fc.requestRenderAll();
+            const layer = fc.toCanvasElement(2, {
+              left: 0,
+              top: 0,
+              width: CANVAS_WIDTH,
+              height: CANVAS_HEIGHT,
+              filter: (obj: any) => Boolean(obj._userElement && !obj._isBackground),
+            });
+            ctx.drawImage(layer, 0, 0, base.width, base.height);
+          } catch (err) {
+            console.warn('bake canvas failed', err);
+          } finally {
+            if (originalVpt) fc.setViewportTransform(originalVpt);
+            fc.requestRenderAll();
           }
         };
         bakeCanvas(frontFabricRef.current);
         bakeCanvas(backFabricRef.current);
 
-        if (alive) setUv3DCanvas(base);
+        if (alive) {
+          setUv3DCanvas(base);
+          setUvTextureVersion(v => v + 1);
+        }
       } catch (e) {
         console.warn('UV compose failed', e);
       }
@@ -614,6 +625,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       });
       canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
       canvas.on('object:modified', () => bumpEdits());
+      canvas.on('object:moving', () => bumpEdits());
+      canvas.on('object:scaling', () => bumpEdits());
+      canvas.on('object:rotating', () => bumpEdits());
+      canvas.on('text:changed', () => bumpEdits());
       canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
     };
 
@@ -1244,6 +1259,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         active.dirty = true;
         active.setCoords();
         canvas.requestRenderAll();
+        bumpEdits();
       };
       applyFont();
     }
@@ -1950,6 +1966,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       backImage={selectedTemplate.backImageUrl}
                       uvMapUrl={effectiveUvUrl}
                       uvCanvas={uv3DCanvas}
+                      uvVersion={uvTextureVersion}
                     />
                   </div>
                 </div>
