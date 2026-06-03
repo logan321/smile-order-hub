@@ -343,7 +343,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     try { sessionStorage.setItem('editor-guide-dismissed', 'true'); } catch {}
   }, []);
 
-  const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
+  // Prefer UV-based zones; fall back to legacy template zones
+  const { zones: uvZones } = useTemplateZones(undefined, selectedTemplate?.uvMapId ?? undefined);
+  const { zones: legacyZones } = useTemplateZones(
+    selectedTemplate?.uvMapId ? undefined : selectedTemplate?.id
+  );
+  const templateZones = (selectedTemplate?.uvMapId && uvZones.length > 0) ? uvZones : legacyZones;
 
   // 3D UV texture:
   // 1) if the picked stamp has its own complete UV mockup → use it as-is (no compose)
@@ -432,25 +437,37 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   useEffect(() => {
     if (!ownerUserId) return;
     const fetchData = async () => {
-      const [templatesRes, stampsRes, patchesRes, textStylesRes, nichesRes] = await Promise.all([
+      const [templatesRes, stampsRes, patchesRes, textStylesRes, nichesRes, uvMapsRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('stamp_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('patch_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('text_styles').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
+        supabase.from('uv_maps' as any).select('id, image_url').eq('user_id', ownerUserId),
       ]);
+      const uvMapById = new Map<string, string>();
+      ((uvMapsRes.data as any[]) ?? []).forEach((u: any) => uvMapById.set(u.id, u.image_url));
+      const resolveUv = (uvId: string | null, legacyUrl: string | null) =>
+        (uvId && uvMapById.get(uvId)) || legacyUrl || null;
       const rawTemplates = (templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, uvMapUrl: t.uv_map_url ?? null, userId: t.user_id, nicheId: t.niche_id ?? null,
+        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
+        uvMapId: t.uv_map_id ?? null,
+        uvMapUrl: resolveUv(t.uv_map_id ?? null, t.uv_map_url ?? null),
+        userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
       const misplacedStampTemplates = rawTemplates.filter(isMisplacedStampTemplate);
       const allT = rawTemplates.filter(t => !isMisplacedStampTemplate(t));
       setAllTemplates(allT);
       setTemplates(allT);
       const catalogStamps = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null, nicheId: s.niche_id ?? null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
+        uvMapId: s.uv_map_id ?? null,
+        uvMapUrl: resolveUv(s.uv_map_id ?? null, s.uv_map_url ?? null),
+        nicheId: s.niche_id ?? null,
       })) ?? [];
       const recoveredStamps = misplacedStampTemplates.map(t => ({
-        id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
+        id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
+        uvMapId: t.uvMapId, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
       }));
       const allS = [...recoveredStamps, ...catalogStamps];
       setAllStamps(allS);
