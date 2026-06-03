@@ -11,7 +11,7 @@ export interface ShirtTemplate {
   createdAt: string;
 }
 
-const isLikelyStampTemplateRow = (t: any) => {
+const isLikelyStampTemplateRow = (t: Record<string, string | null | undefined>) => {
   const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test((t.name || '').trim());
   const assetLooksLikeStamp = !!t.uv_map_url || /colorway|estampa|stamp/i.test(`${t.front_image_url || ''} ${t.back_image_url || ''}`);
   return nameLooksLikeCode && assetLooksLikeStamp;
