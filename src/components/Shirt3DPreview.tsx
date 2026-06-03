@@ -62,10 +62,13 @@ function ShirtModel({
 
   useEffect(() => {
     const color = new THREE.Color(fabricColor);
-    const projW = size.x * 0.55;
-    const projH = size.y * 0.45;
+    // The user's front/back images already contain the full shirt artwork
+    // (silhouette + design). Project them to cover the entire bbox so the
+    // design fills the whole 3D garment instead of sitting as a tiny decal.
+    const projW = size.x * 1.15;
+    const projH = size.y * 1.05;
     const projCenterX = center.x;
-    const projCenterY = center.y + size.y * 0.05;
+    const projCenterY = center.y;
 
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
