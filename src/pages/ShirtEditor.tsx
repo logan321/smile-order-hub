@@ -18,6 +18,23 @@ import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { composeShirtMockup, composeUvWithStamp } from '@/lib/composeMockup';
+
+// Small thumbnail that composes the shirt front + stamp into a single mockup image.
+function StampThumb({ shirtUrl, stampUrl, name }: { shirtUrl?: string; stampUrl: string; name: string }) {
+  const [src, setSrc] = useState<string>(stampUrl);
+  useEffect(() => {
+    let alive = true;
+    if (!shirtUrl) { setSrc(stampUrl); return; }
+    composeShirtMockup(shirtUrl, stampUrl, 240)
+      .then(url => { if (alive) setSrc(url); })
+      .catch(() => { if (alive) setSrc(stampUrl); });
+    return () => { alive = false; };
+  }, [shirtUrl, stampUrl]);
+  return (
+    <img src={src} alt={name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-1 protected-img bg-muted/10" />
+  );
+}
 
 function Preview3DTabs({ front, back, uvMapUrl }: { front: string; back: string; uvMapUrl: string | null }) {
   const [side, setSide] = useState<'front' | 'back'>('front');
@@ -241,6 +258,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [downloading, setDownloading] = useState(false);
   const [show3D, setShow3D] = useState(false);
   const [preview3D, setPreview3D] = useState<{ front: string; back: string } | null>(null);
+  const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [show2DEditor, setShow2DEditor] = useState(false);
 
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
@@ -316,6 +335,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   }, []);
 
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
+
+  // Regenerate the UV texture composite whenever the stamp or template changes.
+  useEffect(() => {
+    const uv = selectedTemplate?.uvMapUrl;
+    if (!uv) { setUv3DCanvas(null); return; }
+    let alive = true;
+    composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null)
+      .then(c => { if (alive) setUv3DCanvas(c); })
+      .catch(e => console.warn('UV compose failed', e));
+    return () => { alive = false; };
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.imageUrl]);
 
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
@@ -1539,7 +1569,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <img src={s.imageUrl} alt={s.name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-1 protected-img" />
+                          <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} name={s.name} />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
@@ -1662,7 +1692,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <img src={s.imageUrl} alt={s.name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-0.5 protected-img" />
+                            <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} name={s.name} />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
@@ -1786,7 +1816,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
             {/* Canvas container — single render, responsive display */}
             <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
-              <div className="relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center"
+              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${selectedTemplate?.uvMapUrl && !show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
                 style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
                 <div ref={frontWrapRef}
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
@@ -1801,6 +1831,33 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <div className="rounded-xl overflow-hidden"><canvas ref={backCanvasRef} /></div>
                 </div>
               </div>
+
+              {/* 3D principal — quando o template tem UV configurado e o usuário não está editando 2D */}
+              {selectedTemplate?.uvMapUrl && !show2DEditor && (
+                <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
+                  <div className="w-full h-full max-w-3xl">
+                    <Shirt3DPreview
+                      frontImage={selectedTemplate.frontImageUrl}
+                      backImage={selectedTemplate.backImageUrl}
+                      uvMapUrl={selectedTemplate.uvMapUrl}
+                      uvCanvas={uv3DCanvas}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Toggle 2D/3D — só aparece quando UV está configurado */}
+              {selectedTemplate?.uvMapUrl && (
+                <button
+                  onClick={() => setShow2DEditor(v => !v)}
+                  className="absolute top-2 left-2 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border shadow-md text-xs font-bold text-foreground hover:bg-muted transition-all"
+                  title={show2DEditor ? 'Voltar para 3D' : 'Editar em 2D'}
+                >
+                  {show2DEditor ? <Box className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+                  {show2DEditor ? 'Ver 3D' : 'Editar 2D'}
+                </button>
+              )}
+
               {/* Floating pan mode button — big and obvious for mobile users */}
               {activeZoom > 1 && (
                 <div className="lg:hidden absolute bottom-3 right-3 flex flex-col items-center gap-2 z-20">
