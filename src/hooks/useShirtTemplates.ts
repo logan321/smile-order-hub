@@ -11,6 +11,12 @@ export interface ShirtTemplate {
   createdAt: string;
 }
 
+const isLikelyStampTemplateRow = (t: any) => {
+  const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test((t.name || '').trim());
+  const assetLooksLikeStamp = !!t.uv_map_url || /colorway|estampa|stamp/i.test(`${t.front_image_url || ''} ${t.back_image_url || ''}`);
+  return nameLooksLikeCode && assetLooksLikeStamp;
+};
+
 export function useShirtTemplates(targetUserId?: string) {
   const [templates, setTemplates] = useState<ShirtTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +30,7 @@ export function useShirtTemplates(targetUserId?: string) {
     let query = supabase.from('shirt_templates').select('*').order('created_at', { ascending: false });
     if (userId) query = query.eq('user_id', userId);
     const { data } = await query;
-    setTemplates((data as any[])?.map(t => ({
+    setTemplates((data as any[])?.filter(t => !isLikelyStampTemplateRow(t)).map(t => ({
       id: t.id,
       name: t.name,
       frontImageUrl: t.front_image_url,
