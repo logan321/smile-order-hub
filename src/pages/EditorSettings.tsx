@@ -154,14 +154,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     setUploadingStamp(true);
     try {
       const nicheObj = niches.find(n => n.id === newStampNicheId);
-      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, stampUvFile);
-      // Update niche_id
-      if (newStampNicheId) {
-        const { data: latestStamps } = await supabase.from('stamp_catalog').select('id').order('created_at', { ascending: false }).limit(1);
-        if (latestStamps?.[0]) {
-          await supabase.from('stamp_catalog').update({ niche_id: newStampNicheId } as any).eq('id', latestStamps[0].id);
-        }
-      }
+      const stampNicheId = newStampNicheId && newStampNicheId !== 'none' && newStampNicheId !== 'all' ? newStampNicheId : null;
+      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, stampUvFile, stampNicheId);
       setNewStampName('');
       setNewStampNicheId('');
       setStampFrontFile(null);
@@ -702,14 +696,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 )}
 
                 <div className="space-y-3 border-t border-border/50 pt-4">
-                  <p className="text-sm font-medium">Adicionar nova estampa</p>
+                    <p className="text-sm font-medium">Adicionar nova estampa</p>
+                    <p className="text-xs text-muted-foreground">Frente e costas aparecem como miniatura 2D no editor final. O UV fica vinculado a esta estampa e troca o 3D quando o cliente clicar nela.</p>
                   <div className="flex gap-2">
                     <Input value={newStampName} onChange={e => setNewStampName(e.target.value)} placeholder="Nome da estampa" className="flex-1" />
                     <NicheSelector value={newStampNicheId || 'none'} onChange={v => setNewStampNicheId(v === 'none' ? '' : v)} label="Nicho" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Imagem Frente *</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">2D Frente / miniatura *</label>
                       <div className="border border-dashed border-border rounded-lg p-3">
                         <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
                           <Upload className="h-4 w-4 text-muted-foreground" />
@@ -719,7 +714,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Imagem Costas *</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">2D Costas *</label>
                       <div className="border border-dashed border-border rounded-lg p-3">
                         <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
                           <Upload className="h-4 w-4 text-muted-foreground" />
@@ -731,7 +726,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> Molde UV completo da estampa (opcional — mockup pronto da camisa inteira com esta estampa)
+                      <Box className="h-3 w-3" /> UV desta estampa para o 3D (opcional)
                     </label>
                     <div className="border border-dashed border-border rounded-lg p-3">
                       <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
@@ -740,7 +735,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         <input ref={stampUvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampUvFile(e.target.files?.[0] ?? null)} className="hidden" />
                       </label>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">Quando enviado, esta imagem é usada como miniatura da estampa e como textura 3D pronta, sem precisar compor nada.</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Este arquivo não aparece na miniatura. Ele só é usado para trocar a textura do 3D quando o cliente escolher esta estampa.</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
