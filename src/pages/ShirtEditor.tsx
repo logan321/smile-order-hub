@@ -391,7 +391,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // Always bake the front+back canvas user edits (text/logos) onto the UV at the
   // same percent coordinates the zones use, so anything the client edits shows in 3D.
   useEffect(() => {
-    const uv = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl;
+    const uv = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl;
     if (!uv) { setUv3DCanvas(null); return; }
     let alive = true;
     (async () => {
@@ -479,10 +479,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones, usingUvZones]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
-  const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
+  // Falls back to any registered UV map so 3D always has a texture to paint.
+  const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
 
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
