@@ -380,7 +380,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         const bakeCanvas = (fc: Canvas | null) => {
           if (!fc) return;
           const originalVpt = fc.viewportTransform ? ([...fc.viewportTransform] as typeof fc.viewportTransform) : undefined;
-          const originalZoom = fc.getZoom();
           try {
             // Render the whole edit layer instead of each object individually.
             // This keeps absolute zone clips/polygon masks valid, which is what
@@ -401,7 +400,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             console.warn('bake canvas failed', err);
           } finally {
             if (originalVpt) fc.setViewportTransform(originalVpt);
-            fc.setZoom(originalZoom);
             fc.requestRenderAll();
           }
         };
