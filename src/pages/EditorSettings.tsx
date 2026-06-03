@@ -515,6 +515,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
                               </SelectContent>
                             </Select>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              title={t.uvMapUrl ? 'Trocar molde UV (3D)' : 'Enviar molde UV (3D)'}
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/png,image/jpeg,image/webp';
+                                input.onchange = async () => {
+                                  const f = input.files?.[0];
+                                  if (!f) return;
+                                  try {
+                                    await updateUvMap(t.id, f);
+                                    toast.success('Molde UV atualizado!');
+                                  } catch { toast.error('Erro ao enviar molde UV'); }
+                                };
+                                input.click();
+                              }}
+                            >
+                              <Box className={`h-3.5 w-3.5 ${t.uvMapUrl ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
                               <MapPin className="h-3.5 w-3.5 text-primary" />
                             </Button>
