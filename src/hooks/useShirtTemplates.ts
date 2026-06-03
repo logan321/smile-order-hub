@@ -6,6 +6,7 @@ export interface ShirtTemplate {
   name: string;
   frontImageUrl: string;
   backImageUrl: string;
+  uvMapUrl: string | null;
   active: boolean;
   createdAt: string;
 }
@@ -28,6 +29,7 @@ export function useShirtTemplates(targetUserId?: string) {
       name: t.name,
       frontImageUrl: t.front_image_url,
       backImageUrl: t.back_image_url,
+      uvMapUrl: t.uv_map_url ?? null,
       active: t.active,
       createdAt: t.created_at,
     })) ?? []);
@@ -36,7 +38,7 @@ export function useShirtTemplates(targetUserId?: string) {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  const addTemplate = useCallback(async (name: string, frontFile: File, backFile: File) => {
+  const addTemplate = useCallback(async (name: string, frontFile: File, backFile: File, uvFile?: File | null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -55,12 +57,21 @@ export function useShirtTemplates(targetUserId?: string) {
     if (backErr) throw backErr;
     const { data: backUrl } = supabase.storage.from('shirt-templates').getPublicUrl(backPath);
 
+    let uvUrl: string | null = null;
+    if (uvFile) {
+      const uvPath = `${userId}/${ts}_uv_${uvFile.name}`;
+      const { error: uvErr } = await supabase.storage.from('shirt-templates').upload(uvPath, uvFile);
+      if (uvErr) throw uvErr;
+      uvUrl = supabase.storage.from('shirt-templates').getPublicUrl(uvPath).data.publicUrl;
+    }
+
     await supabase.from('shirt_templates').insert({
       user_id: userId,
       name,
       front_image_url: frontUrl.publicUrl,
       back_image_url: backUrl.publicUrl,
-    });
+      uv_map_url: uvUrl,
+    } as any);
 
     await fetchTemplates();
   }, [fetchTemplates]);
@@ -78,5 +89,21 @@ export function useShirtTemplates(targetUserId?: string) {
     await fetchTemplates();
   }, [fetchTemplates]);
 
-  return { templates, loading, addTemplate, deleteTemplate, toggleActive };
+  const updateUvMap = useCallback(async (id: string, uvFile: File | null) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = targetUserId || session.user.id;
+    let uvUrl: string | null = null;
+    if (uvFile) {
+      const ts = Date.now();
+      const uvPath = `${userId}/${ts}_uv_${uvFile.name}`;
+      const { error } = await supabase.storage.from('shirt-templates').upload(uvPath, uvFile);
+      if (error) throw error;
+      uvUrl = supabase.storage.from('shirt-templates').getPublicUrl(uvPath).data.publicUrl;
+    }
+    await supabase.from('shirt_templates').update({ uv_map_url: uvUrl } as any).eq('id', id);
+    await fetchTemplates();
+  }, [fetchTemplates]);
+
+  return { templates, loading, addTemplate, deleteTemplate, toggleActive, updateUvMap };
 }

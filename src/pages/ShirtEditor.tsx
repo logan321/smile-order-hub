@@ -104,6 +104,7 @@ interface Template {
   name: string;
   frontImageUrl: string;
   backImageUrl: string;
+  uvMapUrl: string | null;
   userId: string;
   nicheId: string | null;
 }
@@ -365,7 +366,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
       ]);
       const allT = (templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, userId: t.user_id, nicheId: t.niche_id ?? null,
+        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, uvMapUrl: t.uv_map_url ?? null, userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
       setAllTemplates(allT);
       setTemplates(allT);
@@ -1976,7 +1977,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </DialogHeader>
           <div className="flex-1 min-h-0">
             {preview3D && (
-              <Shirt3DPreview frontImage={preview3D.front} backImage={preview3D.back} />
+              <Shirt3DPreview frontImage={preview3D.front} backImage={preview3D.back} uvMapUrl={selectedTemplate?.uvMapUrl ?? null} />
             )}
           </div>
           <p className="text-xs text-muted-foreground text-center">

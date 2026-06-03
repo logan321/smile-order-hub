@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil, ImageIcon } from 'lucide-react';
+import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil, ImageIcon, Box } from 'lucide-react';
 import StampColorManager from '@/components/StampColorManager';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
@@ -20,7 +20,7 @@ interface EditorSettingsProps {
 }
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
@@ -100,8 +100,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newTemplateNicheId, setNewTemplateNicheId] = useState<string>('');
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
+  const [uvFile, setUvFile] = useState<File | null>(null);
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
+  const uvRef = useRef<HTMLInputElement>(null);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [zoneEditorTemplate, setZoneEditorTemplate] = useState<{ id: string; frontImageUrl: string; backImageUrl: string } | null>(null);
 
@@ -112,7 +114,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     }
     setUploadingTemplate(true);
     try {
-      await addTemplate(newTemplateName.trim(), frontFile, backFile);
+      await addTemplate(newTemplateName.trim(), frontFile, backFile, uvFile);
       // Update niche_id if selected
       if (newTemplateNicheId && newTemplateNicheId !== 'all') {
         const { data: latestTemplates } = await supabase.from('shirt_templates').select('id').order('created_at', { ascending: false }).limit(1);
@@ -124,8 +126,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       setNewTemplateNicheId('');
       setFrontFile(null);
       setBackFile(null);
+      setUvFile(null);
       if (frontRef.current) frontRef.current.value = '';
       if (backRef.current) backRef.current.value = '';
+      if (uvRef.current) uvRef.current.value = '';
       toast.success('Template adicionado!');
     } catch { toast.error('Erro ao adicionar template'); }
     setUploadingTemplate(false);
@@ -511,6 +515,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
                               </SelectContent>
                             </Select>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              title={t.uvMapUrl ? 'Trocar molde UV (3D)' : 'Enviar molde UV (3D)'}
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/png,image/jpeg,image/webp';
+                                input.onchange = async () => {
+                                  const f = input.files?.[0];
+                                  if (!f) return;
+                                  try {
+                                    await updateUvMap(t.id, f);
+                                    toast.success('Molde UV atualizado!');
+                                  } catch { toast.error('Erro ao enviar molde UV'); }
+                                };
+                                input.click();
+                              }}
+                            >
+                              <Box className={`h-3.5 w-3.5 ${t.uvMapUrl ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
                               <MapPin className="h-3.5 w-3.5 text-primary" />
                             </Button>
@@ -561,6 +587,19 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         </label>
                       </div>
                     </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                      <Box className="h-3 w-3" /> Molde UV completo (opcional — usado na pré-visualização 3D)
+                    </label>
+                    <div className="border border-dashed border-border rounded-lg p-3">
+                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
+                        <Upload className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{uvFile ? uvFile.name : 'Selecionar molde UV (PNG)'}</span>
+                        <input ref={uvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setUvFile(e.target.files?.[0] ?? null)} className="hidden" />
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">Layout plano exportado do CLO3D (frente + costas + mangas + gola na mesma imagem). O cliente final não verá esta imagem — ela é usada apenas para projetar a estampa no 3D.</p>
                   </div>
                   <Button onClick={handleAddTemplate} disabled={uploadingTemplate || !newTemplateName.trim() || !frontFile || !backFile}>
                     <Plus className="h-4 w-4 mr-2" />
