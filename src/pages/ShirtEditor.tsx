@@ -918,7 +918,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   const handleAddTextClick = () => {
     if (!textInput.trim()) return;
-    const zonesForSide = templateZones.filter(z => !z.patchOnly && (z.side === activeView || z.shared));
+    const zonesForSide = templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView));
     if (zonesForSide.length > 0) setShowZonePicker('text');
     else addTextAtZone();
   };
@@ -1121,9 +1121,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       // Find zones for front and back
       // Priority: 1) patchOnly zone matching name, 2) any patchOnly zone, 3) exact name match, 4) shared zone
       const findZoneForSide = (s: 'front' | 'back') =>
-        templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && (z.side === s || z.shared)) ||
-        templateZones.find(z => z.patchOnly && (z.side === s || z.shared)) ||
-        templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === s || z.shared)) ||
+        templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, s)) ||
+        templateZones.find(z => z.patchOnly && zoneMatchesSide(z, s)) ||
+        templateZones.find(z => targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, s)) ||
         templateZones.find(z => z.shared);
 
       const frontZone = findZoneForSide('front');
@@ -1146,9 +1146,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     } else {
       // Single side - find matching zone (prefer patchOnly, then name match, then shared)
-      const zone = templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && (z.side === side || z.shared))
-        || templateZones.find(z => z.patchOnly && (z.side === side || z.shared))
-        || templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === side || z.shared))
+      const zone = templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, side))
+        || templateZones.find(z => z.patchOnly && zoneMatchesSide(z, side))
+        || templateZones.find(z => targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, side))
         || templateZones.find(z => z.shared);
 
       if (zone) {
@@ -1206,7 +1206,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const patchAvailableZones = patchSideChoice
     ? templateZones.filter(z => {
         if (patchSideChoice === 'both') return true;
-        return z.side === patchSideChoice || z.shared;
+        return zoneMatchesSide(z, patchSideChoice);
       })
     : [];
 
@@ -1214,7 +1214,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    const zonesForSide = templateZones.filter(z => !z.patchOnly && (z.side === activeView || z.shared));
+    const zonesForSide = templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView));
     if (zonesForSide.length > 0) { setPendingLogoFile(file); setShowZonePicker('logo'); }
     else placeLogoFile(file);
   };
