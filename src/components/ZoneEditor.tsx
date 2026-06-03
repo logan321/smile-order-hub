@@ -317,8 +317,14 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold font-display">Editor de Zonas</h2>
-            <p className="text-sm text-muted-foreground">Defina as áreas onde logos e textos serão posicionados</p>
+            <h2 className="text-lg font-semibold font-display">
+              {uvMode ? 'Zonas sobre o UV map' : 'Editor de Zonas'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {uvMode
+                ? 'Desenhe as zonas sobre o UV — frente, costas, mangas, gola — onde os elementos serão posicionados no 3D'
+                : 'Defina as áreas onde logos e textos serão posicionados'}
+            </p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -329,6 +335,7 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
           {/* Image preview with zones */}
           <div className="flex-1">
             {/* Side toggle */}
+            {!uvMode && (
             <div className="flex gap-2 mb-3">
               <Button
                 variant={activeSide === 'front' ? 'default' : 'outline'}
@@ -345,6 +352,7 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
                 Costas
               </Button>
             </div>
+            )}
 
             {/* Zoom controls */}
             <div className="flex items-center gap-1 mb-2">
