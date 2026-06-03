@@ -12,11 +12,12 @@ interface Shirt3DPreviewProps {
   backImage: string;
   uvMapUrl?: string | null;
   uvCanvas?: HTMLCanvasElement | null;
+  uvVersion?: number;
   fabricColor?: string;
   autoRotate?: boolean;
 }
 
-function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined) {
+function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
   return useMemo(() => {
     if (canvas) {
       const t = new THREE.CanvasTexture(canvas);
@@ -37,23 +38,25 @@ function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | und
     t.wrapT = THREE.RepeatWrapping;
     t.needsUpdate = true;
     return t;
-  }, [url, canvas]);
+  }, [url, canvas, version]);
 }
 
 function ShirtModel({
   uvImage,
   uvCanvas,
+  uvVersion,
   fabricColor,
 }: {
   uvImage: string | null;
   uvCanvas: HTMLCanvasElement | null | undefined;
+  uvVersion?: number;
   fabricColor: string;
 }) {
   const gltf = useLoader(GLTFLoader, shirtModel.url, (loader) => {
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 
-  const uvTex = useUvTexture(uvImage, uvCanvas);
+  const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
 
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
@@ -101,6 +104,7 @@ export default function Shirt3DPreview({
   backImage,
   uvMapUrl,
   uvCanvas,
+  uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
 }: Shirt3DPreviewProps) {
@@ -121,7 +125,7 @@ export default function Shirt3DPreview({
         <directionalLight position={[3, 4, 5]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[-3, 2, -2]} intensity={0.4} />
         <Suspense fallback={null}>
-          <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} fabricColor={fabricColor} />
+          <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
           <Environment preset="studio" />
         </Suspense>
