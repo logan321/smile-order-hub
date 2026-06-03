@@ -336,6 +336,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
 
+  // Regenerate the UV texture composite whenever the stamp or template changes.
+  useEffect(() => {
+    const uv = selectedTemplate?.uvMapUrl;
+    if (!uv) { setUv3DCanvas(null); return; }
+    let alive = true;
+    composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null)
+      .then(c => { if (alive) setUv3DCanvas(c); })
+      .catch(e => console.warn('UV compose failed', e));
+    return () => { alive = false; };
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.imageUrl]);
+
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
   const frontClipRef = useRef<FabricImage | null>(null);
