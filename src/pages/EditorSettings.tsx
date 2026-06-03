@@ -131,6 +131,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newTemplateUvMapId, setNewTemplateUvMapId] = useState<string>('none');
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
+  const [newTemplateUvFile, setNewTemplateUvFile] = useState<File | null>(null);
+  const newTemplateUvRef = useRef<HTMLInputElement>(null);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [zoneEditorUv, setZoneEditorUv] = useState<{ id: string; imageUrl: string; code: string } | null>(null);
 
