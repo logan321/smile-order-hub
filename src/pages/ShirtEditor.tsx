@@ -2009,7 +2009,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
             {/* Canvas container — single render, responsive display */}
             <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
-              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${effectiveUvUrl && !show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
+              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${!show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
                 style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
                 <div ref={frontWrapRef}
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
@@ -2025,8 +2025,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               </div>
 
-              {/* 3D principal — quando há UV (template ou estampa) e o usuário não está editando 2D */}
-              {effectiveUvUrl && !show2DEditor && (
+              {/* 3D principal — sempre que o usuário não está editando em 2D.
+                  Se não houver UV, mostra a camisa lisa (sem estampa). */}
+              {!show2DEditor && (
                 <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
                   <div className="w-full h-full max-w-3xl">
                     <Shirt3DPreview
@@ -2040,9 +2041,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               )}
 
-              {/* Toggle 2D/3D — só aparece quando UV está configurado */}
-              {effectiveUvUrl && (
-                <button
+              {/* Toggle 2D/3D — sempre disponível */}
+              <button
                   onClick={() => setShow2DEditor(v => !v)}
                   className="absolute top-2 left-2 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border shadow-md text-xs font-bold text-foreground hover:bg-muted transition-all"
                   title={show2DEditor ? 'Voltar para 3D' : 'Editar em 2D'}
@@ -2050,7 +2050,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   {show2DEditor ? <Box className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
                   {show2DEditor ? 'Ver 3D' : 'Editar 2D'}
                 </button>
-              )}
 
               {/* Floating pan mode button — big and obvious for mobile users */}
               {activeZoom > 1 && (
