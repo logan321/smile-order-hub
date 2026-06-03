@@ -178,6 +178,32 @@ type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
+const ZONE_EDITOR_PREVIEW_WIDTH = 480;
+const ZONE_EDITOR_PREVIEW_HEIGHT = 600;
+
+const mapZoneEditorCoordsToImageCoords = (
+  coords: { xPercent: number; yPercent: number; widthPercent: number; heightPercent: number; rotation: number; pathData: { x: number; y: number }[] | null },
+  imageWidth: number,
+  imageHeight: number,
+) => {
+  const imageRatio = imageWidth / Math.max(imageHeight, 1);
+  const boxRatio = ZONE_EDITOR_PREVIEW_WIDTH / ZONE_EDITOR_PREVIEW_HEIGHT;
+  const renderedWidth = imageRatio > boxRatio ? ZONE_EDITOR_PREVIEW_WIDTH : ZONE_EDITOR_PREVIEW_HEIGHT * imageRatio;
+  const renderedHeight = imageRatio > boxRatio ? ZONE_EDITOR_PREVIEW_WIDTH / imageRatio : ZONE_EDITOR_PREVIEW_HEIGHT;
+  const offsetX = (ZONE_EDITOR_PREVIEW_WIDTH - renderedWidth) / 2;
+  const offsetY = (ZONE_EDITOR_PREVIEW_HEIGHT - renderedHeight) / 2;
+  const xPx = (coords.xPercent / 100) * ZONE_EDITOR_PREVIEW_WIDTH;
+  const yPx = (coords.yPercent / 100) * ZONE_EDITOR_PREVIEW_HEIGHT;
+  const wPx = (coords.widthPercent / 100) * ZONE_EDITOR_PREVIEW_WIDTH;
+  const hPx = (coords.heightPercent / 100) * ZONE_EDITOR_PREVIEW_HEIGHT;
+  return {
+    ...coords,
+    xPercent: ((xPx - offsetX) / Math.max(renderedWidth, 1)) * 100,
+    yPercent: ((yPx - offsetY) / Math.max(renderedHeight, 1)) * 100,
+    widthPercent: (wPx / Math.max(renderedWidth, 1)) * 100,
+    heightPercent: (hPx / Math.max(renderedHeight, 1)) * 100,
+  };
+};
 
 // Custom rotation icon renderer — draws a circular arrow that's unmistakable
 const renderRotateIcon = (ctx: CanvasRenderingContext2D, left: number, top: number, _styleOverride: any, fabricObject: any) => {
@@ -354,6 +380,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     selectedTemplate?.uvMapId ? undefined : selectedTemplate?.id
   );
   const templateZones = (selectedTemplate?.uvMapId && uvZones.length > 0) ? uvZones : legacyZones;
+  const usingUvZones = Boolean(selectedTemplate?.uvMapId && uvZones.length > 0);
+  const zoneMatchesSide = (zone: TemplateZone, side: 'front' | 'back') => usingUvZones || zone.side === side || zone.shared;
 
   // 3D UV texture:
   // Always bake the front+back canvas user edits (text/logos) onto the UV at the
@@ -401,23 +429,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             // For each zone visible on this side, copy that zone's pixel region from
             // the rendered edit layer into the matching zone region on the UV image,
             // so user-added text/logos appear where the user actually placed them.
-            const zonesForSide = templateZones.filter(
-              (z) => !z.patchOnly && (z.side === side || z.shared)
-            );
+            const zonesForSide = templateZones.filter((z) => zoneMatchesSide(z, side));
             if (zonesForSide.length === 0) {
               // Fallback: stretch whole layer (legacy behavior)
               ctx.drawImage(layer, 0, 0, base.width, base.height);
             } else {
               for (const z of zonesForSide) {
                 const c = getZoneCoordsForSide(z, side);
+                const uvCoords = usingUvZones ? mapZoneEditorCoordsToImageCoords(c, base.width, base.height) : c;
                 const sx = (c.xPercent / 100) * CANVAS_WIDTH * MULT;
                 const sy = (c.yPercent / 100) * CANVAS_HEIGHT * MULT;
                 const sw = (c.widthPercent / 100) * CANVAS_WIDTH * MULT;
                 const sh = (c.heightPercent / 100) * CANVAS_HEIGHT * MULT;
-                const dx = (c.xPercent / 100) * base.width;
-                const dy = (c.yPercent / 100) * base.height;
-                const dw = (c.widthPercent / 100) * base.width;
-                const dh = (c.heightPercent / 100) * base.height;
+                const dx = (uvCoords.xPercent / 100) * base.width;
+                const dy = (uvCoords.yPercent / 100) * base.height;
+                const dw = (uvCoords.widthPercent / 100) * base.width;
+                const dh = (uvCoords.heightPercent / 100) * base.height;
                 if (sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) continue;
                 try {
                   ctx.drawImage(layer, sx, sy, sw, sh, dx, dy, dw, dh);
@@ -445,7 +472,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones, usingUvZones]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
@@ -891,7 +918,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   const handleAddTextClick = () => {
     if (!textInput.trim()) return;
-    const zonesForSide = templateZones.filter(z => !z.patchOnly && (z.side === activeView || z.shared));
+    const zonesForSide = templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView));
     if (zonesForSide.length > 0) setShowZonePicker('text');
     else addTextAtZone();
   };
@@ -1017,7 +1044,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   // Helper to get zone coords for a specific side
   const getZoneCoordsForSide = (zone: TemplateZone, side: 'front' | 'back') => {
-    const useBack = zone.shared && zone.side !== side;
+    const useBack = !usingUvZones && zone.shared && zone.side !== side;
     return {
       xPercent: useBack ? zone.backXPercent : zone.xPercent,
       yPercent: useBack ? zone.backYPercent : zone.yPercent,
@@ -1094,9 +1121,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       // Find zones for front and back
       // Priority: 1) patchOnly zone matching name, 2) any patchOnly zone, 3) exact name match, 4) shared zone
       const findZoneForSide = (s: 'front' | 'back') =>
-        templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && (z.side === s || z.shared)) ||
-        templateZones.find(z => z.patchOnly && (z.side === s || z.shared)) ||
-        templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === s || z.shared)) ||
+        templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, s)) ||
+        templateZones.find(z => z.patchOnly && zoneMatchesSide(z, s)) ||
+        templateZones.find(z => targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, s)) ||
         templateZones.find(z => z.shared);
 
       const frontZone = findZoneForSide('front');
@@ -1119,9 +1146,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     } else {
       // Single side - find matching zone (prefer patchOnly, then name match, then shared)
-      const zone = templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && (z.side === side || z.shared))
-        || templateZones.find(z => z.patchOnly && (z.side === side || z.shared))
-        || templateZones.find(z => targetName && z.name.toLowerCase() === targetName && (z.side === side || z.shared))
+      const zone = templateZones.find(z => z.patchOnly && targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, side))
+        || templateZones.find(z => z.patchOnly && zoneMatchesSide(z, side))
+        || templateZones.find(z => targetName && z.name.toLowerCase() === targetName && zoneMatchesSide(z, side))
         || templateZones.find(z => z.shared);
 
       if (zone) {
@@ -1179,7 +1206,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const patchAvailableZones = patchSideChoice
     ? templateZones.filter(z => {
         if (patchSideChoice === 'both') return true;
-        return z.side === patchSideChoice || z.shared;
+        return zoneMatchesSide(z, patchSideChoice);
       })
     : [];
 
@@ -1187,7 +1214,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    const zonesForSide = templateZones.filter(z => !z.patchOnly && (z.side === activeView || z.shared));
+    const zonesForSide = templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView));
     if (zonesForSide.length > 0) { setPendingLogoFile(file); setShowZonePicker('logo'); }
     else placeLogoFile(file);
   };
@@ -2143,7 +2170,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               Escolha a zona onde {showZonePicker === 'text' ? 'o texto' : 'a logo'} será posicionado(a):
             </p>
             <div className="space-y-2 mb-4">
-              {templateZones.filter(z => !z.patchOnly && (z.side === activeView || z.shared)).map(zone => (
+              {templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView)).map(zone => (
                 <Button key={zone.id} variant="outline" className="w-full justify-start gap-2" onClick={() => {
                   if (showZonePicker === 'text') addTextAtZone(zone);
                   else if (pendingLogoFile) placeLogoFile(pendingLogoFile, zone);
