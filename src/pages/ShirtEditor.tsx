@@ -627,6 +627,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       });
       canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
       canvas.on('object:modified', () => bumpEdits());
+      canvas.on('object:moving', () => bumpEdits());
+      canvas.on('object:scaling', () => bumpEdits());
+      canvas.on('object:rotating', () => bumpEdits());
+      canvas.on('text:changed', () => bumpEdits());
       canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
     };
 
@@ -1257,6 +1261,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         active.dirty = true;
         active.setCoords();
         canvas.requestRenderAll();
+        bumpEdits();
       };
       applyFont();
     }
