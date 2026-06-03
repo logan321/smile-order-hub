@@ -186,43 +186,56 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   };
 
   const handleAddTemplate = async () => {
-    if (!newTemplateName.trim() || !frontFile || !backFile) {
-      toast.error('Preencha o nome e envie as imagens de frente e costas');
+    if (!newTemplateName.trim()) {
+      toast.error('Informe o nome do template');
+      return;
+    }
+    const hasLibraryUv = newTemplateUvMapId && newTemplateUvMapId !== 'none';
+    if (!newTemplateUvFile && !hasLibraryUv) {
+      toast.error('Envie a imagem UV (matriz) do template ou selecione uma da biblioteca');
       return;
     }
     setUploadingTemplate(true);
     try {
       const name = newTemplateName.trim();
       const templateNicheId = newTemplateNicheId && newTemplateNicheId !== 'all' && newTemplateNicheId !== 'none' ? newTemplateNicheId : null;
-      const uvMapId = newTemplateUvMapId && newTemplateUvMapId !== 'none' ? newTemplateUvMapId : null;
-      if (uvMapId && isLikelyStampCode(name)) {
-        const nicheObj = niches.find(n => n.id === templateNicheId);
-        await addStamp(name, nicheObj?.name || 'Geral', frontFile, backFile, null, templateNicheId, uvMapId);
-        await Promise.all([fetchTemplates(), fetchStamps()]);
-        toast.success('Código identificado: salvo no Catálogo de Estampas!');
-      } else {
-        await addTemplate(name, frontFile, backFile, null, templateNicheId);
-        // Link UV from library if selected — find newly created template by name+createdAt
-        if (uvMapId) {
-          await fetchTemplates();
-          const { data } = await supabase
-            .from('shirt_templates')
-            .select('id')
-            .eq('user_id', effectiveUserId!)
-            .eq('name', name)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          if (data?.[0]) await updateTemplateUvMapId(data[0].id, uvMapId);
-        }
-        toast.success('Template adicionado!');
+      let uvMapId: string | null = hasLibraryUv ? newTemplateUvMapId : null;
+      let uvImageUrl: string | null = null;
+
+      // If user uploaded a UV file, create a uv_maps entry
+      if (newTemplateUvFile && effectiveUserId) {
+        const ts = Date.now();
+        const safeName = newTemplateUvFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${effectiveUserId}/uv-library/${ts}_${safeName}`;
+        const { error: upErr } = await supabase.storage.from('stamp-catalog').upload(path, newTemplateUvFile);
+        if (upErr) throw upErr;
+        uvImageUrl = supabase.storage.from('stamp-catalog').getPublicUrl(path).data.publicUrl;
+        const codeBase = name.replace(/\s+/g, '').slice(0, 8).toUpperCase() || 'TPL';
+        const code = `MTZ-${codeBase}-${ts.toString().slice(-4)}`;
+        const { data: uvRow, error: uvErr } = await supabase
+          .from('uv_maps' as any)
+          .insert({ user_id: effectiveUserId, code, name: `Matriz ${name}`, image_url: uvImageUrl } as any)
+          .select()
+          .single();
+        if (uvErr) throw uvErr;
+        uvMapId = (uvRow as any).id;
+        await fetchUvMaps();
+      } else if (uvMapId) {
+        const uv = uvMaps.find(u => u.id === uvMapId);
+        uvImageUrl = uv?.imageUrl ?? null;
       }
+
+      await addTemplate(name, frontFile, backFile, null, templateNicheId, uvMapId, uvImageUrl);
+      toast.success('Template adicionado!');
       setNewTemplateName('');
       setNewTemplateNicheId('');
       setFrontFile(null);
       setBackFile(null);
       setNewTemplateUvMapId('none');
+      setNewTemplateUvFile(null);
       if (frontRef.current) frontRef.current.value = '';
       if (backRef.current) backRef.current.value = '';
+      if (newTemplateUvRef.current) newTemplateUvRef.current.value = '';
     } catch { toast.error('Erro ao adicionar template'); }
     setUploadingTemplate(false);
   };
