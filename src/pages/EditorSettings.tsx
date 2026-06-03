@@ -137,6 +137,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
   const moveTemplateToStamps = async (template: typeof templates[number]) => {
     if (!confirm(`Mover "${template.name}" para o Catálogo de Estampas?`)) return;
+    if (!effectiveUserId) { toast.error('Usuário não identificado'); return; }
     try {
       const nicheId = templateNicheMap[template.id] || null;
       const nicheObj = niches.find(n => n.id === nicheId);
@@ -562,6 +563,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
                               <MapPin className="h-3.5 w-3.5 text-primary" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
+                              <Stamp className="h-3.5 w-3.5 text-primary" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
                               {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
