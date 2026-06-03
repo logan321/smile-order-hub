@@ -18,7 +18,7 @@ import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { composeShirtMockup, composeUvWithStamp } from '@/lib/composeMockup';
+import { composeUvWithStamp } from '@/lib/composeMockup';
 
 // Thumbnail: simply show the stamp's front image (no compose, no UV mold).
 // The full UV is only used as the 3D texture, never as a thumbnail.
