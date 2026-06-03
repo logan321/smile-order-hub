@@ -7,6 +7,7 @@ export interface ShirtTemplate {
   frontImageUrl: string;
   backImageUrl: string;
   uvMapUrl: string | null;
+  uvMapId: string | null;
   active: boolean;
   createdAt: string;
 }
@@ -36,6 +37,7 @@ export function useShirtTemplates(targetUserId?: string) {
       frontImageUrl: t.front_image_url,
       backImageUrl: t.back_image_url,
       uvMapUrl: t.uv_map_url ?? null,
+      uvMapId: t.uv_map_id ?? null,
       active: t.active,
       createdAt: t.created_at,
     })) ?? []);
@@ -112,5 +114,10 @@ export function useShirtTemplates(targetUserId?: string) {
     await fetchTemplates();
   }, [fetchTemplates, targetUserId]);
 
-  return { templates, loading, addTemplate, deleteTemplate, toggleActive, updateUvMap, fetchTemplates };
+  const updateTemplateUvMapId = useCallback(async (id: string, uvMapId: string | null) => {
+    await supabase.from('shirt_templates').update({ uv_map_id: uvMapId } as any).eq('id', id);
+    await fetchTemplates();
+  }, [fetchTemplates]);
+
+  return { templates, loading, addTemplate, deleteTemplate, toggleActive, updateUvMap, updateTemplateUvMapId, fetchTemplates };
 }
