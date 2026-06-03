@@ -136,6 +136,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const newTemplateUvRef = useRef<HTMLInputElement>(null);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [zoneEditorUv, setZoneEditorUv] = useState<{ id: string; imageUrl: string; code: string } | null>(null);
+  const [zone3dEditorTarget, setZone3dEditorTarget] = useState<{ templateId?: string; uvMapId?: string; label: string } | null>(null);
 
   // Inline matriz UV upload per template
   const matrizFileRef = useRef<HTMLInputElement>(null);
@@ -692,9 +693,14 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                               const uv = uvMaps.find(u => u.id === t.uvMapId);
                               if (!uv) return null;
                               return (
-                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar zonas do UV vinculado" onClick={() => setZoneEditorUv({ id: uv.id, imageUrl: uv.imageUrl, code: uv.code })}>
-                                  <MapPin className="h-3.5 w-3.5 text-primary" />
-                                </Button>
+                                <>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar zonas 2D do UV vinculado" onClick={() => setZoneEditorUv({ id: uv.id, imageUrl: uv.imageUrl, code: uv.code })}>
+                                    <MapPin className="h-3.5 w-3.5 text-primary" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Definir zonas no 3D (decals)" onClick={() => setZone3dEditorTarget({ uvMapId: uv.id, label: uv.code })}>
+                                    <Box className="h-3.5 w-3.5 text-amber-600" />
+                                  </Button>
+                                </>
                               );
                             })()}
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
@@ -1248,6 +1254,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           uvMapId={zoneEditorUv.id}
           uvImageUrl={zoneEditorUv.imageUrl}
           onClose={() => setZoneEditorUv(null)}
+        />
+      )}
+
+      {/* Zone 3D Editor Modal */}
+      {zone3dEditorTarget && (
+        <Zone3DEditor
+          templateId={zone3dEditorTarget.templateId}
+          uvMapId={zone3dEditorTarget.uvMapId}
+          onClose={() => setZone3dEditorTarget(null)}
         />
       )}
 
