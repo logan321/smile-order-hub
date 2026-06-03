@@ -718,14 +718,39 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
                 <div className="space-y-3 border-t border-border/50 pt-4">
                   <p className="text-sm font-medium">Adicionar novo template</p>
-                  <p className="text-xs text-muted-foreground">Use esta área apenas para o molde base da camisa sem arte. Para arte pronta com UV, use o Catálogo de Estampas.</p>
+                  <p className="text-xs text-muted-foreground">Envie a <strong>imagem UV (matriz)</strong> do molde — é nela que você marca as zonas (nome, números, logos). Frente e costas são apenas miniaturas opcionais.</p>
                   <div className="flex gap-2">
                     <Input value={newTemplateName} onChange={e => setNewTemplateName(e.target.value)} placeholder="Nome do modelo (ex: Gola O Manga Longa)" className="flex-1" />
                     <NicheSelector value={newTemplateNicheId || 'none'} onChange={v => setNewTemplateNicheId(v === 'none' ? '' : v)} label="Nicho" />
                   </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                      <Box className="h-3 w-3" /> UV / Matriz do template *
+                    </label>
+                    <div className="border-2 border-dashed border-primary/40 rounded-lg p-4 bg-primary/5">
+                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
+                        <Upload className="h-5 w-5 text-primary" />
+                        <span className="text-xs font-medium">{newTemplateUvFile ? newTemplateUvFile.name : 'Selecionar imagem UV (matriz)'}</span>
+                        <span className="text-[10px] text-muted-foreground">PNG/JPG/WEBP — será usado para marcar zonas compartilhadas</span>
+                        <input ref={newTemplateUvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setNewTemplateUvFile(e.target.files?.[0] ?? null)} className="hidden" />
+                      </label>
+                    </div>
+                    <div className="mt-2">
+                      <label className="text-[10px] text-muted-foreground mb-1 block">ou escolha um UV já cadastrado na biblioteca</label>
+                      <Select value={newTemplateUvMapId} onValueChange={setNewTemplateUvMapId}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none" className="text-xs">— Nenhum —</SelectItem>
+                          {uvMaps.map(u => (
+                            <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Imagem Frente *</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">Miniatura Frente (opcional)</label>
                       <div className="border border-dashed border-border rounded-lg p-3">
                         <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
                           <Upload className="h-4 w-4 text-muted-foreground" />
@@ -735,7 +760,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Imagem Costas *</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">Miniatura Costas (opcional)</label>
                       <div className="border border-dashed border-border rounded-lg p-3">
                         <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
                           <Upload className="h-4 w-4 text-muted-foreground" />
@@ -745,22 +770,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                       </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> UV map da biblioteca (opcional — usado na pré-visualização 3D)
-                    </label>
-                    <Select value={newTemplateUvMapId} onValueChange={setNewTemplateUvMapId}>
-                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
-                        {uvMaps.map(u => (
-                          <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">Depois de vincular, use o botão <MapPin className="h-3 w-3 inline" /> ao lado do template para editar as zonas (frente, costas, mangas, gola) sobre o UV. Todas as estampas que usarem este molde compartilham as mesmas zonas.</p>
-                  </div>
-                  <Button onClick={handleAddTemplate} disabled={uploadingTemplate || !newTemplateName.trim() || !frontFile || !backFile}>
+                  <p className="text-[10px] text-muted-foreground">Depois de adicionar, use o botão <MapPin className="h-3 w-3 inline" /> no card do template para marcar as zonas (frente, costas, mangas, gola) sobre o UV. Todas as estampas vinculadas a este template compartilham as mesmas zonas.</p>
+                  <Button onClick={handleAddTemplate} disabled={uploadingTemplate || !newTemplateName.trim() || (!newTemplateUvFile && (!newTemplateUvMapId || newTemplateUvMapId === 'none'))}>
                     <Plus className="h-4 w-4 mr-2" />
                     {uploadingTemplate ? 'Enviando...' : 'Adicionar Template'}
                   </Button>
