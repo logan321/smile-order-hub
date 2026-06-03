@@ -135,6 +135,31 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     setUploadingTemplate(false);
   };
 
+  const moveTemplateToStamps = async (template: typeof templates[number]) => {
+    if (!confirm(`Mover "${template.name}" para o Catálogo de Estampas?`)) return;
+    try {
+      const nicheId = templateNicheMap[template.id] || null;
+      const nicheObj = niches.find(n => n.id === nicheId);
+      const { error: insertError } = await supabase.from('stamp_catalog').insert({
+        user_id: effectiveUserId,
+        name: template.name,
+        category: nicheObj?.name || 'Geral',
+        image_url: template.frontImageUrl,
+        back_image_url: template.backImageUrl,
+        uv_map_url: template.uvMapUrl,
+        niche_id: nicheId,
+        active: true,
+      } as any);
+      if (insertError) throw insertError;
+      await supabase.from('shirt_templates').update({ active: false } as any).eq('id', template.id);
+      await Promise.all([fetchTemplates(), fetchStamps()]);
+      toast.success('Movido para Estampas!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao mover para Estampas');
+    }
+  };
+
   // Stamps
   const [newStampName, setNewStampName] = useState('');
   const [newStampNicheId, setNewStampNicheId] = useState<string>('');
