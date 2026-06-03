@@ -20,9 +20,9 @@ import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { composeUvWithStamp } from '@/lib/composeMockup';
 
-// Thumbnail: simply show the stamp's front image (no compose, no UV mold).
-// The full UV is only used as the 3D texture, never as a thumbnail.
-function StampThumb({ stampUrl, name }: { shirtUrl?: string; stampUrl: string; stampUvUrl?: string | null; name: string }) {
+// Thumbnail: show only the 2D front image uploaded for the stamp.
+// The UV is kept only for the 3D texture when the client clicks this stamp.
+function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
   return (
     <img
       src={stampUrl}
@@ -159,6 +159,7 @@ interface Stamp {
   imageUrl: string;
   backImageUrl: string | null;
   uvMapUrl?: string | null;
+  nicheId?: string | null;
 }
 
 type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | 'textStyles' | null;
@@ -435,7 +436,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setAllTemplates(allT);
       setTemplates(allT);
       const allS = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null, nicheId: s.niche_id ?? null,
       })) ?? [];
       setAllStamps(allS);
       setStamps(allS);
