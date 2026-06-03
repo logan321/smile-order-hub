@@ -880,18 +880,20 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> UV map da biblioteca (opcional)
+                      <Shirt className="h-3 w-3" /> Template (modelagem) vinculado *
                     </label>
-                    <Select value={newStampUvMapId} onValueChange={setNewStampUvMapId}>
-                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
+                    <Select value={newStampTemplateId} onValueChange={setNewStampTemplateId}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione o template desta estampa" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
-                        {uvMaps.map(u => (
-                          <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                        <SelectItem value="none" className="text-xs">Sem template</SelectItem>
+                        {templates.map(t => (
+                          <SelectItem key={t.id} value={t.id} className="text-xs">
+                            {t.name}{t.uvMapId ? ' • UV ✓' : ' • sem UV'}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">Quando o cliente clicar nesta estampa, o 3D usa o UV vinculado. Cadastre UVs na aba "Biblioteca de UVs".</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Ao escolher esta estampa no editor, o 3D usa o UV e as zonas do template vinculado. Cadastre o UV matriz e marque as zonas pelo botão <MapPin className="h-3 w-3 inline" /> em "Camisas em Branco".</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
