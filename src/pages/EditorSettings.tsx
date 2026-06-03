@@ -104,12 +104,11 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newTemplateNicheId, setNewTemplateNicheId] = useState<string>('');
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
-  const [uvFile, setUvFile] = useState<File | null>(null);
+  const [newTemplateUvMapId, setNewTemplateUvMapId] = useState<string>('none');
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
-  const uvRef = useRef<HTMLInputElement>(null);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
-  const [zoneEditorTemplate, setZoneEditorTemplate] = useState<{ id: string; frontImageUrl: string; backImageUrl: string } | null>(null);
+  const [zoneEditorUv, setZoneEditorUv] = useState<{ id: string; imageUrl: string; code: string } | null>(null);
 
   const handleAddTemplate = async () => {
     if (!newTemplateName.trim() || !frontFile || !backFile) {
@@ -120,23 +119,35 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     try {
       const name = newTemplateName.trim();
       const templateNicheId = newTemplateNicheId && newTemplateNicheId !== 'all' && newTemplateNicheId !== 'none' ? newTemplateNicheId : null;
-      if (uvFile && isLikelyStampCode(name)) {
+      const uvMapId = newTemplateUvMapId && newTemplateUvMapId !== 'none' ? newTemplateUvMapId : null;
+      if (uvMapId && isLikelyStampCode(name)) {
         const nicheObj = niches.find(n => n.id === templateNicheId);
-        await addStamp(name, nicheObj?.name || 'Geral', frontFile, backFile, uvFile, templateNicheId);
+        await addStamp(name, nicheObj?.name || 'Geral', frontFile, backFile, null, templateNicheId, uvMapId);
         await Promise.all([fetchTemplates(), fetchStamps()]);
         toast.success('Código identificado: salvo no Catálogo de Estampas!');
       } else {
-        await addTemplate(name, frontFile, backFile, uvFile, templateNicheId);
+        await addTemplate(name, frontFile, backFile, null, templateNicheId);
+        // Link UV from library if selected — find newly created template by name+createdAt
+        if (uvMapId) {
+          await fetchTemplates();
+          const { data } = await supabase
+            .from('shirt_templates')
+            .select('id')
+            .eq('user_id', effectiveUserId!)
+            .eq('name', name)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (data?.[0]) await updateTemplateUvMapId(data[0].id, uvMapId);
+        }
         toast.success('Template adicionado!');
       }
       setNewTemplateName('');
       setNewTemplateNicheId('');
       setFrontFile(null);
       setBackFile(null);
-      setUvFile(null);
+      setNewTemplateUvMapId('none');
       if (frontRef.current) frontRef.current.value = '';
       if (backRef.current) backRef.current.value = '';
-      if (uvRef.current) uvRef.current.value = '';
     } catch { toast.error('Erro ao adicionar template'); }
     setUploadingTemplate(false);
   };
@@ -172,10 +183,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newStampNicheId, setNewStampNicheId] = useState<string>('');
   const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
   const [stampBackFile, setStampBackFile] = useState<File | null>(null);
-  const [stampUvFile, setStampUvFile] = useState<File | null>(null);
+  const [newStampUvMapId, setNewStampUvMapId] = useState<string>('none');
   const stampFrontRef = useRef<HTMLInputElement>(null);
   const stampBackRef = useRef<HTMLInputElement>(null);
-  const stampUvRef = useRef<HTMLInputElement>(null);
   const [uploadingStamp, setUploadingStamp] = useState(false);
 
   const handleAddStamp = async () => {
@@ -187,15 +197,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     try {
       const nicheObj = niches.find(n => n.id === newStampNicheId);
       const stampNicheId = newStampNicheId && newStampNicheId !== 'none' && newStampNicheId !== 'all' ? newStampNicheId : null;
-      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, stampUvFile, stampNicheId);
+      const uvMapId = newStampUvMapId && newStampUvMapId !== 'none' ? newStampUvMapId : null;
+      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, null, stampNicheId, uvMapId);
       setNewStampName('');
       setNewStampNicheId('');
       setStampFrontFile(null);
       setStampBackFile(null);
-      setStampUvFile(null);
+      setNewStampUvMapId('none');
       if (stampFrontRef.current) stampFrontRef.current.value = '';
       if (stampBackRef.current) stampBackRef.current.value = '';
-      if (stampUvRef.current) stampUvRef.current.value = '';
       toast.success('Estampa adicionada!');
     } catch { toast.error('Erro ao adicionar estampa'); }
     setUploadingStamp(false);
