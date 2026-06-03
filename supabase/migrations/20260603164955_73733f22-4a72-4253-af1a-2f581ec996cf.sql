@@ -1,0 +1,1 @@
+ALTER TABLE public.stamp_catalog ADD COLUMN IF NOT EXISTS uv_map_url TEXT;
