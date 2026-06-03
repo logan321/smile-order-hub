@@ -38,7 +38,7 @@ export function useStampCatalog(targetUserId?: string) {
       createdAt: s.created_at,
     })) ?? []);
     setLoading(false);
-  }, []);
+  }, [targetUserId]);
 
   useEffect(() => { fetchStamps(); }, [fetchStamps]);
 
@@ -80,12 +80,12 @@ export function useStampCatalog(targetUserId?: string) {
     } as any);
 
     await fetchStamps();
-  }, [fetchStamps]);
+  }, [fetchStamps, targetUserId]);
 
   const deleteStamp = useCallback(async (id: string) => {
     await supabase.from('stamp_catalog').delete().eq('id', id);
     await fetchStamps();
-  }, [fetchStamps]);
+  }, [fetchStamps, targetUserId]);
 
   const updateStampUv = useCallback(async (id: string, uvFile: File | null) => {
     const { data: { session } } = await supabase.auth.getSession();
