@@ -386,6 +386,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
             <Sparkles className="h-4 w-4" />
             Emblemas
           </TabsTrigger>
+          <TabsTrigger value="uvlib" className="gap-2">
+            <Box className="h-4 w-4" />
+            Biblioteca de UVs
+          </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
             Estilos de Texto
