@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,11 +6,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
-import { Upload, X } from 'lucide-react';
 
 interface Shirt3DPreviewProps {
   frontImage: string;
   backImage: string;
+  uvMapUrl?: string | null;
   fabricColor?: string;
   autoRotate?: boolean;
 }
@@ -89,20 +89,12 @@ function ShirtModel({
 export default function Shirt3DPreview({
   frontImage,
   backImage,
+  uvMapUrl,
   fabricColor = '#ffffff',
   autoRotate = true,
 }: Shirt3DPreviewProps) {
-  const [uvImage, setUvImage] = useState<string | null>(null);
   const [rotating, setRotating] = useState(autoRotate);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setUvImage(reader.result as string);
-    reader.readAsDataURL(file);
-  };
+  const uvImage = uvMapUrl ?? null;
 
   return (
     <div className="w-full h-full bg-gradient-to-b from-muted/40 to-muted rounded-lg overflow-hidden relative">
@@ -132,14 +124,6 @@ export default function Shirt3DPreview({
         />
       </Canvas>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={onPickFile}
-      />
-
       <div className="absolute top-2 right-2 flex gap-2">
         <Button
           size="sm"
@@ -149,30 +133,11 @@ export default function Shirt3DPreview({
         >
           {rotating ? 'Pausar' : 'Girar'}
         </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          className="h-8 px-2 shadow-sm gap-1"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="h-4 w-4" />
-          {uvImage ? 'Trocar molde' : 'Carregar molde UV'}
-        </Button>
-        {uvImage && (
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-8 px-2 shadow-sm"
-            onClick={() => setUvImage(null)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
       {!uvImage && (
         <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur border rounded-lg p-3 shadow-lg text-xs text-center text-muted-foreground">
-          Faça upload do <strong>molde UV completo</strong> (frente + costas + mangas + gola na mesma imagem, igual ao layout exportado do CLO3D) para visualizar a sublimação aplicada perfeitamente na camisa.
+          Esta camisa ainda não tem um <strong>molde UV</strong> configurado. Peça ao administrador para enviar o molde UV deste template para visualizar a estampa aplicada perfeitamente em 3D.
         </div>
       )}
     </div>
