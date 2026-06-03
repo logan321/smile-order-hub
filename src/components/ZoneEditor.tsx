@@ -7,9 +7,11 @@ import { toast } from 'sonner';
 import PolygonDrawer from '@/components/PolygonDrawer';
 
 interface ZoneEditorProps {
-  templateId: string;
-  frontImageUrl: string;
-  backImageUrl: string;
+  templateId?: string;
+  uvMapId?: string;
+  uvImageUrl?: string;
+  frontImageUrl?: string;
+  backImageUrl?: string;
   onClose: () => void;
 }
 
@@ -41,8 +43,9 @@ interface DragState {
   origRotation: number;
 }
 
-const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEditorProps) => {
-  const { zones, loading, addZone, updateZone, deleteZone } = useTemplateZones(templateId);
+const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageUrl, onClose }: ZoneEditorProps) => {
+  const uvMode = !!uvMapId;
+  const { zones, loading, addZone, updateZone, deleteZone } = useTemplateZones(templateId, uvMapId);
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [newZoneName, setNewZoneName] = useState('');
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -55,12 +58,15 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Show zones for active side + shared zones from the other side
-  const filteredZones = zones.filter(z => z.side === activeSide || z.shared);
-  const imageUrl = activeSide === 'front' ? frontImageUrl : backImageUrl;
+  // In UV mode, all zones are shown on the single UV map image (side stored only as label).
+  // In template mode, show zones for active side + shared zones from the other side.
+  const filteredZones = uvMode ? zones : zones.filter(z => z.side === activeSide || z.shared);
+  const imageUrl = uvMode
+    ? (uvImageUrl || '')
+    : (activeSide === 'front' ? (frontImageUrl || '') : (backImageUrl || ''));
 
   // Check if this zone is being shown on its opposite side (shared zone on the other side)
-  const isBackSideOfShared = (zone: TemplateZone) => zone.shared && zone.side !== activeSide;
+  const isBackSideOfShared = (zone: TemplateZone) => !uvMode && zone.shared && zone.side !== activeSide;
 
   // Merge DB zones with local drag overrides, using back_* coords when viewing back side of shared zone
   const getZoneDisplay = (zone: TemplateZone) => {
@@ -82,7 +88,8 @@ const ZoneEditor = ({ templateId, frontImageUrl, backImageUrl, onClose }: ZoneEd
 
   const handleAddZone = async () => {
     if (!newZoneName.trim()) return;
-    await addZone(newZoneName.trim(), activeSide);
+    // In UV mode every zone is "front" by convention (single image).
+    await addZone(newZoneName.trim(), uvMode ? 'front' : activeSide);
     setNewZoneName('');
     toast.success('Zona adicionada!');
   };
