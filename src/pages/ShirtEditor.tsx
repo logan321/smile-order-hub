@@ -16,7 +16,7 @@ import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import ShirtPseudo3DPreview from '@/components/ShirtPseudo3DPreview';
+import Shirt3DPreview from '@/components/Shirt3DPreview';
 
 
 interface ShirtEditorProps {
@@ -1976,14 +1976,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </DialogHeader>
           <div className="flex-1 min-h-0">
             {preview3D && (
-              <ShirtPseudo3DPreview
-                angles={[preview3D.front, preview3D.back]}
-                labels={['Frente', 'Costas']}
-              />
+              <Shirt3DPreview frontImage={preview3D.front} backImage={preview3D.back} />
             )}
           </div>
           <p className="text-xs text-muted-foreground text-center">
-            Arraste para girar · Use os botões para alternar entre frente e costas
+            Arraste para girar · Use a roda do mouse / pinça para dar zoom
           </p>
         </DialogContent>
       </Dialog>
