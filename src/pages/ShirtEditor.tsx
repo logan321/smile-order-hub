@@ -271,6 +271,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [preview3D, setPreview3D] = useState<{ front: string; back: string } | null>(null);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
   const [show2DEditor, setShow2DEditor] = useState(false);
+  const [editsVersion, setEditsVersion] = useState(0);
+  const bumpEdits = useCallback(() => setEditsVersion(v => v + 1), []);
 
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
