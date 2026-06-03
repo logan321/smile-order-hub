@@ -8,6 +8,7 @@ export interface StampItem {
   imageUrl: string;
   backImageUrl: string | null;
   uvMapUrl: string | null;
+  nicheId: string | null;
   active: boolean;
   createdAt: string;
 }
@@ -32,15 +33,16 @@ export function useStampCatalog(targetUserId?: string) {
       imageUrl: s.image_url,
       backImageUrl: s.back_image_url ?? null,
       uvMapUrl: s.uv_map_url ?? null,
+      nicheId: s.niche_id ?? null,
       active: s.active,
       createdAt: s.created_at,
     })) ?? []);
     setLoading(false);
-  }, []);
+  }, [targetUserId]);
 
   useEffect(() => { fetchStamps(); }, [fetchStamps]);
 
-  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File, uvFile?: File | null) => {
+  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File, uvFile?: File | null, nicheId?: string | null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -74,15 +76,16 @@ export function useStampCatalog(targetUserId?: string) {
       image_url: frontUrl.publicUrl,
       back_image_url: backUrl.publicUrl,
       uv_map_url: uvUrl,
+      niche_id: nicheId || null,
     } as any);
 
     await fetchStamps();
-  }, [fetchStamps]);
+  }, [fetchStamps, targetUserId]);
 
   const deleteStamp = useCallback(async (id: string) => {
     await supabase.from('stamp_catalog').delete().eq('id', id);
     await fetchStamps();
-  }, [fetchStamps]);
+  }, [fetchStamps, targetUserId]);
 
   const updateStampUv = useCallback(async (id: string, uvFile: File | null) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -98,7 +101,7 @@ export function useStampCatalog(targetUserId?: string) {
     }
     await supabase.from('stamp_catalog').update({ uv_map_url: uvUrl } as any).eq('id', id);
     await fetchStamps();
-  }, [fetchStamps]);
+  }, [fetchStamps, targetUserId]);
 
   return { stamps, loading, addStamp, deleteStamp, updateStampUv };
 }

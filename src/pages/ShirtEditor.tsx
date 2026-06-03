@@ -20,9 +20,9 @@ import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { composeUvWithStamp } from '@/lib/composeMockup';
 
-// Thumbnail: simply show the stamp's front image (no compose, no UV mold).
-// The full UV is only used as the 3D texture, never as a thumbnail.
-function StampThumb({ stampUrl, name }: { shirtUrl?: string; stampUrl: string; stampUvUrl?: string | null; name: string }) {
+// Thumbnail: show only the 2D front image uploaded for the stamp.
+// The UV is kept only for the 3D texture when the client clicks this stamp.
+function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
   return (
     <img
       src={stampUrl}
@@ -159,6 +159,7 @@ interface Stamp {
   imageUrl: string;
   backImageUrl: string | null;
   uvMapUrl?: string | null;
+  nicheId?: string | null;
 }
 
 type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | 'textStyles' | null;
@@ -435,7 +436,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setAllTemplates(allT);
       setTemplates(allT);
       const allS = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null, nicheId: s.niche_id ?? null,
       })) ?? [];
       setAllStamps(allS);
       setStamps(allS);
@@ -1575,7 +1576,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} stampUvUrl={s.uvMapUrl} name={s.name} />
+                          <StampThumb stampUrl={s.imageUrl} name={s.name} />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
@@ -1698,7 +1699,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
                         {stamps.map(s => (
                           <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <StampThumb shirtUrl={selectedTemplate?.frontImageUrl} stampUrl={s.imageUrl} stampUvUrl={s.uvMapUrl} name={s.name} />
+                            <StampThumb stampUrl={s.imageUrl} name={s.name} />
                             <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
                           </button>
                         ))}
@@ -1822,7 +1823,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
             {/* Canvas container — single render, responsive display */}
             <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
-              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${selectedTemplate?.uvMapUrl && !show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
+              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${effectiveUvUrl && !show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
                 style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
                 <div ref={frontWrapRef}
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
