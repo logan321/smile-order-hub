@@ -38,7 +38,6 @@ const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]
 
 const isMisplacedStampTemplate = (template: Template) =>
   isLikelyStampCode(template.name) && (
-    !!template.uvMapUrl ||
     /colorway/i.test(template.frontImageUrl) ||
     /colorway/i.test(template.backImageUrl)
   );
