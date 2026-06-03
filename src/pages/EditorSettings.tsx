@@ -608,6 +608,15 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
                               <Stamp className="h-3.5 w-3.5 text-primary" />
                             </Button>
+                            {t.uvMapId && (() => {
+                              const uv = uvMaps.find(u => u.id === t.uvMapId);
+                              if (!uv) return null;
+                              return (
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar zonas do UV vinculado" onClick={() => setZoneEditorUv({ id: uv.id, imageUrl: uv.imageUrl, code: uv.code })}>
+                                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                              );
+                            })()}
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
                               {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
                             </Button>
