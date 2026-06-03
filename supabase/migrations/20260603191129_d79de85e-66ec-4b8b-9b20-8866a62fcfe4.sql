@@ -1,0 +1,2 @@
+ALTER TABLE public.stamp_catalog ADD COLUMN IF NOT EXISTS template_id uuid REFERENCES public.shirt_templates(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS stamp_catalog_template_id_idx ON public.stamp_catalog(template_id);

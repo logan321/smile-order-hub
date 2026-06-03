@@ -536,6 +536,7 @@ export type Database = {
           image_url: string
           name: string
           niche_id: string | null
+          template_id: string | null
           user_id: string
           uv_map_id: string | null
           uv_map_url: string | null
@@ -549,6 +550,7 @@ export type Database = {
           image_url: string
           name: string
           niche_id?: string | null
+          template_id?: string | null
           user_id: string
           uv_map_id?: string | null
           uv_map_url?: string | null
@@ -562,6 +564,7 @@ export type Database = {
           image_url?: string
           name?: string
           niche_id?: string | null
+          template_id?: string | null
           user_id?: string
           uv_map_id?: string | null
           uv_map_url?: string | null
@@ -572,6 +575,13 @@ export type Database = {
             columns: ["niche_id"]
             isOneToOne: false
             referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stamp_catalog_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shirt_templates"
             referencedColumns: ["id"]
           },
           {
