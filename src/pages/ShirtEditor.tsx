@@ -445,7 +445,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
