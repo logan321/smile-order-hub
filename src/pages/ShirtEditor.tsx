@@ -432,7 +432,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setAllTemplates(allT);
       setTemplates(allT);
       const allS = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null,
       })) ?? [];
       setAllStamps(allS);
       setStamps(allS);
