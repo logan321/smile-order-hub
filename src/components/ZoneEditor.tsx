@@ -108,12 +108,24 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
   }, []);
 
   const handleWrapperMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.altKey) {
-      e.preventDefault();
-      setIsPanning(true);
-      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-    }
+    // Pan when clicking empty area (zones stop propagation on their mousedown)
+    e.preventDefault();
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   }, [pan]);
+
+  const handleWrapperTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    setIsPanning(true);
+    setPanStart({ x: t.clientX - pan.x, y: t.clientY - pan.y });
+  }, [pan]);
+
+  const handleWrapperTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPanning || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    setPan({ x: t.clientX - panStart.x, y: t.clientY - panStart.y });
+  }, [isPanning, panStart]);
 
   const handleWrapperMouseMove = useCallback((e: React.MouseEvent) => {
     if (isPanning) {
@@ -372,12 +384,15 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
             <div
               ref={wrapperRef}
               className="border border-border rounded-lg overflow-hidden bg-muted/30"
-              style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, cursor: isPanning ? 'grabbing' : 'default' }}
+              style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT, cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none' }}
               onWheel={handleWheel}
               onMouseDown={handleWrapperMouseDown}
               onMouseMove={handleWrapperMouseMove}
               onMouseUp={handleWrapperMouseUp}
               onMouseLeave={handleWrapperMouseUp}
+              onTouchStart={handleWrapperTouchStart}
+              onTouchMove={handleWrapperTouchMove}
+              onTouchEnd={handleWrapperMouseUp}
             >
               <div
                 style={{
