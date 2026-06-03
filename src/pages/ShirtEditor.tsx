@@ -339,8 +339,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   const { zones: templateZones } = useTemplateZones(selectedTemplate?.id);
 
-  // Regenerate the UV texture composite whenever the stamp or template changes.
+  // 3D UV texture:
+  // 1) if the picked stamp has its own complete UV mockup → use it as-is (no compose)
+  // 2) else if the template has a base UV → compose it with the stamp image
+  // 3) else → no UV texture
   useEffect(() => {
+    if (appliedStamp?.uvMapUrl) { setUv3DCanvas(null); return; } // url path handled below
     const uv = selectedTemplate?.uvMapUrl;
     if (!uv) { setUv3DCanvas(null); return; }
     let alive = true;
@@ -348,7 +352,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       .then(c => { if (alive) setUv3DCanvas(c); })
       .catch(e => console.warn('UV compose failed', e));
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.imageUrl]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl]);
+
+  // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
+  const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
 
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
