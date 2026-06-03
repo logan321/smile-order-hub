@@ -439,14 +439,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         supabase.from('text_styles').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
       ]);
-      const allT = (templatesRes.data as any[])?.map(t => ({
+      const rawTemplates = (templatesRes.data as any[])?.map(t => ({
         id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, uvMapUrl: t.uv_map_url ?? null, userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
+      const misplacedStampTemplates = rawTemplates.filter(isMisplacedStampTemplate);
+      const allT = rawTemplates.filter(t => !isMisplacedStampTemplate(t));
       setAllTemplates(allT);
       setTemplates(allT);
-      const allS = (stampsRes.data as any[])?.map(s => ({
+      const catalogStamps = (stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null, uvMapUrl: s.uv_map_url ?? null, nicheId: s.niche_id ?? null,
       })) ?? [];
+      const recoveredStamps = misplacedStampTemplates.map(t => ({
+        id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
+      }));
+      const allS = [...recoveredStamps, ...catalogStamps];
       setAllStamps(allS);
       setStamps(allS);
       const allP = (patchesRes.data as any[])?.map(p => ({
