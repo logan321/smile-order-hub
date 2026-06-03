@@ -910,6 +910,108 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           </div>
         </TabsContent>
 
+        {/* UV Library */}
+        <TabsContent value="uvlib">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Box className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">Biblioteca de UVs</h2>
+                <p className="text-sm text-muted-foreground">Faça upload dos mapas UV (frente, costas, manga...) e edite as zonas onde estampas serão aplicadas no 3D. Vincule códigos às estampas e templates pela aba correspondente.</p>
+              </div>
+            </div>
+
+            {/* Upload form */}
+            <div className="space-y-3 mb-6 p-4 rounded-lg border border-border/50 bg-muted/20">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Código (ex: UV-001)</label>
+                  <Input value={newUvCode} onChange={e => setNewUvCode(e.target.value)} placeholder="UV-001" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome (opcional)</label>
+                  <Input value={newUvName} onChange={e => setNewUvName(e.target.value)} placeholder="Camisa Manga Curta" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Imagem do UV map</label>
+                <input
+                  ref={newUvFileRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setNewUvFile(e.target.files?.[0] ?? null)}
+                  className="text-sm w-full"
+                />
+              </div>
+              <Button onClick={handleAddUv} disabled={uploadingUv} className="w-full sm:w-auto">
+                <Upload className="h-4 w-4 mr-2" />
+                {uploadingUv ? 'Enviando...' : 'Adicionar UV à biblioteca'}
+              </Button>
+            </div>
+
+            {uvLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Carregando...</p>
+            ) : uvMaps.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum UV cadastrado ainda</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {uvMaps.map(uv => {
+                  const isEditing = editingUvId === uv.id;
+                  return (
+                    <div key={uv.id} className="rounded-lg border border-border/50 overflow-hidden bg-background">
+                      <img src={uv.imageUrl} alt={uv.code} loading="lazy" className="w-full aspect-square object-contain p-2 bg-muted/20" />
+                      <div className="p-3 space-y-2">
+                        {isEditing ? (
+                          <>
+                            <Input value={editUvCode} onChange={e => setEditUvCode(e.target.value)} placeholder="Código" className="h-8 text-sm" />
+                            <Input value={editUvName} onChange={e => setEditUvName(e.target.value)} placeholder="Nome" className="h-8 text-sm" />
+                            <div className="flex gap-1">
+                              <Button size="sm" className="flex-1 h-8 text-xs" onClick={async () => {
+                                try {
+                                  await updateUvLib(uv.id, { code: editUvCode, name: editUvName });
+                                  setEditingUvId(null);
+                                  toast.success('UV atualizado');
+                                } catch (e: any) { toast.error(e?.message || 'Erro'); }
+                              }}>
+                                <Save className="h-3 w-3 mr-1" /> Salvar
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setEditingUvId(null)}>Cancelar</Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div>
+                              <p className="text-sm font-semibold truncate">{uv.code}</p>
+                              {uv.name && <p className="text-xs text-muted-foreground truncate">{uv.name}</p>}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => setZoneEditorUv({ id: uv.id, imageUrl: uv.imageUrl, code: uv.code })}>
+                                <MapPin className="h-3 w-3 mr-1" /> Zonas
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditingUvId(uv.id); setEditUvCode(uv.code); setEditUvName(uv.name ?? ''); }}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={async () => {
+                                if (!confirm(`Excluir UV ${uv.code}? As zonas associadas também serão removidas.`)) return;
+                                try { await deleteUvMap(uv.id); toast.success('UV removido'); }
+                                catch (e: any) { toast.error(e?.message || 'Erro'); }
+                              }}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
         {/* WhatsApp */}
         <TabsContent value="whatsapp">
           <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
