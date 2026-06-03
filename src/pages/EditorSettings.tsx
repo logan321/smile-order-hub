@@ -19,6 +19,8 @@ interface EditorSettingsProps {
   targetEmail?: string;
 }
 
+const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
+
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap, fetchTemplates } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv, fetchStamps } = useStampCatalog(targetUserId);
@@ -114,13 +116,16 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     }
     setUploadingTemplate(true);
     try {
-      await addTemplate(newTemplateName.trim(), frontFile, backFile, uvFile);
-      // Update niche_id if selected
-      if (newTemplateNicheId && newTemplateNicheId !== 'all') {
-        const { data: latestTemplates } = await supabase.from('shirt_templates').select('id').order('created_at', { ascending: false }).limit(1);
-        if (latestTemplates?.[0]) {
-          await supabase.from('shirt_templates').update({ niche_id: newTemplateNicheId } as any).eq('id', latestTemplates[0].id);
-        }
+      const name = newTemplateName.trim();
+      const templateNicheId = newTemplateNicheId && newTemplateNicheId !== 'all' && newTemplateNicheId !== 'none' ? newTemplateNicheId : null;
+      if (uvFile && isLikelyStampCode(name)) {
+        const nicheObj = niches.find(n => n.id === templateNicheId);
+        await addStamp(name, nicheObj?.name || 'Geral', frontFile, backFile, uvFile, templateNicheId);
+        await Promise.all([fetchTemplates(), fetchStamps()]);
+        toast.success('Código identificado: salvo no Catálogo de Estampas!');
+      } else {
+        await addTemplate(name, frontFile, backFile, uvFile, templateNicheId);
+        toast.success('Template adicionado!');
       }
       setNewTemplateName('');
       setNewTemplateNicheId('');
@@ -130,7 +135,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       if (frontRef.current) frontRef.current.value = '';
       if (backRef.current) backRef.current.value = '';
       if (uvRef.current) uvRef.current.value = '';
-      toast.success('Template adicionado!');
     } catch { toast.error('Erro ao adicionar template'); }
     setUploadingTemplate(false);
   };
