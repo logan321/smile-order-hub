@@ -1949,7 +1949,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       frontImage={selectedTemplate.frontImageUrl}
                       backImage={selectedTemplate.backImageUrl}
                       uvMapUrl={effectiveUvUrl}
-                      uvCanvas={appliedStamp?.uvMapUrl ? null : uv3DCanvas}
+                      uvCanvas={uv3DCanvas}
                     />
                   </div>
                 </div>
