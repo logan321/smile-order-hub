@@ -1266,8 +1266,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const ownerUserId = selectedTemplate?.userId;
     if (!ownerUserId) { toast.error('Template sem dono identificado'); return; }
 
-    const { data } = await supabase.from('user_settings').select('whatsapp_number').eq('user_id', ownerUserId).maybeSingle();
-    const whatsappNumber = data?.whatsapp_number?.replace(/\D/g, '') || '';
+    const { data } = await supabase.rpc('get_owner_whatsapp', { _owner: ownerUserId });
+    const whatsappNumber = (data as string | null)?.replace(/\D/g, '') || '';
 
     if (!whatsappNumber) {
       toast.error('Configure o número do WhatsApp em Configurações → WhatsApp');
