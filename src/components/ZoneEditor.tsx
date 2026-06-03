@@ -492,7 +492,9 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
           {/* Zone list + controls */}
           <div className="lg:w-64 space-y-3">
             <div>
-              <p className="text-sm font-semibold mb-2">Zonas ({activeSide === 'front' ? 'Frente' : 'Costas'})</p>
+              <p className="text-sm font-semibold mb-2">
+                {uvMode ? `Zonas (${zones.length})` : `Zonas (${activeSide === 'front' ? 'Frente' : 'Costas'})`}
+              </p>
 
               {loading ? (
                 <p className="text-xs text-muted-foreground">Carregando...</p>
@@ -532,6 +534,7 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
                           >
                             <Fish className="h-3 w-3" />
                           </Button>
+                          {!uvMode && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -541,6 +544,7 @@ const ZoneEditor = ({ templateId, uvMapId, uvImageUrl, frontImageUrl, backImageU
                           >
                             <Link className="h-3 w-3" />
                           </Button>
+                          )}
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteZone(zone.id)}>
                             <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
