@@ -1972,17 +1972,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Box className="h-5 w-5 text-primary" />
-              Pré-visualização 3D
+              Pré-visualização da camisa
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 min-h-0">
-            {preview3D && (
-              <Shirt3DPreview frontImage={preview3D.front} backImage={preview3D.back} uvMapUrl={selectedTemplate?.uvMapUrl ?? null} />
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Arraste para girar · Use a roda do mouse / pinça para dar zoom
-          </p>
+          {preview3D && (
+            <Preview3DTabs
+              front={preview3D.front}
+              back={preview3D.back}
+              uvMapUrl={selectedTemplate?.uvMapUrl ?? null}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
