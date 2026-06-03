@@ -1450,6 +1450,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">{downloading ? 'Baixando...' : 'Baixar'}</span>
           </Button>
+          <Button onClick={handleOpen3D} size="sm" variant="secondary" className="gap-1 h-9 px-3 rounded-full shadow-sm">
+            <Box className="h-4 w-4" />
+            <span className="hidden sm:inline">Ver 3D</span>
+          </Button>
         </div>
       </header>
 
