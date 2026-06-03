@@ -12,6 +12,7 @@ import { useStampCatalog } from '@/hooks/useStampCatalog';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
+import { useUvLibrary } from '@/hooks/useUvLibrary';
 import ZoneEditor from '@/components/ZoneEditor';
 
 interface EditorSettingsProps {
@@ -22,10 +23,11 @@ interface EditorSettingsProps {
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap, fetchTemplates } = useShirtTemplates(targetUserId);
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv, fetchStamps } = useStampCatalog(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, fetchTemplates } = useShirtTemplates(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
+  const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, deleteUvMap } = useUvLibrary(targetUserId);
 
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
