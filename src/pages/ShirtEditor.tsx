@@ -178,6 +178,32 @@ type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
+const ZONE_EDITOR_PREVIEW_WIDTH = 480;
+const ZONE_EDITOR_PREVIEW_HEIGHT = 600;
+
+const mapZoneEditorCoordsToImageCoords = (
+  coords: { xPercent: number; yPercent: number; widthPercent: number; heightPercent: number; rotation: number; pathData: { x: number; y: number }[] | null },
+  imageWidth: number,
+  imageHeight: number,
+) => {
+  const imageRatio = imageWidth / Math.max(imageHeight, 1);
+  const boxRatio = ZONE_EDITOR_PREVIEW_WIDTH / ZONE_EDITOR_PREVIEW_HEIGHT;
+  const renderedWidth = imageRatio > boxRatio ? ZONE_EDITOR_PREVIEW_WIDTH : ZONE_EDITOR_PREVIEW_HEIGHT * imageRatio;
+  const renderedHeight = imageRatio > boxRatio ? ZONE_EDITOR_PREVIEW_WIDTH / imageRatio : ZONE_EDITOR_PREVIEW_HEIGHT;
+  const offsetX = (ZONE_EDITOR_PREVIEW_WIDTH - renderedWidth) / 2;
+  const offsetY = (ZONE_EDITOR_PREVIEW_HEIGHT - renderedHeight) / 2;
+  const xPx = (coords.xPercent / 100) * ZONE_EDITOR_PREVIEW_WIDTH;
+  const yPx = (coords.yPercent / 100) * ZONE_EDITOR_PREVIEW_HEIGHT;
+  const wPx = (coords.widthPercent / 100) * ZONE_EDITOR_PREVIEW_WIDTH;
+  const hPx = (coords.heightPercent / 100) * ZONE_EDITOR_PREVIEW_HEIGHT;
+  return {
+    ...coords,
+    xPercent: ((xPx - offsetX) / Math.max(renderedWidth, 1)) * 100,
+    yPercent: ((yPx - offsetY) / Math.max(renderedHeight, 1)) * 100,
+    widthPercent: (wPx / Math.max(renderedWidth, 1)) * 100,
+    heightPercent: (hPx / Math.max(renderedHeight, 1)) * 100,
+  };
+};
 
 // Custom rotation icon renderer — draws a circular arrow that's unmistakable
 const renderRotateIcon = (ctx: CanvasRenderingContext2D, left: number, top: number, _styleOverride: any, fabricObject: any) => {
