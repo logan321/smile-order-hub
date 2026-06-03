@@ -87,7 +87,7 @@ export function useShirtTemplates(targetUserId?: string) {
   const toggleActive = useCallback(async (id: string, active: boolean) => {
     await supabase.from('shirt_templates').update({ active }).eq('id', id);
     await fetchTemplates();
-  }, [fetchTemplates]);
+  }, [fetchTemplates, targetUserId]);
 
   const updateUvMap = useCallback(async (id: string, uvFile: File | null) => {
     const { data: { session } } = await supabase.auth.getSession();
