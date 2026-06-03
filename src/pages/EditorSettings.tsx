@@ -20,7 +20,7 @@ interface EditorSettingsProps {
 }
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive } = useShirtTemplates(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
@@ -100,8 +100,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [newTemplateNicheId, setNewTemplateNicheId] = useState<string>('');
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
+  const [uvFile, setUvFile] = useState<File | null>(null);
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
+  const uvRef = useRef<HTMLInputElement>(null);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [zoneEditorTemplate, setZoneEditorTemplate] = useState<{ id: string; frontImageUrl: string; backImageUrl: string } | null>(null);
 
@@ -112,7 +114,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
     }
     setUploadingTemplate(true);
     try {
-      await addTemplate(newTemplateName.trim(), frontFile, backFile);
+      await addTemplate(newTemplateName.trim(), frontFile, backFile, uvFile);
       // Update niche_id if selected
       if (newTemplateNicheId && newTemplateNicheId !== 'all') {
         const { data: latestTemplates } = await supabase.from('shirt_templates').select('id').order('created_at', { ascending: false }).limit(1);
@@ -124,8 +126,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       setNewTemplateNicheId('');
       setFrontFile(null);
       setBackFile(null);
+      setUvFile(null);
       if (frontRef.current) frontRef.current.value = '';
       if (backRef.current) backRef.current.value = '';
+      if (uvRef.current) uvRef.current.value = '';
       toast.success('Template adicionado!');
     } catch { toast.error('Erro ao adicionar template'); }
     setUploadingTemplate(false);
