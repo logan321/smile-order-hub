@@ -101,7 +101,7 @@ export function useStampCatalog(targetUserId?: string) {
     }
     await supabase.from('stamp_catalog').update({ uv_map_url: uvUrl } as any).eq('id', id);
     await fetchStamps();
-  }, [fetchStamps]);
+  }, [fetchStamps, targetUserId]);
 
   return { stamps, loading, addStamp, deleteStamp, updateStampUv };
 }
