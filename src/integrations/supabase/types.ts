@@ -899,6 +899,53 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_owner_whatsapp: { Args: { _owner: string }; Returns: string }
+      get_public_order: {
+        Args: { _owner: string; _tracking_id: string }
+        Returns: {
+          created_at: string
+          delivery_date: string
+          order_date: string
+          order_id: string
+          order_type: string
+          status: string
+          tracking_id: string
+          user_id: string
+        }[]
+      }
+      get_public_order_custom_values: {
+        Args: { _order_id: string }
+        Returns: {
+          field_name: string
+          value: string
+        }[]
+      }
+      get_public_order_files: {
+        Args: { _order_id: string }
+        Returns: {
+          file_id: string
+          file_name: string
+          file_url: string
+        }[]
+      }
+      get_public_order_items: {
+        Args: { _order_id: string }
+        Returns: {
+          quantity: number
+          service_id: string
+          service_name: string
+          unit_price: number
+        }[]
+      }
+      get_public_order_stages: {
+        Args: { _owner: string }
+        Returns: {
+          name: string
+          stage_id: string
+          stage_position: number
+        }[]
+      }
+      get_tracking_owner: { Args: { _slug: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
