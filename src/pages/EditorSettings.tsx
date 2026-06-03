@@ -20,8 +20,8 @@ interface EditorSettingsProps {
 }
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap } = useShirtTemplates(targetUserId);
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv } = useStampCatalog(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateUvMap, fetchTemplates } = useShirtTemplates(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUv, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
 
