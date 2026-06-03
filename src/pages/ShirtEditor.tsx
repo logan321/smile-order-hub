@@ -18,6 +18,23 @@ import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { composeShirtMockup, composeUvWithStamp } from '@/lib/composeMockup';
+
+// Small thumbnail that composes the shirt front + stamp into a single mockup image.
+function StampThumb({ shirtUrl, stampUrl, name }: { shirtUrl?: string; stampUrl: string; name: string }) {
+  const [src, setSrc] = useState<string>(stampUrl);
+  useEffect(() => {
+    let alive = true;
+    if (!shirtUrl) { setSrc(stampUrl); return; }
+    composeShirtMockup(shirtUrl, stampUrl, 240)
+      .then(url => { if (alive) setSrc(url); })
+      .catch(() => { if (alive) setSrc(stampUrl); });
+    return () => { alive = false; };
+  }, [shirtUrl, stampUrl]);
+  return (
+    <img src={src} alt={name} loading="lazy" decoding="async" className="w-full aspect-[3/4] object-contain p-1 protected-img bg-muted/10" />
+  );
+}
 
 function Preview3DTabs({ front, back, uvMapUrl }: { front: string; back: string; uvMapUrl: string | null }) {
   const [side, setSide] = useState<'front' | 'back'>('front');
