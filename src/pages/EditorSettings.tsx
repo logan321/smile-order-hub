@@ -996,11 +996,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                               {uv.name && <p className="text-xs text-muted-foreground truncate">{uv.name}</p>}
                             </div>
                             <div className="flex gap-1">
-                              <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => setZoneEditorUv({ id: uv.id, imageUrl: uv.imageUrl, code: uv.code })}>
-                                <MapPin className="h-3 w-3 mr-1" /> Zonas
-                              </Button>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditingUvId(uv.id); setEditUvCode(uv.code); setEditUvName(uv.name ?? ''); }}>
+                              <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => { setEditingUvId(uv.id); setEditUvCode(uv.code); setEditUvName(uv.name ?? ''); }}>
                                 <Pencil className="h-3.5 w-3.5" />
+                                <span className="ml-1">Editar</span>
                               </Button>
                               <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={async () => {
                                 if (!confirm(`Excluir UV ${uv.code}? As zonas associadas também serão removidas.`)) return;
