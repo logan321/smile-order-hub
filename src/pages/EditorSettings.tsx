@@ -812,24 +812,26 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             </Select>
                             <StampColorManager stampId={s.id} stampName={s.name} targetUserId={effectiveUserId} />
                             <Select
-                              value={s.uvMapId || 'none'}
+                              value={(s as any).templateId || 'none'}
                               onValueChange={async v => {
                                 try {
-                                  await updateStampUvMapId(s.id, v === 'none' ? null : v);
-                                  toast.success('UV vinculado!');
-                                } catch { toast.error('Erro ao vincular UV'); }
+                                  await updateStampTemplateId(s.id, v === 'none' ? null : v);
+                                  toast.success('Template vinculado!');
+                                } catch { toast.error('Erro ao vincular template'); }
                               }}
                             >
-                              <SelectTrigger className="h-7 w-24 text-[10px] flex-shrink-0">
+                              <SelectTrigger className="h-7 w-28 text-[10px] flex-shrink-0">
                                 <div className="flex items-center gap-1">
-                                  <Box className={`h-3 w-3 ${s.uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
-                                  <SelectValue placeholder="UV" />
+                                  <Shirt className={`h-3 w-3 ${(s as any).templateId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="Template" />
                                 </div>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
-                                {uvMaps.map(u => (
-                                  <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                                <SelectItem value="none" className="text-xs">Sem template</SelectItem>
+                                {templates.map(t => (
+                                  <SelectItem key={t.id} value={t.id} className="text-xs">
+                                    {t.name}{t.uvMapId ? ' • UV ✓' : ''}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
