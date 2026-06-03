@@ -379,6 +379,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
         const bakeCanvas = (fc: Canvas | null) => {
           if (!fc) return;
+          const side: 'front' | 'back' = fc === frontFabricRef.current ? 'front' : 'back';
           const originalVpt = fc.viewportTransform ? ([...fc.viewportTransform] as typeof fc.viewportTransform) : undefined;
           try {
             // Render the whole edit layer instead of each object individually.
@@ -388,14 +389,43 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             fc.setViewportTransform([1, 0, 0, 1, 0, 0]);
             fc.setZoom(1);
             fc.requestRenderAll();
-            const layer = fc.toCanvasElement(2, {
+            const MULT = 2;
+            const layer = fc.toCanvasElement(MULT, {
               left: 0,
               top: 0,
               width: CANVAS_WIDTH,
               height: CANVAS_HEIGHT,
               filter: (obj: any) => Boolean(obj._userElement && !obj._isBackground),
             });
-            ctx.drawImage(layer, 0, 0, base.width, base.height);
+            // The 2D editor canvas and the UV image are different layouts.
+            // For each zone visible on this side, copy that zone's pixel region from
+            // the rendered edit layer into the matching zone region on the UV image,
+            // so user-added text/logos appear where the user actually placed them.
+            const zonesForSide = templateZones.filter(
+              (z) => !z.patchOnly && (z.side === side || z.shared)
+            );
+            if (zonesForSide.length === 0) {
+              // Fallback: stretch whole layer (legacy behavior)
+              ctx.drawImage(layer, 0, 0, base.width, base.height);
+            } else {
+              for (const z of zonesForSide) {
+                const c = getZoneCoordsForSide(z, side);
+                const sx = (c.xPercent / 100) * CANVAS_WIDTH * MULT;
+                const sy = (c.yPercent / 100) * CANVAS_HEIGHT * MULT;
+                const sw = (c.widthPercent / 100) * CANVAS_WIDTH * MULT;
+                const sh = (c.heightPercent / 100) * CANVAS_HEIGHT * MULT;
+                const dx = (c.xPercent / 100) * base.width;
+                const dy = (c.yPercent / 100) * base.height;
+                const dw = (c.widthPercent / 100) * base.width;
+                const dh = (c.heightPercent / 100) * base.height;
+                if (sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) continue;
+                try {
+                  ctx.drawImage(layer, sx, sy, sw, sh, dx, dy, dw, dh);
+                } catch (e) {
+                  // ignore out-of-bounds
+                }
+              }
+            }
           } catch (err) {
             console.warn('bake canvas failed', err);
           } finally {
@@ -415,7 +445,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
