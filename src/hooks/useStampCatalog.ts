@@ -7,6 +7,7 @@ export interface StampItem {
   category: string;
   imageUrl: string;
   backImageUrl: string | null;
+  uvMapUrl: string | null;
   active: boolean;
   createdAt: string;
 }
@@ -30,6 +31,7 @@ export function useStampCatalog(targetUserId?: string) {
       category: s.category,
       imageUrl: s.image_url,
       backImageUrl: s.back_image_url ?? null,
+      uvMapUrl: s.uv_map_url ?? null,
       active: s.active,
       createdAt: s.created_at,
     })) ?? []);
@@ -38,7 +40,7 @@ export function useStampCatalog(targetUserId?: string) {
 
   useEffect(() => { fetchStamps(); }, [fetchStamps]);
 
-  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File) => {
+  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File, uvFile?: File | null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -57,12 +59,21 @@ export function useStampCatalog(targetUserId?: string) {
     if (backErr) throw backErr;
     const { data: backUrl } = supabase.storage.from('stamp-catalog').getPublicUrl(backPath);
 
+    let uvUrl: string | null = null;
+    if (uvFile) {
+      const uvPath = `${userId}/${ts}_uv_${uvFile.name}`;
+      const { error: uvErr } = await supabase.storage.from('stamp-catalog').upload(uvPath, uvFile);
+      if (uvErr) throw uvErr;
+      uvUrl = supabase.storage.from('stamp-catalog').getPublicUrl(uvPath).data.publicUrl;
+    }
+
     await supabase.from('stamp_catalog').insert({
       user_id: userId,
       name,
       category,
       image_url: frontUrl.publicUrl,
       back_image_url: backUrl.publicUrl,
+      uv_map_url: uvUrl,
     } as any);
 
     await fetchStamps();
@@ -73,5 +84,21 @@ export function useStampCatalog(targetUserId?: string) {
     await fetchStamps();
   }, [fetchStamps]);
 
-  return { stamps, loading, addStamp, deleteStamp };
+  const updateStampUv = useCallback(async (id: string, uvFile: File | null) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = targetUserId || session.user.id;
+    let uvUrl: string | null = null;
+    if (uvFile) {
+      const ts = Date.now();
+      const uvPath = `${userId}/${ts}_uv_${uvFile.name}`;
+      const { error } = await supabase.storage.from('stamp-catalog').upload(uvPath, uvFile);
+      if (error) throw error;
+      uvUrl = supabase.storage.from('stamp-catalog').getPublicUrl(uvPath).data.publicUrl;
+    }
+    await supabase.from('stamp_catalog').update({ uv_map_url: uvUrl } as any).eq('id', id);
+    await fetchStamps();
+  }, [fetchStamps]);
+
+  return { stamps, loading, addStamp, deleteStamp, updateStampUv };
 }
