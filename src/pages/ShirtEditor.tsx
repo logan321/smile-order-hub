@@ -1842,22 +1842,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               </div>
 
-              {/* 3D principal — quando o template tem UV configurado e o usuário não está editando 2D */}
-              {selectedTemplate?.uvMapUrl && !show2DEditor && (
+              {/* 3D principal — quando há UV (template ou estampa) e o usuário não está editando 2D */}
+              {effectiveUvUrl && !show2DEditor && (
                 <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
                   <div className="w-full h-full max-w-3xl">
                     <Shirt3DPreview
                       frontImage={selectedTemplate.frontImageUrl}
                       backImage={selectedTemplate.backImageUrl}
-                      uvMapUrl={selectedTemplate.uvMapUrl}
-                      uvCanvas={uv3DCanvas}
+                      uvMapUrl={effectiveUvUrl}
+                      uvCanvas={appliedStamp?.uvMapUrl ? null : uv3DCanvas}
                     />
                   </div>
                 </div>
               )}
 
               {/* Toggle 2D/3D — só aparece quando UV está configurado */}
-              {selectedTemplate?.uvMapUrl && (
+              {effectiveUvUrl && (
                 <button
                   onClick={() => setShow2DEditor(v => !v)}
                   className="absolute top-2 left-2 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border shadow-md text-xs font-bold text-foreground hover:bg-muted transition-all"
