@@ -17,6 +17,34 @@ import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
+function Preview3DTabs({ front, back, uvMapUrl }: { front: string; back: string; uvMapUrl: string | null }) {
+  const [side, setSide] = useState<'front' | 'back'>('front');
+  return (
+    <Tabs defaultValue="3d" className="flex-1 min-h-0 flex flex-col">
+      <TabsList className="self-center">
+        <TabsTrigger value="2d">Ver em 2D</TabsTrigger>
+        <TabsTrigger value="3d">Ver em 3D</TabsTrigger>
+      </TabsList>
+      <TabsContent value="2d" className="flex-1 min-h-0 mt-2 flex flex-col">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Button size="sm" variant={side === 'front' ? 'default' : 'outline'} onClick={() => setSide('front')}>Frente</Button>
+          <Button size="sm" variant={side === 'back' ? 'default' : 'outline'} onClick={() => setSide('back')}>Costas</Button>
+        </div>
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden">
+          <img src={side === 'front' ? front : back} alt={`Pré-visualização ${side}`} className="max-h-full max-w-full object-contain" />
+        </div>
+      </TabsContent>
+      <TabsContent value="3d" className="flex-1 min-h-0 mt-2 flex flex-col">
+        <div className="flex-1 min-h-0">
+          <Shirt3DPreview frontImage={front} backImage={back} uvMapUrl={uvMapUrl} />
+        </div>
+        <p className="text-xs text-muted-foreground text-center mt-1">Arraste para girar · Use a roda do mouse / pinça para dar zoom</p>
+      </TabsContent>
+    </Tabs>
+  );
+}
 
 
 interface ShirtEditorProps {
