@@ -472,7 +472,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion, templateZones, usingUvZones]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
@@ -1044,7 +1044,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   // Helper to get zone coords for a specific side
   const getZoneCoordsForSide = (zone: TemplateZone, side: 'front' | 'back') => {
-    const useBack = zone.shared && zone.side !== side;
+    const useBack = !usingUvZones && zone.shared && zone.side !== side;
     return {
       xPercent: useBack ? zone.backXPercent : zone.xPercent,
       yPercent: useBack ? zone.backYPercent : zone.yPercent,
