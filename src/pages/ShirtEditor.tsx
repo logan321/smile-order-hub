@@ -436,15 +436,18 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             } else {
               for (const z of zonesForSide) {
                 const c = getZoneCoordsForSide(z, side);
-                const uvCoords = usingUvZones ? mapZoneEditorCoordsToImageCoords(c, base.width, base.height) : c;
+                // Zones are stored as percentages — use them directly on both
+                // the source (edit canvas) and destination (UV image). No
+                // letterboxing reprojection: matches the reference system's
+                // UV_POSITIONS approach (xPercent * uvWidth, yPercent * uvHeight).
                 const sx = (c.xPercent / 100) * CANVAS_WIDTH * MULT;
                 const sy = (c.yPercent / 100) * CANVAS_HEIGHT * MULT;
                 const sw = (c.widthPercent / 100) * CANVAS_WIDTH * MULT;
                 const sh = (c.heightPercent / 100) * CANVAS_HEIGHT * MULT;
-                const dx = (uvCoords.xPercent / 100) * base.width;
-                const dy = (uvCoords.yPercent / 100) * base.height;
-                const dw = (uvCoords.widthPercent / 100) * base.width;
-                const dh = (uvCoords.heightPercent / 100) * base.height;
+                const dx = (c.xPercent / 100) * base.width;
+                const dy = (c.yPercent / 100) * base.height;
+                const dw = (c.widthPercent / 100) * base.width;
+                const dh = (c.heightPercent / 100) * base.height;
                 if (sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) continue;
                 try {
                   ctx.drawImage(layer, sx, sy, sw, sh, dx, dy, dw, dh);
