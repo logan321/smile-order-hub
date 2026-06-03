@@ -23,18 +23,20 @@ export interface TemplateZone {
   backPathData: { x: number; y: number }[] | null;
 }
 
-export function useTemplateZones(templateId?: string) {
+export function useTemplateZones(templateId?: string, uvMapId?: string) {
   const [zones, setZones] = useState<TemplateZone[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchZones = useCallback(async () => {
-    if (!templateId) { setZones([]); return; }
+    if (!templateId && !uvMapId) { setZones([]); return; }
     setLoading(true);
-    const { data } = await supabase
-      .from('template_zones')
-      .select('*')
-      .eq('template_id', templateId)
-      .order('created_at', { ascending: true });
+    let query = supabase.from('template_zones').select('*').order('created_at', { ascending: true });
+    if (uvMapId) {
+      query = query.eq('uv_map_id', uvMapId);
+    } else if (templateId) {
+      query = query.eq('template_id', templateId);
+    }
+    const { data } = await query;
 
     setZones((data as any[])?.map(z => ({
       id: z.id,
@@ -57,16 +59,17 @@ export function useTemplateZones(templateId?: string) {
       backPathData: z.back_path_data as { x: number; y: number }[] | null,
     })) ?? []);
     setLoading(false);
-  }, [templateId]);
+  }, [templateId, uvMapId]);
 
   useEffect(() => { fetchZones(); }, [fetchZones]);
 
   const addZone = useCallback(async (name: string, side: 'front' | 'back', x = 30, y = 30, w = 20, h = 15) => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session || !templateId) return;
+    if (!session || (!templateId && !uvMapId)) return;
 
     await supabase.from('template_zones').insert({
-      template_id: templateId,
+      template_id: uvMapId ? null : templateId,
+      uv_map_id: uvMapId ?? null,
       user_id: session.user.id,
       name,
       side,
@@ -80,7 +83,7 @@ export function useTemplateZones(templateId?: string) {
       back_height_percent: h,
     });
     await fetchZones();
-  }, [templateId, fetchZones]);
+  }, [templateId, uvMapId, fetchZones]);
 
   const updateZone = useCallback(async (id: string, updates: Partial<Pick<TemplateZone, 'name' | 'xPercent' | 'yPercent' | 'widthPercent' | 'heightPercent' | 'shared' | 'patchOnly' | 'pathData' | 'rotation' | 'backXPercent' | 'backYPercent' | 'backWidthPercent' | 'backHeightPercent' | 'backRotation' | 'backPathData'>>) => {
     const mapped: Record<string, any> = {};
