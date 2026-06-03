@@ -1965,6 +1965,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         </div>
       )}
       {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
+
+      <Dialog open={show3D} onOpenChange={setShow3D}>
+        <DialogContent className="max-w-3xl w-[95vw] h-[85vh] p-4 flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-primary" />
+              Pré-visualização 3D
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {preview3D && (
+              <Shirt3DPreview frontImage={preview3D.front} backImage={preview3D.back} />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Arraste para girar · Use a roda do mouse / pinça para dar zoom
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
