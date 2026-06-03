@@ -24,7 +24,7 @@ const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, fetchTemplates } = useShirtTemplates(targetUserId);
-  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, fetchStamps } = useStampCatalog(targetUserId);
+  const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, updateStampTemplateId, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
   const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, deleteUvMap, fetchUvMaps } = useUvLibrary(targetUserId);
@@ -257,6 +257,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
   const [stampBackFile, setStampBackFile] = useState<File | null>(null);
   const [newStampUvMapId, setNewStampUvMapId] = useState<string>('none');
+  const [newStampTemplateId, setNewStampTemplateId] = useState<string>('none');
   const stampFrontRef = useRef<HTMLInputElement>(null);
   const stampBackRef = useRef<HTMLInputElement>(null);
   const [uploadingStamp, setUploadingStamp] = useState(false);
@@ -271,12 +272,14 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       const nicheObj = niches.find(n => n.id === newStampNicheId);
       const stampNicheId = newStampNicheId && newStampNicheId !== 'none' && newStampNicheId !== 'all' ? newStampNicheId : null;
       const uvMapId = newStampUvMapId && newStampUvMapId !== 'none' ? newStampUvMapId : null;
-      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, null, stampNicheId, uvMapId);
+      const templateId = newStampTemplateId && newStampTemplateId !== 'none' ? newStampTemplateId : null;
+      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, null, stampNicheId, uvMapId, templateId);
       setNewStampName('');
       setNewStampNicheId('');
       setStampFrontFile(null);
       setStampBackFile(null);
       setNewStampUvMapId('none');
+      setNewStampTemplateId('none');
       if (stampFrontRef.current) stampFrontRef.current.value = '';
       if (stampBackRef.current) stampBackRef.current.value = '';
       toast.success('Estampa adicionada!');
@@ -809,24 +812,26 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             </Select>
                             <StampColorManager stampId={s.id} stampName={s.name} targetUserId={effectiveUserId} />
                             <Select
-                              value={s.uvMapId || 'none'}
+                              value={(s as any).templateId || 'none'}
                               onValueChange={async v => {
                                 try {
-                                  await updateStampUvMapId(s.id, v === 'none' ? null : v);
-                                  toast.success('UV vinculado!');
-                                } catch { toast.error('Erro ao vincular UV'); }
+                                  await updateStampTemplateId(s.id, v === 'none' ? null : v);
+                                  toast.success('Template vinculado!');
+                                } catch { toast.error('Erro ao vincular template'); }
                               }}
                             >
-                              <SelectTrigger className="h-7 w-24 text-[10px] flex-shrink-0">
+                              <SelectTrigger className="h-7 w-28 text-[10px] flex-shrink-0">
                                 <div className="flex items-center gap-1">
-                                  <Box className={`h-3 w-3 ${s.uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
-                                  <SelectValue placeholder="UV" />
+                                  <Shirt className={`h-3 w-3 ${(s as any).templateId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="Template" />
                                 </div>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
-                                {uvMaps.map(u => (
-                                  <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                                <SelectItem value="none" className="text-xs">Sem template</SelectItem>
+                                {templates.map(t => (
+                                  <SelectItem key={t.id} value={t.id} className="text-xs">
+                                    {t.name}{t.uvMapId ? ' • UV ✓' : ''}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -875,18 +880,20 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> UV map da biblioteca (opcional)
+                      <Shirt className="h-3 w-3" /> Template (modelagem) vinculado *
                     </label>
-                    <Select value={newStampUvMapId} onValueChange={setNewStampUvMapId}>
-                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
+                    <Select value={newStampTemplateId} onValueChange={setNewStampTemplateId}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione o template desta estampa" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
-                        {uvMaps.map(u => (
-                          <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                        <SelectItem value="none" className="text-xs">Sem template</SelectItem>
+                        {templates.map(t => (
+                          <SelectItem key={t.id} value={t.id} className="text-xs">
+                            {t.name}{t.uvMapId ? ' • UV ✓' : ' • sem UV'}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">Quando o cliente clicar nesta estampa, o 3D usa o UV vinculado. Cadastre UVs na aba "Biblioteca de UVs".</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Ao escolher esta estampa no editor, o 3D usa o UV e as zonas do template vinculado. Cadastre o UV matriz e marque as zonas pelo botão <MapPin className="h-3 w-3 inline" /> em "Camisas em Branco".</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />

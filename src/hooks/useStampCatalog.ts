@@ -9,6 +9,7 @@ export interface StampItem {
   backImageUrl: string | null;
   uvMapUrl: string | null;
   uvMapId: string | null;
+  templateId: string | null;
   nicheId: string | null;
   active: boolean;
   createdAt: string;
@@ -35,6 +36,7 @@ export function useStampCatalog(targetUserId?: string) {
       backImageUrl: s.back_image_url ?? null,
       uvMapUrl: s.uv_map_url ?? null,
       uvMapId: s.uv_map_id ?? null,
+      templateId: s.template_id ?? null,
       nicheId: s.niche_id ?? null,
       active: s.active,
       createdAt: s.created_at,
@@ -44,7 +46,7 @@ export function useStampCatalog(targetUserId?: string) {
 
   useEffect(() => { fetchStamps(); }, [fetchStamps]);
 
-  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File, uvFile?: File | null, nicheId?: string | null, uvMapId?: string | null) => {
+  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File, uvFile?: File | null, nicheId?: string | null, uvMapId?: string | null, templateId?: string | null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -79,6 +81,7 @@ export function useStampCatalog(targetUserId?: string) {
       back_image_url: backUrl.publicUrl,
       uv_map_url: uvUrl,
       uv_map_id: uvMapId ?? null,
+      template_id: templateId ?? null,
       niche_id: nicheId || null,
     } as any);
 
@@ -111,5 +114,10 @@ export function useStampCatalog(targetUserId?: string) {
     await fetchStamps();
   }, [fetchStamps]);
 
-  return { stamps, loading, addStamp, deleteStamp, updateStampUv, updateStampUvMapId, fetchStamps };
+  const updateStampTemplateId = useCallback(async (id: string, templateId: string | null) => {
+    await supabase.from('stamp_catalog').update({ template_id: templateId } as any).eq('id', id);
+    await fetchStamps();
+  }, [fetchStamps]);
+
+  return { stamps, loading, addStamp, deleteStamp, updateStampUv, updateStampUvMapId, updateStampTemplateId, fetchStamps };
 }

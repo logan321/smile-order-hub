@@ -170,6 +170,7 @@ interface Stamp {
   backImageUrl: string | null;
   uvMapUrl?: string | null;
   uvMapId?: string | null;
+  templateId?: string | null;
   nicheId?: string | null;
 }
 
@@ -465,6 +466,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapId: s.uv_map_id ?? null,
         uvMapUrl: resolveUv(s.uv_map_id ?? null, s.uv_map_url ?? null),
+        templateId: s.template_id ?? null,
         nicheId: s.niche_id ?? null,
       })) ?? [];
       const recoveredStamps = misplacedStampTemplates.map(t => ({
@@ -834,6 +836,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
+    // If the stamp is linked to a different template, swap the active template
+    // so the 3D preview (UV + zones) reflects the template configured for it.
+    if (stamp.templateId && stamp.templateId !== selectedTemplate?.id) {
+      const linked = allTemplates.find(t => t.id === stamp.templateId);
+      if (linked) setSelectedTemplate(linked);
+    }
     const backUrl = stamp.backImageUrl || stamp.imageUrl;
     try {
       await Promise.all([
