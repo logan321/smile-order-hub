@@ -569,6 +569,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         if (u.code) uvMapByCode.set(norm(u.code), { id: u.id, url: u.image_url });
         if (u.name) uvMapByCode.set(norm(u.name), { id: u.id, url: u.image_url });
       });
+      // Pick the first available UV map as the universal fallback for 3D.
+      const firstUv = ((uvMapsRes.data as any[]) ?? [])[0];
+      setFallbackUvUrl(firstUv?.image_url ?? null);
       const matchByName = (name: string | null | undefined) => {
         if (!name) return null;
         return uvMapByCode.get(name.trim().toLowerCase()) ?? null;
