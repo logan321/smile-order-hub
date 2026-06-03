@@ -1963,6 +1963,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       backImage={selectedTemplate.backImageUrl}
                       uvMapUrl={effectiveUvUrl}
                       uvCanvas={uv3DCanvas}
+                      uvVersion={uvTextureVersion}
                     />
                   </div>
                 </div>
