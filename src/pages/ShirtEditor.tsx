@@ -15,6 +15,8 @@ import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import Shirt3DPreview from '@/components/Shirt3DPreview';
 
 
 interface ShirtEditorProps {
@@ -208,6 +210,23 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [show3D, setShow3D] = useState(false);
+  const [preview3D, setPreview3D] = useState<{ front: string; back: string } | null>(null);
+
+  const handleOpen3D = () => {
+    const frontCanvas = frontFabricRef.current;
+    const backCanvas = backFabricRef.current;
+    if (!frontCanvas || !backCanvas) return;
+    try {
+      const front = exportCanvas(frontCanvas);
+      const back = exportCanvas(backCanvas);
+      setPreview3D({ front, back });
+      setShow3D(true);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao gerar pré-visualização 3D');
+    }
+  };
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
   const [strokeColor, setStrokeColor] = useState('#FFFFFF');
