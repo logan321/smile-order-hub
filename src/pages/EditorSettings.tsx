@@ -555,31 +555,28 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 {niches.map(n => <SelectItem key={n.id} value={n.id} className="text-xs">{n.icon} {n.name}</SelectItem>)}
                               </SelectContent>
                             </Select>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              title={t.uvMapUrl ? 'Trocar molde UV (3D)' : 'Enviar molde UV (3D)'}
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/png,image/jpeg,image/webp';
-                                input.onchange = async () => {
-                                  const f = input.files?.[0];
-                                  if (!f) return;
-                                  try {
-                                    await updateUvMap(t.id, f);
-                                    toast.success('Molde UV atualizado!');
-                                  } catch { toast.error('Erro ao enviar molde UV'); }
-                                };
-                                input.click();
+                            <Select
+                              value={t.uvMapId || 'none'}
+                              onValueChange={async v => {
+                                try {
+                                  await updateTemplateUvMapId(t.id, v === 'none' ? null : v);
+                                  toast.success('UV vinculado!');
+                                } catch { toast.error('Erro ao vincular UV'); }
                               }}
                             >
-                              <Box className={`h-3.5 w-3.5 ${t.uvMapUrl ? 'text-primary' : 'text-muted-foreground'}`} />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoneEditorTemplate({ id: t.id, frontImageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl })} title="Editar Zonas">
-                              <MapPin className="h-3.5 w-3.5 text-primary" />
-                            </Button>
+                              <SelectTrigger className="h-7 w-24 text-[10px]">
+                                <div className="flex items-center gap-1">
+                                  <Box className={`h-3 w-3 ${t.uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="UV" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                                {uvMaps.map(u => (
+                                  <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveTemplateToStamps(t)} title="Mover para Estampas">
                               <Stamp className="h-3.5 w-3.5 text-primary" />
                             </Button>
@@ -634,16 +631,18 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> Molde UV completo (opcional — usado na pré-visualização 3D)
+                      <Box className="h-3 w-3" /> UV map da biblioteca (opcional — usado na pré-visualização 3D)
                     </label>
-                    <div className="border border-dashed border-border rounded-lg p-3">
-                      <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
-                        <Upload className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{uvFile ? uvFile.name : 'Selecionar molde UV (PNG)'}</span>
-                        <input ref={uvRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setUvFile(e.target.files?.[0] ?? null)} className="hidden" />
-                      </label>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">Layout plano exportado do CLO3D (frente + costas + mangas + gola na mesma imagem). O cliente final não verá esta imagem — ela é usada apenas para projetar a estampa no 3D.</p>
+                    <Select value={newTemplateUvMapId} onValueChange={setNewTemplateUvMapId}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione um UV da biblioteca" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                        {uvMaps.map(u => (
+                          <SelectItem key={u.id} value={u.id} className="text-xs">{u.code}{u.name ? ` — ${u.name}` : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1">As zonas (frente, costas, mangas, gola) são definidas sobre o UV map na aba "Biblioteca de UVs".</p>
                   </div>
                   <Button onClick={handleAddTemplate} disabled={uploadingTemplate || !newTemplateName.trim() || !frontFile || !backFile}>
                     <Plus className="h-4 w-4 mr-2" />
