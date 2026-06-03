@@ -47,13 +47,9 @@ const TrackOrder = () => {
   useEffect(() => {
     if (!slug) { setSlugValid(false); return; }
     const resolve = async () => {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('user_id')
-        .eq('tracking_slug', slug.toLowerCase())
-        .maybeSingle();
+      const { data } = await supabase.rpc('get_tracking_owner', { _slug: slug.toLowerCase() });
       if (data) {
-        setOwnerUserId(data.user_id);
+        setOwnerUserId(data as string);
         setSlugValid(true);
       } else {
         setSlugValid(false);
@@ -72,55 +68,37 @@ const TrackOrder = () => {
     setOrder(null);
 
     try {
-      const { data: orderData, error } = await supabase
-        .from('orders')
-        .select('id, tracking_id, status, date, created_at, user_id, order_type, delivery_date')
-        .eq('tracking_id', id)
-        .eq('user_id', ownerUserId)
-        .maybeSingle();
-
+      const { data: orderRows, error } = await supabase.rpc('get_public_order', { _tracking_id: id, _owner: ownerUserId });
       if (error) throw error;
+      const orderData: any = Array.isArray(orderRows) ? orderRows[0] : orderRows;
       if (!orderData) { setOrder(null); return; }
 
-      // Fetch items, files, custom values, and stages in parallel
+      const orderId = orderData.order_id;
+
       const [itemsRes, filesRes, customRes, stagesRes] = await Promise.all([
-        supabase.from('order_items').select('quantity, unit_price, service_id').eq('order_id', orderData.id),
-        supabase.from('order_files').select('id, file_name, file_url').eq('order_id', orderData.id),
-        supabase.from('order_custom_values').select('value, custom_field_id').eq('order_id', orderData.id),
-        supabase.from('order_stages').select('*').eq('user_id', orderData.user_id).order('position', { ascending: true }),
+        supabase.rpc('get_public_order_items', { _order_id: orderId }),
+        supabase.rpc('get_public_order_files', { _order_id: orderId }),
+        supabase.rpc('get_public_order_custom_values', { _order_id: orderId }),
+        supabase.rpc('get_public_order_stages', { _owner: orderData.user_id }),
       ]);
 
-      // Resolve service names
-      let itemsWithNames: OrderResult['items'] = [];
-      if (itemsRes.data && itemsRes.data.length > 0) {
-        const serviceIds = [...new Set(itemsRes.data.map(i => i.service_id))];
-        const { data: svcs } = await supabase.from('services').select('id, name').in('id', serviceIds);
-        itemsWithNames = itemsRes.data.map(item => ({
-          service_name: svcs?.find((s: any) => s.id === item.service_id)?.name ?? 'Serviço',
-          quantity: item.quantity,
-          unit_price: Number(item.unit_price),
-        }));
-      }
-
-      // Resolve custom field names
-      let customValues: CustomValue[] = [];
-      if (customRes.data && customRes.data.length > 0) {
-        const fieldIds = [...new Set(customRes.data.map(v => v.custom_field_id))];
-        const { data: fieldsData } = await supabase.from('custom_fields').select('id, name').in('id', fieldIds);
-        customValues = customRes.data.map(v => ({
-          fieldName: fieldsData?.find((f: any) => f.id === v.custom_field_id)?.name ?? 'Campo',
-          value: v.value,
-        }));
-      }
-
-      // Files
-      const files: OrderFile[] = (filesRes.data ?? []).map((f: any) => ({
-        id: f.id, fileName: f.file_name, fileUrl: f.file_url,
+      const itemsWithNames: OrderResult['items'] = (itemsRes.data ?? []).map((item: any) => ({
+        service_name: item.service_name ?? 'Serviço',
+        quantity: item.quantity,
+        unit_price: Number(item.unit_price),
       }));
 
-      // Stages
+      const customValues: CustomValue[] = (customRes.data ?? []).map((v: any) => ({
+        fieldName: v.field_name ?? 'Campo',
+        value: v.value,
+      }));
+
+      const files: OrderFile[] = (filesRes.data ?? []).map((f: any) => ({
+        id: f.file_id, fileName: f.file_name, fileUrl: f.file_url,
+      }));
+
       if (stagesRes.data && stagesRes.data.length > 0) {
-        setStatusSteps(stagesRes.data.map((s: any) => ({ key: s.id, label: s.name, description: s.name })));
+        setStatusSteps(stagesRes.data.map((s: any) => ({ key: s.stage_id, label: s.name, description: s.name })));
       } else {
         setStatusSteps(DEFAULT_STATUS_STEPS);
       }
@@ -128,11 +106,11 @@ const TrackOrder = () => {
       setOrder({
         tracking_id: orderData.tracking_id,
         status: orderData.status,
-        date: orderData.date,
+        date: orderData.order_date,
         created_at: orderData.created_at,
         user_id: orderData.user_id,
         order_type: orderData.order_type,
-        delivery_date: (orderData as any).delivery_date ?? null,
+        delivery_date: orderData.delivery_date ?? null,
         items: itemsWithNames,
         files,
         customValues,
