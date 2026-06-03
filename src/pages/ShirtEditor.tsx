@@ -380,6 +380,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     selectedTemplate?.uvMapId ? undefined : selectedTemplate?.id
   );
   const templateZones = (selectedTemplate?.uvMapId && uvZones.length > 0) ? uvZones : legacyZones;
+  const usingUvZones = Boolean(selectedTemplate?.uvMapId && uvZones.length > 0);
+  const zoneMatchesSide = (zone: TemplateZone, side: 'front' | 'back') => usingUvZones || zone.side === side || zone.shared;
 
   // 3D UV texture:
   // Always bake the front+back canvas user edits (text/logos) onto the UV at the
@@ -427,23 +429,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             // For each zone visible on this side, copy that zone's pixel region from
             // the rendered edit layer into the matching zone region on the UV image,
             // so user-added text/logos appear where the user actually placed them.
-            const zonesForSide = templateZones.filter(
-              (z) => !z.patchOnly && (z.side === side || z.shared)
-            );
+            const zonesForSide = templateZones.filter((z) => zoneMatchesSide(z, side));
             if (zonesForSide.length === 0) {
               // Fallback: stretch whole layer (legacy behavior)
               ctx.drawImage(layer, 0, 0, base.width, base.height);
             } else {
               for (const z of zonesForSide) {
                 const c = getZoneCoordsForSide(z, side);
+                const uvCoords = usingUvZones ? mapZoneEditorCoordsToImageCoords(c, base.width, base.height) : c;
                 const sx = (c.xPercent / 100) * CANVAS_WIDTH * MULT;
                 const sy = (c.yPercent / 100) * CANVAS_HEIGHT * MULT;
                 const sw = (c.widthPercent / 100) * CANVAS_WIDTH * MULT;
                 const sh = (c.heightPercent / 100) * CANVAS_HEIGHT * MULT;
-                const dx = (c.xPercent / 100) * base.width;
-                const dy = (c.yPercent / 100) * base.height;
-                const dw = (c.widthPercent / 100) * base.width;
-                const dh = (c.heightPercent / 100) * base.height;
+                const dx = (uvCoords.xPercent / 100) * base.width;
+                const dy = (uvCoords.yPercent / 100) * base.height;
+                const dw = (uvCoords.widthPercent / 100) * base.width;
+                const dh = (uvCoords.heightPercent / 100) * base.height;
                 if (sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) continue;
                 try {
                   ctx.drawImage(layer, sx, sy, sw, sh, dx, dy, dw, dh);
