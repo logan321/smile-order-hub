@@ -104,6 +104,7 @@ interface Template {
   name: string;
   frontImageUrl: string;
   backImageUrl: string;
+  uvMapUrl: string | null;
   userId: string;
   nicheId: string | null;
 }
