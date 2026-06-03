@@ -1,0 +1,1 @@
+ALTER TABLE public.shirt_templates ADD COLUMN IF NOT EXISTS uv_map_url TEXT;
