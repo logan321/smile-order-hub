@@ -355,19 +355,56 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const templateZones = (selectedTemplate?.uvMapId && uvZones.length > 0) ? uvZones : legacyZones;
 
   // 3D UV texture:
-  // 1) if the picked stamp has its own complete UV mockup → use it as-is (no compose)
-  // 2) else if the template has a base UV → compose it with the stamp image
-  // 3) else → no UV texture
+  // Always bake the front+back canvas user edits (text/logos) onto the UV at the
+  // same percent coordinates the zones use, so anything the client edits shows in 3D.
   useEffect(() => {
-    if (appliedStamp?.uvMapUrl) { setUv3DCanvas(null); return; } // url path handled below
-    const uv = selectedTemplate?.uvMapUrl;
+    const uv = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl;
     if (!uv) { setUv3DCanvas(null); return; }
     let alive = true;
-    composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null)
-      .then(c => { if (alive) setUv3DCanvas(c); })
-      .catch(e => console.warn('UV compose failed', e));
+    (async () => {
+      try {
+        // Start from UV image. If template (not stamp) UV, optionally overlay stamp.
+        const base = appliedStamp?.uvMapUrl
+          ? await (async () => {
+              const img = await loadUvImage(uv);
+              const c = document.createElement('canvas');
+              c.width = img.naturalWidth; c.height = img.naturalHeight;
+              c.getContext('2d')!.drawImage(img, 0, 0);
+              return c;
+            })()
+          : await composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null);
+
+        const ctx = base.getContext('2d')!;
+        const uvW = base.width;
+        const uvH = base.height;
+
+        const bakeCanvas = (fc: Canvas | null) => {
+          if (!fc) return;
+          const objs = fc.getObjects().filter((o: any) => !o._isBackground);
+          for (const obj of objs) {
+            try {
+              const b = obj.getBoundingRect();
+              const dx = (b.left / CANVAS_WIDTH) * uvW;
+              const dy = (b.top / CANVAS_HEIGHT) * uvH;
+              const dw = (b.width / CANVAS_WIDTH) * uvW;
+              const dh = (b.height / CANVAS_HEIGHT) * uvH;
+              const el = (obj as any).toCanvasElement({ multiplier: 2 }) as HTMLCanvasElement;
+              ctx.drawImage(el, dx, dy, dw, dh);
+            } catch (err) {
+              console.warn('bake obj failed', err);
+            }
+          }
+        };
+        bakeCanvas(frontFabricRef.current);
+        bakeCanvas(backFabricRef.current);
+
+        if (alive) setUv3DCanvas(base);
+      } catch (e) {
+        console.warn('UV compose failed', e);
+      }
+    })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, editsVersion]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
