@@ -2170,7 +2170,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               Escolha a zona onde {showZonePicker === 'text' ? 'o texto' : 'a logo'} será posicionado(a):
             </p>
             <div className="space-y-2 mb-4">
-              {templateZones.filter(z => !z.patchOnly && (z.side === activeView || z.shared)).map(zone => (
+              {templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView)).map(zone => (
                 <Button key={zone.id} variant="outline" className="w-full justify-start gap-2" onClick={() => {
                   if (showZonePicker === 'text') addTextAtZone(zone);
                   else if (pendingLogoFile) placeLogoFile(pendingLogoFile, zone);
