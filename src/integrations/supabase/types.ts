@@ -694,12 +694,16 @@ export type Database = {
           back_x_percent: number
           back_y_percent: number
           created_at: string
+          default_size_3d: Json | null
           height_percent: number
           id: string
           name: string
+          normal_3d: Json | null
           patch_only: boolean
           path_data: Json | null
+          position_3d: Json | null
           rotation: number
+          rotation_3d: number | null
           shared: boolean
           side: string
           template_id: string | null
@@ -717,12 +721,16 @@ export type Database = {
           back_x_percent?: number
           back_y_percent?: number
           created_at?: string
+          default_size_3d?: Json | null
           height_percent?: number
           id?: string
           name: string
+          normal_3d?: Json | null
           patch_only?: boolean
           path_data?: Json | null
+          position_3d?: Json | null
           rotation?: number
+          rotation_3d?: number | null
           shared?: boolean
           side?: string
           template_id?: string | null
@@ -740,12 +748,16 @@ export type Database = {
           back_x_percent?: number
           back_y_percent?: number
           created_at?: string
+          default_size_3d?: Json | null
           height_percent?: number
           id?: string
           name?: string
+          normal_3d?: Json | null
           patch_only?: boolean
           path_data?: Json | null
+          position_3d?: Json | null
           rotation?: number
+          rotation_3d?: number | null
           shared?: boolean
           side?: string
           template_id?: string | null
