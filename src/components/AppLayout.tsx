@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield, Shirt, Palette, Calculator } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Wrench, FileText, Settings, Menu, X, LogOut, Shield, Shirt, Palette, Calculator, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useTheme } from '@/hooks/useTheme';
 import logo from '@/assets/logo.png';
 
 const navItems = [
@@ -21,6 +22,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const { isAdmin, editorEnabled } = useSubscription();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const allNavItems = [
     ...navItems,
@@ -66,6 +68,14 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </nav>
         <div className="p-3">
           <button
+            onClick={toggleTheme}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full mb-1"
+            aria-label="Alternar tema"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+          </button>
+          <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors w-full"
           >
@@ -79,9 +89,14 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border bg-card">
           <img src={logo} alt="Macro Master" className="h-7 w-auto" />
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={toggleTheme} className="p-2" aria-label="Alternar tema">
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </header>
 
         {/* Mobile Nav Overlay */}
