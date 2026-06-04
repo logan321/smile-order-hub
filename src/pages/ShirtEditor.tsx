@@ -1394,6 +1394,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         if ('initDimensions' in active && typeof (active as any).initDimensions === 'function') {
           (active as any).initDimensions();
         }
+        try { applyArcToText(active as FabricText, textCurvature); } catch (e) { console.warn(e); }
         active.dirty = true;
         active.setCoords();
         canvas.requestRenderAll();
@@ -1401,7 +1402,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       };
       applyFont();
     }
-  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, shadowEnabled, shadowColor, shadowBlur, activeView]);
+  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, shadowEnabled, shadowColor, shadowBlur, textCurvature, activeView]);
 
   // Auto-select last text object when text tab is opened (mobile)
   useEffect(() => {
