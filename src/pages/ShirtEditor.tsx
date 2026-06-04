@@ -2350,25 +2350,43 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     />
                   </div>
                   {uvZonesActive && (
-                    <div className="absolute top-2 right-2 z-30 w-[260px] max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-lg shadow-lg p-3 space-y-2">
+                    <div className="absolute top-2 right-2 z-30 w-[min(92vw,320px)] max-h-[84%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-lg shadow-lg p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <Sparkles className="h-4 w-4 text-accent" />
                         <p className="text-sm font-bold">Personalização UV</p>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">
-                        Edição direta na textura UV — sempre alinhado com o modelo 3D.
-                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={20} /></div>
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={8} max={220} /></div>
+                      </div>
+                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Arco</label>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
+                        </div>
+                        <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
+                      </div>
                       {Object.keys(uvMapZones).map((zoneKey) => {
                         const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
+                        const imageLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image');
                         return (
-                          <div key={zoneKey} className="space-y-1">
+                          <div key={zoneKey} className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-2">
                             <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{zoneKey}</label>
                             <Input
-                              value={layer?.content ?? ''}
+                              value={uvTextDrafts[zoneKey] ?? layer?.content ?? ''}
                               onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
                               placeholder="Texto / nome / nº"
                               className="h-8 text-sm"
                             />
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs" onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()}><Upload className="h-3.5 w-3.5" /> Logo</Button>
+                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs text-destructive" onClick={() => removeUvLayer(zoneKey)}><Trash2 className="h-3.5 w-3.5" /> Limpar</Button>
+                            </div>
+                            <input id={`uv-file-${zoneKey}`} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); e.currentTarget.value = ''; }} />
+                            {imageLayer && <p className="text-[10px] text-muted-foreground">Logo/imagem aplicada</p>}
                           </div>
                         );
                       })}
