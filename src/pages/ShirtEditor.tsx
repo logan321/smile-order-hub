@@ -86,10 +86,24 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
             <div className="relative flex items-center justify-center">
               <Shirt className="h-5 w-5 mb-0.5" />
               <div className="absolute inset-0 flex items-center justify-center bg-secondary/80">
-                <span className="text-[10px] font-black">L</span>
+                <span className="text-[10px] font-black">LE</span>
               </div>
             </div>
-            <span className="text-[10px] font-bold uppercase">Lateral</span>
+            <span className="text-[10px] font-bold uppercase">L. ESQ</span>
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="flex flex-col h-14 w-14 p-0 shadow-md border-2 border-primary/20 hover:border-primary/50"
+            onClick={() => onCameraChange([-5.2, 0.1, 0])}
+          >
+            <div className="relative flex items-center justify-center">
+              <Shirt className="h-5 w-5 mb-0.5" />
+              <div className="absolute inset-0 flex items-center justify-center bg-secondary/80">
+                <span className="text-[10px] font-black">LD</span>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold uppercase">L. DIR</span>
           </Button>
         </div>
       </div>

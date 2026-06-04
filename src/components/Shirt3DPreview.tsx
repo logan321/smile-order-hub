@@ -89,12 +89,12 @@ function ShirtModel({
     });
   }, [scene, uvTex, fabricColor]);
 
-  const fitScale = 3.2 / Math.max(size.y, 0.0001);
+  const fitScale = 2.8 / Math.max(size.y, 0.0001);
 
   return (
     <group
       scale={fitScale}
-      position={[-center.x * fitScale, -center.y * fitScale + 0.2, -center.z * fitScale]}
+      position={[-center.x * fitScale, -center.y * fitScale, -center.z * fitScale]}
     >
       <primitive object={scene} />
     </group>
