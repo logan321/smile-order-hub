@@ -520,6 +520,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     bumpEdits();
   };
 
+  const updateSvgText = (id: string, newText: string) => {
+    if (!svgContent) return;
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+    const updatedSvg = svgAnalyzer.current.updateText(svgDoc, id, newText);
+    setSvgContent(updatedSvg);
+    setSvgTexts(prev => prev.map(t => t.id === id ? { ...t, text: newText } : t));
+    bumpEdits();
+  };
+
+  const updateSvgImage = (id: string, newHref: string) => {
+    if (!svgContent) return;
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+    const updatedSvg = svgAnalyzer.current.updateImage(svgDoc, id, newHref);
+    setSvgContent(updatedSvg);
+    setSvgImages(prev => prev.map(img => img.id === id ? { ...img, href: newHref } : img));
+    bumpEdits();
+  };
+
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [shadowColor, setShadowColor] = useState('#000000');
   const [shadowBlur, setShadowBlur] = useState(4);
