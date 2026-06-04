@@ -2031,6 +2031,71 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                 </div>
               )}
+              {activeTab === 'text' && (
+                <div className="px-0 pt-2 -mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-semibold">Curvatura (arco)</label>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
+                  </div>
+                  <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
+                  <p className="text-[9px] text-muted-foreground/70 mt-1">-100 = arco para baixo · 0 = reto · 100 = arco para cima</p>
+                </div>
+              )}
+              {activeTab === 'name' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Nome e número</p>
+                  <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Nome (ex: SILVA)" className="h-9 text-sm uppercase" maxLength={20} />
+                  <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="Número (opcional)" className="h-9 text-sm" maxLength={3} />
+                  <div className="flex gap-2">
+                    <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={10} max={120} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button size="sm" variant="outline" onClick={() => addNamePreset('arc')} className="h-8 text-xs">Esportivo (arco)</Button>
+                    <Button size="sm" variant="outline" onClick={() => addNamePreset('straight')} className="h-8 text-xs">Reto</Button>
+                  </div>
+                </div>
+              )}
+              {activeTab === 'emblems' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Emblemas</p>
+                  {emblems.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
+                        <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={em.name}>
+                          <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 protected-img bg-muted/10" />
+                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {clientEmblems.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Meus emblemas</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {clientEmblems.map(em => (
+                          <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-primary/40 overflow-hidden bg-background">
+                            <img src={em.imageUrl} className="w-full aspect-square object-contain p-1 bg-muted/10" />
+                            <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div onClick={() => emblemInputRef.current?.click()} className="flex items-center gap-2 px-3 py-3 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <div><span className="text-xs text-muted-foreground">Enviar meu emblema</span><span className="text-[9px] text-muted-foreground/60 block">PNG, JPG, SVG</span></div>
+                  </div>
+                  <input ref={emblemInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleEmblemUpload} className="hidden" />
+                </div>
+              )}
               {activeTab === 'logo' && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
