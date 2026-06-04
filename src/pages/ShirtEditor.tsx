@@ -686,6 +686,18 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setTextStyles((textStylesRes.data as any[])?.map(ts => ({
         id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
       })) ?? []);
+      // Emblems (admin-curated library, filtered by owner)
+      try {
+        const { data: emblemsData } = await (supabase as any)
+          .from('emblems')
+          .select('id, name, image_url, niche_id')
+          .eq('user_id', ownerUserId)
+          .eq('active', true)
+          .order('position', { ascending: true });
+        setEmblems(((emblemsData as any[]) ?? []).map(e => ({
+          id: e.id, name: e.name, imageUrl: e.image_url, nicheId: e.niche_id ?? null,
+        })));
+      } catch (e) { console.warn('emblems fetch failed', e); }
       setNiches((nichesRes.data as any[])?.map(n => ({
         id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
       })) ?? []);
