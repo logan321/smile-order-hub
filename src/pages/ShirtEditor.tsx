@@ -2329,6 +2329,53 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Textos Editáveis do SVG */}
+                  {svgTexts.length > 0 && (
+                    <div className="mt-6 space-y-4">
+                      <p className="text-xs font-bold text-foreground uppercase flex items-center gap-2">
+                        <Type className="h-3.5 w-3.5 text-primary" /> 
+                        Textos da Estampa
+                      </p>
+                      {svgTexts.map((txt) => (
+                        <div key={txt.id} className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/50">
+                          <label className="text-[10px] text-muted-foreground">Conteúdo</label>
+                          <Input 
+                            value={txt.text} 
+                            onChange={(e) => updateSvgText(txt.id, e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Logos/Imagens Editáveis do SVG */}
+                  {svgImages.length > 0 && (
+                    <div className="mt-6 space-y-4">
+                      <p className="text-xs font-bold text-foreground uppercase flex items-center gap-2">
+                        <ImageIcon className="h-3.5 w-3.5 text-primary" /> 
+                        Imagens / Logos
+                      </p>
+                      {svgImages.map((img) => (
+                        <div key={img.id} className="space-y-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                          <div className="h-20 w-full bg-background rounded border border-border overflow-hidden flex items-center justify-center p-2">
+                            <img src={img.href} alt="Logo" className="max-h-full max-w-full object-contain" />
+                          </div>
+                          <div className="flex gap-2">
+                            <Input 
+                              placeholder="Nova URL da logo..."
+                              className="h-8 text-[10px]"
+                              onBlur={(e) => updateSvgImage(img.id, e.target.value)}
+                            />
+                            <Button size="sm" variant="outline" className="h-8 w-8 p-0" title="Upload">
+                              <Upload className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
