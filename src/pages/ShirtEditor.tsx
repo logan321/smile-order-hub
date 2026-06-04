@@ -410,6 +410,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   // SVG Color Personalization (Fase 1)
   const [svgColors, setSvgColors] = useState<Map<string, SvgColorGroup>>(new Map());
+  const [svgTexts, setSvgTexts] = useState<any[]>([]);
+  const [svgImages, setSvgImages] = useState<any[]>([]);
   const [analyzingColors, setAnalyzingColors] = useState(false);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const svgAnalyzer = useRef(new SvgAnalyzer());
