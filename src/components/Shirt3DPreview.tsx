@@ -94,7 +94,7 @@ function ShirtModel({
   return (
     <group
       scale={fitScale}
-      position={[-center.x * fitScale, -center.y * fitScale + 0.2, -center.z * fitScale]}
+      position={[-center.x * fitScale, -center.y * fitScale, -center.z * fitScale]}
     >
       <primitive object={scene} />
     </group>
