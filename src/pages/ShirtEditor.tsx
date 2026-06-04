@@ -359,16 +359,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     uvHeight: uvMapDims.h,
   });
 
-  const setUvLayerText = (zoneKey: string, content: string) => {
+  const commitUvLayerText = (zoneKey: string, content: string) => {
     setUvLayers(prev => {
       const existing = prev.find(l => l.zoneKey === zoneKey && l.type === 'text');
       if (existing) {
         if (!content) return prev.filter(l => l !== existing);
-        return prev.map(l => l === existing ? { ...l, content } as UvLayer : l);
+        return prev.map(l => l === existing ? { ...l, content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900 } as UvLayer : l);
       }
       if (!content) return prev;
-      return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: '#ffffff', strokeColor: '#000', strokeWidth: 6, fontFamily: 'Arial', fontWeight: 900 }];
+      return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900 }];
     });
+  };
+
+  const setUvLayerText = (zoneKey: string, content: string) => {
+    setUvTextDrafts(prev => ({ ...prev, [zoneKey]: content }));
+    if (uvTextCommitTimerRef.current != null) window.clearTimeout(uvTextCommitTimerRef.current);
+    uvTextCommitTimerRef.current = window.setTimeout(() => {
+      uvTextCommitTimerRef.current = null;
+      commitUvLayerText(zoneKey, content);
+    }, 180);
   };
 
   const handleOpen3D = () => {
