@@ -15,6 +15,7 @@ interface Shirt3DPreviewProps {
   uvVersion?: number;
   fabricColor?: string;
   autoRotate?: boolean;
+  cameraPosition?: [number, number, number];
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
@@ -108,8 +109,16 @@ export default function Shirt3DPreview({
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
+  cameraPosition = [0, 0.1, 5.2],
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
+  const [currentCameraPos, setCurrentCameraPos] = useState<[number, number, number]>(cameraPosition);
+  const [controlsKey, setControlsKey] = useState(0);
+
+  useEffect(() => {
+    setCurrentCameraPos(cameraPosition);
+    setControlsKey(prev => prev + 1);
+  }, [cameraPosition]);
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
@@ -117,7 +126,7 @@ export default function Shirt3DPreview({
     <div className="w-full h-full bg-gradient-to-b from-muted/40 to-muted rounded-lg overflow-hidden relative">
       <Canvas
         shadows
-        camera={{ position: [0, 0.1, 5.2], fov: 35 }}
+        camera={{ position: currentCameraPos, fov: 35 }}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
         dpr={[1, 2]}
       >
@@ -131,6 +140,7 @@ export default function Shirt3DPreview({
           <Environment preset="studio" background={false} />
         </Suspense>
         <OrbitControls
+          key={controlsKey}
           enablePan={false}
           autoRotate={rotating}
           autoRotateSpeed={1.2}
@@ -138,6 +148,7 @@ export default function Shirt3DPreview({
           maxDistance={8}
           enableDamping
           dampingFactor={0.08}
+          makeDefault
         />
       </Canvas>
 
