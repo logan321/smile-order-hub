@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Canvas, useLoader, useThree, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Environment, ContactShadows } from '@react-three/drei';
+import { OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -242,7 +242,6 @@ export default function Shirt3DEditor({
             pickPreview={pickPreview}
           />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
-          <Environment preset="studio" />
         </Suspense>
         <OrbitControls
           enablePan={false}
