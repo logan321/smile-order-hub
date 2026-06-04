@@ -14,15 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import {
-  Shirt, Palette, Type, Award, Upload, Save, Send, X, Plus, Trash2,
+  Shirt, Palette, Type, Award, Upload, Save, Send, X, Plus, Trash2, Sparkles,
 } from 'lucide-react';
 
 interface Props { useOwnAssets?: boolean }
 
-type TabId = 'modelo' | 'cores' | 'nome' | 'emblemas' | 'upload';
+type TabId = 'modelo' | 'estampas' | 'cores' | 'nome' | 'emblemas' | 'upload';
 
 const TABS: { id: TabId; label: string; icon: any }[] = [
   { id: 'modelo',   label: 'Modelo',   icon: Shirt },
+  { id: 'estampas', label: 'Estampas', icon: Sparkles },
   { id: 'cores',    label: 'Cores',    icon: Palette },
   { id: 'nome',     label: 'Nome',     icon: Type },
   { id: 'emblemas', label: 'Emblemas', icon: Award },
@@ -35,6 +36,7 @@ const PRESET_COLORS = [
 ];
 
 interface Emblem { id: string; name: string; image_url: string; category: string | null }
+interface Stamp  { id: string; name: string; image_url: string; uv_map_url: string | null; category: string }
 
 export default function ShirtEditor({ useOwnAssets }: Props = {}) {
   const params = useParams();
@@ -58,9 +60,10 @@ export default function ShirtEditor({ useOwnAssets }: Props = {}) {
   const [layers, setLayers] = useState<UvLayer[]>([]);
   const [activeTab, setActiveTab] = useState<TabId>('modelo');
   const [panelOpen, setPanelOpen] = useState(true);
+  const [selectedStampUrl, setSelectedStampUrl] = useState<string | null>(null);
 
   // Composite the UV texture
-  const baseUrl = template?.uvMapUrl ?? uvMap?.imageUrl ?? null;
+  const baseUrl = selectedStampUrl ?? template?.uvMapUrl ?? uvMap?.imageUrl ?? null;
   const { canvas, version, ready } = useUvCompositor({
     baseUrl,
     zones,
@@ -122,6 +125,15 @@ export default function ShirtEditor({ useOwnAssets }: Props = {}) {
     (async () => {
       const { data } = await supabase.from('emblems' as any).select('id,name,image_url,category').eq('active', true).order('position', { ascending: true });
       setEmblems((data as any[]) ?? []);
+    })();
+  }, []);
+
+  // ---- Stamps (catálogo de estampas full-body) ----
+  const [stamps, setStamps] = useState<Stamp[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('stamp_catalog').select('id,name,image_url,uv_map_url,category').eq('active', true).order('created_at', { ascending: false });
+      setStamps((data as any[]) ?? []);
     })();
   }, []);
 
@@ -220,6 +232,36 @@ export default function ShirtEditor({ useOwnAssets }: Props = {}) {
                       <div className="absolute bottom-0 inset-x-0 bg-background/90 text-[10px] font-medium text-center py-1 truncate px-1">{t.name}</div>
                     </button>
                   ))}
+                </div>
+              )}
+
+              {activeTab === 'estampas' && (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setSelectedStampUrl(null)}
+                    className={`w-full text-xs font-semibold py-2 rounded-md border-2 transition ${selectedStampUrl === null ? 'border-accent text-accent bg-accent/10' : 'border-border hover:border-accent/60'}`}
+                  >
+                    Sem estampa
+                  </button>
+                  {!stamps.length && (
+                    <p className="text-xs text-muted-foreground">Nenhuma estampa cadastrada. Peça ao admin.</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {stamps.map(s => {
+                      const url = s.uv_map_url || s.image_url;
+                      const active = selectedStampUrl === url;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedStampUrl(url)}
+                          className={`group relative rounded-lg overflow-hidden border-2 transition-all ${active ? 'border-accent ring-2 ring-accent/40' : 'border-border hover:border-accent/60'}`}
+                        >
+                          <img src={s.image_url} alt={s.name} className="w-full aspect-square object-cover bg-muted" loading="lazy" />
+                          <div className="absolute bottom-0 inset-x-0 bg-background/90 text-[10px] font-medium text-center py-1 truncate px-1">{s.name}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
