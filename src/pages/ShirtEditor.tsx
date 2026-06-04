@@ -235,6 +235,36 @@ export default function ShirtEditor({ useOwnAssets }: Props = {}) {
                 </div>
               )}
 
+              {activeTab === 'estampas' && (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setSelectedStampUrl(null)}
+                    className={`w-full text-xs font-semibold py-2 rounded-md border-2 transition ${selectedStampUrl === null ? 'border-accent text-accent bg-accent/10' : 'border-border hover:border-accent/60'}`}
+                  >
+                    Sem estampa
+                  </button>
+                  {!stamps.length && (
+                    <p className="text-xs text-muted-foreground">Nenhuma estampa cadastrada. Peça ao admin.</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    {stamps.map(s => {
+                      const url = s.uv_map_url || s.image_url;
+                      const active = selectedStampUrl === url;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedStampUrl(url)}
+                          className={`group relative rounded-lg overflow-hidden border-2 transition-all ${active ? 'border-accent ring-2 ring-accent/40' : 'border-border hover:border-accent/60'}`}
+                        >
+                          <img src={s.image_url} alt={s.name} className="w-full aspect-square object-cover bg-muted" loading="lazy" />
+                          <div className="absolute bottom-0 inset-x-0 bg-background/90 text-[10px] font-medium text-center py-1 truncate px-1">{s.name}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'cores' && (
                 <div className="space-y-4">
                   <div>
