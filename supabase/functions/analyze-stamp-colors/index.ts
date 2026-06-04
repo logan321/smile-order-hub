@@ -50,12 +50,22 @@ serve(async (req) => {
       }),
     })
 
-    const data = await response.json()
-    const result = data.choices[0].message.content
+    const data = await response.json();
+    const result = data.choices[0].message.content;
 
-    return new Response(JSON.stringify(result), {
+    // A IA pode retornar o JSON dentro de um campo ou como string pura.
+    // Como usamos response_format: json_object, o Gemini deve retornar um objeto válido.
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(result);
+    } catch (e) {
+      console.error("Erro ao fazer parse do resultado da IA:", e);
+      parsedResult = result;
+    }
+
+    return new Response(JSON.stringify(parsedResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

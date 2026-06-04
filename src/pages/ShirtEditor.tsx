@@ -410,6 +410,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   // SVG Color Personalization (Fase 1)
   const [svgColors, setSvgColors] = useState<Map<string, SvgColorGroup>>(new Map());
+  const [svgTexts, setSvgTexts] = useState<any[]>([]);
+  const [svgImages, setSvgImages] = useState<any[]>([]);
   const [analyzingColors, setAnalyzingColors] = useState(false);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const svgAnalyzer = useRef(new SvgAnalyzer());
@@ -459,17 +461,34 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const response = await fetch(toProxyUrl(url));
       const svgText = await response.text();
       setSvgContent(svgText);
-      const colors = await svgAnalyzer.current.analyze(svgText);
+      const { colors, texts, images } = await svgAnalyzer.current.analyze(svgText);
       setSvgColors(colors);
+      setSvgTexts(texts);
+      setSvgImages(images);
       
-      // Chamar IA para classificar (Mock por enquanto ou chamada real se possível)
+      // Chamar IA para classificar
       const colorList = Array.from(colors.values()).map(c => ({ hex: c.hex, count: c.usageCount }));
-      const { data, error } = await supabase.functions.invoke('analyze-stamp-colors', {
+      const { data: aiResult, error: aiError } = await supabase.functions.invoke('analyze-stamp-colors', {
         body: { colors: colorList }
       });
       
-      if (!error && data) {
-        // Atualizar grupos semânticos se a IA retornar
+      if (!aiError && aiResult) {
+        // O Gemini com json_object pode retornar uma chave (ex: "colors" ou "result") 
+        // ou a lista diretamente dependendo do prompt. 
+        // Vamos ser flexíveis na detecção da lista.
+        const classifications = Array.isArray(aiResult) ? aiResult : (aiResult.colors || aiResult.classifications || []);
+        
+        setSvgColors(prev => {
+          const next = new Map(prev);
+          classifications.forEach((item: any) => {
+            if (item.hex && next.has(item.hex.toUpperCase())) {
+              const group = next.get(item.hex.toUpperCase())!;
+              group.groupName = item.group;
+              group.reason = item.reason;
+            }
+          });
+          return next;
+        });
       }
     } catch (err) {
       console.error('Erro ao analisar SVG:', err);
@@ -498,6 +517,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       return next;
     });
     
+    bumpEdits();
+  };
+
+  const updateSvgText = (id: string, newText: string) => {
+    if (!svgContent) return;
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+    const updatedSvg = svgAnalyzer.current.updateText(svgDoc, id, newText);
+    setSvgContent(updatedSvg);
+    setSvgTexts(prev => prev.map(t => t.id === id ? { ...t, text: newText } : t));
+    bumpEdits();
+  };
+
+  const updateSvgImage = (id: string, newHref: string) => {
+    if (!svgContent) return;
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+    const updatedSvg = svgAnalyzer.current.updateImage(svgDoc, id, newHref);
+    setSvgContent(updatedSvg);
+    setSvgImages(prev => prev.map(img => img.id === id ? { ...img, href: newHref } : img));
     bumpEdits();
   };
 
@@ -2142,6 +2181,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     </div>
                   )}
+                  {/* Vectorize Call to Action for non-SVG stamps */}
+                  {appliedStamp && !appliedStamp.imageUrl.toLowerCase().endsWith('.svg') && (
+                    <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2 animate-in fade-in slide-in-from-top-1">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <span className="text-[10px] font-bold text-primary uppercase">Personalização Avançada</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground leading-snug">
+                        Esta estampa não é um vetor. Deseja vetorizar para habilitar a troca de cores CMYK?
+                      </p>
+                      <Button 
+                        size="sm" 
+                        variant="default" 
+                        className="w-full h-7 text-[10px] gap-1.5"
+                        onClick={() => toast.info('Vetorização (Fase 2) em desenvolvimento...')}
+                      >
+                        <Palette className="h-3 w-3" />
+                        Vetorizar Agora
+                      </Button>
+                    </div>
+                  )}
+
                 </div>
               )}
               {activeTab === 'patches' && (
@@ -2219,14 +2280,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <div className="space-y-4">
                     {Array.from(svgColors.values()).map((group) => (
                       <div key={group.hex} className="p-3 rounded-xl bg-muted/30 border border-border/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="h-6 w-6 rounded-full border border-border shadow-sm" 
-                              style={{ backgroundColor: group.hex }}
-                            />
-                            <span className="text-[10px] font-mono text-muted-foreground">{group.hex}</span>
+                        <div className="flex flex-col mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-bold text-foreground">
+                              {group.groupName || 'Cor Detectada'}
+                            </span>
+                            <span className="text-[9px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{group.hex}</span>
                           </div>
+                          {group.reason && (
+                            <p className="text-[9px] text-muted-foreground leading-tight italic">
+                              {group.reason}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-3">
+                          <div 
+                            className="h-8 w-8 rounded-lg border border-border shadow-inner" 
+                            style={{ backgroundColor: group.hex }}
+                          />
+                          <div className="flex-1 h-[1px] bg-border/50" />
                         </div>
                         
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
@@ -2278,6 +2351,53 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Textos Editáveis do SVG */}
+                  {svgTexts.length > 0 && (
+                    <div className="mt-6 space-y-4">
+                      <p className="text-xs font-bold text-foreground uppercase flex items-center gap-2">
+                        <Type className="h-3.5 w-3.5 text-primary" /> 
+                        Textos da Estampa
+                      </p>
+                      {svgTexts.map((txt) => (
+                        <div key={txt.id} className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/50">
+                          <label className="text-[10px] text-muted-foreground">Conteúdo</label>
+                          <Input 
+                            value={txt.text} 
+                            onChange={(e) => updateSvgText(txt.id, e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Logos/Imagens Editáveis do SVG */}
+                  {svgImages.length > 0 && (
+                    <div className="mt-6 space-y-4">
+                      <p className="text-xs font-bold text-foreground uppercase flex items-center gap-2">
+                        <ImageIcon className="h-3.5 w-3.5 text-primary" /> 
+                        Imagens / Logos
+                      </p>
+                      {svgImages.map((img) => (
+                        <div key={img.id} className="space-y-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                          <div className="h-20 w-full bg-background rounded border border-border overflow-hidden flex items-center justify-center p-2">
+                            <img src={img.href} alt="Logo" className="max-h-full max-w-full object-contain" />
+                          </div>
+                          <div className="flex gap-2">
+                            <Input 
+                              placeholder="Nova URL da logo..."
+                              className="h-8 text-[10px]"
+                              onBlur={(e) => updateSvgImage(img.id, e.target.value)}
+                            />
+                            <Button size="sm" variant="outline" className="h-8 w-8 p-0" title="Upload">
+                              <Upload className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
