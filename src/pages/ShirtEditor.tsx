@@ -2181,6 +2181,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     </div>
                   )}
+                  {/* Vectorize Call to Action for non-SVG stamps */}
+                  {appliedStamp && !appliedStamp.imageUrl.toLowerCase().endsWith('.svg') && (
+                    <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2 animate-in fade-in slide-in-from-top-1">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <span className="text-[10px] font-bold text-primary uppercase">Personalização Avançada</span>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground leading-snug">
+                        Esta estampa não é um vetor. Deseja vetorizar para habilitar a troca de cores CMYK?
+                      </p>
+                      <Button 
+                        size="sm" 
+                        variant="default" 
+                        className="w-full h-7 text-[10px] gap-1.5"
+                        onClick={() => toast.info('Vetorização (Fase 2) em desenvolvimento...')}
+                      >
+                        <Palette className="h-3 w-3" />
+                        Vetorizar Agora
+                      </Button>
+                    </div>
+                  )}
+
                 </div>
               )}
               {activeTab === 'patches' && (
