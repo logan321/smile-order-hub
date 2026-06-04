@@ -2227,24 +2227,123 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
                   )}
                   {/* Vectorize Call to Action for non-SVG stamps */}
-                  {appliedStamp && !appliedStamp.imageUrl.toLowerCase().endsWith('.svg') && (
+                  {appliedStamp && (
                     <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2 animate-in fade-in slide-in-from-top-1">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-primary" />
                         <span className="text-[10px] font-bold text-primary uppercase">Personalização Avançada</span>
                       </div>
-                      <p className="text-[9px] text-muted-foreground leading-snug">
-                        Esta estampa não é um vetor. Deseja vetorizar para habilitar a troca de cores CMYK?
-                      </p>
-                      <Button 
-                        size="sm" 
-                        variant="default" 
-                        className="w-full h-7 text-[10px] gap-1.5"
-                        onClick={() => toast.info('Vetorização (Fase 2) em desenvolvimento...')}
-                      >
-                        <Palette className="h-3 w-3" />
-                        Vetorizar Agora
-                      </Button>
+                      
+                      {appliedStamp.imageUrl.toLowerCase().endsWith('.svg') ? (
+                        <>
+                          <p className="text-[9px] text-muted-foreground leading-snug">
+                            Vetor detectado! Você pode alterar as cores CMYK, trocar logos e editar textos diretamente na arte.
+                          </p>
+                          <div className="flex flex-col gap-2 pt-1">
+                            {/* Color controls */}
+                            {Array.from(svgColors.entries()).length > 0 && (
+                              <div className="space-y-1.5">
+                                <p className="text-[8px] font-bold text-muted-foreground uppercase">Cores da Estampa</p>
+                                <div className="grid grid-cols-5 gap-1.5">
+                                  {Array.from(svgColors.entries()).map(([hex, group]) => (
+                                    <div key={hex} className="group/color relative">
+                                      <button
+                                        onClick={() => {
+                                          const input = document.createElement('input');
+                                          input.type = 'color';
+                                          input.value = hex;
+                                          input.onchange = (e) => {
+                                            const newHex = (e.target as HTMLInputElement).value;
+                                            updateSvgColor(hex, hexToCmyk(newHex));
+                                          };
+                                          input.click();
+                                        }}
+                                        className="h-7 w-full rounded-md border border-border/50 shadow-sm transition-transform active:scale-95"
+                                        style={{ backgroundColor: hex }}
+                                        title={`${group.groupName || 'Cor'}: ${hex}`}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Text controls */}
+                            {svgTexts.length > 0 && (
+                              <div className="space-y-1.5 pt-1 border-t border-border/10">
+                                <p className="text-[8px] font-bold text-muted-foreground uppercase">Textos da Arte</p>
+                                <div className="space-y-1">
+                                  {svgTexts.map(txt => (
+                                    <div key={txt.id} className="flex gap-1.5 items-center">
+                                      <Input 
+                                        value={txt.text}
+                                        onChange={(e) => updateSvgText(txt.id, e.target.value)}
+                                        className="h-6 text-[9px] bg-background/50"
+                                        placeholder={txt.groupName || 'Texto'}
+                                      />
+                                      <button 
+                                        onClick={() => toggleSvgElement(txt.id, !txt.visible, 'text')}
+                                        className={`p-1 rounded ${txt.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
+                                      >
+                                        <Box className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Image/Logo controls */}
+                            {svgImages.length > 0 && (
+                              <div className="space-y-1.5 pt-1 border-t border-border/10">
+                                <p className="text-[8px] font-bold text-muted-foreground uppercase">Logos e Imagens</p>
+                                <div className="grid grid-cols-1 gap-1">
+                                  {svgImages.map(img => (
+                                    <div key={img.id} className="flex gap-1.5 items-center bg-background/30 p-1 rounded">
+                                      <span className="text-[8px] flex-1 truncate opacity-70">{img.groupName || 'Logo'}</span>
+                                      <div className="flex gap-1">
+                                        <button 
+                                          onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
+                                          className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
+                                        >
+                                          <Box className="h-3 w-3" />
+                                        </button>
+                                        <button 
+                                          onClick={() => {
+                                            const input = document.createElement('input');
+                                            input.type = 'file';
+                                            input.accept = 'image/*';
+                                            input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
+                                            input.click();
+                                          }}
+                                          className="p-1 rounded hover:bg-primary/10 text-primary"
+                                        >
+                                          <Upload className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-[9px] text-muted-foreground leading-snug">
+                            Esta estampa não é um vetor. Deseja vetorizar para habilitar a troca de cores CMYK?
+                          </p>
+                          <Button 
+                            size="sm" 
+                            variant="default" 
+                            className="w-full h-7 text-[10px] gap-1.5"
+                            onClick={() => toast.info('Vetorização (Fase 2) em desenvolvimento...')}
+                          >
+                            <Palette className="h-3 w-3" />
+                            Vetorizar Agora
+                          </Button>
+                        </>
+                      )}
                     </div>
                   )}
 
