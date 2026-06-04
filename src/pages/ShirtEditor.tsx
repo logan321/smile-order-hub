@@ -318,6 +318,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
+  const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
+  const uvTextCommitTimerRef = useRef<number | null>(null);
   // Priority: stamp UV (full design) > template UV > fallback. This makes
   // selecting a stamp with its own UV immediately reflect in 3D even when
   // the template has uv_zones registered.
@@ -340,6 +342,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
       setUvLayers([]);
+      setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
