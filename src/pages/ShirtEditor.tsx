@@ -400,19 +400,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
 
   // ===== UV-based personalization (new pipeline) =====
-  // When the selected template's UV map has uv_zones registered by the admin,
-  // we render text/image layers directly onto a canvas the size of the UV
-  // texture. The canvas is fed live to <Shirt3DPreview /> as the material map.
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const uvTextCommitTimerRef = useRef<number | null>(null);
-  // Priority: stamp UV (full design) > template UV > fallback. This makes
-  // selecting a stamp with its own UV immediately reflect in 3D even when
-  // the template has uv_zones registered.
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
+
+  // SVG Color Personalization (Fase 1)
+  const [svgColors, setSvgColors] = useState<Map<string, SvgColorGroup>>(new Map());
+  const [analyzingColors, setAnalyzingColors] = useState(false);
+  const [svgContent, setSvgContent] = useState<string | null>(null);
+  const svgAnalyzer = useRef(new SvgAnalyzer());
+
 
   // Fetch uv_zones / dims for the selected template's UV map.
   useEffect(() => {
