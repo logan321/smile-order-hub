@@ -12,7 +12,7 @@ interface Options {
 }
 
 
-export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
+export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight, svgOverlay }: Options) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   if (!canvasRef.current && typeof document !== 'undefined') {
     canvasRef.current = document.createElement('canvas');
