@@ -461,8 +461,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const response = await fetch(toProxyUrl(url));
       const svgText = await response.text();
       setSvgContent(svgText);
-      const colors = await svgAnalyzer.current.analyze(svgText);
+      const { colors, texts, images } = await svgAnalyzer.current.analyze(svgText);
       setSvgColors(colors);
+      setSvgTexts(texts);
+      setSvgImages(images);
       
       // Chamar IA para classificar
       const colorList = Array.from(colors.values()).map(c => ({ hex: c.hex, count: c.usageCount }));
