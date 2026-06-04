@@ -961,6 +961,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     (text as any)._fontName = fontFamily;
     (text as any)._textContent = textInput;
     if (zoneClipData) (text as any)._zoneClipData = zoneClipData;
+    // Apply arc curvature (single-line only)
+    if (textCurvature && !isMultiline) {
+      try { applyArcToText(text as FabricText, textCurvature); } catch (e) { console.warn(e); }
+    }
     canvas.add(text);
     return text;
   };
