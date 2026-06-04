@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -22,6 +22,8 @@ import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMocku
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
+import { SvgAnalyzer, SvgColorGroup } from '@/lib/svgAnalyzer';
+import { cmykToHex, hexToCmyk } from '@/lib/cmykEngine';
 
 // Thumbnail: show only the 2D front image uploaded for the stamp.
 // The UV is kept only for the 3D texture when the client clicks this stamp.
@@ -36,6 +38,7 @@ function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
     />
   );
 }
+
 
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
@@ -397,19 +400,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
 
   // ===== UV-based personalization (new pipeline) =====
-  // When the selected template's UV map has uv_zones registered by the admin,
-  // we render text/image layers directly onto a canvas the size of the UV
-  // texture. The canvas is fed live to <Shirt3DPreview /> as the material map.
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const uvTextCommitTimerRef = useRef<number | null>(null);
-  // Priority: stamp UV (full design) > template UV > fallback. This makes
-  // selecting a stamp with its own UV immediately reflect in 3D even when
-  // the template has uv_zones registered.
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
+
+  // SVG Color Personalization (Fase 1)
+  const [svgColors, setSvgColors] = useState<Map<string, SvgColorGroup>>(new Map());
+  const [analyzingColors, setAnalyzingColors] = useState(false);
+  const [svgContent, setSvgContent] = useState<string | null>(null);
+  const svgAnalyzer = useRef(new SvgAnalyzer());
+
 
   // Fetch uv_zones / dims for the selected template's UV map.
   useEffect(() => {
@@ -438,7 +442,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     layers: uvLayers,
     uvWidth: uvMapDims.w,
     uvHeight: uvMapDims.h,
+    svgOverlay: svgContent,
   });
+
 
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
@@ -446,6 +452,55 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Arial');
+
+  const handleSvgAnalysis = async (url: string) => {
+    try {
+      setAnalyzingColors(true);
+      const response = await fetch(toProxyUrl(url));
+      const svgText = await response.text();
+      setSvgContent(svgText);
+      const colors = await svgAnalyzer.current.analyze(svgText);
+      setSvgColors(colors);
+      
+      // Chamar IA para classificar (Mock por enquanto ou chamada real se possível)
+      const colorList = Array.from(colors.values()).map(c => ({ hex: c.hex, count: c.usageCount }));
+      const { data, error } = await supabase.functions.invoke('analyze-stamp-colors', {
+        body: { colors: colorList }
+      });
+      
+      if (!error && data) {
+        // Atualizar grupos semânticos se a IA retornar
+      }
+    } catch (err) {
+      console.error('Erro ao analisar SVG:', err);
+      toast.error('Não foi possível analisar as cores da estampa');
+    } finally {
+      setAnalyzingColors(false);
+    }
+  };
+
+  const updateSvgColor = (oldHex: string, newCmyk: any) => {
+    if (!svgContent) return;
+    const newHex = cmykToHex(newCmyk);
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+    const updatedSvg = svgAnalyzer.current.updateColor(svgDoc, oldHex, newHex);
+    setSvgContent(updatedSvg);
+    
+    // Atualizar o mapa de cores local para refletir a mudança na UI
+    setSvgColors(prev => {
+      const next = new Map(prev);
+      const group = next.get(oldHex);
+      if (group) {
+        next.delete(oldHex);
+        next.set(newHex, { ...group, hex: newHex, cmyk: newCmyk });
+      }
+      return next;
+    });
+    
+    bumpEdits();
+  };
+
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [shadowColor, setShadowColor] = useState('#000000');
   const [shadowBlur, setShadowBlur] = useState(4);
@@ -1190,12 +1245,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
+    
+    // Analyze SVG if the stamp is a vector
+    if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
+      handleSvgAnalysis(stamp.imageUrl);
+    } else {
+      setSvgContent(null);
+      setSvgColors(new Map());
+    }
+
     // If the stamp is linked to a different template, swap the active template
     // so the 3D preview (UV + zones) reflects the template configured for it.
     if (stamp.templateId && stamp.templateId !== selectedTemplate?.id) {
       const linked = allTemplates.find(t => t.id === stamp.templateId);
       if (linked) setSelectedTemplate(linked);
     }
+
     const backUrl = stamp.backImageUrl || stamp.imageUrl;
     try {
       await Promise.all([
@@ -2143,6 +2208,79 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <p className="text-[9px] text-muted-foreground/70 mt-1">-100 = arco para baixo · 0 = reto · 100 = arco para cima</p>
                 </div>
               )}
+              
+              {/* Personalização de Cores SVG */}
+              {svgContent && svgColors.size > 0 && (
+                <div className="mt-4 pt-4 border-t border-border/50 animate-fade-in">
+                  <p className="text-xs font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                    <Palette className="h-3.5 w-3.5 text-primary" /> 
+                    Cores da Estampa (CMYK)
+                  </p>
+                  <div className="space-y-4">
+                    {Array.from(svgColors.values()).map((group) => (
+                      <div key={group.hex} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-6 w-6 rounded-full border border-border shadow-sm" 
+                              style={{ backgroundColor: group.hex }}
+                            />
+                            <span className="text-[10px] font-mono text-muted-foreground">{group.hex}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-[9px] font-bold text-cyan-600">C: {group.cmyk.c}%</span>
+                            </div>
+                            <Slider 
+                              value={[group.cmyk.c]} 
+                              max={100} 
+                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, c: v })}
+                              className="h-2"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-[9px] font-bold text-magenta-600">M: {group.cmyk.m}%</span>
+                            </div>
+                            <Slider 
+                              value={[group.cmyk.m]} 
+                              max={100} 
+                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, m: v })}
+                              className="h-2"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-[9px] font-bold text-yellow-600">Y: {group.cmyk.y}%</span>
+                            </div>
+                            <Slider 
+                              value={[group.cmyk.y]} 
+                              max={100} 
+                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, y: v })}
+                              className="h-2"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-[9px] font-bold text-slate-900">K: {group.cmyk.k}%</span>
+                            </div>
+                            <Slider 
+                              value={[group.cmyk.k]} 
+                              max={100} 
+                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, k: v })}
+                              className="h-2"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'name' && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Nome e número</p>
@@ -2398,7 +2536,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           )}
 
           {/* Canvas area */}
-            <div className={`flex-1 flex flex-col overflow-hidden min-h-0 relative ${!selectedNiche?.backgroundImageUrl ? 'bg-gradient-to-b from-muted/50 to-muted/20' : ''}`}
+            <div className={`flex-1 flex flex-col overflow-hidden min-h-0 relative ${!selectedNiche?.backgroundImageUrl ? 'bg-gradient-to-b from-muted/50 to-muted/20' : ''} ${analyzingColors ? 'opacity-50 pointer-events-none' : ''}`}
               style={selectedNiche?.backgroundImageUrl ? {
                 backgroundImage: `url(${selectedNiche.backgroundImageUrl})`,
                 backgroundSize: 'cover',

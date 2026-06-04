@@ -8,9 +8,11 @@ interface Options {
   layers: UvLayer[];
   uvWidth?: number | null;
   uvHeight?: number | null;
+  svgOverlay?: string | null;
 }
 
-export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
+
+export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight, svgOverlay }: Options) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   if (!canvasRef.current && typeof document !== 'undefined') {
     canvasRef.current = document.createElement('canvas');
@@ -21,11 +23,12 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
   useEffect(() => {
     let cancelled = false;
     if (!baseUrl || !canvasRef.current) { setReady(false); return; }
-    const delay = layers.length > 0 ? 220 : 0;
+    const delay = (layers.length > 0 || svgOverlay) ? 220 : 0;
     const timer = window.setTimeout(() => {
       composeUvTexture({
         baseUrl, zones, layers, uvWidth, uvHeight,
         canvas: canvasRef.current!,
+        svgOverlay,
       }).then(() => {
         if (cancelled) return;
         setReady(true);
@@ -35,7 +38,8 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
       });
     }, delay);
     return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [baseUrl, zones, layers, uvWidth, uvHeight]);
+  }, [baseUrl, zones, layers, uvWidth, uvHeight, svgOverlay]);
+
 
   return { canvas: canvasRef.current, version, ready };
 }

@@ -52,6 +52,8 @@ export async function composeUvTexture(opts: {
   zones: Record<string, UvZone>;
   layers: UvLayer[];
   canvas?: HTMLCanvasElement;
+  svgOverlay?: string | null;
+
 }): Promise<HTMLCanvasElement> {
   const base = await loadImage(opts.baseUrl);
   const w = opts.uvWidth || base.naturalWidth;
@@ -62,6 +64,24 @@ export async function composeUvTexture(opts: {
   const ctx = canvas.getContext('2d')!;
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(base, 0, 0, w, h);
+  
+  if (opts.svgOverlay) {
+    try {
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(opts.svgOverlay)}`;
+      const svgImg = new Image();
+      svgImg.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        svgImg.onload = resolve;
+        svgImg.onerror = reject;
+        svgImg.src = svgUrl;
+      });
+      // A overlay SVG já deve estar nas proporções da UV
+      ctx.drawImage(svgImg, 0, 0, w, h);
+    } catch (e) {
+      console.warn('SVG overlay failed', e);
+    }
+  }
+
 
   for (const layer of opts.layers) {
     const zone = opts.zones[layer.zoneKey];
