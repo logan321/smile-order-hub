@@ -2094,9 +2094,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           const sx = CANVAS_WIDTH / uvMapDims.w!;
                           const sy = CANVAS_HEIGHT / uvMapDims.h!;
                           const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
+                          const imgLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image') as Extract<UvLayer, { type: 'image' }> | undefined;
                           return (
                             <div key={zoneKey} className="absolute border border-amber-500/70 border-dashed flex items-center justify-center overflow-hidden"
                               style={{ left: z.x * sx, top: z.y * sy, width: z.width * sx, height: z.height * sy }}>
+                              {imgLayer && (
+                                <img src={imgLayer.url} alt="" className="absolute inset-0 w-full h-full object-contain" />
+                              )}
                               {layer?.content ? (
                                 <span className="font-black uppercase leading-none text-center"
                                   style={{
@@ -2108,9 +2112,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                                   }}>
                                   {layer.content}
                                 </span>
-                              ) : (
+                              ) : !imgLayer ? (
                                 <span className="text-[9px] text-amber-600 bg-amber-50/80 px-1 rounded">{zoneKey}</span>
-                              )}
+                              ) : null}
                             </div>
                           );
                         })}
