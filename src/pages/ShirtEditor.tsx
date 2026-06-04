@@ -380,6 +380,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }, 180);
   };
 
+  const setUvLayerImage = (zoneKey: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = typeof reader.result === 'string' ? reader.result : '';
+      if (!url) return;
+      setUvLayers(prev => [
+        ...prev.filter(l => !(l.zoneKey === zoneKey && l.type === 'image')),
+        { id: `${zoneKey}_image_${Date.now()}`, zoneKey, type: 'image', url, scale: 0.9, opacity: 1 } as UvLayer,
+      ]);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
