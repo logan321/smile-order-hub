@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Canvas, useLoader, useThree, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, ContactShadows } from '@react-three/drei';
+import { OrbitControls, ContactShadows, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -146,6 +146,7 @@ function ShirtModel({
       mesh.material = mat;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      (mat as any).envMapIntensity = 0.1;
     });
     setTargetMesh(firstMesh);
   }, [scene, fabricColor]);
