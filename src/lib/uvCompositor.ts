@@ -11,6 +11,7 @@ export type UvLayer =
       color?: string;
       strokeColor?: string;
       strokeWidth?: number;
+      fontSize?: number;
       align?: 'left' | 'center' | 'right';
       rotation?: number;
       scale?: number;
@@ -81,7 +82,7 @@ export async function composeUvTexture(opts: {
       // auto-fit: pick the largest size where text fits zone.width
       const targetW = zone.width * 0.92 * scale;
       const targetH = zone.height * 0.92 * scale;
-      let size = targetH;
+      let size = Math.max(8, layer.fontSize ?? targetH);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (let i = 0; i < 12; i++) {
