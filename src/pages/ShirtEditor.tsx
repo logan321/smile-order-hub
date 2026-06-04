@@ -2534,7 +2534,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           )}
 
           {/* Canvas area */}
-            <div className={`flex-1 flex flex-col overflow-hidden min-h-0 relative ${!selectedNiche?.backgroundImageUrl ? 'bg-gradient-to-b from-muted/50 to-muted/20' : ''}`}
+            <div className={`flex-1 flex flex-col overflow-hidden min-h-0 relative ${!selectedNiche?.backgroundImageUrl ? 'bg-gradient-to-b from-muted/50 to-muted/20' : ''} ${analyzingColors ? 'opacity-50 pointer-events-none' : ''}`}
               style={selectedNiche?.backgroundImageUrl ? {
                 backgroundImage: `url(${selectedNiche.backgroundImageUrl})`,
                 backgroundSize: 'cover',
