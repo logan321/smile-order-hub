@@ -1887,16 +1887,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     );
   }
 
-  // ─── Toolbar tab items ────────────────────────────────────────
-  const toolbarTabs: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'patches', label: currentPatchLabel, icon: <Sparkles className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'name', label: 'Nome', icon: <UserIcon className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'emblems', label: 'Emblemas', icon: <Award className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
-  ];
-
   // Select a text style as reference (not applied to canvas)
   const selectTextStyle = (style: { imageUrl: string; name: string }) => {
     setSelectedTextStyle(style);
