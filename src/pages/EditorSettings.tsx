@@ -13,6 +13,7 @@ import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
 import { useUvLibrary } from '@/hooks/useUvLibrary';
+import UvZoneAdminEditor from '@/components/UvZoneAdminEditor';
 import ZoneEditor from '@/components/ZoneEditor';
 import Zone3DEditor from '@/components/Zone3DEditor';
 
@@ -28,7 +29,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, updateStampTemplateId, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
-  const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, deleteUvMap, fetchUvMaps } = useUvLibrary(targetUserId);
+  const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, updateUvZones, deleteUvMap, fetchUvMaps } = useUvLibrary(targetUserId);
+  const [uvZoneEditorTarget, setUvZoneEditorTarget] = useState<string | null>(null);
 
   // UV Library form state
   const [newUvCode, setNewUvCode] = useState('');
@@ -1106,6 +1108,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                               <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => { setEditingUvId(uv.id); setEditUvCode(uv.code); setEditUvName(uv.name ?? ''); }}>
                                 <Pencil className="h-3.5 w-3.5" />
                                 <span className="ml-1">Editar</span>
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setUvZoneEditorTarget(uv.id)} title="Definir zonas UV">
+                                <MapPin className="h-3.5 w-3.5" />
+                                <span className="ml-1">Zonas</span>
                               </Button>
                               <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={async () => {
                                 if (!confirm(`Excluir UV ${uv.code}? As zonas associadas também serão removidas.`)) return;
