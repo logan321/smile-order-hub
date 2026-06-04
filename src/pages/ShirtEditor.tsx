@@ -61,62 +61,65 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
         <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-[12px] z-10">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
             onClick={() => onCameraChange([0, 0.1, 5.2])}
           >
-            <div className="mb-2 text-[#4F7BFF] transition-colors">
-              <Shirt size={28} strokeWidth={1.5} />
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
+            <div className="mb-1 text-[#4F7BFF] transition-colors">
+              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md">
+                <div className="w-4 h-1 bg-[#4F7BFF] absolute top-1 rounded-full opacity-30" />
+                <Shirt size={20} strokeWidth={2.5} />
+              </div>
             </div>
-            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Frente</span>
+            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">FRENTE</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
             onClick={() => onCameraChange([0, 0.1, -5.2])}
           >
-            <div className="mb-2 text-[#4F7BFF] transition-colors">
-              {/* Back view icon: no rotation, just the back of the shirt */}
-              <div className="relative">
-                <Shirt size={28} strokeWidth={1.5} />
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-[#4F7BFF]/10 to-transparent opacity-40 rounded-full" />
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
+            <div className="mb-1 text-[#4F7BFF] transition-colors">
+              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md overflow-hidden">
+                <div className="absolute inset-0 bg-[#4F7BFF]/10" />
+                <Shirt size={20} strokeWidth={2.5} />
+                <div className="absolute bottom-1 w-4 h-0.5 bg-[#4F7BFF] rounded-full opacity-40" />
               </div>
             </div>
-            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Costas</span>
+            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">COSTAS</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
             onClick={() => onCameraChange([-5.2, 0.1, 0])}
           >
-            <div className="mb-2 text-[#4F7BFF] transition-colors">
-              {/* Side view icon (Left) */}
-              <div className="relative transform -scale-x-100">
-                <Shirt size={28} strokeWidth={1.5} className="opacity-40" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-3 h-5 border-2 border-[#4F7BFF] rounded-sm" />
-                </div>
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
+            <div className="mb-1 text-[#4F7BFF] transition-colors">
+              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md">
+                <div className="absolute left-1 w-1 h-3 bg-[#4F7BFF] rounded-full opacity-40" />
+                <Shirt size={20} strokeWidth={2.5} className="opacity-40" />
+                <div className="absolute right-1.5 w-2 h-4 border-r-2 border-[#4F7BFF]" />
               </div>
             </div>
-            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Lateral Esquerda</span>
+            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">LATERAL\nESQUERDA</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
             onClick={() => onCameraChange([5.2, 0.1, 0])}
           >
-            <div className="mb-2 text-[#4F7BFF] transition-colors">
-              {/* Side view icon (Right) */}
-              <div className="relative">
-                <Shirt size={28} strokeWidth={1.5} className="opacity-40" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-3 h-5 border-2 border-[#4F7BFF] rounded-sm" />
-                </div>
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
+            <div className="mb-1 text-[#4F7BFF] transition-colors">
+              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md">
+                <div className="absolute right-1 w-1 h-3 bg-[#4F7BFF] rounded-full opacity-40" />
+                <Shirt size={20} strokeWidth={2.5} className="opacity-40" />
+                <div className="absolute left-1.5 w-2 h-4 border-l-2 border-[#4F7BFF]" />
               </div>
             </div>
-            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Lateral Direita</span>
+            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">LATERAL\nDIREITA</span>
           </Button>
         </div>
       </div>
