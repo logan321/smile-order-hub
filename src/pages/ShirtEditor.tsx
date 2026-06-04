@@ -1441,7 +1441,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         setFontFamily(active.fontFamily || 'Arial');
         setStrokeWidth(active.strokeWidth || 0);
         setStrokeColor((active.stroke as string) || '#FFFFFF');
-        
+        setTextCurvature((active as any)._curvature || 0);
       }
     };
     canvas.on('selection:created', onSelect);
