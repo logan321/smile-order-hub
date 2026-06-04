@@ -268,6 +268,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const backFabricRef = useRef<Canvas | null>(null);
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>(null);
+  const [showUvPanel, setShowUvPanel] = useState(false);
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [allTemplates, setAllTemplates] = useState<Template[]>([]);
@@ -1930,7 +1931,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
       {/* Unified responsive layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {/* Barra 2D removida: a personalização agora fica no painel direto do 3D. */}
+        {/* Top icon toolbar — visible on mobile & desktop, sits ABOVE the 3D so it never covers the shirt */}
+        <div className="shrink-0 bg-card/80 backdrop-blur border-b border-border/60 px-2 py-2 overflow-x-auto">
+          <div className="flex items-center justify-start lg:justify-center gap-2 lg:gap-3 min-w-max mx-auto">
+            {([
+              { id: 'stamps',   label: 'Estampas',    icon: Shirt },
+              { id: 'patches',  label: 'Acabamentos', icon: Sparkles },
+              { id: 'name',     label: 'Nome / Nº',   icon: Type },
+              { id: 'emblems',  label: 'Escudo',      icon: ImageIcon },
+              { id: 'logo',     label: 'Upload',      icon: Upload },
+            ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
+              const active = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(active ? null : id)}
+                  className={`flex flex-col items-center justify-center gap-1 px-1 py-1 rounded-xl transition-all active:scale-95 ${active ? 'text-accent' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <span className={`h-12 w-12 lg:h-14 lg:w-14 rounded-2xl border-2 flex items-center justify-center shadow-sm transition-all ${active ? 'bg-accent text-accent-foreground border-accent shadow-md' : 'bg-background border-accent/60 text-accent'}`}>
+                    <Icon className="h-6 w-6" />
+                  </span>
+                  <span className={`text-[10px] lg:text-[11px] font-semibold leading-none px-1.5 py-0.5 rounded-full ${active ? 'bg-accent/15 text-accent' : 'text-foreground/80'}`}>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
           {/* Desktop sidebar panel */}
@@ -2345,7 +2371,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     />
                   </div>
                   {uvZonesActive && (
-                    <div className="absolute top-2 right-2 z-30 w-[min(92vw,320px)] max-h-[84%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-lg shadow-lg p-3 space-y-3">
+                    <>
+                    {/* Toggle button — small, top-right, never covers the shirt */}
+                    <button
+                      onClick={() => setShowUvPanel(p => !p)}
+                      className="absolute top-2 right-2 z-40 h-10 px-3 rounded-full bg-accent text-accent-foreground shadow-lg flex items-center gap-1.5 text-xs font-bold active:scale-95"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {showUvPanel ? 'Fechar' : 'Personalizar'}
+                    </button>
+                    {showUvPanel && (
+                    <div className="absolute inset-x-2 bottom-2 lg:inset-x-auto lg:top-14 lg:right-2 lg:bottom-2 lg:w-[320px] z-30 max-h-[60vh] lg:max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-xl shadow-2xl p-3 space-y-3 animate-fade-in">
                       <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="h-4 w-4 text-accent" />
                         <p className="text-sm font-bold">Personalização UV</p>
@@ -2396,6 +2432,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         );
                       })}
                     </div>
+                    )}
+                    </>
                   )}
                 </div>
               )}
