@@ -128,6 +128,15 @@ export default function ShirtEditor({ useOwnAssets }: Props = {}) {
     })();
   }, []);
 
+  // ---- Stamps (catálogo de estampas full-body) ----
+  const [stamps, setStamps] = useState<Stamp[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('stamp_catalog').select('id,name,image_url,uv_map_url,category').eq('active', true).order('created_at', { ascending: false });
+      setStamps((data as any[]) ?? []);
+    })();
+  }, []);
+
   const addImageLayer = (url: string, zoneKey: string) => {
     const id = `img_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
     setLayers(p => [...p, { id, zoneKey, type: 'image', url, scale: 1 }]);
