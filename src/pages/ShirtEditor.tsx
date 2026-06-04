@@ -1910,45 +1910,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
       {/* Unified responsive layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {/* Top toolbar — tabs + view toggle + zoom */}
-        <div className="border-b border-border bg-card/90 backdrop-blur-sm shrink-0">
-          {/* Desktop: horizontal tab bar */}
-          <div className="hidden lg:flex items-center justify-center gap-1 px-2">
-            {toolbarTabs.map(tab => (
-              <button key={tab.id} onClick={() => {
-                  setActiveTab(activeTab === tab.id ? null : tab.id);
-                  if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
-                  if (tab.id === 'patches') advanceGuide('patches-tab', 'patch-pick');
-                  if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
-                  if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
-                }}
-                data-guide-desktop={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'patches' ? 'patches-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
-                className={`flex flex-col items-center gap-0.5 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wide transition-all border-b-3 ${activeTab === tab.id ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-            <div className="ml-auto flex items-center gap-1 pr-2">
-              <div className="flex items-center rounded-full overflow-hidden shadow-sm border-2 border-accent/40">
-                <Button variant={activeView === 'front' ? 'default' : 'ghost'} size="sm" className={`h-8 text-xs px-4 rounded-full ${activeView === 'front' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => setActiveView('front')}>Frente</Button>
-                <Button variant={activeView === 'back' ? 'default' : 'ghost'} size="sm" className={`h-8 text-xs px-4 rounded-full ${activeView === 'back' ? 'bg-primary text-primary-foreground' : ''}`} onClick={() => setActiveView('back')}>Costas</Button>
-              </div>
-            </div>
-          </div>
-          {/* Mobile: view toggle + zoom — vibrant style */}
-          <div className="lg:hidden flex items-center justify-between px-3 py-2.5 bg-sidebar/5">
-            <div className="flex items-center rounded-full overflow-hidden shadow-sm border-2 border-accent/50">
-              <button onClick={() => setActiveView('front')} className={`px-6 py-2 text-sm font-bold transition-all ${activeView === 'front' ? 'bg-accent text-accent-foreground shadow-inner' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Frente</button>
-              <button onClick={() => setActiveView('back')} className={`px-6 py-2 text-sm font-bold transition-all ${activeView === 'back' ? 'bg-primary text-primary-foreground shadow-inner' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Costas</button>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-4 w-4" /></Button>
-              <span className="text-xs font-bold text-muted-foreground w-10 text-center">{Math.round(activeZoom * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setActiveZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }}><RotateCcw className="h-4 w-4" /></Button>
-            </div>
-          </div>
-        </div>
+        {/* Barra 2D removida: a personalização agora fica no painel direto do 3D. */}
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
           {/* Desktop sidebar panel */}
