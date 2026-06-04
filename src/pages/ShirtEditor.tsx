@@ -2150,15 +2150,67 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </p>
                       {Object.keys(uvMapZones).map((zoneKey) => {
                         const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
+                        const imgLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image') as Extract<UvLayer, { type: 'image' }> | undefined;
                         return (
-                          <div key={zoneKey} className="space-y-1">
-                            <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{zoneKey}</label>
+                          <div key={zoneKey} className="space-y-1.5 border border-border/60 rounded-md p-2 bg-background/50">
+                            <label className="text-[11px] font-bold uppercase tracking-wide text-foreground">{zoneKey}</label>
                             <Input
                               value={layer?.content ?? ''}
                               onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
                               placeholder="Texto / nome / nº"
                               className="h-8 text-sm"
                             />
+                            {layer && (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="color"
+                                  value={layer.color || '#ffffff'}
+                                  onChange={(e) => updateUvTextLayer(zoneKey, { color: e.target.value })}
+                                  className="h-7 w-8 rounded cursor-pointer border border-border"
+                                  title="Cor"
+                                />
+                                <input
+                                  type="color"
+                                  value={layer.strokeColor || '#000000'}
+                                  onChange={(e) => updateUvTextLayer(zoneKey, { strokeColor: e.target.value })}
+                                  className="h-7 w-8 rounded cursor-pointer border border-border"
+                                  title="Contorno"
+                                />
+                                <Select
+                                  value={layer.fontFamily || 'Arial'}
+                                  onValueChange={(v) => { updateUvTextLayer(zoneKey, { fontFamily: v }); const opt = FONT_OPTIONS.find(f => f.value === v); if (opt?.google) loadGoogleFont(v); }}
+                                >
+                                  <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
+                                  <SelectContent className="max-h-60">
+                                    {FONT_OPTIONS.map(f => (
+                                      <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-border/40">
+                              <label className="text-[10px] text-muted-foreground cursor-pointer bg-muted/60 hover:bg-muted rounded px-2 py-1 flex items-center gap-1">
+                                <Upload className="h-3 w-3" /> Logo
+                                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUvLogoUpload(zoneKey, f); e.currentTarget.value = ''; }} />
+                              </label>
+                              {patches.length > 0 && (
+                                <Select value={imgLayer?.url && patches.find(p => p.imageUrl === imgLayer.url)?.id || ''} onValueChange={(id) => { const p = patches.find(p => p.id === id); if (p) setUvImageLayer(zoneKey, p.imageUrl); }}>
+                                  <SelectTrigger className="h-7 text-[10px] flex-1"><SelectValue placeholder="Emblema" /></SelectTrigger>
+                                  <SelectContent className="max-h-60">
+                                    {patches.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              {imgLayer && (
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setUvImageLayer(zoneKey, null)}>
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                            {imgLayer && (
+                              <img src={imgLayer.url} alt="layer" className="h-10 object-contain mx-auto opacity-80" />
+                            )}
                           </div>
                         );
                       })}
