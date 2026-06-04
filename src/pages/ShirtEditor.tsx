@@ -2455,48 +2455,64 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <Button 
                         variant="secondary" 
                         size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        className="flex flex-col h-[74px] w-[64px] p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur rounded-xl group transition-all duration-200"
                         onClick={() => setCameraPosition([0, 0.1, 5.2])}
                       >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                        <span className="text-[10px] font-bold uppercase">Frente</span>
+                        <div className="relative mb-0.5">
+                          <Shirt className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-tight text-foreground/80 group-hover:text-primary transition-colors">Frente</span>
                       </Button>
+
                       <Button 
                         variant="secondary" 
                         size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        className="flex flex-col h-[74px] w-[64px] p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur rounded-xl group transition-all duration-200"
                         onClick={() => setCameraPosition([0, 0.1, -5.2])}
                       >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                        <span className="text-[10px] font-bold uppercase">Costas</span>
+                        <div className="relative mb-0.5">
+                          <Shirt className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" style={{ transform: 'scaleX(-1)' }} />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] flex items-center justify-center">
+                            <span className="text-[7px] font-black text-primary/40 pointer-events-none">BACK</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-tight text-foreground/80 group-hover:text-primary transition-colors">Costas</span>
                       </Button>
+
                       <Button 
                         variant="secondary" 
                         size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        className="flex flex-col h-[74px] w-[64px] p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur rounded-xl group transition-all duration-200"
                         onClick={() => setCameraPosition([-5.2, 0.1, 0])}
                       >
-                        <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-                            <span className="text-[10px] font-black translate-y-[-1px]">LE</span>
+                        <div className="relative mb-0.5">
+                          <Shirt className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full flex items-center justify-center opacity-30">
+                            <div className="w-1.5 h-3 border-l-2 border-primary rounded-l-full translate-x-[4px]" />
                           </div>
                         </div>
-                        <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Esquerda</span></span>
+                        <span className="text-[9px] font-bold uppercase leading-[1] text-center px-0.5 flex flex-col text-foreground/80 group-hover:text-primary transition-colors">
+                          <span>Lateral</span>
+                          <span>Esquerda</span>
+                        </span>
                       </Button>
+
                       <Button 
                         variant="secondary" 
                         size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        className="flex flex-col h-[74px] w-[64px] p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur rounded-xl group transition-all duration-200"
                         onClick={() => setCameraPosition([5.2, 0.1, 0])}
                       >
-                        <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-                            <span className="text-[10px] font-black translate-y-[-1px]">LD</span>
+                        <div className="relative mb-0.5">
+                          <Shirt className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" style={{ transform: 'scaleX(-1)' }} />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full flex items-center justify-center opacity-30">
+                            <div className="w-1.5 h-3 border-r-2 border-primary rounded-r-full -translate-x-[4px]" />
                           </div>
                         </div>
-                        <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Direita</span></span>
+                        <span className="text-[9px] font-bold uppercase leading-[1] text-center px-0.5 flex flex-col text-foreground/80 group-hover:text-primary transition-colors">
+                          <span>Lateral</span>
+                          <span>Direita</span>
+                        </span>
                       </Button>
                     </div>
                   </div>
