@@ -1,0 +1,1 @@
+ALTER TABLE public.uv_maps ADD COLUMN IF NOT EXISTS uv_zones jsonb NOT NULL DEFAULT '{}'::jsonb; ALTER TABLE public.uv_maps ADD COLUMN IF NOT EXISTS uv_width integer; ALTER TABLE public.uv_maps ADD COLUMN IF NOT EXISTS uv_height integer;

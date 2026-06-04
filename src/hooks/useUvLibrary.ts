@@ -7,6 +7,18 @@ export interface UvMapItem {
   name: string | null;
   imageUrl: string;
   createdAt: string;
+  uvZones: Record<string, UvZone>;
+  uvWidth: number | null;
+  uvHeight: number | null;
+}
+
+export interface UvZone {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  label?: string;
 }
 
 export function useUvLibrary(targetUserId?: string) {
@@ -31,6 +43,9 @@ export function useUvLibrary(targetUserId?: string) {
       name: u.name ?? null,
       imageUrl: u.image_url,
       createdAt: u.created_at,
+      uvZones: (u.uv_zones && typeof u.uv_zones === 'object') ? u.uv_zones as Record<string, UvZone> : {},
+      uvWidth: u.uv_width ?? null,
+      uvHeight: u.uv_height ?? null,
     })) ?? []);
     setLoading(false);
   }, [targetUserId]);
@@ -77,11 +92,19 @@ export function useUvLibrary(targetUserId?: string) {
     await fetchUvMaps();
   }, [fetchUvMaps, targetUserId]);
 
+  const updateUvZones = useCallback(async (id: string, zones: Record<string, UvZone>, dims?: { width: number; height: number }) => {
+    const patch: any = { uv_zones: zones };
+    if (dims) { patch.uv_width = dims.width; patch.uv_height = dims.height; }
+    const { error } = await supabase.from('uv_maps' as any).update(patch).eq('id', id);
+    if (error) throw error;
+    await fetchUvMaps();
+  }, [fetchUvMaps]);
+
   const deleteUvMap = useCallback(async (id: string) => {
     const { error } = await supabase.from('uv_maps' as any).delete().eq('id', id);
     if (error) throw error;
     await fetchUvMaps();
   }, [fetchUvMaps]);
 
-  return { uvMaps, loading, addUvMap, updateUvMap, deleteUvMap, fetchUvMaps };
+  return { uvMaps, loading, addUvMap, updateUvMap, updateUvZones, deleteUvMap, fetchUvMaps };
 }

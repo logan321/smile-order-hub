@@ -895,6 +895,9 @@ export type Database = {
           name: string | null
           updated_at: string
           user_id: string
+          uv_height: number | null
+          uv_width: number | null
+          uv_zones: Json
         }
         Insert: {
           code: string
@@ -904,6 +907,9 @@ export type Database = {
           name?: string | null
           updated_at?: string
           user_id: string
+          uv_height?: number | null
+          uv_width?: number | null
+          uv_zones?: Json
         }
         Update: {
           code?: string
@@ -913,6 +919,9 @@ export type Database = {
           name?: string | null
           updated_at?: string
           user_id?: string
+          uv_height?: number | null
+          uv_width?: number | null
+          uv_zones?: Json
         }
         Relationships: []
       }

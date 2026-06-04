@@ -1,87 +1,84 @@
-# Adotar mecânica de decals 3D (estilo Jumptec) no editor de camisas
+# Personalização 100% UV-based
 
-## O que muda na prática (visão do usuário)
+## Mudança fundamental
 
-Hoje:
-- Você marca uma "zona" no editor 2D (peito, costas, etc.)
-- O sistema tenta **pintar uma textura** com tudo dentro dessa zona e aplicar na camisa 3D
-- Qualquer descasamento entre o 2D e o UV map da camisa desloca o emblema → bug atual
+Hoje: posições calculadas no preview 2D da camisa → bake → textura UV → 3D (gera deslocamento).
+Novo: usuário edita elementos em um **canvas com o tamanho exato da textura UV**, dentro de **zonas definidas em pixels UV reais**. Essa textura UV vira diretamente o `map` do material 3D — sem conversão de coordenadas, sem bake intermediário.
 
-Novo:
-- Cada emblema/texto/logo vira um **adesivo (decal)** colado direto na superfície 3D da camisa
-- Você pode **clicar no 3D** para posicionar, e arrastar/girar/escalar o adesivo lá mesmo
-- Zonas pré-definidas continuam existindo (peito direito, costas, manga…) mas agora são **pontos salvos no modelo 3D**, não retângulos no 2D
-- Resultado: o emblema cai exatamente onde foi marcado, sempre — porque o decal "envelopa" a malha automaticamente
+## Modelo de dados
 
-## Por que isso resolve o bug
+Cada `shirt_template` (ou `uv_map`) recebe um JSON `uv_zones` com zonas em pixels da textura UV:
 
-A Jumptec usa `THREE.DecalGeometry`. É o método oficial do Three.js para colar adesivos em modelo 3D arbitrário. Ele não depende de UV map nem de bake de textura — projeta direto na malha usando ponto + normal da superfície. Por isso nunca desloca.
+```json
+{
+  "uvWidth": 4096,
+  "uvHeight": 4096,
+  "zones": {
+    "name_back":    { "x": 1600, "y": 700,  "width": 900, "height": 200 },
+    "number_back":  { "x": 1700, "y": 950,  "width": 700, "height": 700 },
+    "chest_right":  { "x": 2800, "y": 1200, "width": 400, "height": 300 },
+    "sleeve_left":  { "x": 200,  "y": 1400, "width": 350, "height": 350 }
+  }
+}
+```
 
-## Etapas
+Migração:
+- `uv_maps.uv_zones jsonb` (canônico) + `uv_maps.uv_width int`, `uv_maps.uv_height int`
+- Manter `template_zones` (coords 2D do preview) só para overlay visual das zonas — não usado em render.
 
-### 1. Novo componente `Shirt3DEditor` (substitui o `Shirt3DPreview` atual no editor)
-- Carrega o GLB já existente
-- Aceita uma lista de "decals": `{ id, textureUrl, position, normal, size, rotation }`
-- Renderiza cada decal com `DecalGeometry` por cima do mesh da camisa
-- Clique no 3D faz raycast → devolve `position + normal` para o editor
-- Decal selecionado mostra handles de mover/girar/escalar (gizmo)
-- Cor de tecido continua aplicada no material base do mesh
+## Render pipeline (UV Compositor)
 
-### 2. Conversão de objeto Fabric → textura PNG individual
-- Cada texto/logo/patch é renderizado isoladamente em um canvas off-screen → `dataURL`
-- Essa imagem vira a textura do decal correspondente
-- Atualizar texto ou cor regera só a textura daquele decal (sem rebake do UV inteiro)
+Novo módulo `src/lib/uvCompositor.ts`:
 
-### 3. Zonas como presets 3D
-- Nova tela em admin de templates: "Definir zonas no 3D"
-- Admin clica nos pontos da camisa 3D (peito direito, costas, manga esq…) e salva `position + normal + tamanho padrão` por zona
-- Migração: adicionar colunas `position_3d (jsonb)`, `normal_3d (jsonb)`, `default_size` em `template_zones`
-- Zonas 2D antigas continuam funcionando como fallback até o admin recadastrar
+1. Cria um `OffscreenCanvas` (fallback HTMLCanvas) `uvWidth × uvHeight`.
+2. Desenha a textura UV base (imagem original do CLO3D) como camada 0.
+3. Para cada `layer` do usuário (`{ zoneKey, type: 'text'|'image', content, fontFamily, fontSize, color, rotation, scale, offsetX, offsetY, align }`):
+   - Lê a zona pelo `zoneKey` do JSON.
+   - Aplica `ctx.save() / translate(zone center) / rotate / clip(zone rect)`.
+   - Renderiza texto (auto-fit dentro da zona) ou imagem PNG (contain).
+   - `ctx.restore()`.
+4. Retorna um `THREE.CanvasTexture` (ou atualiza o existente com `texture.needsUpdate = true`).
 
-### 4. Editor (ShirtEditor.tsx)
-- Quando o usuário escolhe um emblema/texto/logo e seleciona uma zona, em vez de adicionar ao canvas Fabric da zona, criar um decal no `Shirt3DEditor` usando o preset 3D da zona
-- "Adicionar livre" (sem zona): usuário clica no 3D → cria decal naquele ponto
-- Painel lateral lista os decals atuais (excluir, duplicar, ajustar tamanho/rotação)
-- Modo 2D continua existindo para compatibilidade (e para o PDF de produção)
+Hook `useUvCompositor(baseUrl, zones, layers)` devolve `{ texture, dataURL, redraw }`.
 
-### 5. Exportação
-- PDF/orçamento: render do canvas 3D para PNG (`gl.preserveDrawingBuffer` já está ligado)
-- Frente/costas: girar câmera para 0° e 180°, capturar cada vista
+## Three.js
 
-## Detalhes técnicos
+`Shirt3DPreview` (atual) passa a aceitar `texture: THREE.Texture` em vez de URL. O material da malha usa `material.map = texture; material.needsUpdate = true`. Modelo nunca é recarregado, só a textura.
 
-- `import { DecalGeometry } from 'three/examples/jsm/geometries/DecalGeometry.js'`
-- Raycast: `new THREE.Raycaster()` em `onPointerDown` do `<Canvas>` do R3F
-- Material do decal: `MeshStandardMaterial({ map, transparent: true, polygonOffset: true, polygonOffsetFactor: -4, depthTest: true, depthWrite: false })`
-- Tamanho do decal: `new THREE.Vector3(w, h, depth)` — `depth` define até onde "envelopa" a malha
-- Rotação: euler em torno da normal
-- Para evitar z-fighting: `polygonOffsetFactor: -4` é padrão
+## Editor (ShirtEditor.tsx)
+
+- Sidebar de camadas em vez de canvas Fabric livre.
+- Botão "Adicionar nome" → cria layer `{ zoneKey: 'name_back', type: 'text', content: '' }`. Usuário edita texto/fonte/cor no painel.
+- Cada layer aparece como item editável (texto, imagem upload, número, logo do catálogo).
+- Preview 2D frontal/traseiro = imagem da camisa com **overlays semi-transparentes** das zonas (lidos do JSON via mapeamento UV→2D só visual, opcional) — clique na zona seleciona/cria layer. **Nunca usado para coordenadas.**
+- Preview 3D = `Shirt3DPreview` recebendo a `CanvasTexture` ao vivo.
+
+## Admin: definir zonas UV
+
+Nova aba em `EditorSettings` → "Zonas UV":
+- Carrega a imagem UV base.
+- Mostra retângulos sobre ela; admin arrasta/resize.
+- Salva `uv_zones` no template/uv_map.
+- Permite renomear chaves (`name_back`, `chest_right`, etc.).
+
+## Exportação (PDF/orçamento)
+
+- Frente/costas: captura do canvas 3D em 0° e 180° (já implementado).
+- "Textura final": exporta o `dataURL` do compositor como PNG (útil para produção/CLO3D).
 
 ## Arquivos afetados
 
-- `src/components/Shirt3DPreview.tsx` — vira `Shirt3DEditor.tsx` (modo edit) + mantém leitura simples
-- `src/pages/ShirtEditor.tsx` — fluxo de adicionar texto/logo/patch passa a criar decals
-- `src/hooks/useTemplateZones.ts` — expor campos 3D quando existirem
-- Nova página/aba no admin para marcar zonas 3D
-- Migration Supabase: colunas 3D em `template_zones`
+- **Nova migration**: add `uv_zones jsonb`, `uv_width int`, `uv_height int` em `uv_maps`.
+- **Novo**: `src/lib/uvCompositor.ts`, `src/hooks/useUvCompositor.ts`, `src/components/UvZoneAdminEditor.tsx`, `src/components/LayerPanel.tsx`.
+- **Refatorar**: `src/pages/ShirtEditor.tsx` (remove Fabric coord-based logic; usa LayerPanel + compositor), `src/components/Shirt3DPreview.tsx` (aceita texture), `src/pages/EditorSettings.tsx` (nova aba), `src/hooks/useUvLibrary.ts` (expor uv_zones).
+- **Manter como fallback**: `template_zones` 2D e Fabric (modo legacy enquanto admin não cadastra zonas UV).
 
-## O que NÃO muda
+## Ordem de entrega
 
-- GLB existente, lista de zonas existentes, catálogo de stamps/patches, fluxo de orçamento, PDF
-- Modo 2D do editor continua funcionando — o 3D só vira a "verdade" visual
+1. Migration `uv_zones` + hook expondo.
+2. `uvCompositor` + `useUvCompositor` + `Shirt3DPreview` aceitando texture viva. Teste com zonas hardcoded.
+3. Admin UI de zonas UV.
+4. Refatorar ShirtEditor para usar LayerPanel (texto/número/logo).
+5. Remover paths legacy quando o usuário confirmar.
 
-## Riscos
-
-- Refatoração grande: ~2 dias de trabalho equivalente. Vou em etapas com você testando cada uma.
-- Admin precisará **recadastrar zonas 3D** clicando no modelo (poucos cliques por template)
-- Até o admin recadastrar, a camisa daquele template usa fallback 2D (não piora vs. hoje)
-
-## Ordem de entrega sugerida
-
-1. Migration + componente `Shirt3DEditor` com decals controlados por props (sem UI ainda)
-2. Tela admin "Definir zonas 3D" + salvar no banco
-3. Ligar fluxo do editor: adicionar texto/logo/patch → decal 3D
-4. Gizmo de mover/girar/escalar no 3D
-5. Captura 3D para PDF
-
-Quer que eu siga nessa ordem?
+Quer que eu siga nessa ordem? Posso começar pelos passos 1+2 agora (base funcional ponta-a-ponta) e depois iterar admin/editor.
