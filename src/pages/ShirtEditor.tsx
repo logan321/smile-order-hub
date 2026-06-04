@@ -462,14 +462,29 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const colors = await svgAnalyzer.current.analyze(svgText);
       setSvgColors(colors);
       
-      // Chamar IA para classificar (Mock por enquanto ou chamada real se possível)
+      // Chamar IA para classificar
       const colorList = Array.from(colors.values()).map(c => ({ hex: c.hex, count: c.usageCount }));
-      const { data, error } = await supabase.functions.invoke('analyze-stamp-colors', {
+      const { data: aiResult, error: aiError } = await supabase.functions.invoke('analyze-stamp-colors', {
         body: { colors: colorList }
       });
       
-      if (!error && data) {
-        // Atualizar grupos semânticos se a IA retornar
+      if (!aiError && aiResult) {
+        // O Gemini com json_object pode retornar uma chave (ex: "colors" ou "result") 
+        // ou a lista diretamente dependendo do prompt. 
+        // Vamos ser flexíveis na detecção da lista.
+        const classifications = Array.isArray(aiResult) ? aiResult : (aiResult.colors || aiResult.classifications || []);
+        
+        setSvgColors(prev => {
+          const next = new Map(prev);
+          classifications.forEach((item: any) => {
+            if (item.hex && next.has(item.hex.toUpperCase())) {
+              const group = next.get(item.hex.toUpperCase())!;
+              group.groupName = item.group;
+              group.reason = item.reason;
+            }
+          });
+          return next;
+        });
       }
     } catch (err) {
       console.error('Erro ao analisar SVG:', err);
