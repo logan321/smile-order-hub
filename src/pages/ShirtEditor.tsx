@@ -393,6 +393,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     reader.readAsDataURL(file);
   };
 
+  const removeUvLayer = (zoneKey: string, type?: 'text' | 'image') => {
+    setUvLayers(prev => prev.filter(l => l.zoneKey !== zoneKey || (type ? l.type !== type : false)));
+    if (!type || type === 'text') setUvTextDrafts(prev => ({ ...prev, [zoneKey]: '' }));
+  };
+
+  useEffect(() => {
+    setUvLayers(prev => prev.map(l => l.type === 'text'
+      ? { ...l, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature } as UvLayer
+      : l));
+  }, [textColor, strokeColor, strokeWidth, fontFamily, fontSize, textCurvature]);
+
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
