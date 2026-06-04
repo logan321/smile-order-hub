@@ -66,7 +66,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
             onClick={() => onCameraChange([0, 0.1, 5.2])}
           >
             <Shirt className="h-5 w-5 mb-0.5" />
-            <span className="text-[10px] font-bold">FRENTE</span>
+            <span className="text-[10px] font-bold uppercase">Frente</span>
           </Button>
           <Button 
             variant="secondary" 
@@ -75,7 +75,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
             onClick={() => onCameraChange([0, 0.1, -5.2])}
           >
             <Shirt className="h-5 w-5 mb-0.5" />
-            <span className="text-[10px] font-bold">COSTAS</span>
+            <span className="text-[10px] font-bold uppercase">Costas</span>
           </Button>
           <Button 
             variant="secondary" 
@@ -89,7 +89,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
                 <span className="text-[10px] font-black">LE</span>
               </div>
             </div>
-            <span className="text-[10px] font-bold uppercase">L. ESQ</span>
+            <span className="text-[10px] font-bold uppercase">L. Esq</span>
           </Button>
           <Button 
             variant="secondary" 
@@ -103,7 +103,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
                 <span className="text-[10px] font-black">LD</span>
               </div>
             </div>
-            <span className="text-[10px] font-bold uppercase">L. DIR</span>
+            <span className="text-[10px] font-bold uppercase">L. Dir</span>
           </Button>
         </div>
       </div>
