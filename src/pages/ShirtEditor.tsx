@@ -2371,7 +2371,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     />
                   </div>
                   {uvZonesActive && (
-                    <div className="absolute top-2 right-2 z-30 w-[min(92vw,320px)] max-h-[84%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-lg shadow-lg p-3 space-y-3">
+                    <>
+                    {/* Toggle button — small, top-right, never covers the shirt */}
+                    <button
+                      onClick={() => setShowUvPanel(p => !p)}
+                      className="absolute top-2 right-2 z-40 h-10 px-3 rounded-full bg-accent text-accent-foreground shadow-lg flex items-center gap-1.5 text-xs font-bold active:scale-95"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {showUvPanel ? 'Fechar' : 'Personalizar'}
+                    </button>
+                    {showUvPanel && (
+                    <div className="absolute inset-x-2 bottom-2 lg:inset-x-auto lg:top-14 lg:right-2 lg:bottom-2 lg:w-[320px] z-30 max-h-[60vh] lg:max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-xl shadow-2xl p-3 space-y-3 animate-fade-in">
                       <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="h-4 w-4 text-accent" />
                         <p className="text-sm font-bold">Personalização UV</p>
@@ -2422,6 +2432,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         );
                       })}
                     </div>
+                    )}
+                    </>
                   )}
                 </div>
               )}
