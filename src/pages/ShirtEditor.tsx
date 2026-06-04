@@ -2400,14 +2400,52 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   Se não houver UV, mostra a camisa lisa (sem estampa). */}
               {!show2DEditor && (
                 <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
-                  <div className="w-full h-full max-w-3xl">
+                  <div className="w-full h-full max-w-3xl relative">
                     <Shirt3DPreview
                       frontImage={selectedTemplate.frontImageUrl}
                       backImage={selectedTemplate.backImageUrl}
                       uvMapUrl={effectiveUvUrl}
                       uvCanvas={uvZonesActive ? uvComposite.canvas : uv3DCanvas}
                       uvVersion={uvZonesActive ? uvComposite.version : uvTextureVersion}
+                      cameraPosition={cameraPosition}
+                      autoRotate={false}
                     />
+                    
+                    {/* View Controls - Integration directly in the main 3D view */}
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        onClick={() => setCameraPosition([0, 0.1, 5.2])}
+                      >
+                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                        <span className="text-[10px] font-bold">FRENTE</span>
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        onClick={() => setCameraPosition([0, 0.1, -5.2])}
+                      >
+                        <Shirt className="h-5 w-5 mb-0.5 rotate-180 text-primary" />
+                        <span className="text-[10px] font-bold">COSTAS</span>
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        onClick={() => setCameraPosition([5.2, 0.1, 0])}
+                      >
+                        <div className="relative flex items-center justify-center">
+                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+                            <span className="text-[10px] font-black translate-y-[-1px]">L</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase">Lateral</span>
+                      </Button>
+                    </div>
                   </div>
                   {uvZonesActive && (
                     <>

@@ -140,7 +140,7 @@ export default function Shirt3DPreview({
           <Environment preset="studio" background={false} />
         </Suspense>
         <OrbitControls
-          key={controlsKey}
+          ref={orbitRef}
           enablePan={false}
           autoRotate={rotating}
           autoRotateSpeed={1.2}
