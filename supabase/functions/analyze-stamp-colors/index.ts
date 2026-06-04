@@ -12,26 +12,27 @@ serve(async (req) => {
   }
 
   try {
-    const { colors } = await req.json()
+    const { colors, texts, images } = await req.json()
 
     const prompt = `
       Você é um especialista em design de estampas têxteis. 
-      Analise a seguinte lista de cores detectadas em um arquivo SVG de uma estampa.
+      Analise a composição de uma estampa SVG com base nos seguintes dados:
       
-      Cores:
-      ${JSON.stringify(colors, null, 2)}
+      Cores: ${JSON.stringify(colors)}
+      Textos Detectados: ${JSON.stringify(texts?.map((t: any) => ({ id: t.id, text: t.text })))}
+      Imagens/Logos Detectados: ${JSON.stringify(images?.map((img: any) => ({ id: img.id })))}
       
-      Sua tarefa é classificar cada cor em um dos seguintes grupos semânticos:
-      1. "Cor Base" (a cor predominante do fundo ou maior área)
-      2. "Cor Secundária" (áreas médias)
-      3. "Detalhes" (pequenos elementos decorativos)
-      4. "Textos" (se houver indicação de texto)
-      5. "Destaque" (cores vibrantes para chamar atenção)
+      Sua tarefa:
+      1. Classificar cada cor em: "Cor Base", "Cor Secundária", "Detalhes", "Textos", "Destaque".
+      2. Dar um nome amigável para cada campo de texto detectado (ex: se o texto é "SEU NOME", o nome do campo é "Nome do Atleta").
+      3. Dar um nome amigável para cada logo/imagem detectada (ex: se o ID é "escudo", o nome do campo é "Escudo do Time").
 
-      Retorne apenas um JSON no seguinte formato:
-      [
-        { "hex": "#HEX", "group": "Nome do Grupo", "reason": "Breve motivo" }
-      ]
+      Retorne APENAS um JSON no formato:
+      {
+        "colors": [ { "hex": "#HEX", "group": "Nome do Grupo", "reason": "Motivo" } ],
+        "texts": [ { "id": "id", "group": "Nome Amigável" } ],
+        "images": [ { "id": "id", "group": "Nome Amigável" } ]
+      }
     `
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

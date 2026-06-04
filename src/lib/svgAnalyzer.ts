@@ -13,6 +13,7 @@ export interface SvgColorGroup {
   percentage?: number;
   groupName?: string;
   reason?: string;
+  visible?: boolean;
 }
 
 export interface SvgTextElement {
@@ -21,12 +22,23 @@ export interface SvgTextElement {
   element: SVGTextElement | SVGTSpanElement;
   fontFamily: string;
   fontSize: string;
+  groupName?: string;
+  visible?: boolean;
 }
 
 export interface SvgImageElement {
   id: string;
   href: string;
   element: SVGImageElement;
+  groupName?: string;
+  visible?: boolean;
+}
+
+export interface SvgFeature {
+  id: string;
+  name: string;
+  visible: boolean;
+  elements: SVGElement[];
 }
 
 export class SvgAnalyzer {
@@ -42,7 +54,8 @@ export class SvgAnalyzer {
   public async analyze(svgString: string): Promise<{
     colors: Map<string, SvgColorGroup>,
     texts: SvgTextElement[],
-    images: SvgImageElement[]
+    images: SvgImageElement[],
+    features: SvgFeature[]
   }> {
     const doc = this.parser.parseFromString(svgString, 'image/svg+xml');
     const svg = doc.querySelector('svg');
@@ -52,6 +65,7 @@ export class SvgAnalyzer {
     const colorMap = new Map<string, SvgColorGroup>();
     const texts: SvgTextElement[] = [];
     const images: SvgImageElement[] = [];
+    const features: SvgFeature[] = [];
     const allElements = svg.querySelectorAll('*');
 
     allElements.forEach((el, index) => {
@@ -88,9 +102,19 @@ export class SvgAnalyzer {
           element: el
         });
       }
+
+      // Detect "Features" - elements with IDs or specific classes
+      if (el.id && !el.id.startsWith('text-') && !el.id.startsWith('image-')) {
+        features.push({
+          id: el.id,
+          name: el.id.replace(/[-_]/g, ' '),
+          visible: el.getAttribute('display') !== 'none' && el.getAttribute('visibility') !== 'hidden',
+          elements: [el]
+        });
+      }
     });
 
-    return { colors: colorMap, texts, images };
+    return { colors: colorMap, texts, images, features };
   }
 
   private addColorToMap(map: Map<string, SvgColorGroup>, hex: string, element: SVGElement) {
@@ -139,6 +163,22 @@ export class SvgAnalyzer {
     const el = svgDoc.getElementById(id) || svgDoc.querySelector(`[id="${id}"]`);
     if (el instanceof SVGImageElement) {
       el.setAttribute('href', newHref);
+    }
+    return new XMLSerializer().serializeToString(svgDoc);
+  }
+
+  /**
+   * Toggles visibility of an element or group
+   */
+  public toggleVisibility(svgDoc: Document, id: string, visible: boolean): string {
+    const el = svgDoc.getElementById(id) || svgDoc.querySelector(`[id="${id}"]`);
+    if (el) {
+      if (visible) {
+        el.removeAttribute('display');
+        el.removeAttribute('visibility');
+      } else {
+        el.setAttribute('display', 'none');
+      }
     }
     return new XMLSerializer().serializeToString(svgDoc);
   }
