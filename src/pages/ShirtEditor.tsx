@@ -1387,6 +1387,104 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     setShowZonePicker(null); setPendingLogoFile(null);
   };
 
+  // ─── Emblems ────────────────────────────────────────────────
+  const placeEmblemFromUrl = async (imageUrl: string) => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    try {
+      // Use proxy to bypass CORS for catalog images, raw url for blob/data
+      const src = imageUrl.startsWith('blob:') || imageUrl.startsWith('data:') ? imageUrl : toProxyUrl(imageUrl);
+      const img = await FabricImage.fromURL(src, { crossOrigin: 'anonymous' });
+      const maxSize = 180;
+      const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+      img.set({
+        left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
+        top: CANVAS_HEIGHT / 3,
+        scaleX: scale, scaleY: scale,
+        clipPath: (activeView === 'front' ? frontClipRef.current : backClipRef.current) || undefined,
+      });
+      (img as any)._userElement = true;
+      (img as any)._elementType = 'emblem';
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+      bumpEdits();
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao adicionar emblema');
+    }
+  };
+
+  const handleEmblemUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      // Upload to public bucket so 3D bake/quote can re-fetch it without CORS issues
+      const path = `emblems-uploads/${Date.now()}_${file.name.replace(/[^\w.-]/g, '_')}`;
+      const { error } = await supabase.storage.from('shirt-designs').upload(path, file, { contentType: file.type });
+      let url: string;
+      if (error) {
+        // Fallback: use blob url (won't survive page reload)
+        url = URL.createObjectURL(file);
+      } else {
+        const { data: u } = supabase.storage.from('shirt-designs').getPublicUrl(path);
+        url = u.publicUrl;
+      }
+      const item = { id: `local_${Date.now()}`, name: file.name, imageUrl: url };
+      setClientEmblems(prev => [item, ...prev]);
+      placeEmblemFromUrl(url);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao enviar emblema');
+    }
+  };
+
+  // ─── Name preset ───────────────────────────────────────────
+  const addNamePreset = async (style: 'arc' | 'straight') => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    const nameTxt = nameInput.trim();
+    const numTxt = numberInput.trim();
+    if (!nameTxt && !numTxt) { toast.error('Digite o nome ou número'); return; }
+    const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
+    if (fontDef?.google) await loadGoogleFont(fontFamily);
+
+    const textShadow = shadowEnabled ? new Shadow({ color: shadowColor, blur: shadowBlur, offsetX: 2, offsetY: 2 }) : undefined;
+    const clipPath = (activeView === 'front' ? frontClipRef.current : backClipRef.current) || undefined;
+
+    if (nameTxt) {
+      const nameObj = new FabricText(nameTxt, {
+        fontSize: Math.max(28, fontSize), fill: textColor, fontFamily,
+        stroke: strokeWidth > 0 ? strokeColor : undefined,
+        strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+        shadow: textShadow, originX: 'center', originY: 'center',
+        left: CANVAS_WIDTH / 2, top: CANVAS_HEIGHT * 0.32,
+        clipPath,
+      });
+      (nameObj as any)._userElement = true;
+      (nameObj as any)._elementType = 'name';
+      if (style === 'arc') applyArcToText(nameObj, 35);
+      canvas.add(nameObj);
+    }
+    if (numTxt) {
+      const numObj = new FabricText(numTxt, {
+        fontSize: Math.max(120, fontSize * 4), fill: textColor, fontFamily,
+        stroke: strokeWidth > 0 ? strokeColor : undefined,
+        strokeWidth: strokeWidth > 0 ? strokeWidth + 1 : 0,
+        shadow: textShadow, originX: 'center', originY: 'center',
+        left: CANVAS_WIDTH / 2, top: CANVAS_HEIGHT * 0.55,
+        clipPath,
+      });
+      (numObj as any)._userElement = true;
+      (numObj as any)._elementType = 'name';
+      canvas.add(numObj);
+    }
+    canvas.requestRenderAll();
+    bumpEdits();
+    setNameInput(''); setNumberInput('');
+  };
+
   // Live-update text style on active text object
   useEffect(() => {
     const canvas = getActiveCanvas();
