@@ -117,7 +117,7 @@ export default function Shirt3DPreview({
       <Canvas
         shadows
         camera={{ position: [0, 0.1, 5.2], fov: 35 }}
-        gl={{ antialias: true, preserveDrawingBuffer: true }}
+        gl={{ antialias: true, preserveDrawingBuffer: true, toneMappingExposure: 0.85 }}
         dpr={[1, 2]}
       >
         <color attach="background" args={['#f1f3f6']} />
