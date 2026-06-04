@@ -268,6 +268,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const backFabricRef = useRef<Canvas | null>(null);
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>(null);
+  const [showUvPanel, setShowUvPanel] = useState(false);
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [allTemplates, setAllTemplates] = useState<Template[]>([]);
