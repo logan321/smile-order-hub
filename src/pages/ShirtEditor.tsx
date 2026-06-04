@@ -364,10 +364,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const existing = prev.find(l => l.zoneKey === zoneKey && l.type === 'text');
       if (existing) {
         if (!content) return prev.filter(l => l !== existing);
-        return prev.map(l => l === existing ? { ...l, content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900 } as UvLayer : l);
+        return prev.map(l => l === existing ? { ...l, content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature } as UvLayer : l);
       }
       if (!content) return prev;
-      return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900 }];
+      return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature }];
     });
   };
 
