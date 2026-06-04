@@ -52,6 +52,8 @@ export async function composeUvTexture(opts: {
   zones: Record<string, UvZone>;
   layers: UvLayer[];
   canvas?: HTMLCanvasElement;
+  svgOverlay?: string | null;
+
 }): Promise<HTMLCanvasElement> {
   const base = await loadImage(opts.baseUrl);
   const w = opts.uvWidth || base.naturalWidth;
