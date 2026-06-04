@@ -450,6 +450,55 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [strokeWidth, setStrokeWidth] = useState(0);
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Arial');
+
+  const handleSvgAnalysis = async (url: string) => {
+    try {
+      setAnalyzingColors(true);
+      const response = await fetch(toProxyUrl(url));
+      const svgText = await response.text();
+      setSvgContent(svgText);
+      const colors = await svgAnalyzer.current.analyze(svgText);
+      setSvgColors(colors);
+      
+      // Chamar IA para classificar (Mock por enquanto ou chamada real se possível)
+      const colorList = Array.from(colors.values()).map(c => ({ hex: c.hex, count: c.usageCount }));
+      const { data, error } = await supabase.functions.invoke('analyze-stamp-colors', {
+        body: { colors: colorList }
+      });
+      
+      if (!error && data) {
+        // Atualizar grupos semânticos se a IA retornar
+      }
+    } catch (err) {
+      console.error('Erro ao analisar SVG:', err);
+      toast.error('Não foi possível analisar as cores da estampa');
+    } finally {
+      setAnalyzingColors(false);
+    }
+  };
+
+  const updateSvgColor = (oldHex: string, newCmyk: any) => {
+    if (!svgContent) return;
+    const newHex = cmykToHex(newCmyk);
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+    const updatedSvg = svgAnalyzer.current.updateColor(svgDoc, oldHex, newHex);
+    setSvgContent(updatedSvg);
+    
+    // Atualizar o mapa de cores local para refletir a mudança na UI
+    setSvgColors(prev => {
+      const next = new Map(prev);
+      const group = next.get(oldHex);
+      if (group) {
+        next.delete(oldHex);
+        next.set(newHex, { ...group, hex: newHex, cmyk: newCmyk });
+      }
+      return next;
+    });
+    
+    bumpEdits();
+  };
+
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [shadowColor, setShadowColor] = useState('#000000');
   const [shadowBlur, setShadowBlur] = useState(4);
