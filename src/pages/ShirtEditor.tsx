@@ -358,24 +358,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
   };
 
-  const updateUvTextLayer = (zoneKey: string, patch: Partial<Extract<UvLayer, { type: 'text' }>>) => {
-    setUvLayers(prev => prev.map(l => (l.zoneKey === zoneKey && l.type === 'text') ? { ...l, ...patch } as UvLayer : l));
-  };
-
-  const setUvImageLayer = (zoneKey: string, url: string | null) => {
-    setUvLayers(prev => {
-      const without = prev.filter(l => !(l.zoneKey === zoneKey && l.type === 'image'));
-      if (!url) return without;
-      return [...without, { id: `${zoneKey}_img_${Date.now()}`, zoneKey, type: 'image', url, opacity: 1 } as UvLayer];
-    });
-  };
-
-  const handleUvLogoUpload = (zoneKey: string, file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => setUvImageLayer(zoneKey, reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
@@ -2086,41 +2068,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
                   onClick={() => setActiveView('front')}>
                   <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider hidden lg:block">Frente</p>
-                  <div className="rounded-xl overflow-hidden relative">
-                    <canvas ref={frontCanvasRef} />
-                    {uvZonesActive && uvMapDims.w && uvMapDims.h && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        {Object.entries(uvMapZones).map(([zoneKey, z]) => {
-                          const sx = CANVAS_WIDTH / uvMapDims.w!;
-                          const sy = CANVAS_HEIGHT / uvMapDims.h!;
-                          const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
-                          const imgLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image') as Extract<UvLayer, { type: 'image' }> | undefined;
-                          return (
-                            <div key={zoneKey} className="absolute border border-amber-500/70 border-dashed flex items-center justify-center overflow-hidden"
-                              style={{ left: z.x * sx, top: z.y * sy, width: z.width * sx, height: z.height * sy }}>
-                              {imgLayer && (
-                                <img src={imgLayer.url} alt="" className="absolute inset-0 w-full h-full object-contain" />
-                              )}
-                              {layer?.content ? (
-                                <span className="font-black uppercase leading-none text-center"
-                                  style={{
-                                    color: layer.color || '#ffffff',
-                                    WebkitTextStroke: `${Math.max(1, (layer.strokeWidth || 0) * sx * 0.15)}px ${layer.strokeColor || '#000'}`,
-                                    fontFamily: layer.fontFamily || 'Arial',
-                                    fontSize: Math.min(z.height * sy * 0.85, (z.width * sx) / Math.max(layer.content.length, 1) * 1.6),
-                                    whiteSpace: 'nowrap',
-                                  }}>
-                                  {layer.content}
-                                </span>
-                              ) : !imgLayer ? (
-                                <span className="text-[9px] text-amber-600 bg-amber-50/80 px-1 rounded">{zoneKey}</span>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <div className="rounded-xl overflow-hidden"><canvas ref={frontCanvasRef} /></div>
                 </div>
                 <div ref={backWrapRef}
                   className={`${activeView === 'back' ? 'block' : 'hidden lg:block'} ${activeView !== 'back' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
@@ -2154,67 +2102,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </p>
                       {Object.keys(uvMapZones).map((zoneKey) => {
                         const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
-                        const imgLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image') as Extract<UvLayer, { type: 'image' }> | undefined;
                         return (
-                          <div key={zoneKey} className="space-y-1.5 border border-border/60 rounded-md p-2 bg-background/50">
-                            <label className="text-[11px] font-bold uppercase tracking-wide text-foreground">{zoneKey}</label>
+                          <div key={zoneKey} className="space-y-1">
+                            <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{zoneKey}</label>
                             <Input
                               value={layer?.content ?? ''}
                               onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
                               placeholder="Texto / nome / nº"
                               className="h-8 text-sm"
                             />
-                            {layer && (
-                              <div className="flex items-center gap-1.5">
-                                <input
-                                  type="color"
-                                  value={layer.color || '#ffffff'}
-                                  onChange={(e) => updateUvTextLayer(zoneKey, { color: e.target.value })}
-                                  className="h-7 w-8 rounded cursor-pointer border border-border"
-                                  title="Cor"
-                                />
-                                <input
-                                  type="color"
-                                  value={layer.strokeColor || '#000000'}
-                                  onChange={(e) => updateUvTextLayer(zoneKey, { strokeColor: e.target.value })}
-                                  className="h-7 w-8 rounded cursor-pointer border border-border"
-                                  title="Contorno"
-                                />
-                                <Select
-                                  value={layer.fontFamily || 'Arial'}
-                                  onValueChange={(v) => { updateUvTextLayer(zoneKey, { fontFamily: v }); const opt = FONT_OPTIONS.find(f => f.value === v); if (opt?.google) loadGoogleFont(v); }}
-                                >
-                                  <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
-                                  <SelectContent className="max-h-60">
-                                    {FONT_OPTIONS.map(f => (
-                                      <SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-border/40">
-                              <label className="text-[10px] text-muted-foreground cursor-pointer bg-muted/60 hover:bg-muted rounded px-2 py-1 flex items-center gap-1">
-                                <Upload className="h-3 w-3" /> Logo
-                                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUvLogoUpload(zoneKey, f); e.currentTarget.value = ''; }} />
-                              </label>
-                              {patches.length > 0 && (
-                                <Select value={imgLayer?.url && patches.find(p => p.imageUrl === imgLayer.url)?.id || ''} onValueChange={(id) => { const p = patches.find(p => p.id === id); if (p) setUvImageLayer(zoneKey, p.imageUrl); }}>
-                                  <SelectTrigger className="h-7 text-[10px] flex-1"><SelectValue placeholder="Emblema" /></SelectTrigger>
-                                  <SelectContent className="max-h-60">
-                                    {patches.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                              {imgLayer && (
-                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setUvImageLayer(zoneKey, null)}>
-                                  <X className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                            </div>
-                            {imgLayer && (
-                              <img src={imgLayer.url} alt="layer" className="h-10 object-contain mx-auto opacity-80" />
-                            )}
                           </div>
                         );
                       })}
