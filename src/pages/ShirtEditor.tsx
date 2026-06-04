@@ -5,27 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
-import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
-import { Shadow } from 'fabric';
-import { applyArcToText } from '@/lib/fabricArcText';
-import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
-import { toast } from 'sonner';
-import logo from '@/assets/logo.png';
-import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
-import { toProxyUrl } from '@/lib/imageProxy';
-import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import Shirt3DPreview from '@/components/Shirt3DPreview';
-import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
-import { useUvCompositor } from '@/hooks/useUvCompositor';
-import type { UvLayer } from '@/lib/uvCompositor';
-import type { UvZone } from '@/hooks/useUvLibrary';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette } from 'lucide-react';
+import { SvgAnalyzer, SvgColorGroup } from '@/lib/svgAnalyzer';
+import { cmykToHex, hexToCmyk } from '@/lib/cmykEngine';
 
-// Thumbnail: show only the 2D front image uploaded for the stamp.
-// The UV is kept only for the 3D texture when the client clicks this stamp.
-function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
   return (
     <img
       src={stampUrl}
