@@ -359,6 +359,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     uvHeight: uvMapDims.h,
   });
 
+  const [textInput, setTextInput] = useState('');
+  const [textColor, setTextColor] = useState('#000000');
+  const [strokeColor, setStrokeColor] = useState('#FFFFFF');
+  const [strokeWidth, setStrokeWidth] = useState(0);
+  const [fontSize, setFontSize] = useState(24);
+  const [fontFamily, setFontFamily] = useState('Arial');
+  const [shadowEnabled, setShadowEnabled] = useState(false);
+  const [shadowColor, setShadowColor] = useState('#000000');
+  const [shadowBlur, setShadowBlur] = useState(4);
+  const [textCurvature, setTextCurvature] = useState(0); // -100..100
+
   const commitUvLayerText = (zoneKey: string, content: string) => {
     setUvLayers(prev => {
       const existing = prev.find(l => l.zoneKey === zoneKey && l.type === 'text');
@@ -418,16 +429,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       toast.error('Erro ao gerar pré-visualização 3D');
     }
   };
-  const [textInput, setTextInput] = useState('');
-  const [textColor, setTextColor] = useState('#000000');
-  const [strokeColor, setStrokeColor] = useState('#FFFFFF');
-  const [strokeWidth, setStrokeWidth] = useState(0);
-  const [fontSize, setFontSize] = useState(24);
-  const [fontFamily, setFontFamily] = useState('Arial');
-  const [shadowEnabled, setShadowEnabled] = useState(false);
-  const [shadowColor, setShadowColor] = useState('#000000');
-  const [shadowBlur, setShadowBlur] = useState(4);
-  const [textCurvature, setTextCurvature] = useState(0); // -100..100
   // Name tab
   const [nameInput, setNameInput] = useState('');
   const [numberInput, setNumberInput] = useState('');
