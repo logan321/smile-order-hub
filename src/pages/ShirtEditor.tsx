@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
-import { User as UserIcon, Award } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -19,7 +18,6 @@ import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
@@ -304,6 +302,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       clearTimeout(bumpTimerRef.current);
       bumpTimerRef.current = null;
     }
+    if (uvTextCommitTimerRef.current != null) {
+      clearTimeout(uvTextCommitTimerRef.current);
+      uvTextCommitTimerRef.current = null;
+    }
   }, []);
   // Universal UV fallback: the GLB is the same for every shirt, so any uv_map
   // registered by the user can be used when a specific template/stamp doesn't
@@ -318,6 +320,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
+  const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
+  const uvTextCommitTimerRef = useRef<number | null>(null);
   // Priority: stamp UV (full design) > template UV > fallback. This makes
   // selecting a stamp with its own UV immediately reflect in 3D even when
   // the template has uv_zones registered.
@@ -340,6 +344,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
       setUvLayers([]);
+      setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
@@ -352,17 +357,61 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     uvHeight: uvMapDims.h,
   });
 
-  const setUvLayerText = (zoneKey: string, content: string) => {
+  const [textInput, setTextInput] = useState('');
+  const [textColor, setTextColor] = useState('#000000');
+  const [strokeColor, setStrokeColor] = useState('#FFFFFF');
+  const [strokeWidth, setStrokeWidth] = useState(0);
+  const [fontSize, setFontSize] = useState(24);
+  const [fontFamily, setFontFamily] = useState('Arial');
+  const [shadowEnabled, setShadowEnabled] = useState(false);
+  const [shadowColor, setShadowColor] = useState('#000000');
+  const [shadowBlur, setShadowBlur] = useState(4);
+  const [textCurvature, setTextCurvature] = useState(0); // -100..100
+
+  const commitUvLayerText = (zoneKey: string, content: string) => {
     setUvLayers(prev => {
       const existing = prev.find(l => l.zoneKey === zoneKey && l.type === 'text');
       if (existing) {
         if (!content) return prev.filter(l => l !== existing);
-        return prev.map(l => l === existing ? { ...l, content } as UvLayer : l);
+        return prev.map(l => l === existing ? { ...l, content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature } as UvLayer : l);
       }
       if (!content) return prev;
-      return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: '#ffffff', strokeColor: '#000', strokeWidth: 6, fontFamily: 'Arial', fontWeight: 900 }];
+      return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature }];
     });
   };
+
+  const setUvLayerText = (zoneKey: string, content: string) => {
+    setUvTextDrafts(prev => ({ ...prev, [zoneKey]: content }));
+    if (uvTextCommitTimerRef.current != null) window.clearTimeout(uvTextCommitTimerRef.current);
+    uvTextCommitTimerRef.current = window.setTimeout(() => {
+      uvTextCommitTimerRef.current = null;
+      commitUvLayerText(zoneKey, content);
+    }, 180);
+  };
+
+  const setUvLayerImage = (zoneKey: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = typeof reader.result === 'string' ? reader.result : '';
+      if (!url) return;
+      setUvLayers(prev => [
+        ...prev.filter(l => !(l.zoneKey === zoneKey && l.type === 'image')),
+        { id: `${zoneKey}_image_${Date.now()}`, zoneKey, type: 'image', url, scale: 0.9, opacity: 1 } as UvLayer,
+      ]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeUvLayer = (zoneKey: string, type?: 'text' | 'image') => {
+    setUvLayers(prev => prev.filter(l => l.zoneKey !== zoneKey || (type ? l.type !== type : false)));
+    if (!type || type === 'text') setUvTextDrafts(prev => ({ ...prev, [zoneKey]: '' }));
+  };
+
+  useEffect(() => {
+    setUvLayers(prev => prev.map(l => l.type === 'text'
+      ? { ...l, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature } as UvLayer
+      : l));
+  }, [textColor, strokeColor, strokeWidth, fontFamily, fontSize, textCurvature]);
 
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
@@ -378,16 +427,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       toast.error('Erro ao gerar pré-visualização 3D');
     }
   };
-  const [textInput, setTextInput] = useState('');
-  const [textColor, setTextColor] = useState('#000000');
-  const [strokeColor, setStrokeColor] = useState('#FFFFFF');
-  const [strokeWidth, setStrokeWidth] = useState(0);
-  const [fontSize, setFontSize] = useState(24);
-  const [fontFamily, setFontFamily] = useState('Arial');
-  const [shadowEnabled, setShadowEnabled] = useState(false);
-  const [shadowColor, setShadowColor] = useState('#000000');
-  const [shadowBlur, setShadowBlur] = useState(4);
-  const [textCurvature, setTextCurvature] = useState(0); // -100..100
   // Name tab
   const [nameInput, setNameInput] = useState('');
   const [numberInput, setNumberInput] = useState('');
@@ -1848,16 +1887,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     );
   }
 
-  // ─── Toolbar tab items ────────────────────────────────────────
-  const toolbarTabs: { id: ToolbarTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'patches', label: currentPatchLabel, icon: <Sparkles className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'name', label: 'Nome', icon: <UserIcon className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'emblems', label: 'Emblemas', icon: <Award className="h-5 w-5 lg:h-5 lg:w-5" /> },
-    { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
-  ];
-
   // Select a text style as reference (not applied to canvas)
   const selectTextStyle = (style: { imageUrl: string; name: string }) => {
     setSelectedTextStyle(style);
@@ -1894,45 +1923,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
       {/* Unified responsive layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {/* Top toolbar — tabs + view toggle + zoom */}
-        <div className="border-b border-border bg-card/90 backdrop-blur-sm shrink-0">
-          {/* Desktop: horizontal tab bar */}
-          <div className="hidden lg:flex items-center justify-center gap-1 px-2">
-            {toolbarTabs.map(tab => (
-              <button key={tab.id} onClick={() => {
-                  setActiveTab(activeTab === tab.id ? null : tab.id);
-                  if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
-                  if (tab.id === 'patches') advanceGuide('patches-tab', 'patch-pick');
-                  if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
-                  if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
-                }}
-                data-guide-desktop={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'patches' ? 'patches-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
-                className={`flex flex-col items-center gap-0.5 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wide transition-all border-b-3 ${activeTab === tab.id ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-            <div className="ml-auto flex items-center gap-1 pr-2">
-              <div className="flex items-center rounded-full overflow-hidden shadow-sm border-2 border-accent/40">
-                <Button variant={activeView === 'front' ? 'default' : 'ghost'} size="sm" className={`h-8 text-xs px-4 rounded-full ${activeView === 'front' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => setActiveView('front')}>Frente</Button>
-                <Button variant={activeView === 'back' ? 'default' : 'ghost'} size="sm" className={`h-8 text-xs px-4 rounded-full ${activeView === 'back' ? 'bg-primary text-primary-foreground' : ''}`} onClick={() => setActiveView('back')}>Costas</Button>
-              </div>
-            </div>
-          </div>
-          {/* Mobile: view toggle + zoom — vibrant style */}
-          <div className="lg:hidden flex items-center justify-between px-3 py-2.5 bg-sidebar/5">
-            <div className="flex items-center rounded-full overflow-hidden shadow-sm border-2 border-accent/50">
-              <button onClick={() => setActiveView('front')} className={`px-6 py-2 text-sm font-bold transition-all ${activeView === 'front' ? 'bg-accent text-accent-foreground shadow-inner' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Frente</button>
-              <button onClick={() => setActiveView('back')} className={`px-6 py-2 text-sm font-bold transition-all ${activeView === 'back' ? 'bg-primary text-primary-foreground shadow-inner' : 'bg-card text-muted-foreground hover:text-foreground'}`}>Costas</button>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-4 w-4" /></Button>
-              <span className="text-xs font-bold text-muted-foreground w-10 text-center">{Math.round(activeZoom * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setActiveZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }}><RotateCcw className="h-4 w-4" /></Button>
-            </div>
-          </div>
-        </div>
+        {/* Barra 2D removida: a personalização agora fica no painel direto do 3D. */}
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
           {/* Desktop sidebar panel */}
@@ -2347,25 +2338,43 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     />
                   </div>
                   {uvZonesActive && (
-                    <div className="absolute top-2 right-2 z-30 w-[260px] max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-lg shadow-lg p-3 space-y-2">
+                    <div className="absolute top-2 right-2 z-30 w-[min(92vw,320px)] max-h-[84%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-lg shadow-lg p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <Sparkles className="h-4 w-4 text-accent" />
                         <p className="text-sm font-bold">Personalização UV</p>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">
-                        Edição direta na textura UV — sempre alinhado com o modelo 3D.
-                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={20} /></div>
+                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={8} max={220} /></div>
+                      </div>
+                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Arco</label>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
+                        </div>
+                        <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
+                      </div>
                       {Object.keys(uvMapZones).map((zoneKey) => {
                         const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
+                        const imageLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image');
                         return (
-                          <div key={zoneKey} className="space-y-1">
+                          <div key={zoneKey} className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-2">
                             <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{zoneKey}</label>
                             <Input
-                              value={layer?.content ?? ''}
+                              value={uvTextDrafts[zoneKey] ?? layer?.content ?? ''}
                               onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
                               placeholder="Texto / nome / nº"
                               className="h-8 text-sm"
                             />
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs" onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()}><Upload className="h-3.5 w-3.5" /> Logo</Button>
+                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs text-destructive" onClick={() => removeUvLayer(zoneKey)}><Trash2 className="h-3.5 w-3.5" /> Limpar</Button>
+                            </div>
+                            <input id={`uv-file-${zoneKey}`} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); e.currentTarget.value = ''; }} />
+                            {imageLayer && <p className="text-[10px] text-muted-foreground">Logo/imagem aplicada</p>}
                           </div>
                         );
                       })}
@@ -2417,23 +2426,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-        {/* Mobile bottom tab bar — vibrant, large icons like Jumptec */}
-        <div className="lg:hidden border-t-2 border-sidebar bg-sidebar flex items-stretch shadow-[0_-4px_16px_rgba(0,0,0,0.2)] shrink-0">
-          {toolbarTabs.map(tab => (
-            <button key={tab.id} onClick={() => {
-                setActiveTab(activeTab === tab.id ? null : tab.id);
-                if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
-                if (tab.id === 'patches') advanceGuide('patches-tab', 'patch-pick');
-                if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
-                if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
-              }}
-              data-guide-mobile={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'patches' ? 'patches-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-all ${activeTab === tab.id ? 'text-accent bg-sidebar-accent' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'}`}>
-              <span className={`[&_svg]:h-7 [&_svg]:w-7 p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-accent text-accent-foreground shadow-md scale-110' : ''}`}>{tab.icon}</span>
-              <span className="text-[11px]">{tab.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Botões 2D removidos do mobile. */}
       </div>
 
       {/* Patch side + zone picker modal */}

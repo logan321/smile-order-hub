@@ -21,17 +21,20 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
   useEffect(() => {
     let cancelled = false;
     if (!baseUrl || !canvasRef.current) { setReady(false); return; }
-    composeUvTexture({
-      baseUrl, zones, layers, uvWidth, uvHeight,
-      canvas: canvasRef.current,
-    }).then(() => {
-      if (cancelled) return;
-      setReady(true);
-      setVersion(v => v + 1);
-    }).catch(err => {
-      console.warn('UV composite failed', err);
-    });
-    return () => { cancelled = true; };
+    const delay = layers.length > 0 ? 220 : 0;
+    const timer = window.setTimeout(() => {
+      composeUvTexture({
+        baseUrl, zones, layers, uvWidth, uvHeight,
+        canvas: canvasRef.current!,
+      }).then(() => {
+        if (cancelled) return;
+        setReady(true);
+        setVersion(v => v + 1);
+      }).catch(err => {
+        console.warn('UV composite failed', err);
+      });
+    }, delay);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [baseUrl, zones, layers, uvWidth, uvHeight]);
 
   return { canvas: canvasRef.current, version, ready };
