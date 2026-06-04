@@ -140,6 +140,53 @@ export type Database = {
         }
         Relationships: []
       }
+      emblems: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          id: string
+          image_url: string
+          name: string
+          niche_id: string | null
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          name: string
+          niche_id?: string | null
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          name?: string
+          niche_id?: string | null
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emblems_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       niches: {
         Row: {
           background_image_url: string

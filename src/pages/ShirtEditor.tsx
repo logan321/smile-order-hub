@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
+import { User as UserIcon, Award } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
+import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
@@ -176,7 +178,7 @@ interface Stamp {
   nicheId?: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | 'textStyles' | null;
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
 type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
@@ -385,6 +387,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [shadowColor, setShadowColor] = useState('#000000');
   const [shadowBlur, setShadowBlur] = useState(4);
+  const [textCurvature, setTextCurvature] = useState(0); // -100..100
+  // Name tab
+  const [nameInput, setNameInput] = useState('');
+  const [numberInput, setNumberInput] = useState('');
+  // Emblems tab
+  const [emblems, setEmblems] = useState<{ id: string; name: string; imageUrl: string; nicheId: string | null }[]>([]);
+  const [clientEmblems, setClientEmblems] = useState<{ id: string; name: string; imageUrl: string }[]>([]);
+  const emblemInputRef = useRef<HTMLInputElement>(null);
   const [textStyles, setTextStyles] = useState<{ id: string; name: string; category: string; imageUrl: string }[]>([]);
   const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
@@ -676,6 +686,18 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setTextStyles((textStylesRes.data as any[])?.map(ts => ({
         id: ts.id, name: ts.name, category: ts.category, imageUrl: ts.image_url,
       })) ?? []);
+      // Emblems (admin-curated library, filtered by owner)
+      try {
+        const { data: emblemsData } = await (supabase as any)
+          .from('emblems')
+          .select('id, name, image_url, niche_id')
+          .eq('user_id', ownerUserId)
+          .eq('active', true)
+          .order('position', { ascending: true });
+        setEmblems(((emblemsData as any[]) ?? []).map(e => ({
+          id: e.id, name: e.name, imageUrl: e.image_url, nicheId: e.niche_id ?? null,
+        })));
+      } catch (e) { console.warn('emblems fetch failed', e); }
       setNiches((nichesRes.data as any[])?.map(n => ({
         id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
       })) ?? []);
@@ -951,6 +973,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     (text as any)._fontName = fontFamily;
     (text as any)._textContent = textInput;
     if (zoneClipData) (text as any)._zoneClipData = zoneClipData;
+    // Apply arc curvature (single-line only)
+    if (textCurvature && !isMultiline) {
+      try { applyArcToText(text as FabricText, textCurvature); } catch (e) { console.warn(e); }
+    }
     canvas.add(text);
     return text;
   };
@@ -1361,6 +1387,104 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     setShowZonePicker(null); setPendingLogoFile(null);
   };
 
+  // ─── Emblems ────────────────────────────────────────────────
+  const placeEmblemFromUrl = async (imageUrl: string) => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    try {
+      // Use proxy to bypass CORS for catalog images, raw url for blob/data
+      const src = imageUrl.startsWith('blob:') || imageUrl.startsWith('data:') ? imageUrl : toProxyUrl(imageUrl);
+      const img = await FabricImage.fromURL(src, { crossOrigin: 'anonymous' });
+      const maxSize = 180;
+      const scale = Math.min(maxSize / img.width!, maxSize / img.height!);
+      img.set({
+        left: CANVAS_WIDTH / 2 - (img.width! * scale) / 2,
+        top: CANVAS_HEIGHT / 3,
+        scaleX: scale, scaleY: scale,
+        clipPath: (activeView === 'front' ? frontClipRef.current : backClipRef.current) || undefined,
+      });
+      (img as any)._userElement = true;
+      (img as any)._elementType = 'emblem';
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+      bumpEdits();
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao adicionar emblema');
+    }
+  };
+
+  const handleEmblemUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      // Upload to public bucket so 3D bake/quote can re-fetch it without CORS issues
+      const path = `emblems-uploads/${Date.now()}_${file.name.replace(/[^\w.-]/g, '_')}`;
+      const { error } = await supabase.storage.from('shirt-designs').upload(path, file, { contentType: file.type });
+      let url: string;
+      if (error) {
+        // Fallback: use blob url (won't survive page reload)
+        url = URL.createObjectURL(file);
+      } else {
+        const { data: u } = supabase.storage.from('shirt-designs').getPublicUrl(path);
+        url = u.publicUrl;
+      }
+      const item = { id: `local_${Date.now()}`, name: file.name, imageUrl: url };
+      setClientEmblems(prev => [item, ...prev]);
+      placeEmblemFromUrl(url);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao enviar emblema');
+    }
+  };
+
+  // ─── Name preset ───────────────────────────────────────────
+  const addNamePreset = async (style: 'arc' | 'straight') => {
+    const canvas = getActiveCanvas();
+    if (!canvas) return;
+    const nameTxt = nameInput.trim();
+    const numTxt = numberInput.trim();
+    if (!nameTxt && !numTxt) { toast.error('Digite o nome ou número'); return; }
+    const fontDef = FONT_OPTIONS.find(f => f.value === fontFamily);
+    if (fontDef?.google) await loadGoogleFont(fontFamily);
+
+    const textShadow = shadowEnabled ? new Shadow({ color: shadowColor, blur: shadowBlur, offsetX: 2, offsetY: 2 }) : undefined;
+    const clipPath = (activeView === 'front' ? frontClipRef.current : backClipRef.current) || undefined;
+
+    if (nameTxt) {
+      const nameObj = new FabricText(nameTxt, {
+        fontSize: Math.max(28, fontSize), fill: textColor, fontFamily,
+        stroke: strokeWidth > 0 ? strokeColor : undefined,
+        strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+        shadow: textShadow, originX: 'center', originY: 'center',
+        left: CANVAS_WIDTH / 2, top: CANVAS_HEIGHT * 0.32,
+        clipPath,
+      });
+      (nameObj as any)._userElement = true;
+      (nameObj as any)._elementType = 'name';
+      if (style === 'arc') applyArcToText(nameObj, 35);
+      canvas.add(nameObj);
+    }
+    if (numTxt) {
+      const numObj = new FabricText(numTxt, {
+        fontSize: Math.max(120, fontSize * 4), fill: textColor, fontFamily,
+        stroke: strokeWidth > 0 ? strokeColor : undefined,
+        strokeWidth: strokeWidth > 0 ? strokeWidth + 1 : 0,
+        shadow: textShadow, originX: 'center', originY: 'center',
+        left: CANVAS_WIDTH / 2, top: CANVAS_HEIGHT * 0.55,
+        clipPath,
+      });
+      (numObj as any)._userElement = true;
+      (numObj as any)._elementType = 'name';
+      canvas.add(numObj);
+    }
+    canvas.requestRenderAll();
+    bumpEdits();
+    setNameInput(''); setNumberInput('');
+  };
+
   // Live-update text style on active text object
   useEffect(() => {
     const canvas = getActiveCanvas();
@@ -1380,6 +1504,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         if ('initDimensions' in active && typeof (active as any).initDimensions === 'function') {
           (active as any).initDimensions();
         }
+        try { applyArcToText(active as FabricText, textCurvature); } catch (e) { console.warn(e); }
         active.dirty = true;
         active.setCoords();
         canvas.requestRenderAll();
@@ -1387,7 +1512,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       };
       applyFont();
     }
-  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, shadowEnabled, shadowColor, shadowBlur, activeView]);
+  }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, shadowEnabled, shadowColor, shadowBlur, textCurvature, activeView]);
 
   // Auto-select last text object when text tab is opened (mobile)
   useEffect(() => {
@@ -1426,7 +1551,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         setFontFamily(active.fontFamily || 'Arial');
         setStrokeWidth(active.strokeWidth || 0);
         setStrokeColor((active.stroke as string) || '#FFFFFF');
-        
+        setTextCurvature((active as any)._curvature || 0);
       }
     };
     canvas.on('selection:created', onSelect);
@@ -1728,6 +1853,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     { id: 'stamps', label: 'Estampas', icon: <Shirt className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'patches', label: currentPatchLabel, icon: <Sparkles className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'text', label: 'Texto', icon: <Type className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    { id: 'name', label: 'Nome', icon: <UserIcon className="h-5 w-5 lg:h-5 lg:w-5" /> },
+    { id: 'emblems', label: 'Emblemas', icon: <Award className="h-5 w-5 lg:h-5 lg:w-5" /> },
     { id: 'logo', label: 'Logo / Imagem', icon: <Upload className="h-5 w-5 lg:h-5 lg:w-5" /> },
   ];
 
@@ -1904,6 +2031,71 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
                 </div>
               )}
+              {activeTab === 'text' && (
+                <div className="px-0 pt-2 -mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-semibold">Curvatura (arco)</label>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
+                  </div>
+                  <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
+                  <p className="text-[9px] text-muted-foreground/70 mt-1">-100 = arco para baixo · 0 = reto · 100 = arco para cima</p>
+                </div>
+              )}
+              {activeTab === 'name' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Nome e número</p>
+                  <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Nome (ex: SILVA)" className="h-9 text-sm uppercase" maxLength={20} />
+                  <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="Número (opcional)" className="h-9 text-sm" maxLength={3} />
+                  <div className="flex gap-2">
+                    <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={10} max={120} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button size="sm" variant="outline" onClick={() => addNamePreset('arc')} className="h-8 text-xs">Esportivo (arco)</Button>
+                    <Button size="sm" variant="outline" onClick={() => addNamePreset('straight')} className="h-8 text-xs">Reto</Button>
+                  </div>
+                </div>
+              )}
+              {activeTab === 'emblems' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Emblemas</p>
+                  {emblems.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
+                        <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={em.name}>
+                          <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 protected-img bg-muted/10" />
+                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {clientEmblems.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Meus emblemas</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {clientEmblems.map(em => (
+                          <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-primary/40 overflow-hidden bg-background">
+                            <img src={em.imageUrl} className="w-full aspect-square object-contain p-1 bg-muted/10" />
+                            <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div onClick={() => emblemInputRef.current?.click()} className="flex items-center gap-2 px-3 py-3 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <div><span className="text-xs text-muted-foreground">Enviar meu emblema</span><span className="text-[9px] text-muted-foreground/60 block">PNG, JPG, SVG</span></div>
+                  </div>
+                  <input ref={emblemInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleEmblemUpload} className="hidden" />
+                </div>
+              )}
               {activeTab === 'logo' && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
@@ -1928,7 +2120,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t-2 border-accent rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-h-[45vh] flex flex-col animate-fade-in">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
                 <p className="text-sm font-bold text-foreground">
-                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? `🏷️ ${currentPatchLabel}` : activeTab === 'text' ? '✏️ Texto' : activeTab === 'logo' ? '📤 Logo / Imagem' : ''}
+                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? `🏷️ ${currentPatchLabel}` : activeTab === 'text' ? '✏️ Texto' : activeTab === 'name' ? '👕 Nome' : activeTab === 'emblems' ? '🏅 Emblemas' : activeTab === 'logo' ? '📤 Logo / Imagem' : ''}
                 </p>
                 <button onClick={() => setActiveTab(null)} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors">
                   <X className="h-5 w-5 text-muted-foreground" />
@@ -2023,6 +2215,66 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> {selectedTextStyle ? 'Trocar Estilo' : 'Estilos de Texto'}</Button>
                     )}
                     <Button size="sm" onClick={() => { handleAddTextClick(); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
+                    <div className="pt-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] text-muted-foreground uppercase font-semibold">Curvatura (arco)</label>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
+                      </div>
+                      <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
+                    </div>
+                  </div>
+                )}
+                {activeTab === 'name' && (
+                  <div className="space-y-2">
+                    <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Nome (ex: SILVA)" className="h-9 text-sm uppercase" maxLength={20} />
+                    <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="Número (opcional)" className="h-9 text-sm" maxLength={3} />
+                    <div className="flex gap-2">
+                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                      <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-14 text-xs" min={10} max={120} />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 text-xs" min={0} max={10} /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button size="sm" variant="outline" onClick={() => addNamePreset('arc')} className="h-8 text-xs">Esportivo (arco)</Button>
+                      <Button size="sm" variant="outline" onClick={() => addNamePreset('straight')} className="h-8 text-xs">Reto</Button>
+                    </div>
+                  </div>
+                )}
+                {activeTab === 'emblems' && (
+                  <div className="space-y-3">
+                    {emblems.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
+                    ) : (
+                      <div className="grid grid-cols-4 gap-2">
+                        {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
+                          <button key={em.id} onClick={() => { placeEmblemFromUrl(em.imageUrl); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 bg-background" title={em.name}>
+                            <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 bg-muted/10" />
+                            <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {clientEmblems.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Meus emblemas</p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {clientEmblems.map(em => (
+                            <button key={em.id} onClick={() => { placeEmblemFromUrl(em.imageUrl); setActiveTab(null); }} className="group rounded-lg border border-primary/40 overflow-hidden bg-background">
+                              <img src={em.imageUrl} className="w-full aspect-square object-contain p-1 bg-muted/10" />
+                              <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div onClick={() => emblemInputRef.current?.click()} className="flex items-center gap-2 px-3 py-3 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <div><span className="text-xs text-muted-foreground">Enviar meu emblema</span></div>
+                    </div>
+                    <input ref={emblemInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleEmblemUpload} className="hidden" />
                   </div>
                 )}
                 {activeTab === 'logo' && (
