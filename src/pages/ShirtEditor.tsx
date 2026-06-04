@@ -2234,14 +2234,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <div className="space-y-4">
                     {Array.from(svgColors.values()).map((group) => (
                       <div key={group.hex} className="p-3 rounded-xl bg-muted/30 border border-border/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="h-6 w-6 rounded-full border border-border shadow-sm" 
-                              style={{ backgroundColor: group.hex }}
-                            />
-                            <span className="text-[10px] font-mono text-muted-foreground">{group.hex}</span>
+                        <div className="flex flex-col mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-bold text-foreground">
+                              {group.groupName || 'Cor Detectada'}
+                            </span>
+                            <span className="text-[9px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{group.hex}</span>
                           </div>
+                          {group.reason && (
+                            <p className="text-[9px] text-muted-foreground leading-tight italic">
+                              {group.reason}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-3">
+                          <div 
+                            className="h-8 w-8 rounded-lg border border-border shadow-inner" 
+                            style={{ backgroundColor: group.hex }}
+                          />
+                          <div className="flex-1 h-[1px] bg-border/50" />
                         </div>
                         
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
