@@ -307,6 +307,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // registered by the user can be used when a specific template/stamp doesn't
   // have one linked yet. Without this, 3D used to stay blank for most templates.
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
+  const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
 
   // ===== UV-based personalization (new pipeline) =====
   // When the selected template's UV map has uv_zones registered by the admin,
@@ -387,7 +388,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [textStyles, setTextStyles] = useState<{ id: string; name: string; category: string; imageUrl: string }[]>([]);
   const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
-  const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
