@@ -1,52 +1,103 @@
 ## Objetivo
-Substituir o editor atual (Fabric 2D + preview 3D) por um **editor 100% 3D** com layout inspirado no Jumptec: sidebar vertical de ícones à esquerda + painel deslizante de opções + visualização 3D grande no centro/direita.
 
-## Por que rebuild
-O `ShirtEditor.tsx` atual tem 2595 linhas com lógica Fabric.js (2D) profundamente acoplada. Você relatou que mudanças no 2D não refletem no 3D — isso vai continuar acontecendo enquanto os dois sistemas coexistirem. Solução: **remover o Fabric.js do fluxo do cliente** e fazer toda edição direto no 3D usando o pipeline UV (texto/imagem desenhados no canvas de textura via `composeUvTexture` que já existe e já alimenta o 3D).
+Reforçar o editor 2D (que alimenta o 3D) com:
+1. Edição **ao vivo** de textos já adicionados (cor, contorno, tamanho).
+2. **Texto em arco** com curvatura ajustável (slider).
+3. Nova aba **Nome** (texto rápido com presets prontos).
+4. Nova aba **Emblemas** com biblioteca do admin **+ upload do cliente**.
 
-## Novo layout (igual ao Jumptec)
+A aba **Logo** continua existindo como hoje.
 
-```text
-┌──────┬──────────────────┬─────────────────────────────────┐
-│ ICO  │  PAINEL          │                                 │
-│ BAR  │  da aba ativa    │     CAMISA 3D                   │
-│      │                  │     (grande, rotaciona)         │
-│ 👕   │ [opções]         │                                 │
-│ 🎨   │                  │   [Salvar] [Enviar Orçamento]   │
-│ ✂️   │                  │                                 │
-│ A    │                  │   ◀  →  controles de câmera     │
-│ 🛡    │                  │                                 │
-│ ⬆    │                  │                                 │
-└──────┴──────────────────┴─────────────────────────────────┘
+---
+
+## 1. Edição ao vivo do texto selecionado
+
+Hoje os controles (cor, contorno, fonte, tamanho, sombra) só valem para o **próximo** texto a ser adicionado. Vou ligar esses inputs também ao objeto Fabric selecionado:
+
+- Ao selecionar um texto no canvas, o painel carrega seus valores atuais.
+- Ao mudar qualquer slider/cor/fonte, aplica em tempo real (`obj.set(...) + canvas.requestRenderAll() + bumpEdits()`).
+- Funciona tanto na aba **Texto** quanto na aba **Nome**.
+
+## 2. Texto em arco (curvatura ajustável)
+
+Adicionar um slider **"Curvatura"** (-100 a +100, 0 = reto) no painel de texto.
+
+Implementação: gerar um path SVG de arco com base na largura do texto e na curvatura, criar um `Path` Fabric invisível e usar `path` em `FabricText` (Fabric v6 suporta texto em path). Reaplicar quando o texto, fonte ou curvatura mudarem.
+
+Limitação: textos multi-linha (Textbox) seguem retos — arco só faz sentido em uma linha.
+
+## 3. Aba "Nome"
+
+Nova aba no toolbar (entre Texto e Logo), com ícone próprio. Reaproveita o mesmo motor de texto, mas com UX simplificada:
+
+- Campo "Nome" + Campo "Número" (opcional).
+- Presets rápidos: estilo Camisa Esportiva (nome em arco em cima + número grande embaixo) e estilo Reto.
+- Mesmos controles de cor/contorno/tamanho/curvatura.
+- Internamente cria 1 ou 2 objetos `FabricText` com `_elementType = 'name'`.
+
+## 4. Aba "Emblemas"
+
+Nova aba no toolbar com:
+
+**Biblioteca pública (admin):**
+- Nova tabela `emblems` (id, user_id do admin/dono, name, category, image_url, niche_id, active, position).
+- Filtra por nicho selecionado igual estampas/patches.
+- Admin gerencia via página existente de configurações do editor (nova seção "Emblemas").
+
+**Uploads do cliente:**
+- Botão "Enviar meu emblema" que abre o file picker.
+- Imagem vai pro bucket `shirt-designs` (já existe e é público), namespace `emblems-uploads/`.
+- Persistido por sessão do editor (estado local `clientEmblems`) — não polui o catálogo público.
+- Mesmo comportamento de inserção que estampas/logos (centraliza no canvas ativo, respeita zonas).
+
+## 5. Banco de dados
+
+Migration nova:
+
+```sql
+CREATE TABLE public.emblems (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  category text,
+  image_url text NOT NULL,
+  niche_id uuid REFERENCES public.niches(id) ON DELETE SET NULL,
+  active boolean DEFAULT true,
+  position int DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.emblems TO authenticated;
+GRANT SELECT ON public.emblems TO anon;  -- editor público lê por user_id
+GRANT ALL ON public.emblems TO service_role;
+
+ALTER TABLE public.emblems ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "owners manage own emblems" ON public.emblems
+  FOR ALL TO authenticated
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "public can read active emblems" ON public.emblems
+  FOR SELECT TO anon, authenticated
+  USING (active = true);
 ```
 
-**Abas da sidebar (ícones verticais):**
-1. **Modelo** — escolher template de camisa
-2. **Cores** — cor base do tecido + cores de detalhes
-3. **Acabamentos** — gola, manga (presets visuais)
-4. **Nome / Número** — input nome, número, fonte, cor, contorno, tamanho, **curvatura em arco**
-5. **Escudo / Emblemas** — galeria de emblemas cadastrados pelo admin (trator, peixe, etc.)
-6. **Upload** — cliente faz upload da própria logo/imagem (PNG/JPG/SVG)
+## 6. Arquivos a tocar
 
-Cada item adicionado vira uma **layer UV** (texto ou imagem) ancorada em uma **zona** (peito, costas, manga). O cliente clica na zona desejada (ou seleciona em dropdown) e o item é desenhado direto na textura do 3D em tempo real.
+```text
+src/pages/ShirtEditor.tsx          # edição ao vivo, slider arco, abas Nome/Emblemas, fetch+upload
+src/pages/EditorSettings.tsx       # nova seção admin de Emblemas (CRUD igual estampas)
+src/lib/fabricArcText.ts (novo)    # helper p/ gerar path de arco e aplicar em FabricText
+supabase/migrations/<novo>.sql     # tabela emblems
+```
 
-## Mudanças técnicas
+Nada de mudanças no `Shirt3DPreview` / `Shirt3DEditor` — tudo continua sendo "bakeado" no canvas 2D e jogado na textura UV, como já funciona hoje. Sem risco para o que acertamos na iluminação 3D.
 
-- **Remover do `ShirtEditor.tsx`**: o `<canvas>` Fabric.js visível, todas as abas `text/stamps/patches/textStyles` que dependiam de Fabric, toggle "Ver 2D/3D".
-- **Manter & reusar**: `useUvCompositor`, `composeUvTexture`, `useUvLibrary` (zonas), tabela `emblems` e bucket `shirt-designs`.
-- **Novo componente `ShirtEditor3DLayout.tsx`**: sidebar de ícones + painel + `<Shirt3DPreview/>` central. Estado local de `layers: UvLayer[]` em vez de objetos Fabric.
-- **Texto em arco no UV**: portar `buildArcPath` para desenhar texto em arco direto no canvas 2D do compositor (usando `Path2D` + `textBaseline`), já que não temos mais Fabric. Implementação: dividir o texto em caracteres e posicionar cada um ao longo de uma curva quadrática.
-- **Logo upload**: cliente seleciona arquivo → sobe pro bucket `shirt-designs/{userId}/` → vira layer image na zona escolhida.
-- **Emblemas admin**: lista da tabela `emblems` filtrada pelo `niche` do template. (Admin CRUD já estava pendente — fica para próxima etapa, por ora cliente já consegue usar o que estiver cadastrado.)
-- **Persistência**: salvar `{ baseTemplateId, fabricColor, layers[] }` em vez do JSON Fabric. Migração: pedidos antigos com payload Fabric continuam carregando como "somente leitura" (ou ignorar — confirmar abaixo).
+---
 
-## Detalhes visuais (estilo Jumptec)
-- Sidebar: 64px largura no desktop, ícones grandes + label pequena embaixo, aba ativa com destaque accent.
-- Painel da aba: 280px largura, fundo claro, scroll vertical.
-- Mobile: sidebar vira barra inferior fixa (igual à atual), painel abre como sheet.
-- Botões "Enviar Orçamento" / "Salvar Simulação" no topo do painel 3D.
+## Detalhes técnicos
 
-## Pendências para você confirmar
-1. **Pedidos antigos** (já salvos com payload Fabric 2D) — devolver erro, ou mostrar só leitura, ou descartar?
-2. **Estampas / Patches** (abas atuais com catálogo de estampas e patches) — continuam? viram emblemas? somem? Vi que você listou só: Modelo, Cores, Acabamentos, Nome/Número, Escudo, Upload — confirma que **estampas e patches saem**?
-3. **Texto livre**: além de Nome/Número, quer aba "Texto" separada (frase qualquer com cor/contorno/arco) ou Nome/Número já basta?
+- **Arco**: usa `M x0,y0 A r,r 0 0,1 x1,y1` calculado a partir da largura do texto e da curvatura (raio = `largura / (2 * sin(angulo/2))`).
+- **Live edit**: handlers em `onChange` checam `canvas.getActiveObject()` e, se for `_userElement` do tipo text/name, aplicam a mudança neles em vez de só salvar no state.
+- **Upload cliente**: usa `supabase.storage.from('shirt-designs').upload(...)` + `getPublicUrl`. Sem precisar de bucket novo.
+- **Performance**: re-renderizar arco em cada keystroke é OK (objetos Fabric são leves), mas faço `requestRenderAll` (não `renderAll`) e debouncing só se notar lag no mobile.

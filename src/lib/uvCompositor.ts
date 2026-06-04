@@ -16,8 +16,6 @@ export type UvLayer =
       scale?: number;
       offsetX?: number;
       offsetY?: number;
-      /** -100..100. 0 = flat. Positive = smile (arc up). Negative = frown (arc down). */
-      arc?: number;
     }
   | {
       id: string;
@@ -93,66 +91,14 @@ export async function composeUvTexture(opts: {
         size *= targetW / Math.max(m.width, 1);
       }
       ctx.font = `${weight} ${size}px ${family}`;
-      const drawStraight = () => {
-        if (layer.strokeWidth && layer.strokeWidth > 0) {
-          ctx.lineJoin = 'round';
-          ctx.strokeStyle = layer.strokeColor || '#000';
-          ctx.lineWidth = layer.strokeWidth;
-          ctx.strokeText(layer.content, 0, 0);
-        }
-        ctx.fillStyle = layer.color || '#ffffff';
-        ctx.fillText(layer.content, 0, 0);
-      };
-      const arc = layer.arc ?? 0;
-      if (!arc || Math.abs(arc) < 1 || !layer.content) {
-        drawStraight();
-      } else {
-        // Draw text along a quadratic Bezier curve from (-W/2,0) to (+W/2,0)
-        // control point: (0, sagitta). Negative sagitta = arc upward.
-        const totalW = ctx.measureText(layer.content).width;
-        const W = totalW;
-        const sagitta = -(arc / 100) * W * 0.45; // negative = up
-        const chars = Array.from(layer.content);
-        // pre-measure widths
-        const widths = chars.map(c => ctx.measureText(c).width);
-        const cumulative: number[] = [0];
-        for (let i = 0; i < widths.length; i++) cumulative.push(cumulative[i] + widths[i]);
-        const quad = (t: number) => {
-          // (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
-          const x = (1 - t) * (1 - t) * (-W / 2) + 2 * (1 - t) * t * 0 + t * t * (W / 2);
-          const y = (1 - t) * (1 - t) * 0 + 2 * (1 - t) * t * sagitta + t * t * 0;
-          return { x, y };
-        };
-        const dQuad = (t: number) => {
-          // derivative
-          const x = 2 * (1 - t) * (W / 2 - -W / 2) / 2 + 2 * t * (W / 2 - 0);
-          // simpler analytic derivative
-          const dx = 2 * (1 - t) * (0 - (-W / 2)) + 2 * t * ((W / 2) - 0);
-          const dy = 2 * (1 - t) * (sagitta - 0) + 2 * t * (0 - sagitta);
-          return { x: dx, y: dy };
-        };
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        for (let i = 0; i < chars.length; i++) {
-          const center = cumulative[i] + widths[i] / 2;
-          const t = center / totalW;
-          const { x, y } = quad(t);
-          const d = dQuad(t);
-          const angle = Math.atan2(d.y, d.x);
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(angle);
-          if (layer.strokeWidth && layer.strokeWidth > 0) {
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = layer.strokeColor || '#000';
-            ctx.lineWidth = layer.strokeWidth;
-            ctx.strokeText(chars[i], 0, 0);
-          }
-          ctx.fillStyle = layer.color || '#ffffff';
-          ctx.fillText(chars[i], 0, 0);
-          ctx.restore();
-        }
+      if (layer.strokeWidth && layer.strokeWidth > 0) {
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = layer.strokeColor || '#000';
+        ctx.lineWidth = layer.strokeWidth;
+        ctx.strokeText(layer.content, 0, 0);
       }
+      ctx.fillStyle = layer.color || '#ffffff';
+      ctx.fillText(layer.content, 0, 0);
     } else {
       try {
         const img = await loadImage(layer.url);
