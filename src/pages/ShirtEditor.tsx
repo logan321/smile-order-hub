@@ -387,6 +387,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [shadowEnabled, setShadowEnabled] = useState(false);
   const [shadowColor, setShadowColor] = useState('#000000');
   const [shadowBlur, setShadowBlur] = useState(4);
+  const [textCurvature, setTextCurvature] = useState(0); // -100..100
+  // Name tab
+  const [nameInput, setNameInput] = useState('');
+  const [numberInput, setNumberInput] = useState('');
+  // Emblems tab
+  const [emblems, setEmblems] = useState<{ id: string; name: string; imageUrl: string; nicheId: string | null }[]>([]);
+  const [clientEmblems, setClientEmblems] = useState<{ id: string; name: string; imageUrl: string }[]>([]);
+  const emblemInputRef = useRef<HTMLInputElement>(null);
   const [textStyles, setTextStyles] = useState<{ id: string; name: string; category: string; imageUrl: string }[]>([]);
   const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
