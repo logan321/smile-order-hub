@@ -2374,15 +2374,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               )}
 
-              {/* Toggle 2D/3D — sempre disponível */}
-              <button
-                  onClick={() => setShow2DEditor(v => !v)}
-                  className="absolute top-2 left-2 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-card border border-border shadow-md text-xs font-bold text-foreground hover:bg-muted transition-all"
-                  title={show2DEditor ? 'Voltar para 3D' : 'Editar em 2D'}
-                >
-                  {show2DEditor ? <Box className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
-                  {show2DEditor ? 'Ver 3D' : 'Editar 2D'}
-                </button>
+              {/* Editor agora é 100% 3D — o canvas 2D continua existindo apenas
+                  como fonte da textura UV (oculto) e nunca é exibido ao usuário. */}
 
               {/* Floating pan mode button — big and obvious for mobile users */}
               {activeZoom > 1 && (
