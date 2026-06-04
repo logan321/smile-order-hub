@@ -2087,10 +2087,35 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       frontImage={selectedTemplate.frontImageUrl}
                       backImage={selectedTemplate.backImageUrl}
                       uvMapUrl={effectiveUvUrl}
-                      uvCanvas={uv3DCanvas}
-                      uvVersion={uvTextureVersion}
+                      uvCanvas={uvZonesActive ? uvComposite.canvas : uv3DCanvas}
+                      uvVersion={uvZonesActive ? uvComposite.version : uvTextureVersion}
                     />
                   </div>
+                  {uvZonesActive && (
+                    <div className="absolute top-2 right-2 z-30 w-[260px] max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-lg shadow-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <p className="text-sm font-bold">Personalização UV</p>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Edição direta na textura UV — sempre alinhado com o modelo 3D.
+                      </p>
+                      {Object.keys(uvMapZones).map((zoneKey) => {
+                        const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
+                        return (
+                          <div key={zoneKey} className="space-y-1">
+                            <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{zoneKey}</label>
+                            <Input
+                              value={layer?.content ?? ''}
+                              onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                              placeholder="Texto / nome / nº"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
