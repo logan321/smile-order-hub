@@ -408,9 +408,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   };
 
   useEffect(() => {
-    setUvLayers(prev => prev.map(l => l.type === 'text'
-      ? { ...l, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature } as UvLayer
-      : l));
+    const imgScale = Math.max(0.2, Math.min(2.5, fontSize / 60));
+    setUvLayers(prev => prev.map(l => {
+      if (l.type === 'text') {
+        return { ...l, color: textColor, strokeColor, strokeWidth, fontFamily, fontSize, fontWeight: 900, curvature: textCurvature } as UvLayer;
+      }
+      if (l.type === 'image') {
+        return { ...l, scale: imgScale } as UvLayer;
+      }
+      return l;
+    }));
   }, [textColor, strokeColor, strokeWidth, fontFamily, fontSize, textCurvature]);
 
   const handleOpen3D = () => {
