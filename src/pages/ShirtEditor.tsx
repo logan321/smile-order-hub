@@ -2068,7 +2068,37 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
                   onClick={() => setActiveView('front')}>
                   <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider hidden lg:block">Frente</p>
-                  <div className="rounded-xl overflow-hidden"><canvas ref={frontCanvasRef} /></div>
+                  <div className="rounded-xl overflow-hidden relative">
+                    <canvas ref={frontCanvasRef} />
+                    {uvZonesActive && uvMapDims.w && uvMapDims.h && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        {Object.entries(uvMapZones).map(([zoneKey, z]) => {
+                          const sx = CANVAS_WIDTH / uvMapDims.w!;
+                          const sy = CANVAS_HEIGHT / uvMapDims.h!;
+                          const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
+                          return (
+                            <div key={zoneKey} className="absolute border border-amber-500/70 border-dashed flex items-center justify-center overflow-hidden"
+                              style={{ left: z.x * sx, top: z.y * sy, width: z.width * sx, height: z.height * sy }}>
+                              {layer?.content ? (
+                                <span className="font-black uppercase leading-none text-center"
+                                  style={{
+                                    color: layer.color || '#ffffff',
+                                    WebkitTextStroke: `${Math.max(1, (layer.strokeWidth || 0) * sx * 0.15)}px ${layer.strokeColor || '#000'}`,
+                                    fontFamily: layer.fontFamily || 'Arial',
+                                    fontSize: Math.min(z.height * sy * 0.85, (z.width * sx) / Math.max(layer.content.length, 1) * 1.6),
+                                    whiteSpace: 'nowrap',
+                                  }}>
+                                  {layer.content}
+                                </span>
+                              ) : (
+                                <span className="text-[9px] text-amber-600 bg-amber-50/80 px-1 rounded">{zoneKey}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div ref={backWrapRef}
                   className={`${activeView === 'back' ? 'block' : 'hidden lg:block'} ${activeView !== 'back' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
