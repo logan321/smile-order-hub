@@ -81,7 +81,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
             variant="secondary" 
             size="sm" 
             className="flex flex-col h-14 w-14 p-0 shadow-md border-2 border-primary/20 hover:border-primary/50"
-            onClick={() => onCameraChange([5.2, 0.1, 0])}
+            onClick={() => onCameraChange([-5.2, 0.1, 0])}
           >
             <div className="relative flex items-center justify-center">
               <Shirt className="h-5 w-5 mb-0.5" />
@@ -89,13 +89,13 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
                 <span className="text-[10px] font-black">LE</span>
               </div>
             </div>
-            <span className="text-[10px] font-bold uppercase">L. Esq</span>
+            <span className="text-[10px] font-bold uppercase leading-tight text-center px-0.5">Lateral Esquerda</span>
           </Button>
           <Button 
             variant="secondary" 
             size="sm" 
             className="flex flex-col h-14 w-14 p-0 shadow-md border-2 border-primary/20 hover:border-primary/50"
-            onClick={() => onCameraChange([-5.2, 0.1, 0])}
+            onClick={() => onCameraChange([5.2, 0.1, 0])}
           >
             <div className="relative flex items-center justify-center">
               <Shirt className="h-5 w-5 mb-0.5" />
@@ -103,7 +103,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
                 <span className="text-[10px] font-black">LD</span>
               </div>
             </div>
-            <span className="text-[10px] font-bold uppercase">L. Dir</span>
+            <span className="text-[10px] font-bold uppercase leading-tight text-center px-0.5">Lateral Direita</span>
           </Button>
         </div>
       </div>
@@ -2434,7 +2434,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         onClick={() => setCameraPosition([0, 0.1, 5.2])}
                       >
                         <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                        <span className="text-[10px] font-bold">FRENTE</span>
+                        <span className="text-[10px] font-bold uppercase">Frente</span>
                       </Button>
                       <Button 
                         variant="secondary" 
@@ -2442,8 +2442,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
                         onClick={() => setCameraPosition([0, 0.1, -5.2])}
                       >
-                        <Shirt className="h-5 w-5 mb-0.5 rotate-180 text-primary" />
-                        <span className="text-[10px] font-bold">COSTAS</span>
+                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                        <span className="text-[10px] font-bold uppercase">Costas</span>
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
+                        onClick={() => setCameraPosition([-5.2, 0.1, 0])}
+                      >
+                        <div className="relative flex items-center justify-center">
+                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+                            <span className="text-[10px] font-black translate-y-[-1px]">LE</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase leading-tight text-center px-0.5">Lateral Esquerda</span>
                       </Button>
                       <Button 
                         variant="secondary" 
@@ -2454,10 +2468,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <div className="relative flex items-center justify-center">
                           <Shirt className="h-5 w-5 mb-0.5 text-primary" />
                           <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-                            <span className="text-[10px] font-black translate-y-[-1px]">L</span>
+                            <span className="text-[10px] font-black translate-y-[-1px]">LD</span>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold uppercase">Lateral</span>
+                        <span className="text-[10px] font-bold uppercase leading-tight text-center px-0.5">Lateral Direita</span>
                       </Button>
                     </div>
                   </div>
