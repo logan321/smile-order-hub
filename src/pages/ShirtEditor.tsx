@@ -2615,7 +2615,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <Shirt className="h-4 w-4" /> Apenas Frente
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('back')}>
-                  <Shirt className="h-4 w-4 rotate-180" /> Apenas Costas
+                  <Shirt className="h-4 w-4" /> Apenas Costas
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('both')}>
                   <Shirt className="h-4 w-4" /> Frente e Costas
