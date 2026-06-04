@@ -442,7 +442,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     layers: uvLayers,
     uvWidth: uvMapDims.w,
     uvHeight: uvMapDims.h,
+    svgOverlay: svgContent,
   });
+
 
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
