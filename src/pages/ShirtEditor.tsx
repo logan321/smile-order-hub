@@ -28,7 +28,7 @@ import { cmykToHex, hexToCmyk } from '@/lib/cmykEngine';
 // Thumbnail: show only the 2D front image uploaded for the stamp.
 // The UV is kept only for the 3D texture when the client clicks this stamp.
 function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
-
+  return (
     <img
       src={stampUrl}
       alt={name}
@@ -38,6 +38,7 @@ function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
     />
   );
 }
+
 
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
