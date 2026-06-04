@@ -178,7 +178,7 @@ interface Stamp {
   nicheId?: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'logo' | 'patches' | 'textStyles' | null;
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
 type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
