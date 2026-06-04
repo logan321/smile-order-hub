@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas, useLoader } from '@react-three/fiber';
-import { OrbitControls, ContactShadows } from '@react-three/drei';
+import { OrbitControls, ContactShadows, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -84,6 +84,7 @@ function ShirtModel({
       mesh.material = mat;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      (mat as any).envMapIntensity = 0.1;
     });
   }, [scene, uvTex, fabricColor]);
 
@@ -127,6 +128,7 @@ export default function Shirt3DPreview({
         <Suspense fallback={null}>
           <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
+          <Environment preset="studio" background={false} />
         </Suspense>
         <OrbitControls
           enablePan={false}
