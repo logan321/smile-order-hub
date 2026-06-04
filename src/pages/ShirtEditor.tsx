@@ -358,6 +358,24 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
   };
 
+  const updateUvTextLayer = (zoneKey: string, patch: Partial<Extract<UvLayer, { type: 'text' }>>) => {
+    setUvLayers(prev => prev.map(l => (l.zoneKey === zoneKey && l.type === 'text') ? { ...l, ...patch } as UvLayer : l));
+  };
+
+  const setUvImageLayer = (zoneKey: string, url: string | null) => {
+    setUvLayers(prev => {
+      const without = prev.filter(l => !(l.zoneKey === zoneKey && l.type === 'image'));
+      if (!url) return without;
+      return [...without, { id: `${zoneKey}_img_${Date.now()}`, zoneKey, type: 'image', url, opacity: 1 } as UvLayer];
+    });
+  };
+
+  const handleUvLogoUpload = (zoneKey: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => setUvImageLayer(zoneKey, reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
