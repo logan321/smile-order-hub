@@ -1243,12 +1243,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
+    
+    // Analyze SVG if the stamp is a vector
+    if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
+      handleSvgAnalysis(stamp.imageUrl);
+    } else {
+      setSvgContent(null);
+      setSvgColors(new Map());
+    }
+
     // If the stamp is linked to a different template, swap the active template
     // so the 3D preview (UV + zones) reflects the template configured for it.
     if (stamp.templateId && stamp.templateId !== selectedTemplate?.id) {
       const linked = allTemplates.find(t => t.id === stamp.templateId);
       if (linked) setSelectedTemplate(linked);
     }
+
     const backUrl = stamp.backImageUrl || stamp.imageUrl;
     try {
       await Promise.all([
