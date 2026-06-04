@@ -74,7 +74,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
             className="flex flex-col h-14 w-14 p-0 shadow-md border-2 border-primary/20 hover:border-primary/50"
             onClick={() => onCameraChange([0, 0.1, -5.2])}
           >
-            <Shirt className="h-5 w-5 mb-0.5 rotate-180" />
+            <Shirt className="h-5 w-5 mb-0.5" />
             <span className="text-[10px] font-bold">COSTAS</span>
           </Button>
           <Button 

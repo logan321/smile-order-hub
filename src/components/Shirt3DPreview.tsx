@@ -89,7 +89,7 @@ function ShirtModel({
     });
   }, [scene, uvTex, fabricColor]);
 
-  const fitScale = 2.8 / Math.max(size.y, 0.0001);
+  const fitScale = 2.4 / Math.max(size.y, 0.0001);
 
   return (
     <group
