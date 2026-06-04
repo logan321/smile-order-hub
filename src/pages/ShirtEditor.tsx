@@ -2350,13 +2350,23 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={8} max={220} /></div>
                       </div>
                       <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Arco</label>
-                          <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
+                      {stamps.length > 0 && (
+                        <div className="space-y-1.5 pt-1 border-t border-border/40">
+                          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Estampa</label>
+                          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                            {stamps.map(s => (
+                              <button
+                                key={s.id}
+                                onClick={() => addStamp(s)}
+                                className={`flex-shrink-0 h-14 w-14 rounded-md border-2 overflow-hidden bg-muted transition-all ${appliedStamp?.id === s.id ? 'border-primary ring-2 ring-primary/30' : 'border-border/50 hover:border-primary/50'}`}
+                                title={s.name}
+                              >
+                                <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
-                      </div>
+                      )}
                       {Object.keys(uvMapZones).map((zoneKey) => {
                         const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
                         const imageLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image');
