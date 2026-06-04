@@ -12,6 +12,7 @@ export type UvLayer =
       strokeColor?: string;
       strokeWidth?: number;
       fontSize?: number;
+      curvature?: number;
       align?: 'left' | 'center' | 'right';
       rotation?: number;
       scale?: number;
@@ -92,14 +93,39 @@ export async function composeUvTexture(opts: {
         size *= targetW / Math.max(m.width, 1);
       }
       ctx.font = `${weight} ${size}px ${family}`;
+      const drawText = (stroke: boolean) => {
+        const curvature = layer.curvature ?? 0;
+        if (!curvature) {
+          if (stroke) ctx.strokeText(layer.content, 0, 0);
+          else ctx.fillText(layer.content, 0, 0);
+          return;
+        }
+        const text = layer.content || '';
+        const radius = Math.max(targetW, targetH) * (140 / Math.max(Math.abs(curvature), 1));
+        const direction = curvature > 0 ? -1 : 1;
+        const totalWidth = ctx.measureText(text).width;
+        let cursor = -totalWidth / 2;
+        for (const ch of text) {
+          const cw = ctx.measureText(ch).width;
+          const angle = (cursor + cw / 2) / radius;
+          ctx.save();
+          ctx.rotate(angle * direction);
+          ctx.translate(0, -radius * direction);
+          ctx.rotate(-angle * direction);
+          if (stroke) ctx.strokeText(ch, 0, radius * direction);
+          else ctx.fillText(ch, 0, radius * direction);
+          ctx.restore();
+          cursor += cw;
+        }
+      };
       if (layer.strokeWidth && layer.strokeWidth > 0) {
         ctx.lineJoin = 'round';
         ctx.strokeStyle = layer.strokeColor || '#000';
         ctx.lineWidth = layer.strokeWidth;
-        ctx.strokeText(layer.content, 0, 0);
+        drawText(true);
       }
       ctx.fillStyle = layer.color || '#ffffff';
-      ctx.fillText(layer.content, 0, 0);
+      drawText(false);
     } else {
       try {
         const img = await loadImage(layer.url);
