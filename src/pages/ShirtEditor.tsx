@@ -58,49 +58,65 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
         />
         
         {/* View Controls */}
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-10">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-[12px] z-10">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[72px] w-[72px] p-2 bg-white rounded-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-l-4 border-l-[#4F7BFF] border-y-0 border-r-0 hover:translate-y-[-2px] hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-200 group"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
             onClick={() => onCameraChange([0, 0.1, 5.2])}
           >
-            <div className="mb-1 text-[#1F2A44] group-hover:text-[#4F7BFF] transition-colors">
+            <div className="mb-2 text-[#4F7BFF] transition-colors">
               <Shirt size={28} strokeWidth={1.5} />
             </div>
-            <span className="text-[10px] font-bold uppercase text-[#1F2A44] leading-tight text-center break-words w-full">Frente</span>
+            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Frente</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[72px] w-[72px] p-2 bg-white rounded-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-l-4 border-l-[#4F7BFF] border-y-0 border-r-0 hover:translate-y-[-2px] hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-200 group"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
             onClick={() => onCameraChange([0, 0.1, -5.2])}
           >
-            <div className="mb-1 text-[#1F2A44] group-hover:text-[#4F7BFF] transition-colors">
-              <Shirt size={28} strokeWidth={1.5} className="rotate-180 scale-x-[-1]" />
+            <div className="mb-2 text-[#4F7BFF] transition-colors">
+              {/* Back view icon: no rotation, just the back of the shirt */}
+              <div className="relative">
+                <Shirt size={28} strokeWidth={1.5} />
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-[#4F7BFF]/10 to-transparent opacity-40 rounded-full" />
+              </div>
             </div>
-            <span className="text-[10px] font-bold uppercase text-[#1F2A44] leading-tight text-center break-words w-full">Costas</span>
+            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Costas</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[72px] w-[72px] p-2 bg-white rounded-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-l-4 border-l-[#4F7BFF] border-y-0 border-r-0 hover:translate-y-[-2px] hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-200 group"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
             onClick={() => onCameraChange([-5.2, 0.1, 0])}
           >
-            <div className="mb-1 text-[#1F2A44] group-hover:text-[#4F7BFF] transition-colors">
-              <Shirt size={28} strokeWidth={1.5} className="-rotate-90" />
+            <div className="mb-2 text-[#4F7BFF] transition-colors">
+              {/* Side view icon (Left) */}
+              <div className="relative transform -scale-x-100">
+                <Shirt size={28} strokeWidth={1.5} className="opacity-40" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-3 h-5 border-2 border-[#4F7BFF] rounded-sm" />
+                </div>
+              </div>
             </div>
-            <span className="text-[10px] font-bold uppercase text-[#1F2A44] leading-tight text-center break-words w-full">Lateral Esquerda</span>
+            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Lateral Esquerda</span>
           </Button>
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[72px] w-[72px] p-2 bg-white rounded-[18px] shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-l-4 border-l-[#4F7BFF] border-y-0 border-r-0 hover:translate-y-[-2px] hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-200 group"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-[4px] after:bg-gradient-to-b after:from-[#4F7BFF] after:to-[#8EB8FF] after:rounded-l-[16px]"
             onClick={() => onCameraChange([5.2, 0.1, 0])}
           >
-            <div className="mb-1 text-[#1F2A44] group-hover:text-[#4F7BFF] transition-colors">
-              <Shirt size={28} strokeWidth={1.5} className="rotate-90" />
+            <div className="mb-2 text-[#4F7BFF] transition-colors">
+              {/* Side view icon (Right) */}
+              <div className="relative">
+                <Shirt size={28} strokeWidth={1.5} className="opacity-40" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-3 h-5 border-2 border-[#4F7BFF] rounded-sm" />
+                </div>
+              </div>
             </div>
-            <span className="text-[10px] font-bold uppercase text-[#1F2A44] leading-tight text-center break-words w-full">Lateral Direita</span>
+            <span className="text-[11px] font-semibold uppercase text-[#1A1F2C] leading-tight text-center px-0.5 break-words w-full">Lateral Direita</span>
           </Button>
         </div>
       </div>
