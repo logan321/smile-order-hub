@@ -2406,11 +2406,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </p>
                       {svgTexts.map((txt) => (
                         <div key={txt.id} className="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/50">
-                          <label className="text-[10px] text-muted-foreground">Conteúdo</label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[10px] font-bold text-foreground">{txt.groupName || 'Texto'}</label>
+                            <button 
+                              onClick={() => toggleSvgElement(txt.id, !txt.visible, 'text')}
+                              className={`p-1 rounded hover:bg-muted transition-colors ${txt.visible === false ? 'text-muted-foreground' : 'text-primary'}`}
+                            >
+                              {txt.visible === false ? <X className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+                            </button>
+                          </div>
                           <Input 
                             value={txt.text} 
                             onChange={(e) => updateSvgText(txt.id, e.target.value)}
-                            className="h-8 text-xs"
+                            disabled={txt.visible === false}
+                            className="h-8 text-xs bg-background"
                           />
                         </div>
                       ))}
@@ -2426,21 +2435,61 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </p>
                       {svgImages.map((img) => (
                         <div key={img.id} className="space-y-3 p-3 rounded-xl bg-muted/30 border border-border/50">
-                          <div className="h-20 w-full bg-background rounded border border-border overflow-hidden flex items-center justify-center p-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-foreground">{img.groupName || 'Imagem'}</label>
+                            <button 
+                              onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
+                              className={`p-1 rounded hover:bg-muted transition-colors ${img.visible === false ? 'text-muted-foreground' : 'text-primary'}`}
+                            >
+                              {img.visible === false ? <X className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+                            </button>
+                          </div>
+                          <div className={`h-24 w-full bg-background rounded border border-border overflow-hidden flex items-center justify-center p-2 relative group ${img.visible === false ? 'opacity-30' : ''}`}>
                             <img src={img.href} alt="Logo" className="max-h-full max-w-full object-contain" />
+                            {img.visible !== false && (
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="secondary" 
+                                  className="h-7 text-[10px]"
+                                  onClick={() => document.getElementById(`svg-img-up-${img.id}`)?.click()}
+                                >
+                                  Trocar
+                                </Button>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex gap-2">
-                            <Input 
-                              placeholder="Nova URL da logo..."
-                              className="h-8 text-[10px]"
-                              onBlur={(e) => updateSvgImage(img.id, e.target.value)}
-                            />
-                            <Button size="sm" variant="outline" className="h-8 w-8 p-0" title="Upload">
-                              <Upload className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                          <input 
+                            id={`svg-img-up-${img.id}`}
+                            type="file" 
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleSvgImageUpload(img.id, e)}
+                          />
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Outros Elementos Toggling */}
+                  {svgFeatures.length > 0 && (
+                    <div className="mt-6 space-y-4">
+                      <p className="text-xs font-bold text-foreground uppercase flex items-center gap-2">
+                        <Box className="h-3.5 w-3.5 text-primary" /> 
+                        Elementos Opcionais
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {svgFeatures.map((feat) => (
+                          <div 
+                            key={feat.id} 
+                            onClick={() => toggleSvgElement(feat.id, !feat.visible, 'feature')}
+                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${feat.visible === false ? 'bg-muted/20 border-border/50 text-muted-foreground' : 'bg-primary/5 border-primary/20 text-foreground shadow-sm'}`}
+                          >
+                            <div className={`h-2 w-2 rounded-full ${feat.visible === false ? 'bg-muted-foreground' : 'bg-primary animate-pulse'}`} />
+                            <span className="text-[9px] font-bold truncate uppercase">{feat.name}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
