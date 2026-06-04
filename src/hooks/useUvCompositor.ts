@@ -8,7 +8,9 @@ interface Options {
   layers: UvLayer[];
   uvWidth?: number | null;
   uvHeight?: number | null;
+  svgOverlay?: string | null;
 }
+
 
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
