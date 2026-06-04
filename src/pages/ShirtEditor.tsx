@@ -45,11 +45,53 @@ const isMisplacedStampTemplate = (template: Template) =>
     /colorway/i.test(template.backImageUrl)
   );
 
-function Preview3DTabs({ front, back, uvMapUrl }: { front: string; back: string; uvMapUrl: string | null }) {
+function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }: { front: string; back: string; uvMapUrl: string | null; cameraPosition: [number, number, number]; onCameraChange: (pos: [number, number, number]) => void }) {
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <div className="flex-1 min-h-0">
-        <Shirt3DPreview frontImage={front} backImage={back} uvMapUrl={uvMapUrl} />
+      <div className="flex-1 min-h-0 relative">
+        <Shirt3DPreview 
+          frontImage={front} 
+          backImage={back} 
+          uvMapUrl={uvMapUrl} 
+          cameraPosition={cameraPosition}
+          autoRotate={false}
+        />
+        
+        {/* View Controls */}
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="flex flex-col h-14 w-14 p-0 shadow-md border-2 border-primary/20 hover:border-primary/50"
+            onClick={() => onCameraChange([0, 0.1, 5.2])}
+          >
+            <Shirt className="h-5 w-5 mb-0.5" />
+            <span className="text-[10px] font-bold">FRENTE</span>
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="flex flex-col h-14 w-14 p-0 shadow-md border-2 border-primary/20 hover:border-primary/50"
+            onClick={() => onCameraChange([0, 0.1, -5.2])}
+          >
+            <Shirt className="h-5 w-5 mb-0.5 rotate-180" />
+            <span className="text-[10px] font-bold">COSTAS</span>
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="flex flex-col h-14 w-14 p-0 shadow-md border-2 border-primary/20 hover:border-primary/50"
+            onClick={() => onCameraChange([5.2, 0.1, 0])}
+          >
+            <div className="relative flex items-center justify-center">
+              <Shirt className="h-5 w-5 mb-0.5" />
+              <div className="absolute inset-0 flex items-center justify-center bg-secondary/80">
+                <span className="text-[10px] font-black">L</span>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold uppercase">Lateral</span>
+          </Button>
+        </div>
       </div>
       <p className="text-xs text-muted-foreground text-center mt-1">Arraste para girar · Use a roda do mouse / pinça para dar zoom</p>
     </div>
@@ -287,6 +329,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
+  const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
   // Debounced bump: re-composite the UV texture at most every ~120ms while the
   // user is typing / dragging. Prevents the editor from re-rendering on every
   // keystroke, which was causing visible lag in the 3D preview.
@@ -2628,6 +2671,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               front={preview3D.front}
               back={preview3D.back}
               uvMapUrl={selectedTemplate?.uvMapUrl ?? null}
+              cameraPosition={cameraPosition}
+              onCameraChange={setCameraPosition}
             />
           )}
         </DialogContent>
