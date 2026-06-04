@@ -315,7 +315,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
-  const uvBaseUrl = selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  // Priority: stamp UV (full design) > template UV > fallback. This makes
+  // selecting a stamp with its own UV immediately reflect in 3D even when
+  // the template has uv_zones registered.
+  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   // Fetch uv_zones / dims for the selected template's UV map.
