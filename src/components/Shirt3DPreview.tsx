@@ -117,17 +117,17 @@ export default function Shirt3DPreview({
       <Canvas
         shadows
         camera={{ position: [0, 0.1, 5.2], fov: 35 }}
-        gl={{ antialias: true, preserveDrawingBuffer: true, toneMappingExposure: 0.85 }}
+        gl={{ antialias: true, preserveDrawingBuffer: true }}
         dpr={[1, 2]}
       >
         <color attach="background" args={['#f1f3f6']} />
-        <ambientLight intensity={1.1} />
-        <hemisphereLight args={['#ffffff', '#b0b0b0', 0.6]} />
-        <directionalLight position={[3, 4, 5]} intensity={0.7} castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-3, 2, -2]} intensity={0.35} />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[3, 4, 5]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
+        <directionalLight position={[-3, 2, -2]} intensity={0.4} />
         <Suspense fallback={null}>
           <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
+          <Environment preset="studio" />
         </Suspense>
         <OrbitControls
           enablePan={false}
