@@ -11,6 +11,8 @@ export interface SvgColorGroup {
   elements: SVGElement[];
   usageCount: number;
   percentage?: number;
+  groupName?: string;
+  reason?: string;
 }
 
 export class SvgAnalyzer {
