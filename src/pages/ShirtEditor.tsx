@@ -2395,23 +2395,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-        {/* Mobile bottom tab bar — vibrant, large icons like Jumptec */}
-        <div className="lg:hidden border-t-2 border-sidebar bg-sidebar flex items-stretch shadow-[0_-4px_16px_rgba(0,0,0,0.2)] shrink-0">
-          {toolbarTabs.map(tab => (
-            <button key={tab.id} onClick={() => {
-                setActiveTab(activeTab === tab.id ? null : tab.id);
-                if (tab.id === 'stamps') advanceGuide('stamps-tab', 'stamp-pick');
-                if (tab.id === 'patches') advanceGuide('patches-tab', 'patch-pick');
-                if (tab.id === 'text') advanceGuide('text-tab', 'text-pick');
-                if (tab.id === 'logo') advanceGuide('logo-tab', 'budget');
-              }}
-              data-guide-mobile={tab.id === 'stamps' ? 'stamps-tab' : tab.id === 'patches' ? 'patches-tab' : tab.id === 'text' ? 'text-tab' : tab.id === 'logo' ? 'logo-tab' : undefined}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-bold transition-all ${activeTab === tab.id ? 'text-accent bg-sidebar-accent' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'}`}>
-              <span className={`[&_svg]:h-7 [&_svg]:w-7 p-1.5 rounded-xl transition-all ${activeTab === tab.id ? 'bg-accent text-accent-foreground shadow-md scale-110' : ''}`}>{tab.icon}</span>
-              <span className="text-[11px]">{tab.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Botões 2D removidos do mobile. */}
       </div>
 
       {/* Patch side + zone picker modal */}
