@@ -19,6 +19,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
+import { useUvCompositor } from '@/hooks/useUvCompositor';
+import type { UvLayer } from '@/lib/uvCompositor';
+import type { UvZone } from '@/hooks/useUvLibrary';
 
 // Thumbnail: show only the 2D front image uploaded for the stamp.
 // The UV is kept only for the 3D texture when the client clicks this stamp.
@@ -304,6 +307,56 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // registered by the user can be used when a specific template/stamp doesn't
   // have one linked yet. Without this, 3D used to stay blank for most templates.
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
+
+  // ===== UV-based personalization (new pipeline) =====
+  // When the selected template's UV map has uv_zones registered by the admin,
+  // we render text/image layers directly onto a canvas the size of the UV
+  // texture. The canvas is fed live to <Shirt3DPreview /> as the material map.
+  const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
+  const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
+  const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
+  const uvBaseUrl = selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  const uvZonesActive = Object.keys(uvMapZones).length > 0;
+
+  // Fetch uv_zones / dims for the selected template's UV map.
+  useEffect(() => {
+    let cancelled = false;
+    const uvMapId = selectedTemplate?.uvMapId;
+    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('uv_maps' as any)
+        .select('uv_zones, uv_width, uv_height')
+        .eq('id', uvMapId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const row = data as any;
+      setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
+      setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
+      setUvLayers([]);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedTemplate?.uvMapId]);
+
+  const uvComposite = useUvCompositor({
+    baseUrl: uvZonesActive ? uvBaseUrl : null,
+    zones: uvMapZones,
+    layers: uvLayers,
+    uvWidth: uvMapDims.w,
+    uvHeight: uvMapDims.h,
+  });
+
+  const setUvLayerText = (zoneKey: string, content: string) => {
+    setUvLayers(prev => {
+      const existing = prev.find(l => l.zoneKey === zoneKey && l.type === 'text');
+      if (existing) {
+        if (!content) return prev.filter(l => l !== existing);
+        return prev.map(l => l === existing ? { ...l, content } as UvLayer : l);
+      }
+      if (!content) return prev;
+      return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: '#ffffff', strokeColor: '#000', strokeWidth: 6, fontFamily: 'Arial', fontWeight: 900 }];
+    });
+  };
 
   const handleOpen3D = () => {
     const frontCanvas = frontFabricRef.current;
