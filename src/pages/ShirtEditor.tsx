@@ -66,9 +66,11 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
           >
             <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
             <div className="mb-1 text-[#4F7BFF] transition-colors">
-              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md">
-                <div className="w-4 h-1 bg-[#4F7BFF] absolute top-1 rounded-full opacity-30" />
-                <Shirt size={20} strokeWidth={2.5} />
+              <div className="relative w-7 h-7 flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.62 1.96V10a6 6 0 003.1 5.25L12 22l6.9-6.75A6 6 0 0022 10V5.42a2 2 0 00-1.62-1.96z" />
+                  <path d="M12 22v-6.5M12 7c-2 0-3 1-3 3M12 7c2 0 3 1 3 3" />
+                </svg>
               </div>
             </div>
             <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">FRENTE</span>
@@ -81,10 +83,11 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
           >
             <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
             <div className="mb-1 text-[#4F7BFF] transition-colors">
-              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md overflow-hidden">
-                <div className="absolute inset-0 bg-[#4F7BFF]/10" />
-                <Shirt size={20} strokeWidth={2.5} />
-                <div className="absolute bottom-1 w-4 h-0.5 bg-[#4F7BFF] rounded-full opacity-40" />
+              <div className="relative w-7 h-7 flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.62 1.96V10a6 6 0 003.1 5.25L12 22l6.9-6.75A6 6 0 0022 10V5.42a2 2 0 00-1.62-1.96z" />
+                  <path d="M8 2h8M12 2v3M9 10h6M12 22v-6.5" />
+                </svg>
               </div>
             </div>
             <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">COSTAS</span>
@@ -97,13 +100,16 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
           >
             <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
             <div className="mb-1 text-[#4F7BFF] transition-colors">
-              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md">
-                <div className="absolute left-1 w-1 h-3 bg-[#4F7BFF] rounded-full opacity-40" />
-                <Shirt size={20} strokeWidth={2.5} className="opacity-40" />
-                <div className="absolute right-1.5 w-2 h-4 border-r-2 border-[#4F7BFF]" />
+              <div className="relative w-7 h-7 flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22L5 15.25A6 6 0 012 10V5.42a2 2 0 011.62-1.96L8 2M12 22v-6.5M8 2c.5 1 1 2 4 2M10 10c-1 0-2 1-2 2v4" />
+                </svg>
               </div>
             </div>
-            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">LATERAL\nESQUERDA</span>
+            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 w-full flex flex-col items-center">
+              <span>LATERAL</span>
+              <span>ESQUERDA</span>
+            </span>
           </Button>
 
           <Button 
@@ -113,13 +119,16 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
           >
             <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
             <div className="mb-1 text-[#4F7BFF] transition-colors">
-              <div className="relative w-7 h-7 flex items-center justify-center border-2 border-[#4F7BFF] rounded-md">
-                <div className="absolute right-1 w-1 h-3 bg-[#4F7BFF] rounded-full opacity-40" />
-                <Shirt size={20} strokeWidth={2.5} className="opacity-40" />
-                <div className="absolute left-1.5 w-2 h-4 border-l-2 border-[#4F7BFF]" />
+              <div className="relative w-7 h-7 flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}>
+                  <path d="M12 22L5 15.25A6 6 0 012 10V5.42a2 2 0 011.62-1.96L8 2M12 22v-6.5M8 2c.5 1 1 2 4 2M10 10c-1 0-2 1-2 2v4" />
+                </svg>
               </div>
             </div>
-            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 whitespace-pre-line w-full">LATERAL\nDIREITA</span>
+            <span className="text-[11px] font-bold uppercase text-[#1A1F2C] leading-[1.1] text-center px-1 w-full flex flex-col items-center">
+              <span>LATERAL</span>
+              <span>DIREITA</span>
+            </span>
           </Button>
         </div>
       </div>
