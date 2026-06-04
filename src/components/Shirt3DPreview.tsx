@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment } from '@react-three/drei';
 import * as THREE from 'three';
@@ -112,12 +112,14 @@ export default function Shirt3DPreview({
   cameraPosition = [0, 0.1, 5.2],
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
-  const [currentCameraPos, setCurrentCameraPos] = useState<[number, number, number]>(cameraPosition);
-  const [controlsKey, setControlsKey] = useState(0);
+  const orbitRef = useRef<any>(null);
 
   useEffect(() => {
-    setCurrentCameraPos(cameraPosition);
-    setControlsKey(prev => prev + 1);
+    if (orbitRef.current) {
+      const [x, y, z] = cameraPosition;
+      orbitRef.current.object.position.set(x, y, z);
+      orbitRef.current.update();
+    }
   }, [cameraPosition]);
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
@@ -126,7 +128,7 @@ export default function Shirt3DPreview({
     <div className="w-full h-full bg-gradient-to-b from-muted/40 to-muted rounded-lg overflow-hidden relative">
       <Canvas
         shadows
-        camera={{ position: currentCameraPos, fov: 35 }}
+        camera={{ position: cameraPosition, fov: 35 }}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
         dpr={[1, 2]}
       >
@@ -140,7 +142,7 @@ export default function Shirt3DPreview({
           <Environment preset="studio" background={false} />
         </Suspense>
         <OrbitControls
-          key={controlsKey}
+          ref={orbitRef}
           enablePan={false}
           autoRotate={rotating}
           autoRotateSpeed={1.2}
