@@ -121,13 +121,13 @@ export default function Shirt3DPreview({
         dpr={[1, 2]}
       >
         <color attach="background" args={['#f1f3f6']} />
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[3, 4, 5]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-3, 2, -2]} intensity={0.4} />
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[3, 4, 5]} intensity={0.5} castShadow shadow-mapSize={[1024, 1024]} />
+        <directionalLight position={[-3, 2, -2]} intensity={0.15} />
         <Suspense fallback={null}>
           <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
-          <Environment preset="studio" />
+          <Environment preset="apartment" environmentIntensity={0.4} />
         </Suspense>
         <OrbitControls
           enablePan={false}
