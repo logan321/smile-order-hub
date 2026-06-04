@@ -16,6 +16,8 @@ export type UvLayer =
       scale?: number;
       offsetX?: number;
       offsetY?: number;
+      /** -100..100. 0 = flat. Positive = smile (arc up). Negative = frown (arc down). */
+      arc?: number;
     }
   | {
       id: string;
