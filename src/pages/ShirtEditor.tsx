@@ -408,10 +408,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
-  // SVG Color Personalization (Fase 1)
+  // SVG Color Personalization (Fase 1 & 2)
   const [svgColors, setSvgColors] = useState<Map<string, SvgColorGroup>>(new Map());
   const [svgTexts, setSvgTexts] = useState<any[]>([]);
   const [svgImages, setSvgImages] = useState<any[]>([]);
+  const [svgFeatures, setSvgFeatures] = useState<any[]>([]);
   const [analyzingColors, setAnalyzingColors] = useState(false);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const svgAnalyzer = useRef(new SvgAnalyzer());
@@ -461,26 +462,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const response = await fetch(toProxyUrl(url));
       const svgText = await response.text();
       setSvgContent(svgText);
-      const { colors, texts, images } = await svgAnalyzer.current.analyze(svgText);
+      const { colors, texts, images, features } = await svgAnalyzer.current.analyze(svgText);
       setSvgColors(colors);
       setSvgTexts(texts);
       setSvgImages(images);
+      setSvgFeatures(features);
       
-      // Chamar IA para classificar
+      // Chamar IA para classificar tudo
       const colorList = Array.from(colors.values()).map(c => ({ hex: c.hex, count: c.usageCount }));
       const { data: aiResult, error: aiError } = await supabase.functions.invoke('analyze-stamp-colors', {
-        body: { colors: colorList }
+        body: { 
+          colors: colorList,
+          texts: texts.map(t => ({ id: t.id, text: t.text })),
+          images: images.map(img => ({ id: img.id }))
+        }
       });
       
       if (!aiError && aiResult) {
-        // O Gemini com json_object pode retornar uma chave (ex: "colors" ou "result") 
-        // ou a lista diretamente dependendo do prompt. 
-        // Vamos ser flexíveis na detecção da lista.
-        const classifications = Array.isArray(aiResult) ? aiResult : (aiResult.colors || aiResult.classifications || []);
-        
+        // Atualizar cores
+        const colorClassifications = aiResult.colors || [];
         setSvgColors(prev => {
           const next = new Map(prev);
-          classifications.forEach((item: any) => {
+          colorClassifications.forEach((item: any) => {
             if (item.hex && next.has(item.hex.toUpperCase())) {
               const group = next.get(item.hex.toUpperCase())!;
               group.groupName = item.group;
@@ -489,10 +492,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           });
           return next;
         });
+
+        // Atualizar textos com nomes amigáveis
+        if (aiResult.texts) {
+          setSvgTexts(prev => prev.map(t => {
+            const classification = aiResult.texts.find((ai: any) => ai.id === t.id);
+            return classification ? { ...t, groupName: classification.group } : t;
+          }));
+        }
+
+        // Atualizar imagens com nomes amigáveis
+        if (aiResult.images) {
+          setSvgImages(prev => prev.map(img => {
+            const classification = aiResult.images.find((ai: any) => ai.id === img.id);
+            return classification ? { ...img, groupName: classification.group } : img;
+          }));
+        }
       }
     } catch (err) {
       console.error('Erro ao analisar SVG:', err);
-      toast.error('Não foi possível analisar as cores da estampa');
+      toast.error('Não foi possível analisar os elementos da estampa');
     } finally {
       setAnalyzingColors(false);
     }
@@ -538,6 +557,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     setSvgContent(updatedSvg);
     setSvgImages(prev => prev.map(img => img.id === id ? { ...img, href: newHref } : img));
     bumpEdits();
+  };
+
+  const toggleSvgElement = (id: string, visible: boolean, type: 'text' | 'image' | 'feature') => {
+    if (!svgContent) return;
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+    const updatedSvg = svgAnalyzer.current.toggleVisibility(svgDoc, id, visible);
+    setSvgContent(updatedSvg);
+    
+    if (type === 'text') setSvgTexts(prev => prev.map(t => t.id === id ? { ...t, visible } : t));
+    if (type === 'image') setSvgImages(prev => prev.map(img => img.id === id ? { ...img, visible } : img));
+    if (type === 'feature') setSvgFeatures(prev => prev.map(f => f.id === id ? { ...f, visible } : f));
+    
+    bumpEdits();
+  };
+
+  const handleSvgImageUpload = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      updateSvgImage(id, dataUrl);
+    };
+    reader.readAsDataURL(file);
   };
 
   const [shadowEnabled, setShadowEnabled] = useState(false);
