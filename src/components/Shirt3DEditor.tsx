@@ -243,6 +243,7 @@ export default function Shirt3DEditor({
             pickPreview={pickPreview}
           />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
+          <Environment preset="studio" background={false} />
         </Suspense>
         <OrbitControls
           enablePan={false}
