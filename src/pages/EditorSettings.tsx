@@ -1280,6 +1280,23 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
         className="hidden"
         onChange={handleMatrizFileChange}
       />
+
+      {uvZoneEditorTarget && (() => {
+        const uv = uvMaps.find(u => u.id === uvZoneEditorTarget);
+        if (!uv) return null;
+        return (
+          <UvZoneAdminEditor
+            open={true}
+            onOpenChange={(o) => { if (!o) setUvZoneEditorTarget(null); }}
+            imageUrl={uv.imageUrl}
+            code={uv.code}
+            initialZones={uv.uvZones}
+            initialWidth={uv.uvWidth}
+            initialHeight={uv.uvHeight}
+            onSave={async (zones, dims) => { await updateUvZones(uv.id, zones, dims); }}
+          />
+        );
+      })()}
     </div>
   );
 };
