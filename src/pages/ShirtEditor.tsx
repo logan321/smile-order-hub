@@ -2482,7 +2482,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <span className="text-[10px] font-black translate-y-[-1px]">LE</span>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold uppercase leading-tight text-center px-0.5">Lateral Esquerda</span>
+                        <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Esquerda</span></span>
                       </Button>
                       <Button 
                         variant="secondary" 
@@ -2496,7 +2496,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <span className="text-[10px] font-black translate-y-[-1px]">LD</span>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold uppercase leading-tight text-center px-0.5">Lateral Direita</span>
+                        <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Direita</span></span>
                       </Button>
                     </div>
                   </div>
