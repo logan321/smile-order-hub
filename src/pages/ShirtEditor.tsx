@@ -304,6 +304,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       clearTimeout(bumpTimerRef.current);
       bumpTimerRef.current = null;
     }
+    if (uvTextCommitTimerRef.current != null) {
+      clearTimeout(uvTextCommitTimerRef.current);
+      uvTextCommitTimerRef.current = null;
+    }
   }, []);
   // Universal UV fallback: the GLB is the same for every shirt, so any uv_map
   // registered by the user can be used when a specific template/stamp doesn't
