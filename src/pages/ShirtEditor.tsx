@@ -48,29 +48,13 @@ const isMisplacedStampTemplate = (template: Template) =>
   );
 
 function Preview3DTabs({ front, back, uvMapUrl }: { front: string; back: string; uvMapUrl: string | null }) {
-  const [side, setSide] = useState<'front' | 'back'>('front');
   return (
-    <Tabs defaultValue="3d" className="flex-1 min-h-0 flex flex-col">
-      <TabsList className="self-center">
-        <TabsTrigger value="2d">Ver em 2D</TabsTrigger>
-        <TabsTrigger value="3d">Ver em 3D</TabsTrigger>
-      </TabsList>
-      <TabsContent value="2d" className="flex-1 min-h-0 mt-2 flex flex-col">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Button size="sm" variant={side === 'front' ? 'default' : 'outline'} onClick={() => setSide('front')}>Frente</Button>
-          <Button size="sm" variant={side === 'back' ? 'default' : 'outline'} onClick={() => setSide('back')}>Costas</Button>
-        </div>
-        <div className="flex-1 min-h-0 flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden">
-          <img src={side === 'front' ? front : back} alt={`Pré-visualização ${side}`} className="max-h-full max-w-full object-contain" />
-        </div>
-      </TabsContent>
-      <TabsContent value="3d" className="flex-1 min-h-0 mt-2 flex flex-col">
-        <div className="flex-1 min-h-0">
-          <Shirt3DPreview frontImage={front} backImage={back} uvMapUrl={uvMapUrl} />
-        </div>
-        <p className="text-xs text-muted-foreground text-center mt-1">Arraste para girar · Use a roda do mouse / pinça para dar zoom</p>
-      </TabsContent>
-    </Tabs>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0">
+        <Shirt3DPreview frontImage={front} backImage={back} uvMapUrl={uvMapUrl} />
+      </div>
+      <p className="text-xs text-muted-foreground text-center mt-1">Arraste para girar · Use a roda do mouse / pinça para dar zoom</p>
+    </div>
   );
 }
 
@@ -304,7 +288,23 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
-  const bumpEdits = useCallback(() => setEditsVersion(v => v + 1), []);
+  // Debounced bump: re-composite the UV texture at most every ~120ms while the
+  // user is typing / dragging. Prevents the editor from re-rendering on every
+  // keystroke, which was causing visible lag in the 3D preview.
+  const bumpTimerRef = useRef<number | null>(null);
+  const bumpEdits = useCallback(() => {
+    if (bumpTimerRef.current != null) return;
+    bumpTimerRef.current = window.setTimeout(() => {
+      bumpTimerRef.current = null;
+      setEditsVersion(v => v + 1);
+    }, 120);
+  }, []);
+  useEffect(() => () => {
+    if (bumpTimerRef.current != null) {
+      clearTimeout(bumpTimerRef.current);
+      bumpTimerRef.current = null;
+    }
+  }, []);
   // Universal UV fallback: the GLB is the same for every shirt, so any uv_map
   // registered by the user can be used when a specific template/stamp doesn't
   // have one linked yet. Without this, 3D used to stay blank for most templates.
