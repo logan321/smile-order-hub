@@ -2663,6 +2663,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               )}
               <div className="mt-4 pt-3 border-t border-border/30">
                 <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setShirtColors({
+                      'corpo-frente': '#FFFFFF',
+                      'corpo-verso': '#FFFFFF',
+                      'manga-esquerda': '#FFFFFF',
+                      'manga-direita': '#FFFFFF',
+                      'gola': '#FFFFFF',
+                      'detalhes-1': '#FFFFFF'
+                    });
+                    shirtRegions.forEach(r => {
+                      const el = document.getElementById(r.id);
+                      if (el) el.setAttribute('fill', '#FFFFFF');
+                    });
+                    bumpEdits();
+                  }} 
+                  className="w-full gap-1.5 h-8 text-[10px] mt-1"
+                >
+                  <RotateCcw className="h-3 w-3" /> Resetar Cores
+                </Button>
               </div>
             </aside>
           )}
