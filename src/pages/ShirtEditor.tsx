@@ -2575,19 +2575,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
 
                     
-                    <div className="grid grid-cols-2 gap-1 mb-3">
-                      {shirtRegions.map(region => (
-                        <Button
-                          key={region.id}
-                          variant={activeShirtRegion === region.id ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 text-[9px] px-1 truncate"
-                          onClick={() => setActiveShirtRegion(region.id)}
-                        >
-                          {region.label}
-                        </Button>
-                      ))}
-                    </div>
+                    {regionButtonsDesktop}
 
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[9px] text-muted-foreground uppercase font-bold">Cor Livre:</span>
@@ -2890,19 +2878,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
 
 
-                      <div className="flex overflow-x-auto gap-1.5 pb-2 mb-3 no-scrollbar">
-                        {shirtRegions.map(region => (
-                          <Button
-                            key={region.id}
-                            variant={activeShirtRegion === region.id ? "default" : "outline"}
-                            size="sm"
-                            className="h-8 text-[10px] px-3 whitespace-nowrap shrink-0"
-                            onClick={() => setActiveShirtRegion(region.id)}
-                          >
-                            {region.label}
-                          </Button>
-                        ))}
-                      </div>
+                      {regionButtonsMobile}
 
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-[10px] text-muted-foreground uppercase font-bold">Livre:</span>
