@@ -75,7 +75,15 @@ export async function scanSvgElements(svgUrl: string): Promise<{
         if (match) color = match[1].trim();
       }
     }
-    return (color && color !== 'none' && color.startsWith('#')) ? color : null;
+    // Only accept hex colors for the color picker to avoid UI errors
+    if (color && color.startsWith('#')) {
+      // Normalize to 7-char hex if it's 4-char (#f00 -> #ff0000)
+      if (color.length === 4) {
+        return '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
+      }
+      return color.substring(0, 7);
+    }
+    return null;
   };
 
   fixedIds.forEach(id => {
