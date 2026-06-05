@@ -604,7 +604,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
 
         const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svgDoc);
+        const svgString = serializer.serializeToString(doc);
         const blob = new Blob([svgString], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         setProcessedBaseUrl(url);
