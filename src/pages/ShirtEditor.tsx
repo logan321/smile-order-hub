@@ -2407,101 +2407,50 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               )}
               
-              {/* Personalização de Cores SVG */}
-              {svgContent && svgColors.size > 0 && (
-                <div className="mt-4 pt-4 border-t border-border/50 animate-fade-in">
-                  <p className="text-xs font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                    <Palette className="h-3.5 w-3.5 text-primary" /> 
-                    Controle de Camadas (Padrões)
-                  </p>
-                  {analyzingColors && (
-                    <div className="flex items-center gap-2 mb-4 p-2 bg-primary/5 rounded-lg border border-primary/10 animate-pulse">
-                      <Sparkles className="h-3 w-3 text-primary" />
-                      <span className="text-[10px] font-medium text-primary uppercase">IA analisando cores e elementos...</span>
-                    </div>
-                  )}
-                  <div className="space-y-4">
-                    {Array.from(svgColors.entries()).map(([key, group]) => (
-                      <div key={key} className="p-3 rounded-xl bg-muted/30 border border-border/50">
-                        <div className="flex flex-col mb-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-foreground">
-                                {group.groupName || 'Cor Detectada'}
-                              </span>
-                              <span className="text-[9px] font-mono text-muted-foreground">{group.hex}</span>
-                            </div>
-                            <input 
-                              type="color" 
-                              value={group.hex} 
-                              onChange={(e) => updateSvgColor(key, hexToCmyk(e.target.value))}
-                              className="h-8 w-8 rounded-lg border border-border cursor-pointer transition-transform hover:scale-110"
-                            />
-                          </div>
-                          {group.reason && (
-                            <p className="text-[9px] text-muted-foreground leading-tight italic">
-                              {group.reason}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-2 mb-3">
-                          <div 
-                            className="h-2 w-full rounded-full bg-border/30 overflow-hidden"
-                          >
-                            <div className="h-full bg-primary/20" style={{ width: `${group.percentage || 100}%` }} />
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-[9px] font-bold text-cyan-600">C: {group.cmyk.c}%</span>
-                            </div>
-                            <Slider 
-                              value={[group.cmyk.c]} 
-                              max={100} 
-                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, c: v })}
-                              className="h-2"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-[9px] font-bold text-magenta-600">M: {group.cmyk.m}%</span>
-                            </div>
-                            <Slider 
-                              value={[group.cmyk.m]} 
-                              max={100} 
-                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, m: v })}
-                              className="h-2"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-[9px] font-bold text-yellow-600">Y: {group.cmyk.y}%</span>
-                            </div>
-                            <Slider 
-                              value={[group.cmyk.y]} 
-                              max={100} 
-                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, y: v })}
-                              className="h-2"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-[9px] font-bold text-slate-900">K: {group.cmyk.k}%</span>
-                            </div>
-                            <Slider 
-                              value={[group.cmyk.k]} 
-                              max={100} 
-                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, k: v })}
-                              className="h-2"
-                            />
-                          </div>
-                        </div>
+              {/* Personalização de Cores SVG - ESTÁTICO E FUNCIONAL */}
+              <div className="mt-4 pt-4 border-t border-border/50 animate-fade-in">
+                <p className="text-xs font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                  <Palette className="h-3.5 w-3.5 text-primary" /> 
+                  Painel de Cores da Estampa
+                </p>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {[
+                    { id: 1, label: 'Cor 1 (Principal)', key: 'cor1' },
+                    { id: 2, label: 'Cor 2 (Secundária)', key: 'cor2' },
+                    { id: 3, label: 'Cor 3 (Detalhes)', key: 'cor3' },
+                    { id: 4, label: 'Cor 4 (Fundo)', key: 'cor4' },
+                  ].map((color) => (
+                    <div key={color.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-bold text-foreground">
+                          {color.label}
+                        </span>
+                        <span className="text-[9px] font-mono text-muted-foreground uppercase">
+                          {fixedColors[color.key as keyof typeof fixedColors]}
+                        </span>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="color" 
+                          value={fixedColors[color.key as keyof typeof fixedColors]} 
+                          onChange={(e) => updateSvgColor(color.id, e.target.value)}
+                          className="h-9 w-9 rounded-lg border-2 border-white shadow-sm cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-100">
+                  <div className="flex items-start gap-2">
+                    <Lock className="h-3.5 w-3.5 text-amber-600 mt-0.5" />
+                    <p className="text-[10px] text-amber-700 leading-tight">
+                      Note: Logomarcas e elementos protegidos são tratados como <strong>Imagens Fixas (Não Editáveis)</strong>.
+                    </p>
                   </div>
+                </div>
+              </div>
 
                   {/* Textos Editáveis do SVG */}
                   {svgTexts.length > 0 && (
