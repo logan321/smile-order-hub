@@ -515,6 +515,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
   const [syncFrontBack, setSyncFrontBack] = useState(true);
   const [dynamicElements, setDynamicElements] = useState<string[]>([]);
+  const originalColorsRef = useRef<Record<string, string>>({});
 
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
