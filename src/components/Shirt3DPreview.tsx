@@ -19,27 +19,43 @@ interface Shirt3DPreviewProps {
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
-  return useMemo(() => {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let newTexture: THREE.Texture | null = null;
+
     if (canvas) {
-      const t = new THREE.CanvasTexture(canvas);
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = 16;
-      t.flipY = false;
-      t.needsUpdate = true;
-      return t;
+      newTexture = new THREE.CanvasTexture(canvas);
+      newTexture.colorSpace = THREE.SRGBColorSpace;
+      newTexture.anisotropy = 16;
+      newTexture.flipY = false;
+      newTexture.needsUpdate = true;
+    } else if (url) {
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      newTexture = loader.load(url);
+      newTexture.colorSpace = THREE.SRGBColorSpace;
+      newTexture.anisotropy = 16;
+      newTexture.flipY = false;
+      newTexture.wrapS = THREE.RepeatWrapping;
+      newTexture.wrapT = THREE.RepeatWrapping;
+      newTexture.needsUpdate = true;
     }
-    if (!url) return null;
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin('anonymous');
-    const t = loader.load(url);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 16;
-    t.flipY = false;
-    t.wrapS = THREE.RepeatWrapping;
-    t.wrapT = THREE.RepeatWrapping;
-    t.needsUpdate = true;
-    return t;
+
+    setTexture(prevTexture => {
+      if (prevTexture && prevTexture !== newTexture) {
+        prevTexture.dispose();
+      }
+      return newTexture;
+    });
+
+    return () => {
+      // We don't necessarily want to dispose here if it might be used immediately again,
+      // but the setTexture call above handles the transition.
+    };
   }, [url, canvas, version]);
+
+  return texture;
 }
 
 function ShirtModel({
