@@ -2777,30 +2777,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
-                    {/* Color variants for applied stamp - Mobile */}
-                    {appliedStampColors.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => { switchToOriginalStamp(); }}
-                            className={`h-9 w-9 rounded-full border-2 transition-all overflow-hidden ${!activeStampColorId ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
-                            title="Original"
-                          >
-                            <img src={appliedStamp?.imageUrl} alt="Original" className="h-full w-full object-cover" />
-                          </button>
-                          {appliedStampColors.map(c => (
-                            <button
-                              key={c.id}
-                              onClick={() => { switchStampColor(c); }}
-                              className={`h-9 w-9 rounded-full border-2 transition-all ${activeStampColorId === c.id ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
-                              style={{ backgroundColor: c.colorHex }}
-                              title={c.colorName}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 )}
                 {activeTab === 'patches' && (
