@@ -2622,58 +2622,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
               </div>
               
-              {/* Fase 2: Painel de Personalização Avançada Mobile (Auto-expandido) */}
-              {svgContent && svgColors.size > 0 && (
-                <div className="mt-4 pt-4 border-t border-border/50 animate-fade-in lg:hidden px-1">
-                  <p className="text-[10px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                    <Sparkles className="h-3.5 w-3.5 text-accent" /> 
-                    Ajustes de IA (Fase 2)
-                  </p>
-                  
-                  {/* Cores CMYK */}
-                  <div className="space-y-3">
-                    {Array.from(svgColors.entries()).slice(0, 3).map(([key, group]) => (
-                      <div key={key} className="p-2 rounded-lg bg-muted/30 border border-border/40">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[9px] font-bold truncate flex-1">{group.groupName || 'Cor'}</span>
-                          <input 
-                            type="color" 
-                            value={group.hex} 
-                            onChange={(e) => updateSvgColor(key, hexToCmyk(e.target.value))}
-                            className="h-6 w-6 rounded border border-border cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    {svgColors.size > 3 && <p className="text-[8px] text-center text-muted-foreground italic">+ {svgColors.size - 3} cores detectadas</p>}
-                  </div>
-
-                  {/* Textos da Estampa */}
-                  {svgTexts.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {svgTexts.slice(0, 2).map((txt) => (
-                        <div key={txt.id} className="space-y-1">
-                          <label className="text-[8px] font-bold text-muted-foreground uppercase">{txt.groupName || 'Texto'}</label>
-                          <Input 
-                            value={txt.text} 
-                            onChange={(e) => updateSvgText(txt.id, e.target.value)}
-                            className="h-7 text-xs bg-background"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full h-7 text-[9px] mt-2 text-primary"
-                    onClick={() => setActiveTab('stamps')}
-                  >
-                    Ver todos os ajustes →
-                  </Button>
-                </div>
-              )}
+              {/* Fase 2: Removido */}
+              <div className="mt-4 pt-3 border-t border-border/30">
+                <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
+              </div>
             </aside>
           )}
 
