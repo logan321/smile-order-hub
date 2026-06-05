@@ -66,7 +66,11 @@ const customMtrControl = new Control({
   withConnection: true, actionName: 'rotate', render: renderRotateIcon,
 });
 
-const ShirtEditor = () => {
+interface ShirtEditorProps {
+  useOwnAssets?: boolean;
+}
+
+const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const { userId: urlUserId } = useParams<{ userId: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
