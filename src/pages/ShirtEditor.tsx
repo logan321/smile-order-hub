@@ -535,6 +535,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
   const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
+  const [shirtColors, setShirtColors] = useState<Record<string, string>>({
+    'corpo-frente': '#FFFFFF',
+    'corpo-verso': '#FFFFFF',
+    'manga-esquerda': '#FFFFFF',
+    'manga-direita': '#FFFFFF',
+    'gola': '#FFFFFF',
+    'detalhes-1': '#FFFFFF'
+  });
+  const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
+  const [syncFrontBack, setSyncFrontBack] = useState(true);
   const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
   const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
   const [namingDialog, setNamingDialog] = useState<{ open: boolean; selector: string; name: string }>({ open: false, selector: '', name: '' });
@@ -1173,6 +1183,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       img.set({ scaleX: scale, scaleY: scale, left, top, selectable: false, evented: false });
       (img as any)._isBackground = true;
       canvas.insertAt(0, img);
+      
+      // Sync SVG shirt colors to newly applied stamp if it's a template base
+      if (imageUrl.includes('colorway')) {
+        setTimeout(() => {
+          Object.entries(shirtColors).forEach(([id, color]) => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('fill', color);
+          });
+        }, 100);
+      }
 
       const clipImg = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
       clipImg.set({ scaleX: scale, scaleY: scale, left, top, absolutePositioned: true });
@@ -1476,6 +1496,46 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       selector,
       name: existing ? existing.label : ''
     });
+  };
+
+  const shirtRegions = [
+    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
+    { id: 'corpo-verso', label: 'Verso' },
+    { id: 'manga-esquerda', label: 'Manga Esquerda' },
+    { id: 'manga-direita', label: 'Manga Direita' },
+    { id: 'gola', label: 'Gola' },
+    { id: 'detalhes-1', label: 'Detalhes' },
+  ];
+
+  const shirtColorPalette = [
+    '#FFFFFF','#000000','#C0C0C0','#808080', '#FF0000','#CC0000','#FF6600','#FF9900', 
+    '#FFFF00','#CCFF00','#00FF00','#009900', '#00FFFF','#0099CC','#0000FF','#000099', 
+    '#FF00FF','#990099','#FF99CC','#FFCC99', '#FF6666','#66FF66','#6666FF','#FFFF99', 
+    '#003366','#006633','#660000','#663300', '#336600','#003300','#330066','#660033', 
+    '#1a1a2e','#16213e','#0f3460','#e94560', '#f5a623','#7ed321','#417505','#9013fe', 
+    '#bd10e0','#4a90e2','#50e3c2','#b8e986', '#000033','#330000','#003300','#333300'
+  ];
+
+  const handleApplyShirtColor = (hex: string) => {
+    const newColors = { ...shirtColors, [activeShirtRegion]: hex };
+    
+    // Sincronização lógica para frente/verso
+    if (syncFrontBack) {
+      if (activeShirtRegion === 'corpo-frente') newColors['corpo-verso'] = hex;
+      if (activeShirtRegion === 'corpo-verso') newColors['corpo-frente'] = hex;
+      if (activeShirtRegion === 'manga-esquerda') newColors['manga-direita'] = hex;
+      if (activeShirtRegion === 'manga-direita') newColors['manga-esquerda'] = hex;
+    }
+    
+    setShirtColors(newColors);
+    
+    // Atualizar visualmente o SVG
+    Object.entries(newColors).forEach(([id, color]) => {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute('fill', color);
+    });
+    
+    bumpEdits();
   };
 
   // Switch back to original stamp images
@@ -2427,6 +2487,56 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     </div>
                   )}
+                  {/* Shirt Color Customization - Desktop */}
+                  <div className="mt-3 pt-2 border-t border-border/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">Cores da Camisa</p>
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={syncFrontBack} 
+                          onChange={e => setSyncFrontBack(e.target.checked)} 
+                          className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <span className="text-[9px] text-muted-foreground font-medium">Sincronizar</span>
+                      </label>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-1 mb-3">
+                      {shirtRegions.map(region => (
+                        <Button
+                          key={region.id}
+                          variant={activeShirtRegion === region.id ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 text-[9px] px-1 truncate"
+                          onClick={() => setActiveShirtRegion(region.id)}
+                        >
+                          {region.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[9px] text-muted-foreground uppercase font-bold">Cor Livre:</span>
+                      <input 
+                        type="color" 
+                        value={shirtColors[activeShirtRegion] || '#FFFFFF'} 
+                        onChange={(e) => handleApplyShirtColor(e.target.value)}
+                        className="h-6 w-10 rounded border border-border cursor-pointer shrink-0"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-8 gap-1 p-1 rounded-lg bg-muted/20 border border-border/30">
+                      {shirtColorPalette.map((hex, i) => (
+                        <button
+                          key={i}
+                          className={`h-5 w-full rounded-sm border transition-transform hover:scale-110 ${shirtColors[activeShirtRegion] === hex ? 'border-primary ring-1 ring-primary/30' : 'border-border'}`}
+                          style={{ backgroundColor: hex }}
+                          onClick={() => handleApplyShirtColor(hex)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
               {activeTab === 'patches' && (
@@ -2563,6 +2673,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               )}
               <div className="mt-4 pt-3 border-t border-border/30">
                 <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setShirtColors({
+                      'corpo-frente': '#FFFFFF',
+                      'corpo-verso': '#FFFFFF',
+                      'manga-esquerda': '#FFFFFF',
+                      'manga-direita': '#FFFFFF',
+                      'gola': '#FFFFFF',
+                      'detalhes-1': '#FFFFFF'
+                    });
+                    shirtRegions.forEach(r => {
+                      const el = document.getElementById(r.id);
+                      if (el) el.setAttribute('fill', '#FFFFFF');
+                    });
+                    bumpEdits();
+                  }} 
+                  className="w-full gap-1.5 h-8 text-[10px] mt-1"
+                >
+                  <RotateCcw className="h-3 w-3" /> Resetar Cores
+                </Button>
               </div>
             </aside>
           )}
@@ -2676,8 +2808,61 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             </div>
                           ))}
                         </div>
+                    {/* Shirt Color Customization - Mobile */}
+                    <div className="mt-4 pt-3 border-t border-border/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[11px] font-bold text-foreground uppercase flex items-center gap-2">
+                          <Shirt className="h-3 w-3 text-accent" />
+                          Cores da Camisa
+                        </p>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={syncFrontBack} 
+                            onChange={e => setSyncFrontBack(e.target.checked)} 
+                            className="h-3.5 w-3.5 rounded border-gray-300 text-primary"
+                          />
+                          <span className="text-[10px] text-muted-foreground font-medium">Sincronizar</span>
+                        </label>
                       </div>
-                    )}
+
+                      <div className="flex overflow-x-auto gap-1.5 pb-2 mb-3 no-scrollbar">
+                        {shirtRegions.map(region => (
+                          <Button
+                            key={region.id}
+                            variant={activeShirtRegion === region.id ? "default" : "outline"}
+                            size="sm"
+                            className="h-8 text-[10px] px-3 whitespace-nowrap shrink-0"
+                            onClick={() => setActiveShirtRegion(region.id)}
+                          >
+                            {region.label}
+                          </Button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Livre:</span>
+                        <input 
+                          type="color" 
+                          value={shirtColors[activeShirtRegion] || '#FFFFFF'} 
+                          onChange={(e) => handleApplyShirtColor(e.target.value)}
+                          className="h-8 w-14 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-10 gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/50">
+                        {shirtColorPalette.map((hex, i) => (
+                          <button
+                            key={i}
+                            className={`h-6 w-full rounded-md border-2 transition-transform active:scale-90 ${shirtColors[activeShirtRegion] === hex ? 'border-primary' : 'border-transparent'}`}
+                            style={{ backgroundColor: hex }}
+                            onClick={() => handleApplyShirtColor(hex)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
                     {/* Color variants for applied stamp - Mobile */}
                     {appliedStampColors.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
