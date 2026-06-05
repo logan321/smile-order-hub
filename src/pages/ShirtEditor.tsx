@@ -514,11 +514,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setDynamicElements(dynamicIds);
       
       const idMap: Record<string, string[]> = {
-        'corpo-frente': ['cor-base'],
-        'corpo-verso': ['cor-base-verso'],
+        'corpo-frente':   ['cor-base'],
+        'corpo-verso':    ['cor-base-verso'],
         'manga-esquerda': ['manga-esquerda'],
-        'manga-direita': ['manga-direita'],
-        'gola': ['gola', 'gola_5'],
+        'manga-direita':  ['manga-direita'],
+        'gola':           ['gola', 'gola-2'],
+        'gola-interna':   ['gola-interna'],
+        'gola-externa':   ['gola-externa'],
+        'gola-frente':    ['gola-frente'],
+        'gola-verso':     ['gola-verso'],
       };
 
       const scanned: Record<string, string> = {};
@@ -546,13 +550,21 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
   }, [uvBaseUrl]);
 
-  const fixedRegions = useMemo(() => [
-    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
-    { id: 'corpo-verso', label: 'Verso' },
-    { id: 'manga-esquerda', label: 'Manga Esquerda' },
-    { id: 'manga-direita', label: 'Manga Direita' },
-    { id: 'gola', label: 'Gola' },
-  ], []);
+  const fixedRegions = useMemo(() => {
+    const all = [
+      { id: 'corpo-frente',   label: 'Cor Base (Corpo)' },
+      { id: 'corpo-verso',    label: 'Verso' },
+      { id: 'manga-esquerda', label: 'Manga Esquerda' },
+      { id: 'manga-direita',  label: 'Manga Direita' },
+      { id: 'gola',           label: 'Gola' },
+      { id: 'gola-interna',   label: 'Gola Interna' },
+      { id: 'gola-externa',   label: 'Gola Externa' },
+      { id: 'gola-frente',    label: 'Gola Frente' },
+      { id: 'gola-verso',     label: 'Gola Verso' },
+    ];
+    // Mostra só os que existem no SVG atual (foram encontrados no scan)
+    return all.filter(r => r.id in shirtColors);
+  }, [shirtColors]);
 
   const dynamicRegions = useMemo(() => dynamicElements.map((id, index) => ({
     id,
