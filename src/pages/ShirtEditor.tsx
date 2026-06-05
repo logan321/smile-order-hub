@@ -594,6 +594,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // same percent coordinates the zones use, so anything the client edits shows in 3D.
   useEffect(() => {
     const uv = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl;
+    const stampImg = currentStampUrl || appliedStamp?.imageUrl;
     if (!uv) { setUv3DCanvas(null); return; }
     let alive = true;
     (async () => {
