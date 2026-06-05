@@ -468,84 +468,52 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const response = await fetch(toProxyUrl(url));
       const svgText = await response.text();
       setSvgContent(svgText);
-      const { colors, texts, images, features } = await svgAnalyzer.current.analyze(svgText);
-      setSvgColors(colors);
+      
+      const { texts, images, features } = await svgAnalyzer.current.analyze(svgText);
       setSvgTexts(texts);
       setSvgImages(images);
       setSvgFeatures(features);
       
-      // Chamar IA para classificar tudo
-      const colorList = Array.from(colors.values()).map(c => ({ hex: c.hex, count: c.usageCount }));
-      const { data: aiResult, error: aiError } = await supabase.functions.invoke('analyze-stamp-colors', {
-        body: { 
-          colors: colorList,
-          texts: texts.map(t => ({ id: t.id, text: t.text })),
-          images: images.map(img => ({ id: img.id }))
-        }
-      });
-      
-      if (!aiError && aiResult) {
-        // Atualizar cores
-        const colorClassifications = aiResult.colors || [];
-        setSvgColors(prev => {
-          const next = new Map(prev);
-          colorClassifications.forEach((item: any) => {
-            if (item.hex && next.has(item.hex.toUpperCase())) {
-              const group = next.get(item.hex.toUpperCase())!;
-              group.groupName = item.group;
-              group.reason = item.reason;
-            }
-          });
-          return next;
-        });
-
-        // Atualizar textos com nomes amigáveis
-        if (aiResult.texts) {
-          setSvgTexts(prev => prev.map(t => {
-            const classification = aiResult.texts.find((ai: any) => ai.id === t.id);
-            return classification ? { ...t, groupName: classification.group } : t;
-          }));
-        }
-
-        // Atualizar imagens com nomes amigáveis
-        if (aiResult.images) {
-          setSvgImages(prev => prev.map(img => {
-            const classification = aiResult.images.find((ai: any) => ai.id === img.id);
-            return classification ? { ...img, groupName: classification.group } : img;
-          }));
-        }
-
-        // Auto-detectar e ativar a aba de personalização se houver elementos
-        if (colors.size > 0 || (aiResult.texts && aiResult.texts.length > 0) || (aiResult.images && aiResult.images.length > 0)) {
-          setActiveTab('stamps'); // Mantém a aba de estampas mas os controles de cor estarão visíveis
-        }
-      }
+      // Auto-focus the stamp tab where adjustments appear
+      setActiveTab('stamps');
     } catch (err) {
       console.error('Erro ao analisar SVG:', err);
-      toast.error('Não foi possível analisar os elementos da estampa');
+      toast.error('Não foi possível carregar a estampa');
     } finally {
       setAnalyzingColors(false);
     }
   };
 
-  const updateSvgColor = (key: string, newCmyk: any) => {
+  const updateSvgColor = (layerIndex: number, newHex: string) => {
     if (!svgContent) return;
-    const newHex = cmykToHex(newCmyk);
+    
+    // Mapeamento de cor 1..4 para classes CSS ou fills
+    // Aqui fazemos a substituição direta baseada nas classes .svg-camada-cor-X
     const parser = new DOMParser();
     const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-    const updatedSvg = svgAnalyzer.current.updateColor(svgDoc, key, newHex);
+    
+    // Procura por classes específicas ou elementos com essas classes
+    const className = `svg-camada-cor-${layerIndex}`;
+    const elements = svgDoc.querySelectorAll(`.${className}, [class*="${className}"]`);
+    
+    elements.forEach(el => {
+      if (el.hasAttribute('fill')) el.setAttribute('fill', newHex);
+      if (el.hasAttribute('stroke')) el.setAttribute('stroke', newHex);
+      // Também atualiza o style inline se houver
+      const style = el.getAttribute('style');
+      if (style) {
+        el.setAttribute('style', style.replace(/fill:[^;]+/, `fill:${newHex}`).replace(/stroke:[^;]+/, `stroke:${newHex}`));
+      }
+    });
+
+    const serializer = new XMLSerializer();
+    const updatedSvg = serializer.serializeToString(svgDoc);
     setSvgContent(updatedSvg);
     
-    // Atualizar o mapa de cores local para refletir a mudança na UI
-    setSvgColors(prev => {
-      const next = new Map(prev);
-      const group = next.get(key);
-      if (group) {
-        // We keep the same key (layer ID or old hex) but update the color values
-        next.set(key, { ...group, hex: newHex, cmyk: newCmyk });
-      }
-      return next;
-    });
+    setFixedColors(prev => ({
+      ...prev,
+      [`cor${layerIndex}`]: newHex
+    }));
     
     bumpEdits();
   };
