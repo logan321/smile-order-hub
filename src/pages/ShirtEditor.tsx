@@ -113,21 +113,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   }, []);
 
   const updateSvgColor = (layerIndex: number, newHex: string) => {
-    if (!svgContent) {
-        setFixedColors(prev => ({ ...prev, [`cor${layerIndex}`]: newHex }));
-        return;
-    }
+    setFixedColors(prev => ({ ...prev, [`cor${layerIndex}`]: newHex }));
+    
+    if (!svgContent) return;
+    
     const parser = new DOMParser();
     const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-    const className = `svg-camada-cor-${layerIndex}`;
-    const elements = svgDoc.querySelectorAll(`.${className}, [class*="${className}"]`);
-    elements.forEach(el => {
-      if (el.hasAttribute('fill')) el.setAttribute('fill', newHex);
-      if (el.hasAttribute('stroke')) el.setAttribute('stroke', newHex);
+    
+    // Suporte a múltiplas classes de camada
+    const classes = [`svg-camada-cor-${layerIndex}`, `camada-cor-${layerIndex}`, `layer-color-${layerIndex}`];
+    
+    classes.forEach(className => {
+      const elements = svgDoc.querySelectorAll(`.${className}, [class*="${className}"]`);
+      elements.forEach(el => {
+        if (el.hasAttribute('fill')) el.setAttribute('fill', newHex);
+        if (el.hasAttribute('stroke')) el.setAttribute('stroke', newHex);
+        
+        // Também tenta via style inline
+        const style = el.getAttribute('style');
+        if (style) {
+          el.setAttribute('style', style.replace(/fill:[^;]+/, `fill:${newHex}`).replace(/stroke:[^;]+/, `stroke:${newHex}`));
+        }
+      });
     });
+    
     const serializer = new XMLSerializer();
     setSvgContent(serializer.serializeToString(svgDoc));
-    setFixedColors(prev => ({ ...prev, [`cor${layerIndex}`]: newHex }));
   };
 
   const addStamp = async (stamp: any) => {
