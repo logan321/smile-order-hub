@@ -2732,18 +2732,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => {
-                    setShirtColors({
-                      'corpo-frente': '#FFFFFF',
-                      'corpo-verso': '#FFFFFF',
-                      'manga-esquerda': '#FFFFFF',
-                      'manga-direita': '#FFFFFF',
-                      'gola': '#FFFFFF',
-                      'detalhes-1': '#FFFFFF'
-                    });
-                    shirtRegions.forEach(r => {
-                      const el = document.getElementById(r.id);
-                      if (el) el.setAttribute('fill', '#FFFFFF');
-                    });
+                    setShirtColors(originalColorsRef.current);
                     bumpEdits();
                   }} 
                   className="w-full gap-1.5 h-8 text-[10px] mt-1"
