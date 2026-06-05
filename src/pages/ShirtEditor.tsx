@@ -673,10 +673,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       
       const id = target.id || '';
       // Try to find matching region by exact ID or suffix (Corel)
-      const region = shirtRegions.find(r => id === r.id || id.endsWith(r.id));
+      const region = shirtRegions.find(r => {
+        const idWithSpaces = r.id.replace(/-/g, ' ');
+        return id === r.id || id === idWithSpaces || id.endsWith(r.id) || id.endsWith(idWithSpaces);
+      });
       if (region) {
         onSelect(region.id);
       }
+
     };
 
     return (
