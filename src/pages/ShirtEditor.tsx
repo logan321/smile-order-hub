@@ -602,7 +602,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           }
         });
 
-
         const serializer = new XMLSerializer();
         const svgString = serializer.serializeToString(doc);
         const blob = new Blob([svgString], { type: 'image/svg+xml' });
