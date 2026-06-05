@@ -554,48 +554,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   }, [selectedTemplate?.uvMapId]);
 
 
-  useEffect(() => {
-    if (!uvBaseUrl) { setProcessedBaseUrl(null); return; }
-    if (!baseSvgContent) { setProcessedBaseUrl(uvBaseUrl); return; }
-
-    const updateBaseColors = () => {
-      try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(baseSvgContent, 'image/svg+xml');
-        
-        Object.entries(shirtColors).forEach(([id, color]) => {
-          // Look for element with exact ID or ending with ID (Corel compatibility)
-          // Also try matching with spaces instead of hyphens
-          const idWithSpaces = id.replace(/-/g, ' ');
-          const el = doc.getElementById(id) || 
-                     doc.getElementById(idWithSpaces) ||
-                     doc.querySelector(`[id$="${id}"]`) ||
-                     doc.querySelector(`[id$="${idWithSpaces}"]`);
-          
-          if (el) {
-            el.setAttribute('fill', color);
-            // Also update strokes if they are not none
-            if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-              el.setAttribute('stroke', color);
-            }
-          }
-        });
-
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(doc);
-        const blob = new Blob([svgString], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        setProcessedBaseUrl(url);
-        
-        return () => URL.revokeObjectURL(url);
-      } catch (err) {
-        console.warn("Error processing base SVG colors:", err);
-        setProcessedBaseUrl(uvBaseUrl);
-      }
-    };
-
-    return updateBaseColors();
-  }, [uvBaseUrl, baseSvgContent, shirtColors]);
 
   const uvComposite = useUvCompositor({
     baseUrl: uvZonesActive ? uvBaseUrl : null,
