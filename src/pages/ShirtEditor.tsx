@@ -99,8 +99,8 @@ const ShirtEditor = () => {
   // Carregar dados iniciais
   useEffect(() => {
     const loadData = async () => {
-      const { data: t } = await supabase.from('templates').select('*');
-      const { data: s } = await supabase.from('stamps').select('*');
+      const { data: t } = await (supabase.from('templates') as any).select('*');
+      const { data: s } = await (supabase.from('stamps') as any).select('*');
       if (t) { setTemplates(t as any[]); setSelectedTemplate(t[0]); }
       if (s) setStamps(s as any[]);
       setLoading(false);
