@@ -535,6 +535,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
   const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
+  const [shirtColors, setShirtColors] = useState<Record<string, string>>({
+    'corpo-frente': '#FFFFFF',
+    'corpo-verso': '#FFFFFF',
+    'manga-esquerda': '#FFFFFF',
+    'manga-direita': '#FFFFFF',
+    'gola': '#FFFFFF',
+    'detalhes-1': '#FFFFFF'
+  });
+  const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
+  const [syncFrontBack, setSyncFrontBack] = useState(true);
   const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
   const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
   const [namingDialog, setNamingDialog] = useState<{ open: boolean; selector: string; name: string }>({ open: false, selector: '', name: '' });
