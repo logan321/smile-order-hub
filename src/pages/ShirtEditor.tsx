@@ -530,7 +530,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [backZoom, setBackZoom] = useState(1);
   const [panMode, setPanMode] = useState(false);
 
+  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  const uvZonesActive = Object.keys(uvMapZones).length > 0 || !!baseSvgContent;
+
   useEffect(() => {
+
     if (!uvBaseUrl) { setBaseSvgContent(null); return; }
     if (!uvBaseUrl.toLowerCase().endsWith('.svg') && !uvBaseUrl.includes('data:image/svg+xml')) {
       setBaseSvgContent(null);
