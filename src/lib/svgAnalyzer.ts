@@ -145,7 +145,7 @@ export class SvgAnalyzer {
         cmyk: hexToCmyk(hex),
         elements: [element],
         usageCount: 1,
-        groupName: layerId ? `Camada ${layerId.split('-').pop()} (${hex})` : undefined
+        groupName: layerId ? `Estampa - Camada ${layerId.split('-').pop()}` : undefined
       });
     }
   }
