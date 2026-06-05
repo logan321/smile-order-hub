@@ -2149,6 +2149,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     </div>
                   )}
+
+                  {/* Dynamic SVG Layer Colors - Desktop */}
+                  {appliedStamp?.layerMapping && appliedStamp.layerMapping.length > 0 && (
+                    <div className="mt-3 pt-2 border-t border-border/30">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Personalizar Cores - {appliedStamp.name}</p>
+                      <div className="space-y-2">
+                        {appliedStamp.layerMapping.map((layer, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-muted/20 border border-border/30">
+                            <span className="text-[10px] font-medium text-foreground truncate flex-1">{layer.label}</span>
+                            <input 
+                              type="color" 
+                              value={stampLayerColors[layer.selector] || layer.defaultColor || '#000000'} 
+                              onChange={(e) => handleStampLayerColorChange(layer.selector, e.target.value)}
+                              className="h-6 w-6 rounded border border-border cursor-pointer shrink-0"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === 'patches' && (
