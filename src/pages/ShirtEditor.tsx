@@ -2439,7 +2439,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <div className="mt-4 pt-4 border-t border-border/50 animate-fade-in">
                   <p className="text-xs font-bold text-foreground uppercase mb-3 flex items-center gap-2">
                     <Palette className="h-3.5 w-3.5 text-primary" /> 
-                    Cores da Estampa (CMYK)
+                    Controle de Camadas (Padrões)
                   </p>
                   {analyzingColors && (
                     <div className="flex items-center gap-2 mb-4 p-2 bg-primary/5 rounded-lg border border-primary/10 animate-pulse">
