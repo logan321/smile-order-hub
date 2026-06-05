@@ -581,6 +581,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string
+          layer_mapping: Json | null
           name: string
           niche_id: string | null
           template_id: string | null
@@ -595,6 +596,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url: string
+          layer_mapping?: Json | null
           name: string
           niche_id?: string | null
           template_id?: string | null
@@ -609,6 +611,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string
+          layer_mapping?: Json | null
           name?: string
           niche_id?: string | null
           template_id?: string | null
