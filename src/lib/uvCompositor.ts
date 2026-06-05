@@ -95,11 +95,13 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   // Helper to normalize Corel IDs (remove suffixes like _1, _2)
   const normalizeId = (id: string) => id.split('_')[0];
 
-  const allElementsWithId = Array.from(doc.querySelectorAll('[id]')).filter(el => 
-    el.id.startsWith('elemento') && !fixedIds.includes(el.id)
-  );
+  // Global search for any ID starting with 'elemento' or 'cor-'
+  const allElementsWithId = Array.from(doc.querySelectorAll('[id]')).filter(el => {
+    const normalized = normalizeId(el.id);
+    return (normalized.startsWith('elemento') || normalized.startsWith('cor-')) && !fixedIds.includes(normalized);
+  });
 
-  const dynamicIdsMap = new Map<string, string>(); // rootId -> originalId (for color extraction)
+  const dynamicIdsMap = new Map<string, string>();
   
   allElementsWithId.forEach(el => {
     const rootId = normalizeId(el.id);
@@ -111,10 +113,15 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   });
 
   const dynamicIds = Array.from(dynamicIdsMap.keys()).sort((a, b) => {
-    const numA = parseInt(a.replace('elemento-', '').replace('elemento', '1')) || 1;
-    const numB = parseInt(b.replace('elemento-', '').replace('elemento', '1')) || 1;
-    return numA - numB;
+    // Better numeric sorting: extracting the number from the end of the string
+    const getNum = (s: string) => {
+      const match = s.match(/\d+$/);
+      return match ? parseInt(match[0]) : (s === 'elemento' ? 1 : 0);
+    };
+    return getNum(a) - getNum(b);
   });
+  
+  console.log('IDs encontrados no SVG:', dynamicIds);
   
   return { dynamicIds, colors };
 }
