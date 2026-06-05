@@ -523,6 +523,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [syncFrontBack, setSyncFrontBack] = useState(true);
   const [dynamicElements, setDynamicElements] = useState<string[]>([]);
 
+  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  const uvZonesActive = Object.keys(uvMapZones).length > 0;
+
   useEffect(() => {
     if (!uvBaseUrl) return;
     scanSvgElements(uvBaseUrl).then(ids => {
@@ -571,8 +574,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [backZoom, setBackZoom] = useState(1);
   const [panMode, setPanMode] = useState(false);
 
-  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
-  const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   useEffect(() => {
     let cancelled = false;
