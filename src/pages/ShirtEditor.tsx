@@ -508,6 +508,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             return classification ? { ...img, groupName: classification.group } : img;
           }));
         }
+
+        // Auto-detectar e ativar a aba de personalização se houver elementos
+        if (colors.size > 0 || (aiResult.texts && aiResult.texts.length > 0) || (aiResult.images && aiResult.images.length > 0)) {
+          setActiveTab('stamps'); // Mantém a aba de estampas mas os controles de cor estarão visíveis
+        }
       }
     } catch (err) {
       console.error('Erro ao analisar SVG:', err);
@@ -1331,14 +1336,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     if (!frontCanvas || !backCanvas) return;
     
     // Analyze SVG if the stamp is a vector
-    if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
-      handleSvgAnalysis(stamp.imageUrl);
-    } else if (stamp.uvMapUrl?.toLowerCase().endsWith('.svg')) {
-      // If the main image is a thumb (PNG) but there's a vector UV, prioritize it
-      handleSvgAnalysis(stamp.uvMapUrl);
+    if (stamp.imageUrl.toLowerCase().endsWith('.svg') || stamp.uvMapUrl?.toLowerCase().endsWith('.svg')) {
+      handleSvgAnalysis(stamp.imageUrl.toLowerCase().endsWith('.svg') ? stamp.imageUrl : stamp.uvMapUrl!);
     } else {
       setSvgContent(null);
       setSvgColors(new Map());
+      setSvgTexts([]);
+      setSvgImages([]);
+      setSvgFeatures([]);
     }
 
     // If the stamp is linked to a different template, swap the active template
@@ -2435,10 +2440,18 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <div key={group.hex} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                         <div className="flex flex-col mb-3">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-foreground">
-                              {group.groupName || 'Cor Detectada'}
-                            </span>
-                            <span className="text-[9px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{group.hex}</span>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-foreground">
+                                {group.groupName || 'Cor Detectada'}
+                              </span>
+                              <span className="text-[9px] font-mono text-muted-foreground">{group.hex}</span>
+                            </div>
+                            <input 
+                              type="color" 
+                              value={group.hex} 
+                              onChange={(e) => updateSvgColor(group.hex, hexToCmyk(e.target.value))}
+                              className="h-8 w-8 rounded-lg border border-border cursor-pointer transition-transform hover:scale-110"
+                            />
                           </div>
                           {group.reason && (
                             <p className="text-[9px] text-muted-foreground leading-tight italic">
@@ -2449,10 +2462,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         
                         <div className="flex items-center gap-2 mb-3">
                           <div 
-                            className="h-8 w-8 rounded-lg border border-border shadow-inner" 
-                            style={{ backgroundColor: group.hex }}
-                          />
-                          <div className="flex-1 h-[1px] bg-border/50" />
+                            className="h-2 w-full rounded-full bg-border/30 overflow-hidden"
+                          >
+                            <div className="h-full bg-primary/20" style={{ width: `${group.percentage || 100}%` }} />
+                          </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
