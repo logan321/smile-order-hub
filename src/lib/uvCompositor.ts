@@ -52,8 +52,53 @@ export async function composeUvTexture(opts: {
   zones: Record<string, UvZone>;
   layers: UvLayer[];
   canvas?: HTMLCanvasElement;
+  shirtColors?: Record<string, string>;
 }): Promise<HTMLCanvasElement> {
-  const base = await loadImage(opts.baseUrl);
+  let finalBaseUrl = opts.baseUrl;
+
+  if (opts.shirtColors && Object.keys(opts.shirtColors).length > 0) {
+    try {
+      const response = await fetch(opts.baseUrl);
+      let svgText = await response.text();
+
+      const idMap: Record<string, string[]> = {
+        'corpo-frente': ['cor-base'],
+        'corpo-verso': ['cor-base-verso'],
+        'manga-esquerda': ['manga-esquerda'],
+        'manga-direita': ['manga-direita'],
+        'gola': ['gola', 'gola_5'],
+        'detalhes-1': ['elemento', 'elemento-2'],
+      };
+
+      Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
+        const svgIds = idMap[regionId] || [regionId];
+        svgIds.forEach(id => {
+          // Regular replace for id="..." fill="..."
+          svgText = svgText.replace(
+            new RegExp(`(id="${id}"[^>]*?)fill="[^"]*"`, 'g'),
+            `$1fill="${color}"`
+          );
+          // Replace for style="fill:..."
+          svgText = svgText.replace(
+            new RegExp(`(id="${id}"[^>]*?style="[^"]*?)fill:[^;"]*(;?)`, 'g'),
+            `$1fill:${color}$2`
+          );
+          // Reverse order: fill="..." id="..."
+          svgText = svgText.replace(
+            new RegExp(`fill="[^"]*"([^>]*?id="${id}")`, 'g'),
+            `fill="${color}"$1`
+          );
+        });
+      });
+
+      const blob = new Blob([svgText], { type: 'image/svg+xml' });
+      finalBaseUrl = URL.createObjectURL(blob);
+    } catch (err) {
+      console.warn('Failed to process SVG colors, falling back to original', err);
+    }
+  }
+
+  const base = await loadImage(finalBaseUrl);
   const w = opts.uvWidth || base.naturalWidth;
   const h = opts.uvHeight || base.naturalHeight;
   const canvas = opts.canvas ?? document.createElement('canvas');
@@ -62,6 +107,11 @@ export async function composeUvTexture(opts: {
   const ctx = canvas.getContext('2d')!;
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(base, 0, 0, w, h);
+
+  if (finalBaseUrl !== opts.baseUrl) {
+    URL.revokeObjectURL(finalBaseUrl);
+  }
+
 
   for (const layer of opts.layers) {
     const zone = opts.zones[layer.zoneKey];
