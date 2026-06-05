@@ -535,6 +535,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
   const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
+  const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
+  const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
+  const [namingDialog, setNamingDialog] = useState<{ open: boolean; selector: string; name: string }>({ open: false, selector: '', name: '' });
+  const [configMapping, setConfigMapping] = useState<{ selector: string; label: string }[]>([]);
   const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
@@ -1353,35 +1357,51 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const parser = new DOMParser();
       const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       
-      // We handle two types of mapping:
-      // 1. Fixed IDs (cor-base, elemento-1, elemento-2)
-      // 2. Global color substitution (the previous strategy)
+      // Handle mapping from config mode
+      let handledByMapping = false;
       
-      const selectors = ['cor-base', 'elemento-1', 'elemento-2'];
-      let handledById = false;
-
-      selectors.forEach(id => {
-        if (colorMapping[id]) {
-          // Find by ID or ID containing the string (Corel suffix support)
-          const elements = svgDoc.querySelectorAll(`[id="${id}"], [id$="-${id}"], [id*="${id}"]`);
-          if (elements.length > 0) {
-            elements.forEach(el => {
-              el.setAttribute('fill', colorMapping[id]);
-              // Also check for stroke if it's not a path that should only have fill
-              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                el.setAttribute('stroke', colorMapping[id]);
-              }
-            });
-            handledById = true;
+      if (appliedStamp.layerMapping && appliedStamp.layerMapping.length > 0) {
+        appliedStamp.layerMapping.forEach(layer => {
+          const color = colorMapping[layer.selector];
+          if (color) {
+            const elements = svgDoc.querySelectorAll(layer.selector);
+            if (elements.length > 0) {
+              elements.forEach(el => {
+                el.setAttribute('fill', color);
+                if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                  el.setAttribute('stroke', color);
+                }
+              });
+              handledByMapping = true;
+            }
           }
-        }
-      });
+        });
+      }
+
+      // Legacy support for fixed IDs if no mapping matches
+      if (!handledByMapping) {
+        const selectors = ['cor-base', 'elemento-1', 'elemento-2'];
+        selectors.forEach(id => {
+          if (colorMapping[id]) {
+            const elements = svgDoc.querySelectorAll(`[id="${id}"], [id$="-${id}"], [id*="${id}"]`);
+            if (elements.length > 0) {
+              elements.forEach(el => {
+                el.setAttribute('fill', colorMapping[id]);
+                if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                  el.setAttribute('stroke', colorMapping[id]);
+                }
+              });
+              handledByMapping = true;
+            }
+          }
+        });
+      }
 
       let finalSvgText = "";
-      if (handledById) {
+      if (handledByMapping) {
         finalSvgText = new XMLSerializer().serializeToString(svgDoc);
       } else {
-        // Fallback to global color substitution if no IDs matched
+        // Fallback to global color substitution if no mappings matched
         finalSvgText = svgText;
         Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
           if (oldColor === newColor) return;
@@ -1397,6 +1417,65 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       console.warn('SVG color update failed', e);
       return url;
     }
+  };
+
+  const saveStampLayerMapping = async (newMapping: { selector: string; label: string }[]) => {
+    if (!appliedStamp) return;
+    
+    try {
+      const { error } = await supabase
+        .from('stamp_catalog')
+        .update({ layer_mapping: newMapping })
+        .eq('id', appliedStamp.id);
+
+      if (error) throw error;
+      
+      toast.success('Configuração de camadas salva!');
+      
+      const updatedStamp = { ...appliedStamp, layerMapping: newMapping };
+      setAppliedStamp(updatedStamp);
+      setAllStamps(prev => prev.map(s => s.id === appliedStamp.id ? updatedStamp : s));
+      setUvEditorMode('client');
+    } catch (err) {
+      console.error('Erro ao salvar mapeamento:', err);
+      toast.error('Erro ao salvar configuração');
+    }
+  };
+
+  const getElementSelector = (element: Element): string => {
+    if (element.id) return `#${CSS.escape(element.id)}`;
+    
+    // Fallback: build a path selector
+    const parts = [];
+    let current: Element | null = element;
+    while (current && current.nodeName.toLowerCase() !== 'svg') {
+      let selector = current.nodeName.toLowerCase();
+      const parent = current.parentElement;
+      if (parent) {
+        const siblings = Array.from(parent.children).filter(el => el.nodeName === current?.nodeName);
+        if (siblings.length > 1) {
+          const index = siblings.indexOf(current) + 1;
+          selector += `:nth-of-type(${index})`;
+        }
+      }
+      parts.unshift(selector);
+      current = current.parentElement;
+    }
+    return parts.join(' > ');
+  };
+
+  const handleSvgElementClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as Element;
+    if (target.nodeName === 'svg') return;
+    
+    const selector = getElementSelector(target);
+    const existing = configMapping.find(m => m.selector === selector);
+    
+    setNamingDialog({
+      open: true,
+      selector,
+      name: existing ? existing.label : ''
+    });
   };
 
   // Switch back to original stamp images
@@ -2215,29 +2294,66 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
                   )}
 
-                  {/* Corel ID Selection Section - Desktop */}
+                  {/* Configuration & Color Selection Section - Desktop */}
                   {appliedStamp?.imageUrl.toLowerCase().endsWith('.svg') && (
                     <div className="mt-4 pt-3 border-t border-border/30">
-                      <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                        <Sparkles className="h-3 w-3 text-accent" />
-                        Cores da Estampa Ativa
-                      </p>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[11px] font-bold text-foreground uppercase flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-accent" />
+                          Personalização UV
+                        </p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-[9px] font-bold text-primary hover:text-primary/80 hover:bg-primary/5"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(toProxyUrl(appliedStamp.imageUrl));
+                              const svgText = await response.text();
+                              setSvgSourceForConfig(svgText);
+                              setConfigMapping(appliedStamp.layerMapping || []);
+                              setUvEditorMode('config');
+                            } catch (err) {
+                              toast.error('Erro ao carregar editor de camadas');
+                            }
+                          }}
+                        >
+                          CONFIGURAR
+                        </Button>
+                      </div>
+
+                      {/* Client Mode View - Dynamic Selectors based on Layer Mapping */}
                       <div className="space-y-2">
-                        {[
-                          { id: 'cor-base', label: 'Cor Base' },
-                          { id: 'elemento-1', label: 'Elemento 1' },
-                          { id: 'elemento-2', label: 'Elemento 2' }
-                        ].map((layer) => (
-                          <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
-                            <input 
-                              type="color" 
-                              value={stampLayerColors[layer.id] || '#FFFFFF'} 
-                              onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
-                              className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                            />
-                          </div>
-                        ))}
+                        {appliedStamp.layerMapping && appliedStamp.layerMapping.length > 0 ? (
+                          appliedStamp.layerMapping.map((layer) => (
+                            <div key={layer.selector} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                              <input 
+                                type="color" 
+                                value={stampLayerColors[layer.selector] || layer.defaultColor || '#FFFFFF'} 
+                                onChange={(e) => handleStampLayerColorChange(layer.selector, e.target.value)}
+                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          /* Fallback to legacy IDs if no mapping exists yet */
+                          [
+                            { id: 'cor-base', label: 'Cor Base' },
+                            { id: 'elemento-1', label: 'Elemento 1' },
+                            { id: 'elemento-2', label: 'Elemento 2' }
+                          ].map((layer) => (
+                            <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                              <input 
+                                type="color" 
+                                value={stampLayerColors[layer.id] || '#FFFFFF'} 
+                                onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
+                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                              />
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   )}
@@ -2476,29 +2592,63 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
-                    {/* Corel ID Selection Section - Mobile */}
+                    {/* Configuration & Color Selection Section - Mobile */}
                     {appliedStamp?.imageUrl.toLowerCase().endsWith('.svg') && (
                       <div className="mt-4 pt-3 border-t border-border/30">
-                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                          <Sparkles className="h-3 w-3 text-accent" />
-                          Cores da Estampa Ativa
-                        </p>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-[11px] font-bold text-foreground uppercase flex items-center gap-2">
+                            <Sparkles className="h-3 w-3 text-accent" />
+                            Personalização UV
+                          </p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 px-2 text-[9px] font-bold text-primary"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(toProxyUrl(appliedStamp.imageUrl));
+                                const svgText = await response.text();
+                                setSvgSourceForConfig(svgText);
+                                setConfigMapping(appliedStamp.layerMapping || []);
+                                setUvEditorMode('config');
+                              } catch (err) {
+                                toast.error('Erro ao carregar editor');
+                              }
+                            }}
+                          >
+                            CONFIGURAR
+                          </Button>
+                        </div>
                         <div className="grid grid-cols-1 gap-2">
-                          {[
-                            { id: 'cor-base', label: 'Cor Base' },
-                            { id: 'elemento-1', label: 'Elemento 1' },
-                            { id: 'elemento-2', label: 'Elemento 2' }
-                          ].map((layer) => (
-                            <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
-                              <input 
-                                type="color" 
-                                value={stampLayerColors[layer.id] || '#FFFFFF'} 
-                                onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
-                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                              />
-                            </div>
-                          ))}
+                          {appliedStamp.layerMapping && appliedStamp.layerMapping.length > 0 ? (
+                            appliedStamp.layerMapping.map((layer) => (
+                              <div key={layer.selector} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                                <input 
+                                  type="color" 
+                                  value={stampLayerColors[layer.selector] || layer.defaultColor || '#FFFFFF'} 
+                                  onChange={(e) => handleStampLayerColorChange(layer.selector, e.target.value)}
+                                  className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                                />
+                              </div>
+                            ))
+                          ) : (
+                            [
+                              { id: 'cor-base', label: 'Cor Base' },
+                              { id: 'elemento-1', label: 'Elemento 1' },
+                              { id: 'elemento-2', label: 'Elemento 2' }
+                            ].map((layer) => (
+                              <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                                <input 
+                                  type="color" 
+                                  value={stampLayerColors[layer.id] || '#FFFFFF'} 
+                                  onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
+                                  className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                                />
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
@@ -3073,6 +3223,134 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               onCameraChange={setCameraPosition}
             />
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Editor de Camadas SVG (Modo Configuração) */}
+      <Dialog open={uvEditorMode === 'config'} onOpenChange={(open) => !open && setUvEditorMode('client')}>
+        <DialogContent className="max-w-[95vw] w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
+          <DialogHeader className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <Box className="h-5 w-5 text-primary" />
+                Mapeamento de Camadas UV
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setUvEditorMode('client')}>Cancelar</Button>
+                <Button variant="default" size="sm" onClick={() => saveStampLayerMapping(configMapping)}>Salvar Configuração</Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Clique nos elementos da arte abaixo para nomeá-los e criar seletores de cores.
+            </p>
+          </DialogHeader>
+          
+          <div className="flex-1 flex overflow-hidden">
+            {/* SVG Viewer */}
+            <div className="flex-1 bg-muted/20 relative flex items-center justify-center p-8 overflow-auto">
+              <div 
+                className="max-w-full max-h-full cursor-crosshair uv-config-svg-container shadow-2xl bg-white"
+                onClick={handleSvgElementClick}
+                dangerouslySetInnerHTML={{ __html: svgSourceForConfig || '' }}
+              />
+              <style dangerouslySetInnerHTML={{ __html: `
+                .uv-config-svg-container svg {
+                  display: block;
+                  max-width: 100%;
+                  height: auto;
+                }
+                .uv-config-svg-container svg * {
+                  transition: all 0.2s;
+                  pointer-events: auto !important;
+                }
+                .uv-config-svg-container svg *:hover {
+                  outline: 2px solid #2563eb;
+                  outline-offset: 2px;
+                  filter: brightness(0.8);
+                }
+              `}} />
+            </div>
+            
+            {/* Sidebar with mapped layers */}
+            <div className="w-72 border-l bg-card p-4 overflow-y-auto">
+              <h4 className="text-[10px] font-bold text-muted-foreground uppercase mb-4 tracking-wider">Camadas Mapeadas</h4>
+              <div className="space-y-3">
+                {configMapping.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <Sparkles className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-xs text-muted-foreground italic px-4">Nenhuma camada mapeada.<br/>Clique na arte para começar.</p>
+                  </div>
+                ) : (
+                  configMapping.map((item, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-muted/30 border border-border/50 group hover:border-primary/30 transition-all">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-foreground">{item.label}</span>
+                        <button 
+                          onClick={() => setConfigMapping(prev => prev.filter((_, i) => i !== idx))}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground font-mono bg-background/50 p-1.5 rounded-md overflow-hidden">
+                        <span className="shrink-0 opacity-50">#</span>
+                        <span className="truncate">{item.selector}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para nomear camada */}
+      <Dialog open={namingDialog.open} onOpenChange={(open) => setNamingDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              Nomear Camada
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nome amigável para o cliente</label>
+              <Input 
+                value={namingDialog.name}
+                onChange={(e) => setNamingDialog(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Ex: Cor Base, Círculo Central, Detalhe Gola"
+                autoFocus
+                className="h-12 text-base"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const newMapping = configMapping.filter(m => m.selector !== namingDialog.selector);
+                    if (namingDialog.name.trim()) {
+                      newMapping.push({ selector: namingDialog.selector, label: namingDialog.name });
+                    }
+                    setConfigMapping(newMapping);
+                    setNamingDialog(prev => ({ ...prev, open: false }));
+                  }
+                }}
+              />
+            </div>
+            <div className="p-2 rounded bg-muted/50 overflow-hidden">
+              <p className="text-[9px] text-muted-foreground font-mono truncate">Seletor Técnico: {namingDialog.selector}</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setNamingDialog(prev => ({ ...prev, open: false }))}>Cancelar</Button>
+            <Button onClick={() => {
+              const newMapping = configMapping.filter(m => m.selector !== namingDialog.selector);
+              if (namingDialog.name.trim()) {
+                newMapping.push({ selector: namingDialog.selector, label: namingDialog.name });
+              }
+              setConfigMapping(newMapping);
+              setNamingDialog(prev => ({ ...prev, open: false }));
+            }}>Confirmar Mapeamento</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
