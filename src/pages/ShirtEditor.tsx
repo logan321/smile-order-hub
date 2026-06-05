@@ -510,6 +510,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     if (!uvBaseUrl) return;
     setShirtColors({}); // Clear immediately to show original colors while scanning
     scanSvgElements(uvBaseUrl).then(({ dynamicIds, colors }) => {
+      console.log('IDs dinâmicos encontrados no carregamento:', dynamicIds);
       setDynamicElements(dynamicIds);
       
       const idMap: Record<string, string[]> = {
