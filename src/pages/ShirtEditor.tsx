@@ -582,7 +582,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const updateBaseColors = () => {
       try {
         const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(baseSvgContent, 'image/svg+xml');
+        const doc = parser.parseFromString(baseSvgContent, 'image/svg+xml');
         
         Object.entries(shirtColors).forEach(([id, color]) => {
           // Look for element with exact ID or ending with ID (Corel compatibility)
