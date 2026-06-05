@@ -101,8 +101,8 @@ const ShirtEditor = () => {
     const loadData = async () => {
       const { data: t } = await supabase.from('templates').select('*');
       const { data: s } = await supabase.from('stamps').select('*');
-      if (t) { setTemplates(t); setSelectedTemplate(t[0]); }
-      if (s) setStamps(s);
+      if (t) { setTemplates(t as any[]); setSelectedTemplate(t[0]); }
+      if (s) setStamps(s as any[]);
       setLoading(false);
     };
     loadData();
