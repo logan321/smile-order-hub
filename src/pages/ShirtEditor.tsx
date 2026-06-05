@@ -1261,9 +1261,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     setStampLayerColors(newColors);
 
     // Sync state for the specific selectors if they match our standard
-    if (selector === '.cor-base') setStampBaseColor(color);
-    else if (selector === '.elemento-1') setStampElement1Color(color);
-    else if (selector === '.elemento-2') setStampElement2Color(color);
+    if (selector === 'cor-base' || selector === '.cor-base') setStampBaseColor(color);
+    else if (selector === 'elemento-1' || selector === '.elemento-1') setStampElement1Color(color);
+    else if (selector === 'elemento-2' || selector === '.elemento-2') setStampElement2Color(color);
 
     // Only SVG stamps can have dynamic colors
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
