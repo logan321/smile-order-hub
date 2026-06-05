@@ -62,11 +62,14 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   const text = await getSvgText(svgUrl);
   const parser = new DOMParser();
   const doc = parser.parseFromString(text, 'image/svg+xml');
-  
-  const colors: Record<string, string> = {};
-  const fixedIds = ['cor-base', 'cor-base-verso', 'manga-esquerda', 'manga-direita', 'gola', 'gola_5'];
-  
-  const extractFill = (el: Element) => {
+
+  // IDs fixos — sempre mapeados para regiões fixas
+  const fixedSvgIds = ['cor-base', 'cor-base-verso', 'manga-esquerda', 'manga-direita', 'gola', 'gola_5'];
+
+  // IDs que devem ser IGNORADOS (camadas do Corel)
+  const ignoredPatterns = ['Camada', 'CorelCorpID', 'Corel-Layer'];
+
+  const extractFill = (el: Element): string | null => {
     let color = el.getAttribute('fill');
     if (!color || color === 'none') {
       const style = el.getAttribute('style');
@@ -75,16 +78,24 @@ export async function scanSvgElements(svgUrl: string): Promise<{
         if (match) color = match[1].trim();
       }
     }
-    if (color && color.startsWith('#')) {
-      if (color.length === 4) {
-        return '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
+    if (color && color !== 'none') {
+      if (color.startsWith('#')) {
+        if (color.length === 4) {
+          const r = color[1];
+          const g = color[2];
+          const b = color[3];
+          return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
+        }
+        return color.substring(0, 7).toUpperCase();
       }
-      return color.substring(0, 7).toUpperCase();
     }
     return null;
   };
 
-  fixedIds.forEach(id => {
+  const colors: Record<string, string> = {};
+
+  // Extrai cores dos ids fixos
+  fixedSvgIds.forEach(id => {
     const el = doc.getElementById(id);
     if (el) {
       const color = extractFill(el);
@@ -92,38 +103,38 @@ export async function scanSvgElements(svgUrl: string): Promise<{
     }
   });
 
-  // Helper to normalize Corel IDs (remove suffixes like _1, _2)
-  const normalizeId = (id: string) => id.split('_')[0];
+  // Encontra ids dinâmicos: qualquer id que começa com "elemento"
+  // e não é um id de camada do Corel
+  const allIds = Array.from(doc.querySelectorAll('[id]'))
+    .map(el => el.id)
+    .filter(id => {
+      const isCorelLayer = ignoredPatterns.some(p => id.includes(p));
+      const isFixed = fixedSvgIds.includes(id);
+      return !isCorelLayer && !isFixed && id.startsWith('elemento');
+    });
 
-  // Global search for any ID starting with 'elemento' or 'cor-'
-  const allElementsWithId = Array.from(doc.querySelectorAll('[id]')).filter(el => {
-    const normalized = normalizeId(el.id);
-    return (normalized.startsWith('elemento') || normalized.startsWith('cor-')) && !fixedIds.includes(normalized);
-  });
-
-  const dynamicIdsMap = new Map<string, string>();
-  
-  allElementsWithId.forEach(el => {
-    const rootId = normalizeId(el.id);
-    if (!colors[rootId]) {
-      const color = extractFill(el);
-      if (color) colors[rootId] = color;
-    }
-    dynamicIdsMap.set(rootId, rootId);
-  });
-
-  const dynamicIds = Array.from(dynamicIdsMap.keys()).sort((a, b) => {
-    // Better numeric sorting: extracting the number from the end of the string
+  // Remove duplicatas e ordena numericamente
+  const uniqueIds = [...new Set(allIds)].sort((a, b) => {
     const getNum = (s: string) => {
       const match = s.match(/\d+$/);
       return match ? parseInt(match[0]) : (s === 'elemento' ? 1 : 0);
     };
     return getNum(a) - getNum(b);
   });
-  
-  console.log('IDs encontrados no SVG:', dynamicIds);
-  
-  return { dynamicIds, colors };
+
+  // Extrai cores dos elementos dinâmicos
+  uniqueIds.forEach(id => {
+    const el = doc.getElementById(id);
+    if (el) {
+      const color = extractFill(el);
+      colors[id] = color || '#FFFFFF';
+    }
+  });
+
+  console.log('IDs fixos encontrados:', fixedSvgIds.filter(id => doc.getElementById(id)));
+  console.log('IDs dinâmicos encontrados:', uniqueIds);
+
+  return { dynamicIds: uniqueIds, colors };
 }
 
 let persistentCanvas: HTMLCanvasElement | null = null;
@@ -145,11 +156,12 @@ export async function composeUvTexture(opts: {
       svgText = svgText.slice(); // Ensure we don't mutate cache
 
       const idMap: Record<string, string[]> = {
-        'corpo-frente': ['cor-base'],
-        'corpo-verso': ['cor-base-verso'],
+        'corpo-frente':   ['cor-base'],
+        'corpo-verso':    ['cor-base-verso'],
         'manga-esquerda': ['manga-esquerda'],
-        'manga-direita': ['manga-direita'],
-        'gola': ['gola', 'gola_5'],
+        'manga-direita':  ['manga-direita'],
+        'gola':           ['gola', 'gola_5'],
+        // elementos: usam o próprio id diretamente (sem mapeamento)
       };
 
       Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
@@ -158,9 +170,6 @@ export async function composeUvTexture(opts: {
           // Escape ID for regex and add optional Corel suffix (_1, _2, etc.)
           const escapedId = id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
           const idPattern = `${escapedId}(?:_[0-9]+)?`;
-          
-          // Use a lookahead/lookbehind approach or very specific patterns to ensure exact ID match
-          // and handle both double and single quotes.
           
           // 1. Matches: id="elemento" ... fill="#..."
           const attrIdRegex = new RegExp(`(id=["']${idPattern}["'][^>]*?)fill=["'][^"']*?["']`, 'g');
@@ -187,7 +196,6 @@ export async function composeUvTexture(opts: {
     }
   }
 
-
   const base = await loadImage(finalBaseUrl);
   const w = opts.uvWidth || base.naturalWidth;
   const h = opts.uvHeight || base.naturalHeight;
@@ -204,7 +212,6 @@ export async function composeUvTexture(opts: {
   if (finalBaseUrl !== opts.baseUrl) {
     URL.revokeObjectURL(finalBaseUrl);
   }
-
 
   for (const layer of opts.layers) {
     const zone = opts.zones[layer.zoneKey];
@@ -223,7 +230,6 @@ export async function composeUvTexture(opts: {
     if (layer.type === 'text') {
       const family = layer.fontFamily || 'Arial';
       const weight = layer.fontWeight ?? 700;
-      // auto-fit: pick the largest size where text fits zone.width
       const targetW = zone.width * 0.92 * scale;
       const targetH = zone.height * 0.92 * scale;
       let size = Math.max(8, layer.fontSize ?? targetH);
@@ -273,7 +279,6 @@ export async function composeUvTexture(opts: {
       try {
         const img = await loadImage(layer.url);
         ctx.globalAlpha = layer.opacity ?? 1;
-        // contain
         const zw = zone.width * scale;
         const zh = zone.height * scale;
         const ratio = Math.min(zw / img.naturalWidth, zh / img.naturalHeight);
