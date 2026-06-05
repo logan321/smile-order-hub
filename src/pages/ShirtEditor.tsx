@@ -408,8 +408,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
-  // SVG Color Personalization (Fase 1 & 2)
-  const [svgColors, setSvgColors] = useState<Map<string, SvgColorGroup>>(new Map());
+  // Estado fixo de cores (Mapeamento Direto)
+  const [fixedColors, setFixedColors] = useState({
+    cor1: '#FF0000',
+    cor2: '#00FF00',
+    cor3: '#0000FF',
+    cor4: '#FFFFFF'
+  });
+
   const [svgTexts, setSvgTexts] = useState<any[]>([]);
   const [svgImages, setSvgImages] = useState<any[]>([]);
   const [svgFeatures, setSvgFeatures] = useState<any[]>([]);
