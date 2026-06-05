@@ -1245,6 +1245,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       setActiveStampColorId(color.id);
+      setCurrentStampUrl(color.imageUrl);
       advanceGuide('stamp-color', 'patches-tab');
     } catch {
       toast.error('Erro ao trocar cor');
