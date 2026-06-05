@@ -112,6 +112,8 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   return { dynamicIds, colors };
 }
 
+let persistentCanvas: HTMLCanvasElement | null = null;
+
 export async function composeUvTexture(opts: {
   baseUrl: string;
   uvWidth?: number | null;
@@ -168,7 +170,10 @@ export async function composeUvTexture(opts: {
   const base = await loadImage(finalBaseUrl);
   const w = opts.uvWidth || base.naturalWidth;
   const h = opts.uvHeight || base.naturalHeight;
-  const canvas = opts.canvas ?? document.createElement('canvas');
+  if (!persistentCanvas && !opts.canvas) {
+    persistentCanvas = document.createElement('canvas');
+  }
+  const canvas = opts.canvas ?? persistentCanvas!;
   if (canvas.width !== w) canvas.width = w;
   if (canvas.height !== h) canvas.height = h;
   const ctx = canvas.getContext('2d')!;
