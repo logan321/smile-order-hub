@@ -64,7 +64,11 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   const doc = parser.parseFromString(text, 'image/svg+xml');
 
   // IDs fixos — sempre mapeados para regiões fixas
-  const fixedSvgIds = ['cor-base', 'cor-base-verso', 'manga-esquerda', 'manga-direita', 'gola', 'gola_5', 'gola-5'];
+  const fixedSvgIds = [
+    'cor-base', 'cor-base-verso',
+    'manga-esquerda', 'manga-direita',
+    'gola', 'gola-2', 'gola-interna', 'gola-externa', 'gola-frente', 'gola-verso'
+  ];
 
   // IDs que devem ser IGNORADOS (camadas do Corel)
   const ignoredPatterns = ['Camada', 'CorelCorpID', 'Corel-Layer'];
@@ -160,8 +164,11 @@ export async function composeUvTexture(opts: {
         'corpo-verso':    ['cor-base-verso'],
         'manga-esquerda': ['manga-esquerda'],
         'manga-direita':  ['manga-direita'],
-        'gola':           ['gola', 'gola_5', 'gola-5'],
-        // elementos: usam o próprio id diretamente (sem mapeamento)
+        'gola':           ['gola', 'gola-2'],
+        'gola-interna':   ['gola-interna'],
+        'gola-externa':   ['gola-externa'],
+        'gola-frente':    ['gola-frente'],
+        'gola-verso':     ['gola-verso'],
       };
 
       Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
