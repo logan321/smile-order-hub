@@ -148,21 +148,23 @@ export async function composeUvTexture(opts: {
       Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
         const svgIds = idMap[regionId] || [regionId];
         svgIds.forEach(id => {
-          // Regular replace for id="..." fill="..."
-          svgText = svgText.replace(
-            new RegExp(`(id="${id}"[^>]*?)fill="[^"]*"`, 'g'),
-            `$1fill="${color}"`
-          );
+          // Strict ID pattern: Matches exact ID OR ID with Corel suffix (_1, _2, etc.)
+          // Uses word boundary \b or similar logic via negative lookahead to avoid partial matches like 'elemento' matching 'elemento-1'
+          // Corel suffixes are usually _ followed by numbers.
+          const idPattern = `${id}(?:_[0-9]+)?`;
+          
+          // Replace for id="..." fill="..."
+          // Using a more robust regex that ensures the id is exactly what we want (with optional suffix)
+          const attrIdRegex = new RegExp(`(id="${idPattern}"[^>]*?)fill="[^"]*"`, 'g');
+          svgText = svgText.replace(attrIdRegex, `$1fill="${color}"`);
+          
           // Replace for style="fill:..."
-          svgText = svgText.replace(
-            new RegExp(`(id="${id}"[^>]*?style="[^"]*?)fill:[^;"]*(;?)`, 'g'),
-            `$1fill:${color}$2`
-          );
+          const styleIdRegex = new RegExp(`(id="${idPattern}"[^>]*?style="[^"]*?)fill:[^;"]*(;?)`, 'g');
+          svgText = svgText.replace(styleIdRegex, `$1fill:${color}$2`);
+          
           // Reverse order: fill="..." id="..."
-          svgText = svgText.replace(
-            new RegExp(`fill="[^"]*"([^>]*?id="${id}")`, 'g'),
-            `fill="${color}"$1`
-          );
+          const fillFirstRegex = new RegExp(`fill="[^"]*"([^>]*?id="${idPattern}")`, 'g');
+          svgText = svgText.replace(fillFirstRegex, `fill="${color}"$1`);
         });
       });
 
