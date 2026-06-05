@@ -2184,7 +2184,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampBaseColor} 
-                          onChange={(e) => handleStampLayerColorChange('.cor-base', e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('cor-base', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
