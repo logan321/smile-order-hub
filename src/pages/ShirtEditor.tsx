@@ -387,6 +387,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setEditsVersion(v => v + 1);
     }, 120);
   }, []);
+
+  const debouncedBump = useMemo(
+    () => debounce(() => bumpEdits(), 80),
+    [bumpEdits]
+  );
+
   useEffect(() => () => {
     if (bumpTimerRef.current != null) {
       clearTimeout(bumpTimerRef.current);
