@@ -508,6 +508,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             return classification ? { ...img, groupName: classification.group } : img;
           }));
         }
+
+        // Auto-detectar e ativar a aba de personalização se houver elementos
+        if (colors.size > 0 || (aiResult.texts && aiResult.texts.length > 0) || (aiResult.images && aiResult.images.length > 0)) {
+          setActiveTab('stamps'); // Mantém a aba de estampas mas os controles de cor estarão visíveis
+        }
       }
     } catch (err) {
       console.error('Erro ao analisar SVG:', err);
@@ -1331,14 +1336,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     if (!frontCanvas || !backCanvas) return;
     
     // Analyze SVG if the stamp is a vector
-    if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
-      handleSvgAnalysis(stamp.imageUrl);
-    } else if (stamp.uvMapUrl?.toLowerCase().endsWith('.svg')) {
-      // If the main image is a thumb (PNG) but there's a vector UV, prioritize it
-      handleSvgAnalysis(stamp.uvMapUrl);
+    if (stamp.imageUrl.toLowerCase().endsWith('.svg') || stamp.uvMapUrl?.toLowerCase().endsWith('.svg')) {
+      handleSvgAnalysis(stamp.imageUrl.toLowerCase().endsWith('.svg') ? stamp.imageUrl : stamp.uvMapUrl!);
     } else {
       setSvgContent(null);
       setSvgColors(new Map());
+      setSvgTexts([]);
+      setSvgImages([]);
+      setSvgFeatures([]);
     }
 
     // If the stamp is linked to a different template, swap the active template
