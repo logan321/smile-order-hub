@@ -22,7 +22,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
+import { scanSvgElements } from '@/lib/uvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
+
 import type { UvZone } from '@/hooks/useUvLibrary';
 
 // Thumbnail: show only the 2D front image uploaded for the stamp.
