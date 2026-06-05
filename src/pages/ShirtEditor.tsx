@@ -386,10 +386,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   );
 
   useEffect(() => () => {
-    if (bumpTimerRef.current != null) {
-      clearTimeout(bumpTimerRef.current);
-      bumpTimerRef.current = null;
-    }
     if (uvTextCommitTimerRef.current != null) {
       clearTimeout(uvTextCommitTimerRef.current);
       uvTextCommitTimerRef.current = null;
@@ -978,13 +974,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         // Replace rotation control with custom prominent one
         obj.controls.mtr = customMtrControl;
       });
-      canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
-      canvas.on('object:modified', () => bumpEdits());
-      canvas.on('object:moving', () => bumpEdits());
-      canvas.on('object:scaling', () => bumpEdits());
-      canvas.on('object:rotating', () => bumpEdits());
-      canvas.on('text:changed', () => bumpEdits());
-      canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
+      canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) debouncedBump(); });
+      canvas.on('object:modified', () => debouncedBump());
+      canvas.on('object:moving', () => debouncedBump());
+      canvas.on('object:scaling', () => debouncedBump());
+      canvas.on('object:rotating', () => debouncedBump());
+      canvas.on('text:changed', () => debouncedBump());
+      canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) debouncedBump(); });
     };
 
     customizeControls(frontCanvas);
@@ -1419,7 +1415,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         });
       });
       
-      bumpEdits();
+      debouncedBump();
     } catch (err) {
       console.error('Erro ao atualizar cores da estampa:', err);
     }
@@ -1881,7 +1877,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.requestRenderAll();
-      bumpEdits();
+      debouncedBump();
     } catch (e) {
       console.error(e);
       toast.error('Erro ao adicionar emblema');
@@ -1954,7 +1950,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       canvas.add(numObj);
     }
     canvas.requestRenderAll();
-    bumpEdits();
+    debouncedBump();
     setNameInput(''); setNumberInput('');
   };
 
@@ -1981,7 +1977,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         active.dirty = true;
         active.setCoords();
         canvas.requestRenderAll();
-        bumpEdits();
+        debouncedBump();
       };
       applyFont();
     }
@@ -2724,7 +2720,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   size="sm" 
                   onClick={() => {
                     setShirtColors(originalColorsRef.current);
-                    bumpEdits();
+                    debouncedBump();
                   }} 
                   className="w-full gap-1.5 h-8 text-[10px] mt-1"
                 >
