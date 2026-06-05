@@ -1183,6 +1183,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       img.set({ scaleX: scale, scaleY: scale, left, top, selectable: false, evented: false });
       (img as any)._isBackground = true;
       canvas.insertAt(0, img);
+      
+      // Sync SVG shirt colors to newly applied stamp if it's a template base
+      if (imageUrl.includes('colorway')) {
+        setTimeout(() => {
+          Object.entries(shirtColors).forEach(([id, color]) => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('fill', color);
+          });
+        }, 100);
+      }
 
       const clipImg = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
       clipImg.set({ scaleX: scale, scaleY: scale, left, top, absolutePositioned: true });
