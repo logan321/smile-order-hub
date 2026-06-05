@@ -1222,6 +1222,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
       setStampLayerColors({});
+      setCurrentStampUrl(stamp.imageUrl);
       advanceGuide('stamp-pick', 'stamp-color');
       // Auto-advance to text-tab if no colors available
       const hasColors = stampColors.some(c => c.stampId === stamp.id);
