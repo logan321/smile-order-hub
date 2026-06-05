@@ -55,6 +55,26 @@ async function getSvgText(url: string): Promise<string> {
   return text;
 }
 
+export async function scanSvgElements(svgUrl: string): Promise<string[]> {
+  const text = await getSvgText(svgUrl);
+  
+  const fixedIds = ['cor-base', 'cor-base-verso', 'manga-esquerda', 'manga-direita', 'gola', 'gola_5', 'contorno'];
+  
+  const allIds = [...text.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
+  
+  const elementIds = allIds.filter(id =>
+    id.startsWith('elemento') && !fixedIds.includes(id)
+  );
+  
+  const unique = [...new Set(elementIds)].sort((a, b) => {
+    const numA = parseInt(a.replace('elemento-', '').replace('elemento', '1')) || 1;
+    const numB = parseInt(b.replace('elemento-', '').replace('elemento', '1')) || 1;
+    return numA - numB;
+  });
+  
+  return unique;
+}
+
 export async function composeUvTexture(opts: {
   baseUrl: string;
   uvWidth?: number | null;
@@ -71,14 +91,12 @@ export async function composeUvTexture(opts: {
       let svgText = await getSvgText(opts.baseUrl);
       svgText = svgText.slice(); // Ensure we don't mutate cache
 
-
       const idMap: Record<string, string[]> = {
         'corpo-frente': ['cor-base'],
         'corpo-verso': ['cor-base-verso'],
         'manga-esquerda': ['manga-esquerda'],
         'manga-direita': ['manga-direita'],
         'gola': ['gola', 'gola_5'],
-        'detalhes-1': ['elemento', 'elemento-2'],
       };
 
       Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
@@ -108,6 +126,7 @@ export async function composeUvTexture(opts: {
       console.warn('Failed to process SVG colors, falling back to original', err);
     }
   }
+
 
   const base = await loadImage(finalBaseUrl);
   const w = opts.uvWidth || base.naturalWidth;

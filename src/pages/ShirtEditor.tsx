@@ -22,7 +22,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
+import { scanSvgElements } from '@/lib/uvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
+
 import type { UvZone } from '@/hooks/useUvLibrary';
 
 // Thumbnail: show only the 2D front image uploaded for the stamp.
@@ -519,6 +521,40 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   });
   const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
   const [syncFrontBack, setSyncFrontBack] = useState(true);
+  const [dynamicElements, setDynamicElements] = useState<string[]>([]);
+
+  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  const uvZonesActive = Object.keys(uvMapZones).length > 0;
+
+  useEffect(() => {
+    if (!uvBaseUrl) return;
+    scanSvgElements(uvBaseUrl).then(ids => {
+      setDynamicElements(ids);
+      setShirtColors(prev => {
+        const next = { ...prev };
+        ids.forEach(id => {
+          if (!(id in next)) next[id] = '#FFFFFF';
+        });
+        return next;
+      });
+    });
+  }, [uvBaseUrl]);
+
+  const fixedRegions = useMemo(() => [
+    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
+    { id: 'corpo-verso', label: 'Verso' },
+    { id: 'manga-esquerda', label: 'Manga Esquerda' },
+    { id: 'manga-direita', label: 'Manga Direita' },
+    { id: 'gola', label: 'Gola' },
+  ], []);
+
+  const dynamicRegions = useMemo(() => dynamicElements.map((id, index) => ({
+    id,
+    label: index === 0 ? 'Elemento 1' : `Elemento ${index + 1}`
+  })), [dynamicElements]);
+
+  const shirtRegions = useMemo(() => [...fixedRegions, ...dynamicRegions], [fixedRegions, dynamicRegions]);
+
   const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
   const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
   
@@ -538,8 +574,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [backZoom, setBackZoom] = useState(1);
   const [panMode, setPanMode] = useState(false);
 
-  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
-  const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -1511,14 +1545,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
   };
 
-  const shirtRegions = [
-    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
-    { id: 'corpo-verso', label: 'Verso' },
-    { id: 'manga-esquerda', label: 'Manga Esquerda' },
-    { id: 'manga-direita', label: 'Manga Direita' },
-    { id: 'gola', label: 'Gola' },
-    { id: 'detalhes-1', label: 'Detalhes' },
-  ];
 
 
 
