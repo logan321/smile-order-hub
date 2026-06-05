@@ -805,6 +805,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         uvMapUrl: resolveUv(s.uv_map_id ?? null, s.uv_map_url ?? null, s.name),
         templateId: s.template_id ?? null,
         nicheId: s.niche_id ?? null,
+        layerMapping: s.layer_mapping ?? null,
       })).filter((s: any) => !/\/uv-library\//i.test(s.imageUrl || '')) ?? [];
       const recoveredStamps = misplacedStampTemplates.map(t => ({
         id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
