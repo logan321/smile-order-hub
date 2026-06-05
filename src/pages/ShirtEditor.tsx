@@ -1261,9 +1261,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     setStampLayerColors(newColors);
 
     // Sync state for the specific selectors if they match our standard
-    if (selector === '.cor-base') setStampBaseColor(color);
-    else if (selector === '.elemento-1') setStampElement1Color(color);
-    else if (selector === '.elemento-2') setStampElement2Color(color);
+    if (selector === 'cor-base' || selector === '.cor-base') setStampBaseColor(color);
+    else if (selector === 'elemento-1' || selector === '.elemento-1') setStampElement1Color(color);
+    else if (selector === 'elemento-2' || selector === '.elemento-2') setStampElement2Color(color);
 
     // Only SVG stamps can have dynamic colors
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
@@ -1314,16 +1314,35 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       
       Object.entries(colors).forEach(([selector, color]) => {
-        const elements = svgDoc.querySelectorAll(selector);
-        elements.forEach(el => {
-          // Priority to direct style and standard attributes
-          (el as SVGElement).style.fill = color;
-          (el as SVGElement).style.stroke = color;
-          el.setAttribute('fill', color);
-          el.setAttribute('stroke', color);
+        // CorelDraw often uses attributes of presentation.
+        // We look for IDs matching our keys (cor-base, elemento-1, elemento-2).
+        // Corel might add prefixes like "_12345_cor-base".
+        const cleanId = selector.replace(/^\./, ''); // remove dot from selector if it exists
+        
+        // Find elements that have an ID containing our target string
+        const elements = Array.from(svgDoc.querySelectorAll(`[id*="${cleanId}"]`));
+        
+        // Also fallback to class selector if present
+        const classElements = svgDoc.querySelectorAll(selector);
+        const allTargetElements = new Set([...elements, ...Array.from(classElements)]);
+
+        allTargetElements.forEach(el => {
+          const element = el as SVGElement;
           
-          // Clean up conflicting inline styles if necessary
-          el.removeAttribute('fill-opacity');
+          // Set both attribute and style for maximum compatibility
+          element.setAttribute('fill', color);
+          element.style.fill = color;
+          
+          // If it's a line/path that might use stroke instead of fill
+          if (element.hasAttribute('stroke') || element.style.stroke) {
+            element.setAttribute('stroke', color);
+            element.style.stroke = color;
+          }
+          
+          // Clean up conflicting opacity if it hides the new color
+          if (element.getAttribute('fill-opacity') === '0') {
+            element.removeAttribute('fill-opacity');
+          }
         });
       });
 
@@ -2165,7 +2184,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampBaseColor} 
-                          onChange={(e) => handleStampLayerColorChange('.cor-base', e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('cor-base', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
@@ -2174,7 +2193,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampElement1Color} 
-                          onChange={(e) => handleStampLayerColorChange('.elemento-1', e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('elemento-1', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
@@ -2183,7 +2202,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampElement2Color} 
-                          onChange={(e) => handleStampLayerColorChange('.elemento-2', e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('elemento-2', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
@@ -2411,7 +2430,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <input 
                             type="color" 
                             value={stampBaseColor} 
-                            onChange={(e) => handleStampLayerColorChange('.cor-base', e.target.value)}
+                            onChange={(e) => handleStampLayerColorChange('cor-base', e.target.value)}
                             className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                           />
                         </div>
@@ -2420,7 +2439,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <input 
                             type="color" 
                             value={stampElement1Color} 
-                            onChange={(e) => handleStampLayerColorChange('.elemento-1', e.target.value)}
+                            onChange={(e) => handleStampLayerColorChange('elemento-1', e.target.value)}
                             className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                           />
                         </div>
@@ -2429,7 +2448,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <input 
                             type="color" 
                             value={stampElement2Color} 
-                            onChange={(e) => handleStampLayerColorChange('.elemento-2', e.target.value)}
+                            onChange={(e) => handleStampLayerColorChange('elemento-2', e.target.value)}
                             className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                           />
                         </div>
