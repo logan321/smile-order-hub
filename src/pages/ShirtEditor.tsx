@@ -1260,6 +1260,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const newColors = { ...stampLayerColors, [selector]: color };
     setStampLayerColors(newColors);
 
+    // Sync state for the specific selectors if they match our standard
+    if (selector === '.cor-base') setStampBaseColor(color);
+    else if (selector === '.elemento-1') setStampElement1Color(color);
+    else if (selector === '.elemento-2') setStampElement2Color(color);
+
     // Only SVG stamps can have dynamic colors
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
 
@@ -1277,6 +1282,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(frontCanvas, frontUrl, 'front'),
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
+
+      // When the URL changes (due to colors), we update currentStampUrl
+      // This will trigger useUvCompositor to rebuild the 3D texture
+      setCurrentStampUrl(frontUrl);
+
       
       setCurrentStampUrl(frontUrl);
       
@@ -1306,12 +1316,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       Object.entries(colors).forEach(([selector, color]) => {
         const elements = svgDoc.querySelectorAll(selector);
         elements.forEach(el => {
-          if (el.hasAttribute('fill')) el.setAttribute('fill', color);
-          if (el.hasAttribute('stroke')) el.setAttribute('stroke', color);
+          // Priority to direct style and standard attributes
           (el as SVGElement).style.fill = color;
           (el as SVGElement).style.stroke = color;
+          el.setAttribute('fill', color);
+          el.setAttribute('stroke', color);
+          
+          // Clean up conflicting inline styles if necessary
+          el.removeAttribute('fill-opacity');
         });
       });
+
       
       const serialized = new XMLSerializer().serializeToString(svgDoc);
       const blob = new Blob([serialized], { type: 'image/svg+xml' });
@@ -2150,7 +2165,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampBaseColor} 
-                          onChange={(e) => setStampBaseColor(e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('.cor-base', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
@@ -2159,7 +2174,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampElement1Color} 
-                          onChange={(e) => setStampElement1Color(e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('.elemento-1', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
@@ -2168,10 +2183,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampElement2Color} 
-                          onChange={(e) => setStampElement2Color(e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('.elemento-2', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
+
                     </div>
                   </div>
                   {/* Color variants for applied stamp - Desktop */}
@@ -2395,7 +2411,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <input 
                             type="color" 
                             value={stampBaseColor} 
-                            onChange={(e) => setStampBaseColor(e.target.value)}
+                            onChange={(e) => handleStampLayerColorChange('.cor-base', e.target.value)}
                             className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                           />
                         </div>
@@ -2404,7 +2420,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <input 
                             type="color" 
                             value={stampElement1Color} 
-                            onChange={(e) => setStampElement1Color(e.target.value)}
+                            onChange={(e) => handleStampLayerColorChange('.elemento-1', e.target.value)}
                             className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                           />
                         </div>
@@ -2413,10 +2429,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <input 
                             type="color" 
                             value={stampElement2Color} 
-                            onChange={(e) => setStampElement2Color(e.target.value)}
+                            onChange={(e) => handleStampLayerColorChange('.elemento-2', e.target.value)}
                             className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                           />
                         </div>
+
                       </div>
                     </div>
                     {/* Color variants for applied stamp - Mobile */}
