@@ -1419,6 +1419,65 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
+  const saveStampLayerMapping = async (newMapping: { selector: string; label: string }[]) => {
+    if (!appliedStamp) return;
+    
+    try {
+      const { error } = await supabase
+        .from('stamp_catalog')
+        .update({ layer_mapping: newMapping })
+        .eq('id', appliedStamp.id);
+
+      if (error) throw error;
+      
+      toast.success('Configuração de camadas salva!');
+      
+      const updatedStamp = { ...appliedStamp, layerMapping: newMapping };
+      setAppliedStamp(updatedStamp);
+      setAllStamps(prev => prev.map(s => s.id === appliedStamp.id ? updatedStamp : s));
+      setUvEditorMode('client');
+    } catch (err) {
+      console.error('Erro ao salvar mapeamento:', err);
+      toast.error('Erro ao salvar configuração');
+    }
+  };
+
+  const getElementSelector = (element: Element): string => {
+    if (element.id) return `#${CSS.escape(element.id)}`;
+    
+    // Fallback: build a path selector
+    const parts = [];
+    let current: Element | null = element;
+    while (current && current.nodeName.toLowerCase() !== 'svg') {
+      let selector = current.nodeName.toLowerCase();
+      const parent = current.parentElement;
+      if (parent) {
+        const siblings = Array.from(parent.children).filter(el => el.nodeName === current?.nodeName);
+        if (siblings.length > 1) {
+          const index = siblings.indexOf(current) + 1;
+          selector += `:nth-of-type(${index})`;
+        }
+      }
+      parts.unshift(selector);
+      current = current.parentElement;
+    }
+    return parts.join(' > ');
+  };
+
+  const handleSvgElementClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as Element;
+    if (target.nodeName === 'svg') return;
+    
+    const selector = getElementSelector(target);
+    const existing = configMapping.find(m => m.selector === selector);
+    
+    setNamingDialog({
+      open: true,
+      selector,
+      name: existing ? existing.label : ''
+    });
+  };
+
   // Switch back to original stamp images
   const switchToOriginalStamp = async () => {
     if (!appliedStamp) return;
