@@ -95,11 +95,13 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   // Helper to normalize Corel IDs (remove suffixes like _1, _2)
   const normalizeId = (id: string) => id.split('_')[0];
 
-  const allElementsWithId = Array.from(doc.querySelectorAll('[id]')).filter(el => 
-    el.id.startsWith('elemento') && !fixedIds.includes(el.id)
-  );
+  // Global search for any ID starting with 'elemento' or 'cor-'
+  const allElementsWithId = Array.from(doc.querySelectorAll('[id]')).filter(el => {
+    const normalized = normalizeId(el.id);
+    return (normalized.startsWith('elemento') || normalized.startsWith('cor-')) && !fixedIds.includes(normalized);
+  });
 
-  const dynamicIdsMap = new Map<string, string>(); // rootId -> originalId (for color extraction)
+  const dynamicIdsMap = new Map<string, string>();
   
   allElementsWithId.forEach(el => {
     const rootId = normalizeId(el.id);
@@ -111,10 +113,15 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   });
 
   const dynamicIds = Array.from(dynamicIdsMap.keys()).sort((a, b) => {
-    const numA = parseInt(a.replace('elemento-', '').replace('elemento', '1')) || 1;
-    const numB = parseInt(b.replace('elemento-', '').replace('elemento', '1')) || 1;
-    return numA - numB;
+    // Better numeric sorting: extracting the number from the end of the string
+    const getNum = (s: string) => {
+      const match = s.match(/\d+$/);
+      return match ? parseInt(match[0]) : (s === 'elemento' ? 1 : 0);
+    };
+    return getNum(a) - getNum(b);
   });
+  
+  console.log('IDs encontrados no SVG:', dynamicIds);
   
   return { dynamicIds, colors };
 }
@@ -148,23 +155,28 @@ export async function composeUvTexture(opts: {
       Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
         const svgIds = idMap[regionId] || [regionId];
         svgIds.forEach(id => {
-          // Strict ID pattern: Matches exact ID OR ID with Corel suffix (_1, _2, etc.)
-          // Uses word boundary \b or similar logic via negative lookahead to avoid partial matches like 'elemento' matching 'elemento-1'
-          // Corel suffixes are usually _ followed by numbers.
-          const idPattern = `${id}(?:_[0-9]+)?`;
+          // Escape ID for regex and add optional Corel suffix (_1, _2, etc.)
+          const escapedId = id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          const idPattern = `${escapedId}(?:_[0-9]+)?`;
           
-          // Replace for id="..." fill="..."
-          // Using a more robust regex that ensures the id is exactly what we want (with optional suffix)
-          const attrIdRegex = new RegExp(`(id="${idPattern}"[^>]*?)fill="[^"]*"`, 'g');
+          // Use a lookahead/lookbehind approach or very specific patterns to ensure exact ID match
+          // and handle both double and single quotes.
+          
+          // 1. Matches: id="elemento" ... fill="#..."
+          const attrIdRegex = new RegExp(`(id=["']${idPattern}["'][^>]*?)fill=["'][^"']*?["']`, 'g');
           svgText = svgText.replace(attrIdRegex, `$1fill="${color}"`);
           
-          // Replace for style="fill:..."
-          const styleIdRegex = new RegExp(`(id="${idPattern}"[^>]*?style="[^"]*?)fill:[^;"]*(;?)`, 'g');
+          // 2. Matches: id="elemento" ... style="...fill:#...;..."
+          const styleIdRegex = new RegExp(`(id=["']${idPattern}["'][^>]*?style=["'][^"']*?)fill:\\s*[^;"]*(;?)`, 'g');
           svgText = svgText.replace(styleIdRegex, `$1fill:${color}$2`);
           
-          // Reverse order: fill="..." id="..."
-          const fillFirstRegex = new RegExp(`fill="[^"]*"([^>]*?id="${idPattern}")`, 'g');
+          // 3. Matches: fill="#..." ... id="elemento"
+          const fillFirstRegex = new RegExp(`fill=["'][^"']*?["']([^>]*?id=["']${idPattern}["'])`, 'g');
           svgText = svgText.replace(fillFirstRegex, `fill="${color}"$1`);
+          
+          // 4. Matches elements where fill might be a separate attribute after style
+          const styleFillAttrRegex = new RegExp(`(style=["'][^"']*?["'][^>]*?id=["']${idPattern}["'][^>]*?)fill=["'][^"']*?["']`, 'g');
+          svgText = svgText.replace(styleFillAttrRegex, `$1fill="${color}"`);
         });
       });
 
