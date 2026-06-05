@@ -1629,14 +1629,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   };
 
   const shirtRegions = [
-    { id: 'corpo-frente', label: 'Frente' },
+    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
     { id: 'corpo-verso', label: 'Verso' },
     { id: 'manga-esquerda', label: 'Manga Esquerda' },
     { id: 'manga-direita', label: 'Manga Direita' },
     { id: 'gola', label: 'Gola' },
-    { id: 'cor-base', label: 'Cor Base' },
     { id: 'detalhes-1', label: 'Detalhes' },
   ];
+
 
 
   const shirtColorPalette = [
