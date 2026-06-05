@@ -136,11 +136,17 @@ export class SvgAnalyzer {
    * Updates all elements of a specific color group in the SVG
    */
   public updateColor(svgDoc: Document, oldHex: string, newHex: string): string {
-    const elements = svgDoc.querySelectorAll(`[fill="${oldHex}"], [fill="${oldHex.toLowerCase()}"]`);
-    elements.forEach(el => el.setAttribute('fill', newHex));
+    const selector = `[fill="${oldHex}"], [fill="${oldHex.toLowerCase()}"], [fill="${oldHex.toUpperCase()}"], [stroke="${oldHex}"], [stroke="${oldHex.toLowerCase()}"], [stroke="${oldHex.toUpperCase()}"]`;
+    const elements = svgDoc.querySelectorAll(selector);
     
-    const strokeElements = svgDoc.querySelectorAll(`[stroke="${oldHex}"], [stroke="${oldHex.toLowerCase()}"]`);
-    strokeElements.forEach(el => el.setAttribute('stroke', newHex));
+    elements.forEach(el => {
+      if (el.getAttribute('fill')?.toUpperCase() === oldHex.toUpperCase()) {
+        el.setAttribute('fill', newHex);
+      }
+      if (el.getAttribute('stroke')?.toUpperCase() === oldHex.toUpperCase()) {
+        el.setAttribute('stroke', newHex);
+      }
+    });
 
     return new XMLSerializer().serializeToString(svgDoc);
   }

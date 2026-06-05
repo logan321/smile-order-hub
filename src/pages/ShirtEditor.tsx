@@ -1333,6 +1333,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     // Analyze SVG if the stamp is a vector
     if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
       handleSvgAnalysis(stamp.imageUrl);
+    } else if (stamp.uvMapUrl?.toLowerCase().endsWith('.svg')) {
+      // If the main image is a thumb (PNG) but there's a vector UV, prioritize it
+      handleSvgAnalysis(stamp.uvMapUrl);
     } else {
       setSvgContent(null);
       setSvgColors(new Map());
@@ -2421,6 +2424,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <Palette className="h-3.5 w-3.5 text-primary" /> 
                     Cores da Estampa (CMYK)
                   </p>
+                  {analyzingColors && (
+                    <div className="flex items-center gap-2 mb-4 p-2 bg-primary/5 rounded-lg border border-primary/10 animate-pulse">
+                      <Sparkles className="h-3 w-3 text-primary" />
+                      <span className="text-[10px] font-medium text-primary uppercase">IA analisando cores e elementos...</span>
+                    </div>
+                  )}
                   <div className="space-y-4">
                     {Array.from(svgColors.values()).map((group) => (
                       <div key={group.hex} className="p-3 rounded-xl bg-muted/30 border border-border/50">
