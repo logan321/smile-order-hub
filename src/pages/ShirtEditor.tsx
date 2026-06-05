@@ -2760,7 +2760,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               </div>
               <div className="flex-1 overflow-y-auto p-3">
                 {activeTab === 'stamps' && (
-                  <div>
+                  <div className="space-y-4">
                     {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
                       <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
                         {stamps.map(s => (
@@ -2771,6 +2771,138 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         ))}
                       </div>
                     )}
+
+                    {/* Personalização Avançada Mobile (Fase 2) */}
+                    {appliedStamp && (
+                      <div className="mt-2 p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            <span className="text-[10px] font-bold text-primary uppercase">Ajustes da Arte</span>
+                          </div>
+                          {appliedStamp.imageUrl.toLowerCase().endsWith('.svg') && (
+                            <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">VETOR</span>
+                          )}
+                        </div>
+                        
+                        {appliedStamp.imageUrl.toLowerCase().endsWith('.svg') ? (
+                          <div className="space-y-4">
+                            {/* Color controls */}
+                            {Array.from(svgColors.entries()).length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
+                                  <Palette className="h-3 w-3" /> Cores CMYK
+                                </p>
+                                <div className="grid grid-cols-4 gap-2">
+                                  {Array.from(svgColors.entries()).map(([hex, group]) => (
+                                    <div key={hex} className="flex flex-col items-center gap-1">
+                                      <button
+                                        onClick={() => {
+                                          const input = document.createElement('input');
+                                          input.type = 'color';
+                                          input.value = hex;
+                                          input.onchange = (e) => {
+                                            const newHex = (e.target as HTMLInputElement).value;
+                                            updateSvgColor(hex, hexToCmyk(newHex));
+                                          };
+                                          input.click();
+                                        }}
+                                        className="h-10 w-full rounded-lg border-2 border-white shadow-md transition-transform active:scale-90"
+                                        style={{ backgroundColor: hex }}
+                                      />
+                                      <span className="text-[7px] font-mono truncate w-full text-center opacity-70">{group.groupName || hex}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Text controls */}
+                            {svgTexts.length > 0 && (
+                              <div className="space-y-2 pt-2 border-t border-border/10">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
+                                  <Type className="h-3 w-3" /> Textos
+                                </p>
+                                <div className="space-y-2">
+                                  {svgTexts.map(txt => (
+                                    <div key={txt.id} className="flex gap-2 items-center bg-background/50 p-1.5 rounded-lg border border-border/30">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[8px] font-bold text-muted-foreground truncate mb-0.5">{txt.groupName || 'Texto'}</p>
+                                        <Input 
+                                          value={txt.text} 
+                                          onChange={(e) => updateSvgText(txt.id, e.target.value)}
+                                          className="h-7 text-[10px] bg-background border-none focus-visible:ring-1"
+                                        />
+                                      </div>
+                                      <button 
+                                        onClick={() => toggleSvgElement(txt.id, !txt.visible, 'text')}
+                                        className={`p-1.5 rounded-md ${txt.visible !== false ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                                      >
+                                        <Box className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Logo controls */}
+                            {svgImages.length > 0 && (
+                              <div className="space-y-2 pt-2 border-t border-border/10">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
+                                  <ImageIcon className="h-3 w-3" /> Logos
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {svgImages.map(img => (
+                                    <div key={img.id} className="bg-background/50 p-2 rounded-lg border border-border/30 flex flex-col gap-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[8px] font-bold text-muted-foreground truncate">{img.groupName || 'Logo'}</span>
+                                        <button 
+                                          onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
+                                          className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
+                                        >
+                                          <Box className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                      <div className="aspect-video bg-muted/20 rounded flex items-center justify-center p-1 relative group overflow-hidden">
+                                        <img src={img.href} className="max-h-full max-w-full object-contain" />
+                                        <button 
+                                          onClick={() => {
+                                            const input = document.createElement('input');
+                                            input.type = 'file';
+                                            input.accept = 'image/*';
+                                            input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
+                                            input.click();
+                                          }}
+                                          className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 active:opacity-100 transition-opacity"
+                                        >
+                                          <Upload className="h-4 w-4 text-white" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-[9px] text-amber-600 leading-snug font-medium">
+                              Habilite a troca de cores CMYK e edição de logos para esta estampa.
+                            </p>
+                            <Button 
+                              size="sm" 
+                              className="w-full h-8 text-[10px] gap-1.5 bg-amber-500 hover:bg-amber-600"
+                              onClick={() => toast.info('Vetorização Inteligente (Fase 2) iniciando...')}
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              Vetorizar Arte com IA
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Color variants for applied stamp - Mobile */}
                     {appliedStampColors.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
