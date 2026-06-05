@@ -1545,14 +1545,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
   };
 
-  const shirtRegions = [
-    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
-    { id: 'corpo-verso', label: 'Verso' },
-    { id: 'manga-esquerda', label: 'Manga Esquerda' },
-    { id: 'manga-direita', label: 'Manga Direita' },
-    { id: 'gola', label: 'Gola' },
-    { id: 'detalhes-1', label: 'Detalhes' },
-  ];
 
 
 
