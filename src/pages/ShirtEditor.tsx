@@ -239,6 +239,11 @@ interface Stamp {
   uvMapId?: string | null;
   templateId?: string | null;
   nicheId?: string | null;
+  layerMapping?: {
+    selector: string;
+    label: string;
+    defaultColor?: string;
+  }[];
 }
 
 type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
