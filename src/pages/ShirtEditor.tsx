@@ -586,7 +586,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         
         Object.entries(shirtColors).forEach(([id, color]) => {
           // Look for element with exact ID or ending with ID (Corel compatibility)
-          const el = svgDoc.getElementById(id) || svgDoc.querySelector(`[id$="${id}"]`);
+          // Also try matching with spaces instead of hyphens
+          const idWithSpaces = id.replace(/-/g, ' ');
+          const el = doc.getElementById(id) || 
+                     doc.getElementById(idWithSpaces) ||
+                     doc.querySelector(`[id$="${id}"]`) ||
+                     doc.querySelector(`[id$="${idWithSpaces}"]`);
+          
           if (el) {
             el.setAttribute('fill', color);
             // Also update strokes if they are not none
@@ -595,6 +601,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             }
           }
         });
+
 
         const serializer = new XMLSerializer();
         const svgString = serializer.serializeToString(svgDoc);
