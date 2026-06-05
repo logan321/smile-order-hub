@@ -1304,9 +1304,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const handleStampLayerColorChange = async (oldColor: string, newColor: string) => {
+  const handleStampLayerColorChange = async (selector: string, newColor: string) => {
     if (!appliedStamp) return;
-    const newMapping = { ...stampLayerColors, [oldColor]: newColor };
+    
+    // Update state
+    const newMapping = { ...stampLayerColors, [selector]: newColor };
     setStampLayerColors(newMapping);
 
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
@@ -1348,20 +1350,48 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const response = await fetch(url);
       const svgText = await response.text();
       
-      let modifiedSvgText = svgText;
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       
-      // Perform global search and replace for each color
-      Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
-        if (oldColor === newColor) return;
-        
-        // Escape regex characters just in case
-        const escapedOld = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Replace globally, case insensitive to catch all variations
-        const regex = new RegExp(escapedOld, 'gi');
-        modifiedSvgText = modifiedSvgText.replace(regex, newColor);
+      // We handle two types of mapping:
+      // 1. Fixed IDs (cor-base, elemento-1, elemento-2)
+      // 2. Global color substitution (the previous strategy)
+      
+      const selectors = ['cor-base', 'elemento-1', 'elemento-2'];
+      let handledById = false;
+
+      selectors.forEach(id => {
+        if (colorMapping[id]) {
+          // Find by ID or ID containing the string (Corel suffix support)
+          const elements = svgDoc.querySelectorAll(`[id="${id}"], [id$="-${id}"], [id*="${id}"]`);
+          if (elements.length > 0) {
+            elements.forEach(el => {
+              el.setAttribute('fill', colorMapping[id]);
+              // Also check for stroke if it's not a path that should only have fill
+              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                el.setAttribute('stroke', colorMapping[id]);
+              }
+            });
+            handledById = true;
+          }
+        }
       });
 
-      const blob = new Blob([modifiedSvgText], { type: 'image/svg+xml' });
+      let finalSvgText = "";
+      if (handledById) {
+        finalSvgText = new XMLSerializer().serializeToString(svgDoc);
+      } else {
+        // Fallback to global color substitution if no IDs matched
+        finalSvgText = svgText;
+        Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
+          if (oldColor === newColor) return;
+          const escapedOld = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(escapedOld, 'gi');
+          finalSvgText = finalSvgText.replace(regex, newColor);
+        });
+      }
+
+      const blob = new Blob([finalSvgText], { type: 'image/svg+xml' });
       return URL.createObjectURL(blob);
     } catch (e) {
       console.warn('SVG color update failed', e);
