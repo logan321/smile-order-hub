@@ -3587,20 +3587,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   outline-offset: 2px;
                   filter: brightness(0.8);
                 }
-                .interactive-uv-container svg {
-                  width: 100%;
-                  height: auto;
-                  max-height: 170px;
-                  display: block;
-                }
-                .interactive-uv-container svg * {
-                  cursor: pointer !important;
-                  transition: filter 0.2s, stroke-width 0.2s;
-                  pointer-events: auto !important;
-                }
-                .interactive-uv-container svg *:hover {
-                  filter: brightness(0.9);
-                }
 
               `}} />
             </div>
