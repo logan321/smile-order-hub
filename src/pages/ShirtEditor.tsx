@@ -378,21 +378,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
-  // Debounced bump: re-composite the UV texture at most every ~120ms while the
-  // user is typing / dragging. Prevents the editor from re-rendering on every
-  // keystroke, which was causing visible lag in the 3D preview.
-  const bumpTimerRef = useRef<number | null>(null);
-  const bumpEdits = useCallback(() => {
-    if (bumpTimerRef.current != null) return;
-    bumpTimerRef.current = window.setTimeout(() => {
-      bumpTimerRef.current = null;
-      setEditsVersion(v => v + 1);
-    }, 120);
-  }, []);
-
+  // Debounced bump: re-composite the UV texture with a slight delay
+  // Prevents the editor from re-rendering on every mouse move in the color picker.
   const debouncedBump = useMemo(
-    () => debounce(() => bumpEdits(), 80),
-    [bumpEdits]
+    () => debounce(() => setEditsVersion(v => v + 1), 80),
+    []
   );
 
   useEffect(() => () => {
