@@ -534,9 +534,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
-  const [stampBaseColor, setStampBaseColor] = useState('#FFFFFF');
-  const [stampElement1Color, setStampElement1Color] = useState('#FF0000');
-  const [stampElement2Color, setStampElement2Color] = useState('#0000FF');
+  const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
   const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
