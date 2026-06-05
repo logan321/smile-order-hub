@@ -1304,9 +1304,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const handleStampLayerColorChange = async (oldColor: string, newColor: string) => {
+  const handleStampLayerColorChange = async (selector: string, newColor: string) => {
     if (!appliedStamp) return;
-    const newMapping = { ...stampLayerColors, [oldColor]: newColor };
+    
+    // Update state
+    const newMapping = { ...stampLayerColors, [selector]: newColor };
     setStampLayerColors(newMapping);
 
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
@@ -1348,20 +1350,48 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const response = await fetch(url);
       const svgText = await response.text();
       
-      let modifiedSvgText = svgText;
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       
-      // Perform global search and replace for each color
-      Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
-        if (oldColor === newColor) return;
-        
-        // Escape regex characters just in case
-        const escapedOld = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Replace globally, case insensitive to catch all variations
-        const regex = new RegExp(escapedOld, 'gi');
-        modifiedSvgText = modifiedSvgText.replace(regex, newColor);
+      // We handle two types of mapping:
+      // 1. Fixed IDs (cor-base, elemento-1, elemento-2)
+      // 2. Global color substitution (the previous strategy)
+      
+      const selectors = ['cor-base', 'elemento-1', 'elemento-2'];
+      let handledById = false;
+
+      selectors.forEach(id => {
+        if (colorMapping[id]) {
+          // Find by ID or ID containing the string (Corel suffix support)
+          const elements = svgDoc.querySelectorAll(`[id="${id}"], [id$="-${id}"], [id*="${id}"]`);
+          if (elements.length > 0) {
+            elements.forEach(el => {
+              el.setAttribute('fill', colorMapping[id]);
+              // Also check for stroke if it's not a path that should only have fill
+              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                el.setAttribute('stroke', colorMapping[id]);
+              }
+            });
+            handledById = true;
+          }
+        }
       });
 
-      const blob = new Blob([modifiedSvgText], { type: 'image/svg+xml' });
+      let finalSvgText = "";
+      if (handledById) {
+        finalSvgText = new XMLSerializer().serializeToString(svgDoc);
+      } else {
+        // Fallback to global color substitution if no IDs matched
+        finalSvgText = svgText;
+        Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
+          if (oldColor === newColor) return;
+          const escapedOld = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(escapedOld, 'gi');
+          finalSvgText = finalSvgText.replace(regex, newColor);
+        });
+      }
+
+      const blob = new Blob([finalSvgText], { type: 'image/svg+xml' });
       return URL.createObjectURL(blob);
     } catch (e) {
       console.warn('SVG color update failed', e);
@@ -2185,12 +2215,39 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
                   )}
 
-                  {/* Dynamic Color Selection Section */}
-                  {extractedSvgColors.length > 0 && (
+                  {/* Corel ID Selection Section - Desktop */}
+                  {appliedStamp?.imageUrl.toLowerCase().endsWith('.svg') && (
                     <div className="mt-4 pt-3 border-t border-border/30">
                       <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
                         <Sparkles className="h-3 w-3 text-accent" />
                         Cores da Estampa Ativa
+                      </p>
+                      <div className="space-y-2">
+                        {[
+                          { id: 'cor-base', label: 'Cor Base' },
+                          { id: 'elemento-1', label: 'Elemento 1' },
+                          { id: 'elemento-2', label: 'Elemento 2' }
+                        ].map((layer) => (
+                          <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                            <input 
+                              type="color" 
+                              value={stampLayerColors[layer.id] || '#FFFFFF'} 
+                              onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
+                              className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dynamic Color Selection Section - Desktop (Only if no ID colors are used yet) */}
+                  {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
+                    <div className="mt-4 pt-3 border-t border-border/30">
+                      <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                        <Sparkles className="h-3 w-3 text-accent" />
+                        Cores Detectadas
                       </p>
                       <div className="space-y-2">
                         {extractedSvgColors.map((color, idx) => (
@@ -2419,12 +2476,39 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
-                    {/* Dynamic Color Selection Section - Mobile */}
-                    {extractedSvgColors.length > 0 && (
+                    {/* Corel ID Selection Section - Mobile */}
+                    {appliedStamp?.imageUrl.toLowerCase().endsWith('.svg') && (
                       <div className="mt-4 pt-3 border-t border-border/30">
                         <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
                           <Sparkles className="h-3 w-3 text-accent" />
                           Cores da Estampa Ativa
+                        </p>
+                        <div className="grid grid-cols-1 gap-2">
+                          {[
+                            { id: 'cor-base', label: 'Cor Base' },
+                            { id: 'elemento-1', label: 'Elemento 1' },
+                            { id: 'elemento-2', label: 'Elemento 2' }
+                          ].map((layer) => (
+                            <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                              <input 
+                                type="color" 
+                                value={stampLayerColors[layer.id] || '#FFFFFF'} 
+                                onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
+                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dynamic Color Selection Section - Mobile (Only if no ID colors used) */}
+                    {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
+                      <div className="mt-4 pt-3 border-t border-border/30">
+                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-accent" />
+                          Cores Detectadas
                         </p>
                         <div className="grid grid-cols-1 gap-2">
                           {extractedSvgColors.map((color, idx) => (
