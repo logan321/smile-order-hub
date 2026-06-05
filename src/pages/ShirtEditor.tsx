@@ -2448,8 +2448,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
                   )}
                   <div className="space-y-4">
-                    {Array.from(svgColors.values()).map((group) => (
-                      <div key={group.hex} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                    {Array.from(svgColors.entries()).map(([key, group]) => (
+                      <div key={key} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                         <div className="flex flex-col mb-3">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex flex-col">
@@ -2461,7 +2461,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <input 
                               type="color" 
                               value={group.hex} 
-                              onChange={(e) => updateSvgColor(group.hex, hexToCmyk(e.target.value))}
+                              onChange={(e) => updateSvgColor(key, hexToCmyk(e.target.value))}
                               className="h-8 w-8 rounded-lg border border-border cursor-pointer transition-transform hover:scale-110"
                             />
                           </div>
@@ -2488,7 +2488,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.c]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, c: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, c: v })}
                               className="h-2"
                             />
                           </div>
@@ -2499,7 +2499,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.m]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, m: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, m: v })}
                               className="h-2"
                             />
                           </div>
@@ -2510,7 +2510,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.y]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, y: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, y: v })}
                               className="h-2"
                             />
                           </div>
@@ -2521,7 +2521,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.k]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, k: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, k: v })}
                               className="h-2"
                             />
                           </div>
@@ -2710,14 +2710,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   
                   {/* Cores CMYK */}
                   <div className="space-y-3">
-                    {Array.from(svgColors.values()).slice(0, 3).map((group) => (
-                      <div key={group.hex} className="p-2 rounded-lg bg-muted/30 border border-border/40">
+                    {Array.from(svgColors.entries()).slice(0, 3).map(([key, group]) => (
+                      <div key={key} className="p-2 rounded-lg bg-muted/30 border border-border/40">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-[9px] font-bold truncate flex-1">{group.groupName || 'Cor'}</span>
                           <input 
                             type="color" 
                             value={group.hex} 
-                            onChange={(e) => updateSvgColor(group.hex, hexToCmyk(e.target.value))}
+                            onChange={(e) => updateSvgColor(key, hexToCmyk(e.target.value))}
                             className="h-6 w-6 rounded border border-border cursor-pointer"
                           />
                         </div>
