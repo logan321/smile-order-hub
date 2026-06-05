@@ -516,7 +516,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   
   const [namingDialog, setNamingDialog] = useState<{ open: boolean; selector: string; name: string }>({ open: false, selector: '', name: '' });
   const [configMapping, setConfigMapping] = useState<{ selector: string; label: string }[]>([]);
-  const [processedBaseUrl, setProcessedBaseUrl] = useState<string | null>(null);
+  
   const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
