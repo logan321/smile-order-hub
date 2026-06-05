@@ -3225,6 +3225,134 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Editor de Camadas SVG (Modo Configuração) */}
+      <Dialog open={uvEditorMode === 'config'} onOpenChange={(open) => !open && setUvEditorMode('client')}>
+        <DialogContent className="max-w-[95vw] w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
+          <DialogHeader className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <Box className="h-5 w-5 text-primary" />
+                Mapeamento de Camadas UV
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setUvEditorMode('client')}>Cancelar</Button>
+                <Button variant="default" size="sm" onClick={() => saveStampLayerMapping(configMapping)}>Salvar Configuração</Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Clique nos elementos da arte abaixo para nomeá-los e criar seletores de cores.
+            </p>
+          </DialogHeader>
+          
+          <div className="flex-1 flex overflow-hidden">
+            {/* SVG Viewer */}
+            <div className="flex-1 bg-muted/20 relative flex items-center justify-center p-8 overflow-auto">
+              <div 
+                className="max-w-full max-h-full cursor-crosshair uv-config-svg-container shadow-2xl bg-white"
+                onClick={handleSvgElementClick}
+                dangerouslySetInnerHTML={{ __html: svgSourceForConfig || '' }}
+              />
+              <style dangerouslySetInnerHTML={{ __html: `
+                .uv-config-svg-container svg {
+                  display: block;
+                  max-width: 100%;
+                  height: auto;
+                }
+                .uv-config-svg-container svg * {
+                  transition: all 0.2s;
+                  pointer-events: auto !important;
+                }
+                .uv-config-svg-container svg *:hover {
+                  outline: 2px solid #2563eb;
+                  outline-offset: 2px;
+                  filter: brightness(0.8);
+                }
+              `}} />
+            </div>
+            
+            {/* Sidebar with mapped layers */}
+            <div className="w-72 border-l bg-card p-4 overflow-y-auto">
+              <h4 className="text-[10px] font-bold text-muted-foreground uppercase mb-4 tracking-wider">Camadas Mapeadas</h4>
+              <div className="space-y-3">
+                {configMapping.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <Sparkles className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-xs text-muted-foreground italic px-4">Nenhuma camada mapeada.<br/>Clique na arte para começar.</p>
+                  </div>
+                ) : (
+                  configMapping.map((item, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-muted/30 border border-border/50 group hover:border-primary/30 transition-all">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-foreground">{item.label}</span>
+                        <button 
+                          onClick={() => setConfigMapping(prev => prev.filter((_, i) => i !== idx))}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground font-mono bg-background/50 p-1.5 rounded-md overflow-hidden">
+                        <span className="shrink-0 opacity-50">#</span>
+                        <span className="truncate">{item.selector}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para nomear camada */}
+      <Dialog open={namingDialog.open} onOpenChange={(open) => setNamingDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              Nomear Camada
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nome amigável para o cliente</label>
+              <Input 
+                value={namingDialog.name}
+                onChange={(e) => setNamingDialog(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Ex: Cor Base, Círculo Central, Detalhe Gola"
+                autoFocus
+                className="h-12 text-base"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const newMapping = configMapping.filter(m => m.selector !== namingDialog.selector);
+                    if (namingDialog.name.trim()) {
+                      newMapping.push({ selector: namingDialog.selector, label: namingDialog.name });
+                    }
+                    setConfigMapping(newMapping);
+                    setNamingDialog(prev => ({ ...prev, open: false }));
+                  }
+                }}
+              />
+            </div>
+            <div className="p-2 rounded bg-muted/50 overflow-hidden">
+              <p className="text-[9px] text-muted-foreground font-mono truncate">Seletor Técnico: {namingDialog.selector}</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setNamingDialog(prev => ({ ...prev, open: false }))}>Cancelar</Button>
+            <Button onClick={() => {
+              const newMapping = configMapping.filter(m => m.selector !== namingDialog.selector);
+              if (namingDialog.name.trim()) {
+                newMapping.push({ selector: namingDialog.selector, label: namingDialog.name });
+              }
+              setConfigMapping(newMapping);
+              setNamingDialog(prev => ({ ...prev, open: false }));
+            }}>Confirmar Mapeamento</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
