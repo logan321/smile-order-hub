@@ -1318,7 +1318,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setTimeout(() => setActiveTab('stamps'), 100);
     } else {
       setSvgContent(null);
-      setSvgColors(new Map());
       setSvgTexts([]);
       setSvgImages([]);
       setSvgFeatures([]);
