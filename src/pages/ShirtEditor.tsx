@@ -1275,6 +1275,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       
+      setCurrentStampUrl(frontUrl);
+      
       // Update metadata
       [frontCanvas, backCanvas].forEach(c => {
         c.getObjects().forEach((obj: any) => {
