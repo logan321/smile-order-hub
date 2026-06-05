@@ -8,9 +8,11 @@ interface Options {
   layers: UvLayer[];
   uvWidth?: number | null;
   uvHeight?: number | null;
+  shirtColors?: Record<string, string>;
 }
 
-export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
+export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight, shirtColors }: Options) {
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   if (!canvasRef.current && typeof document !== 'undefined') {
     canvasRef.current = document.createElement('canvas');
