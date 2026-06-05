@@ -2044,7 +2044,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
           )}
         </div>
-      </div>
         {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
       </div>
     );
