@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette, Lock } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -522,21 +522,21 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const updateSvgColor = (oldHex: string, newCmyk: any) => {
+  const updateSvgColor = (key: string, newCmyk: any) => {
     if (!svgContent) return;
     const newHex = cmykToHex(newCmyk);
     const parser = new DOMParser();
     const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-    const updatedSvg = svgAnalyzer.current.updateColor(svgDoc, oldHex, newHex);
+    const updatedSvg = svgAnalyzer.current.updateColor(svgDoc, key, newHex);
     setSvgContent(updatedSvg);
     
     // Atualizar o mapa de cores local para refletir a mudança na UI
     setSvgColors(prev => {
       const next = new Map(prev);
-      const group = next.get(oldHex);
+      const group = next.get(key);
       if (group) {
-        next.delete(oldHex);
-        next.set(newHex, { ...group, hex: newHex, cmyk: newCmyk });
+        // We keep the same key (layer ID or old hex) but update the color values
+        next.set(key, { ...group, hex: newHex, cmyk: newCmyk });
       }
       return next;
     });
@@ -2257,22 +2257,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                               <div className="space-y-1.5">
                                 <p className="text-[8px] font-bold text-muted-foreground uppercase">Cores da Estampa</p>
                                 <div className="grid grid-cols-5 gap-1.5">
-                                  {Array.from(svgColors.entries()).map(([hex, group]) => (
-                                    <div key={hex} className="group/color relative">
+                                  {Array.from(svgColors.entries()).map(([key, group]) => (
+                                    <div key={key} className="group/color relative">
                                       <button
                                         onClick={() => {
                                           const input = document.createElement('input');
                                           input.type = 'color';
-                                          input.value = hex;
+                                          input.value = group.hex;
                                           input.onchange = (e) => {
                                             const newHex = (e.target as HTMLInputElement).value;
-                                            updateSvgColor(hex, hexToCmyk(newHex));
+                                            updateSvgColor(key, hexToCmyk(newHex));
                                           };
                                           input.click();
                                         }}
                                         className="h-7 w-full rounded-md border border-border/50 shadow-sm transition-transform active:scale-95"
-                                        style={{ backgroundColor: hex }}
-                                        title={`${group.groupName || 'Cor'}: ${hex}`}
+                                        style={{ backgroundColor: group.hex }}
+                                        title={`${group.groupName || 'Cor'}: ${group.hex}`}
                                       />
                                     </div>
                                   ))}
@@ -2311,27 +2311,35 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                                 <p className="text-[8px] font-bold text-muted-foreground uppercase">Logos e Imagens</p>
                                 <div className="grid grid-cols-1 gap-1">
                                   {svgImages.map(img => (
-                                    <div key={img.id} className="flex gap-1.5 items-center bg-background/30 p-1 rounded">
-                                      <span className="text-[8px] flex-1 truncate opacity-70">{img.groupName || 'Logo'}</span>
+                                    <div key={img.id} className={`flex gap-1.5 items-center p-1 rounded ${img.isFixed ? 'bg-muted/30 border border-dashed border-border/50' : 'bg-background/30'}`}>
+                                      <span className={`text-[8px] flex-1 truncate ${img.isFixed ? 'text-muted-foreground font-medium' : 'opacity-70'}`}>
+                                        {img.isFixed ? 'Imagem Fixa (Não Editável)' : (img.groupName || 'Logo')}
+                                      </span>
                                       <div className="flex gap-1">
-                                        <button 
-                                          onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
-                                          className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
-                                        >
-                                          <Box className="h-3 w-3" />
-                                        </button>
-                                        <button 
-                                          onClick={() => {
-                                            const input = document.createElement('input');
-                                            input.type = 'file';
-                                            input.accept = 'image/*';
-                                            input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
-                                            input.click();
-                                          }}
-                                          className="p-1 rounded hover:bg-primary/10 text-primary"
-                                        >
-                                          <Upload className="h-3 w-3" />
-                                        </button>
+                                        {img.isFixed ? (
+                                          <Lock className="h-3 w-3 text-muted-foreground opacity-50" />
+                                        ) : (
+                                          <>
+                                            <button 
+                                              onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
+                                              className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
+                                            >
+                                              <Box className="h-3 w-3" />
+                                            </button>
+                                            <button 
+                                              onClick={() => {
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
+                                                input.click();
+                                              }}
+                                              className="p-1 rounded hover:bg-primary/10 text-primary"
+                                            >
+                                              <Upload className="h-3 w-3" />
+                                            </button>
+                                          </>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
@@ -2440,8 +2448,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
                   )}
                   <div className="space-y-4">
-                    {Array.from(svgColors.values()).map((group) => (
-                      <div key={group.hex} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                    {Array.from(svgColors.entries()).map(([key, group]) => (
+                      <div key={key} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                         <div className="flex flex-col mb-3">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex flex-col">
@@ -2453,7 +2461,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <input 
                               type="color" 
                               value={group.hex} 
-                              onChange={(e) => updateSvgColor(group.hex, hexToCmyk(e.target.value))}
+                              onChange={(e) => updateSvgColor(key, hexToCmyk(e.target.value))}
                               className="h-8 w-8 rounded-lg border border-border cursor-pointer transition-transform hover:scale-110"
                             />
                           </div>
@@ -2480,7 +2488,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.c]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, c: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, c: v })}
                               className="h-2"
                             />
                           </div>
@@ -2491,7 +2499,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.m]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, m: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, m: v })}
                               className="h-2"
                             />
                           </div>
@@ -2502,7 +2510,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.y]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, y: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, y: v })}
                               className="h-2"
                             />
                           </div>
@@ -2513,7 +2521,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             <Slider 
                               value={[group.cmyk.k]} 
                               max={100} 
-                              onValueChange={([v]) => updateSvgColor(group.hex, { ...group.cmyk, k: v })}
+                              onValueChange={([v]) => updateSvgColor(key, { ...group.cmyk, k: v })}
                               className="h-2"
                             />
                           </div>
@@ -2702,14 +2710,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   
                   {/* Cores CMYK */}
                   <div className="space-y-3">
-                    {Array.from(svgColors.values()).slice(0, 3).map((group) => (
-                      <div key={group.hex} className="p-2 rounded-lg bg-muted/30 border border-border/40">
+                    {Array.from(svgColors.entries()).slice(0, 3).map(([key, group]) => (
+                      <div key={key} className="p-2 rounded-lg bg-muted/30 border border-border/40">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-[9px] font-bold truncate flex-1">{group.groupName || 'Cor'}</span>
                           <input 
                             type="color" 
                             value={group.hex} 
-                            onChange={(e) => updateSvgColor(group.hex, hexToCmyk(e.target.value))}
+                            onChange={(e) => updateSvgColor(key, hexToCmyk(e.target.value))}
                             className="h-6 w-6 rounded border border-border cursor-pointer"
                           />
                         </div>
@@ -2791,26 +2799,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             {Array.from(svgColors.entries()).length > 0 && (
                               <div className="space-y-2">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-                                  <Palette className="h-3 w-3" /> Cores CMYK
+                                  <Palette className="h-3 w-3" /> Cores da Estampa (Camadas)
                                 </p>
                                 <div className="grid grid-cols-4 gap-2">
-                                  {Array.from(svgColors.entries()).map(([hex, group]) => (
-                                    <div key={hex} className="flex flex-col items-center gap-1">
+                                  {Array.from(svgColors.entries()).map(([key, group]) => (
+                                    <div key={key} className="flex flex-col items-center gap-1">
                                       <button
                                         onClick={() => {
                                           const input = document.createElement('input');
                                           input.type = 'color';
-                                          input.value = hex;
+                                          input.value = group.hex;
                                           input.onchange = (e) => {
                                             const newHex = (e.target as HTMLInputElement).value;
-                                            updateSvgColor(hex, hexToCmyk(newHex));
+                                            updateSvgColor(key, hexToCmyk(newHex));
                                           };
                                           input.click();
                                         }}
                                         className="h-10 w-full rounded-lg border-2 border-white shadow-md transition-transform active:scale-90"
-                                        style={{ backgroundColor: hex }}
+                                        style={{ backgroundColor: group.hex }}
                                       />
-                                      <span className="text-[7px] font-mono truncate w-full text-center opacity-70">{group.groupName || hex}</span>
+                                      <span className="text-[7px] font-mono truncate w-full text-center opacity-70">
+                                        {group.groupName || group.hex}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
@@ -2850,34 +2860,42 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             {svgImages.length > 0 && (
                               <div className="space-y-2 pt-2 border-t border-border/10">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-                                  <ImageIcon className="h-3 w-3" /> Logos
+                                  <ImageIcon className="h-3 w-3" /> Logos e Elementos
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                   {svgImages.map(img => (
-                                    <div key={img.id} className="bg-background/50 p-2 rounded-lg border border-border/30 flex flex-col gap-2">
+                                    <div key={img.id} className={`p-2 rounded-lg border border-border/30 flex flex-col gap-2 ${img.isFixed ? 'bg-muted/10' : 'bg-background/50'}`}>
                                       <div className="flex items-center justify-between">
-                                        <span className="text-[8px] font-bold text-muted-foreground truncate">{img.groupName || 'Logo'}</span>
-                                        <button 
-                                          onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
-                                          className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
-                                        >
-                                          <Box className="h-3.5 w-3.5" />
-                                        </button>
+                                        <span className={`text-[8px] font-bold truncate ${img.isFixed ? 'text-muted-foreground italic' : 'text-muted-foreground'}`}>
+                                          {img.isFixed ? 'Imagem Fixa' : (img.groupName || 'Logo')}
+                                        </span>
+                                        {img.isFixed ? (
+                                          <Lock className="h-3 w-3 text-muted-foreground opacity-50" />
+                                        ) : (
+                                          <button 
+                                            onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
+                                            className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
+                                          >
+                                            <Box className="h-3.5 w-3.5" />
+                                          </button>
+                                        )}
                                       </div>
                                       <div className="aspect-video bg-muted/20 rounded flex items-center justify-center p-1 relative group overflow-hidden">
                                         <img src={img.href} className="max-h-full max-w-full object-contain" />
-                                        <button 
-                                          onClick={() => {
-                                            const input = document.createElement('input');
-                                            input.type = 'file';
-                                            input.accept = 'image/*';
-                                            input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
-                                            input.click();
-                                          }}
-                                          className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 active:opacity-100 transition-opacity"
-                                        >
-                                          <Upload className="h-4 w-4 text-white" />
-                                        </button>
+                                        {!img.isFixed && (
+                                          <button 
+                                            onClick={() => {
+                                              const input = document.createElement('input');
+                                              input.type = 'file';
+                                              input.accept = 'image/*';
+                                              input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
+                                              input.click();
+                                            }}
+                                            className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 active:opacity-100 transition-opacity"
+                                          >
+                                            <Upload className="h-4 w-4 text-white" />
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   ))}

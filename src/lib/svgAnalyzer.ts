@@ -6,6 +6,7 @@ import { hexToCmyk, CMYK } from './cmykEngine';
  */
 
 export interface SvgColorGroup {
+  id?: string; // For explicit layer mapping
   hex: string;
   cmyk: CMYK;
   elements: SVGElement[];
@@ -14,6 +15,7 @@ export interface SvgColorGroup {
   groupName?: string;
   reason?: string;
   visible?: boolean;
+  isFixed?: boolean;
 }
 
 export interface SvgTextElement {
@@ -32,6 +34,7 @@ export interface SvgImageElement {
   element: SVGImageElement;
   groupName?: string;
   visible?: boolean;
+  isFixed?: boolean;
 }
 
 export interface SvgFeature {
@@ -71,16 +74,21 @@ export class SvgAnalyzer {
     allElements.forEach((el, index) => {
       if (!(el instanceof SVGElement)) return;
 
+      // 1. Check for Explicit Layer Mapping (class="svg-camada-cor-X")
+      const className = el.getAttribute('class') || '';
+      const layerMatch = className.match(/svg-camada-cor-(\d+)/);
+      const layerId = layerMatch ? layerMatch[0] : null;
+
       // Analyze colors
       const fill = el.getAttribute('fill');
       const stroke = el.getAttribute('stroke');
 
       if (fill && fill !== 'none' && fill.startsWith('#')) {
-        this.addColorToMap(colorMap, fill.toUpperCase(), el);
+        this.addColorToMap(colorMap, fill.toUpperCase(), el, layerId);
       }
       
       if (stroke && stroke !== 'none' && stroke.startsWith('#')) {
-        this.addColorToMap(colorMap, stroke.toUpperCase(), el);
+        this.addColorToMap(colorMap, stroke.toUpperCase(), el, layerId);
       }
 
       // Analyze texts
@@ -94,12 +102,15 @@ export class SvgAnalyzer {
         });
       }
 
-      // Analyze images (logos)
+      // Analyze images (logos / fixed parts)
       if (el instanceof SVGImageElement) {
+        const isFixed = className.includes('svg-imagem-fixa') || !layerId;
         images.push({
           id: el.id || `image-${index}`,
           href: el.getAttribute('href') || el.getAttribute('xlink:href') || '',
-          element: el
+          element: el,
+          isFixed: isFixed,
+          groupName: isFixed ? 'Imagem Fixa (Não Editável)' : `Logo ${index + 1}`
         });
       }
 
@@ -120,17 +131,21 @@ export class SvgAnalyzer {
     return { colors: sortedColors, texts, images, features };
   }
 
-  private addColorToMap(map: Map<string, SvgColorGroup>, hex: string, element: SVGElement) {
-    if (map.has(hex)) {
-      const group = map.get(hex)!;
+  private addColorToMap(map: Map<string, SvgColorGroup>, hex: string, element: SVGElement, layerId: string | null = null) {
+    const key = layerId || hex;
+    
+    if (map.has(key)) {
+      const group = map.get(key)!;
       group.elements.push(element);
       group.usageCount++;
     } else {
-      map.set(hex, {
+      map.set(key, {
+        id: layerId || undefined,
         hex,
         cmyk: hexToCmyk(hex),
         elements: [element],
-        usageCount: 1
+        usageCount: 1,
+        groupName: layerId ? `Estampa - Camada ${layerId.split('-').pop()}` : undefined
       });
     }
   }
@@ -138,18 +153,29 @@ export class SvgAnalyzer {
   /**
    * Updates all elements of a specific color group in the SVG
    */
-  public updateColor(svgDoc: Document, oldHex: string, newHex: string): string {
-    const selector = `[fill="${oldHex}"], [fill="${oldHex.toLowerCase()}"], [fill="${oldHex.toUpperCase()}"], [stroke="${oldHex}"], [stroke="${oldHex.toLowerCase()}"], [stroke="${oldHex.toUpperCase()}"]`;
-    const elements = svgDoc.querySelectorAll(selector);
-    
-    elements.forEach(el => {
-      if (el.getAttribute('fill')?.toUpperCase() === oldHex.toUpperCase()) {
+  public updateColor(svgDoc: Document, key: string, newHex: string): string {
+    // If the key is a layer ID (svg-camada-cor-X), use class selector
+    if (key.startsWith('svg-camada-cor')) {
+      const elements = svgDoc.querySelectorAll(`.${key}`);
+      elements.forEach(el => {
         el.setAttribute('fill', newHex);
-      }
-      if (el.getAttribute('stroke')?.toUpperCase() === oldHex.toUpperCase()) {
         el.setAttribute('stroke', newHex);
-      }
-    });
+      });
+    } else {
+      // Legacy behavior: update by hex
+      const oldHex = key;
+      const selector = `[fill="${oldHex}"], [fill="${oldHex.toLowerCase()}"], [fill="${oldHex.toUpperCase()}"], [stroke="${oldHex}"], [stroke="${oldHex.toLowerCase()}"], [stroke="${oldHex.toUpperCase()}"]`;
+      const elements = svgDoc.querySelectorAll(selector);
+      
+      elements.forEach(el => {
+        if (el.getAttribute('fill')?.toUpperCase() === oldHex.toUpperCase()) {
+          el.setAttribute('fill', newHex);
+        }
+        if (el.getAttribute('stroke')?.toUpperCase() === oldHex.toUpperCase()) {
+          el.setAttribute('stroke', newHex);
+        }
+      });
+    }
 
     return new XMLSerializer().serializeToString(svgDoc);
   }
