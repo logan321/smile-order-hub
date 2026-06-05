@@ -436,6 +436,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     })();
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
+  useEffect(() => {
+    if (!uvBaseUrl) { setBaseSvgContent(null); return; }
+    if (!uvBaseUrl.toLowerCase().endsWith('.svg') && !uvBaseUrl.includes('data:image/svg+xml')) {
+      setBaseSvgContent(null);
+      return;
+    }
+    
+    const fetchBaseSvg = async () => {
+      try {
+        const response = await fetch(toProxyUrl(uvBaseUrl));
+        const text = await response.text();
+        setBaseSvgContent(text);
+      } catch (err) {
+        console.warn("Error fetching base UV SVG:", err);
+      }
+    };
+    
+    fetchBaseSvg();
+  }, [uvBaseUrl]);
 
   const uvComposite = useUvCompositor({
     baseUrl: uvZonesActive ? uvBaseUrl : null,
