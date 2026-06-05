@@ -28,6 +28,7 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight, shi
       composeUvTexture({
         baseUrl, zones, layers, uvWidth, uvHeight,
         canvas: canvasRef.current!,
+        shirtColors,
       }).then(() => {
         if (cancelled) return;
         setReady(true);
@@ -37,7 +38,8 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight, shi
       });
     }, delay);
     return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [baseUrl, zones, layers, uvWidth, uvHeight]);
+  }, [baseUrl, zones, layers, uvWidth, uvHeight, shirtColors]);
+
 
   return { canvas: canvasRef.current, version, ready };
 }
