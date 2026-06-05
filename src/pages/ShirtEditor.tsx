@@ -533,6 +533,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
+  const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
   const [showTextStylesOverlay, setShowTextStylesOverlay] = useState(false);
