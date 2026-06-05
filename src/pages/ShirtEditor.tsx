@@ -522,6 +522,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   useEffect(() => {
     if (!uvBaseUrl) return;
+    setShirtColors({}); // Clear immediately to show original colors while scanning
     scanSvgElements(uvBaseUrl).then(({ dynamicIds, colors }) => {
       setDynamicElements(dynamicIds);
       
