@@ -2634,17 +2634,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </label>
                     </div>
 
-                    {baseSvgContent && (
-                      <div className="mb-3 border rounded-lg overflow-hidden bg-white/50 p-1">
-                        <p className="text-[9px] text-center text-muted-foreground mb-1 uppercase font-bold">Toque na parte para selecionar</p>
-                        <InteractiveUvDiagram 
-                          svgContent={baseSvgContent} 
-                          activeRegion={activeShirtRegion} 
-                          onSelect={setActiveShirtRegion}
-                          colors={shirtColors}
-                        />
-                      </div>
-                    )}
                     
                     <div className="grid grid-cols-2 gap-1 mb-3">
                       {shirtRegions.map(region => (
