@@ -1316,12 +1316,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       Object.entries(colors).forEach(([selector, color]) => {
         const elements = svgDoc.querySelectorAll(selector);
         elements.forEach(el => {
-          if (el.hasAttribute('fill')) el.setAttribute('fill', color);
-          if (el.hasAttribute('stroke')) el.setAttribute('stroke', color);
+          // Priority to direct style and standard attributes
           (el as SVGElement).style.fill = color;
           (el as SVGElement).style.stroke = color;
+          el.setAttribute('fill', color);
+          el.setAttribute('stroke', color);
+          
+          // Clean up conflicting inline styles if necessary
+          el.removeAttribute('fill-opacity');
         });
       });
+
       
       const serialized = new XMLSerializer().serializeToString(svgDoc);
       const blob = new Blob([serialized], { type: 'image/svg+xml' });
