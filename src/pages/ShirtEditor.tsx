@@ -513,7 +513,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [syncFrontBack, setSyncFrontBack] = useState(true);
   const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
   const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
-  const [baseSvgContent, setBaseSvgContent] = useState<string | null>(null);
+  
   const [namingDialog, setNamingDialog] = useState<{ open: boolean; selector: string; name: string }>({ open: false, selector: '', name: '' });
   const [configMapping, setConfigMapping] = useState<{ selector: string; label: string }[]>([]);
   const [processedBaseUrl, setProcessedBaseUrl] = useState<string | null>(null);
