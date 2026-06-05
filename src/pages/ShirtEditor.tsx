@@ -455,6 +455,42 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     
     fetchBaseSvg();
   }, [uvBaseUrl]);
+  useEffect(() => {
+    if (!uvBaseUrl) { setProcessedBaseUrl(null); return; }
+    if (!baseSvgContent) { setProcessedBaseUrl(uvBaseUrl); return; }
+
+    const updateBaseColors = () => {
+      try {
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(baseSvgContent, 'image/svg+xml');
+        
+        Object.entries(shirtColors).forEach(([id, color]) => {
+          // Look for element with exact ID or ending with ID (Corel compatibility)
+          const el = svgDoc.getElementById(id) || svgDoc.querySelector(`[id$="${id}"]`);
+          if (el) {
+            el.setAttribute('fill', color);
+            // Also update strokes if they are not none
+            if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+              el.setAttribute('stroke', color);
+            }
+          }
+        });
+
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svgDoc);
+        const blob = new Blob([svgString], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        setProcessedBaseUrl(url);
+        
+        return () => URL.revokeObjectURL(url);
+      } catch (err) {
+        console.warn("Error processing base SVG colors:", err);
+        setProcessedBaseUrl(uvBaseUrl);
+      }
+    };
+
+    return updateBaseColors();
+  }, [uvBaseUrl, baseSvgContent, shirtColors]);
 
   const uvComposite = useUvCompositor({
     baseUrl: uvZonesActive ? uvBaseUrl : null,
