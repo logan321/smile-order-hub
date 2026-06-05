@@ -2476,12 +2476,39 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
-                    {/* Dynamic Color Selection Section - Mobile */}
-                    {extractedSvgColors.length > 0 && (
+                    {/* Corel ID Selection Section - Mobile */}
+                    {appliedStamp?.imageUrl.toLowerCase().endsWith('.svg') && (
                       <div className="mt-4 pt-3 border-t border-border/30">
                         <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
                           <Sparkles className="h-3 w-3 text-accent" />
                           Cores da Estampa Ativa
+                        </p>
+                        <div className="grid grid-cols-1 gap-2">
+                          {[
+                            { id: 'cor-base', label: 'Cor Base' },
+                            { id: 'elemento-1', label: 'Elemento 1' },
+                            { id: 'elemento-2', label: 'Elemento 2' }
+                          ].map((layer) => (
+                            <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                              <input 
+                                type="color" 
+                                value={stampLayerColors[layer.id] || '#FFFFFF'} 
+                                onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
+                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dynamic Color Selection Section - Mobile (Only if no ID colors used) */}
+                    {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
+                      <div className="mt-4 pt-3 border-t border-border/30">
+                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-accent" />
+                          Cores Detectadas
                         </p>
                         <div className="grid grid-cols-1 gap-2">
                           {extractedSvgColors.map((color, idx) => (
