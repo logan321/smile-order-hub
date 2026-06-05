@@ -2799,26 +2799,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             {Array.from(svgColors.entries()).length > 0 && (
                               <div className="space-y-2">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-                                  <Palette className="h-3 w-3" /> Cores CMYK
+                                  <Palette className="h-3 w-3" /> Cores da Estampa (Camadas)
                                 </p>
                                 <div className="grid grid-cols-4 gap-2">
-                                  {Array.from(svgColors.entries()).map(([hex, group]) => (
-                                    <div key={hex} className="flex flex-col items-center gap-1">
+                                  {Array.from(svgColors.entries()).map(([key, group]) => (
+                                    <div key={key} className="flex flex-col items-center gap-1">
                                       <button
                                         onClick={() => {
                                           const input = document.createElement('input');
                                           input.type = 'color';
-                                          input.value = hex;
+                                          input.value = group.hex;
                                           input.onchange = (e) => {
                                             const newHex = (e.target as HTMLInputElement).value;
-                                            updateSvgColor(hex, hexToCmyk(newHex));
+                                            updateSvgColor(key, hexToCmyk(newHex));
                                           };
                                           input.click();
                                         }}
                                         className="h-10 w-full rounded-lg border-2 border-white shadow-md transition-transform active:scale-90"
-                                        style={{ backgroundColor: hex }}
+                                        style={{ backgroundColor: group.hex }}
                                       />
-                                      <span className="text-[7px] font-mono truncate w-full text-center opacity-70">{group.groupName || hex}</span>
+                                      <span className="text-[7px] font-mono truncate w-full text-center opacity-70">
+                                        {group.groupName || group.hex}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
@@ -2858,34 +2860,42 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                             {svgImages.length > 0 && (
                               <div className="space-y-2 pt-2 border-t border-border/10">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-                                  <ImageIcon className="h-3 w-3" /> Logos
+                                  <ImageIcon className="h-3 w-3" /> Logos e Elementos
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                   {svgImages.map(img => (
-                                    <div key={img.id} className="bg-background/50 p-2 rounded-lg border border-border/30 flex flex-col gap-2">
+                                    <div key={img.id} className={`p-2 rounded-lg border border-border/30 flex flex-col gap-2 ${img.isFixed ? 'bg-muted/10' : 'bg-background/50'}`}>
                                       <div className="flex items-center justify-between">
-                                        <span className="text-[8px] font-bold text-muted-foreground truncate">{img.groupName || 'Logo'}</span>
-                                        <button 
-                                          onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
-                                          className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
-                                        >
-                                          <Box className="h-3.5 w-3.5" />
-                                        </button>
+                                        <span className={`text-[8px] font-bold truncate ${img.isFixed ? 'text-muted-foreground italic' : 'text-muted-foreground'}`}>
+                                          {img.isFixed ? 'Imagem Fixa' : (img.groupName || 'Logo')}
+                                        </span>
+                                        {img.isFixed ? (
+                                          <Lock className="h-3 w-3 text-muted-foreground opacity-50" />
+                                        ) : (
+                                          <button 
+                                            onClick={() => toggleSvgElement(img.id, !img.visible, 'image')}
+                                            className={`p-1 rounded ${img.visible !== false ? 'text-primary' : 'text-muted-foreground'}`}
+                                          >
+                                            <Box className="h-3.5 w-3.5" />
+                                          </button>
+                                        )}
                                       </div>
                                       <div className="aspect-video bg-muted/20 rounded flex items-center justify-center p-1 relative group overflow-hidden">
                                         <img src={img.href} className="max-h-full max-w-full object-contain" />
-                                        <button 
-                                          onClick={() => {
-                                            const input = document.createElement('input');
-                                            input.type = 'file';
-                                            input.accept = 'image/*';
-                                            input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
-                                            input.click();
-                                          }}
-                                          className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 active:opacity-100 transition-opacity"
-                                        >
-                                          <Upload className="h-4 w-4 text-white" />
-                                        </button>
+                                        {!img.isFixed && (
+                                          <button 
+                                            onClick={() => {
+                                              const input = document.createElement('input');
+                                              input.type = 'file';
+                                              input.accept = 'image/*';
+                                              input.onchange = (e) => handleSvgImageUpload(img.id, e as any);
+                                              input.click();
+                                            }}
+                                            className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 active:opacity-100 transition-opacity"
+                                          >
+                                            <Upload className="h-4 w-4 text-white" />
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
