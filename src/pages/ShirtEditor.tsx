@@ -561,7 +561,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     layers: uvLayers,
     uvWidth: uvMapDims.w,
     uvHeight: uvMapDims.h,
+    shirtColors,
   });
+
 
 
   const isPanningRef = useRef(false);
