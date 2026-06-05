@@ -410,32 +410,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const uvTextCommitTimerRef = useRef<number | null>(null);
-  // Priority: stamp UV (full design) > template UV > fallback. This makes
-  // selecting a stamp with its own UV immediately reflect in 3D even when
-  // the template has uv_zones registered.
-  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
-  const uvZonesActive = Object.keys(uvMapZones).length > 0 || !!baseSvgContent;
-
-  // Fetch uv_zones / dims for the selected template's UV map.
-  useEffect(() => {
-    let cancelled = false;
-    const uvMapId = selectedTemplate?.uvMapId;
-    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
-    (async () => {
-      const { data } = await supabase
-        .from('uv_maps' as any)
-        .select('uv_zones, uv_width, uv_height')
-        .eq('id', uvMapId)
-        .maybeSingle();
-      if (cancelled || !data) return;
-      const row = data as any;
-      setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
-      setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
-      setUvLayers([]);
-      setUvTextDrafts({});
-    })();
-    return () => { cancelled = true; };
-  }, [selectedTemplate?.uvMapId]);
 
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
