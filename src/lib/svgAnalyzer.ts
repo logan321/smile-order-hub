@@ -74,9 +74,11 @@ export class SvgAnalyzer {
     allElements.forEach((el, index) => {
       if (!(el instanceof SVGElement)) return;
 
-      // 1. Check for Explicit Layer Mapping (class="svg-camada-cor-X")
+      // 1. Check for Explicit Layer Mapping (class="svg-camada-cor-X" or "camada-XXX-X")
       const className = el.getAttribute('class') || '';
-      const layerMatch = className.match(/svg-camada-cor-(\d+)/);
+      
+      // Support both the previous format and the new specific patterns like camada-zebra-1
+      const layerMatch = className.match(/(svg-camada-cor-\d+|camada-[a-zA-Z0-9_-]+-\d+)/);
       const layerId = layerMatch ? layerMatch[0] : null;
 
       // Analyze colors
@@ -104,7 +106,12 @@ export class SvgAnalyzer {
 
       // Analyze images (logos / fixed parts)
       if (el instanceof SVGImageElement) {
-        const isFixed = className.includes('svg-imagem-fixa') || !layerId;
+        // Elements with specific IDs or classes that indicate they are fixed
+        const isFixed = className.includes('svg-imagem-fixa') || 
+                        el.id.toLowerCase().includes('logo') || 
+                        el.id.toLowerCase().includes('tigre') ||
+                        !layerId;
+                        
         images.push({
           id: el.id || `image-${index}`,
           href: el.getAttribute('href') || el.getAttribute('xlink:href') || '',
@@ -139,13 +146,25 @@ export class SvgAnalyzer {
       group.elements.push(element);
       group.usageCount++;
     } else {
+      let groupName = undefined;
+      if (layerId) {
+        // Format names like "camada-zebra-1" to "Zebra Padrão 1"
+        const parts = layerId.split('-');
+        if (parts.length >= 3 && parts[0] === 'camada') {
+          const baseName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+          groupName = `${baseName} Padrão ${parts[2]}`;
+        } else {
+          groupName = `Estampa - Camada ${parts.pop()}`;
+        }
+      }
+
       map.set(key, {
         id: layerId || undefined,
         hex,
         cmyk: hexToCmyk(hex),
         elements: [element],
         usageCount: 1,
-        groupName: layerId ? `Estampa - Camada ${layerId.split('-').pop()}` : undefined
+        groupName
       });
     }
   }
@@ -154,8 +173,8 @@ export class SvgAnalyzer {
    * Updates all elements of a specific color group in the SVG
    */
   public updateColor(svgDoc: Document, key: string, newHex: string): string {
-    // If the key is a layer ID (svg-camada-cor-X), use class selector
-    if (key.startsWith('svg-camada-cor')) {
+    // If the key contains "camada", use class selector for explicit mapping
+    if (key.includes('camada')) {
       const elements = svgDoc.querySelectorAll(`.${key}`);
       elements.forEach(el => {
         el.setAttribute('fill', newHex);
