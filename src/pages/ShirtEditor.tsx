@@ -1260,6 +1260,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const newColors = { ...stampLayerColors, [selector]: color };
     setStampLayerColors(newColors);
 
+    // Sync state for the specific selectors if they match our standard
+    if (selector === '.cor-base') setStampBaseColor(color);
+    else if (selector === '.elemento-1') setStampElement1Color(color);
+    else if (selector === '.elemento-2') setStampElement2Color(color);
+
     // Only SVG stamps can have dynamic colors
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
 
@@ -1277,6 +1282,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(frontCanvas, frontUrl, 'front'),
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
+
+      // When the URL changes (due to colors), we update currentStampUrl
+      // This will trigger useUvCompositor to rebuild the 3D texture
+      setCurrentStampUrl(frontUrl);
+
       
       setCurrentStampUrl(frontUrl);
       
