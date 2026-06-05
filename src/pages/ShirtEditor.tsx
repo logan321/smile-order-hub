@@ -2332,20 +2332,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           </div>
                         </>
                       ) : (
-                        <>
-                          <p className="text-[9px] text-muted-foreground leading-snug">
-                            Esta estampa não é um vetor. Deseja vetorizar para habilitar a troca de cores CMYK?
+                        <div className="space-y-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                          <p className="text-[9px] text-amber-700 leading-snug font-medium">
+                            Esta estampa não é um vetor nativo. Clique abaixo para vetorizar e habilitar a troca de cores CMYK profissional.
                           </p>
                           <Button 
                             size="sm" 
                             variant="default" 
-                            className="w-full h-7 text-[10px] gap-1.5"
-                            onClick={() => toast.info('Vetorização (Fase 2) em desenvolvimento...')}
+                            className="w-full h-8 text-[10px] gap-1.5 bg-amber-500 hover:bg-amber-600 border-none shadow-sm"
+                            onClick={() => toast.info('Vetorização Inteligente (Fase 2) iniciando...')}
                           >
-                            <Palette className="h-3 w-3" />
-                            Vetorizar Agora
+                            <Sparkles className="h-3 w-3" />
+                            Vetorizar com IA
                           </Button>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}
