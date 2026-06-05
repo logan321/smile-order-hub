@@ -1247,6 +1247,71 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
+  const handleStampLayerColorChange = async (selector: string, color: string) => {
+    if (!appliedStamp) return;
+    const newColors = { ...stampLayerColors, [selector]: color };
+    setStampLayerColors(newColors);
+
+    // Only SVG stamps can have dynamic colors
+    if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
+
+    try {
+      const frontUrl = await updateSvgColors(toProxyUrl(appliedStamp.imageUrl), newColors);
+      const backUrl = appliedStamp.backImageUrl && appliedStamp.backImageUrl.toLowerCase().endsWith('.svg')
+        ? await updateSvgColors(toProxyUrl(appliedStamp.backImageUrl), newColors)
+        : frontUrl;
+
+      const frontCanvas = frontFabricRef.current;
+      const backCanvas = backFabricRef.current;
+      if (!frontCanvas || !backCanvas) return;
+
+      await Promise.all([
+        applyStampToCanvas(frontCanvas, frontUrl, 'front'),
+        applyStampToCanvas(backCanvas, backUrl, 'back'),
+      ]);
+      
+      // Update metadata
+      [frontCanvas, backCanvas].forEach(c => {
+        c.getObjects().forEach((obj: any) => {
+          if (obj._isBackground) {
+            obj._stampName = appliedStamp.name;
+            obj._stampCategory = appliedStamp.category;
+          }
+        });
+      });
+      
+      bumpEdits();
+    } catch (err) {
+      console.error('Erro ao atualizar cores da estampa:', err);
+    }
+  };
+
+  const updateSvgColors = async (url: string, colors: Record<string, string>) => {
+    try {
+      const response = await fetch(url);
+      const svgText = await response.text();
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+      
+      Object.entries(colors).forEach(([selector, color]) => {
+        const elements = svgDoc.querySelectorAll(selector);
+        elements.forEach(el => {
+          if (el.hasAttribute('fill')) el.setAttribute('fill', color);
+          if (el.hasAttribute('stroke')) el.setAttribute('stroke', color);
+          (el as SVGElement).style.fill = color;
+          (el as SVGElement).style.stroke = color;
+        });
+      });
+      
+      const serialized = new XMLSerializer().serializeToString(svgDoc);
+      const blob = new Blob([serialized], { type: 'image/svg+xml' });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.warn('SVG color update failed', e);
+      return url;
+    }
+  };
+
   // Switch back to original stamp images
   const switchToOriginalStamp = async () => {
     if (!appliedStamp) return;
