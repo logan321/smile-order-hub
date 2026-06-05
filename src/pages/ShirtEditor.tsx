@@ -239,6 +239,11 @@ interface Stamp {
   uvMapId?: string | null;
   templateId?: string | null;
   nicheId?: string | null;
+  layerMapping?: {
+    selector: string;
+    label: string;
+    defaultColor?: string;
+  }[];
 }
 
 type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
@@ -528,6 +533,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
+  const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
+  const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
   const [showTextStylesOverlay, setShowTextStylesOverlay] = useState(false);
@@ -587,6 +594,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // same percent coordinates the zones use, so anything the client edits shows in 3D.
   useEffect(() => {
     const uv = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl;
+    const stampImg = currentStampUrl || appliedStamp?.imageUrl;
     if (!uv) { setUv3DCanvas(null); return; }
     let alive = true;
     (async () => {
@@ -600,7 +608,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               c.getContext('2d')!.drawImage(img, 0, 0);
               return c;
             })()
-          : await composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null);
+          : await composeUvWithStamp(uv, stampImg ?? null);
 
         const ctx = base.getContext('2d')!;
 
@@ -674,7 +682,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, currentStampUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   // Falls back to any registered UV map so 3D always has a texture to paint.
@@ -799,6 +807,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         uvMapUrl: resolveUv(s.uv_map_id ?? null, s.uv_map_url ?? null, s.name),
         templateId: s.template_id ?? null,
         nicheId: s.niche_id ?? null,
+        layerMapping: s.layer_mapping ?? null,
       })).filter((s: any) => !/\/uv-library\//i.test(s.imageUrl || '')) ?? [];
       const recoveredStamps = misplacedStampTemplates.map(t => ({
         id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
@@ -1212,6 +1221,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       });
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
+      setStampLayerColors({});
+      setCurrentStampUrl(stamp.imageUrl);
       advanceGuide('stamp-pick', 'stamp-color');
       // Auto-advance to text-tab if no colors available
       const hasColors = stampColors.some(c => c.stampId === stamp.id);
@@ -1234,9 +1245,77 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       setActiveStampColorId(color.id);
+      setCurrentStampUrl(color.imageUrl);
       advanceGuide('stamp-color', 'patches-tab');
     } catch {
       toast.error('Erro ao trocar cor');
+    }
+  };
+
+  const handleStampLayerColorChange = async (selector: string, color: string) => {
+    if (!appliedStamp) return;
+    const newColors = { ...stampLayerColors, [selector]: color };
+    setStampLayerColors(newColors);
+
+    // Only SVG stamps can have dynamic colors
+    if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
+
+    try {
+      const frontUrl = await updateSvgColors(toProxyUrl(appliedStamp.imageUrl), newColors);
+      const backUrl = appliedStamp.backImageUrl && appliedStamp.backImageUrl.toLowerCase().endsWith('.svg')
+        ? await updateSvgColors(toProxyUrl(appliedStamp.backImageUrl), newColors)
+        : frontUrl;
+
+      const frontCanvas = frontFabricRef.current;
+      const backCanvas = backFabricRef.current;
+      if (!frontCanvas || !backCanvas) return;
+
+      await Promise.all([
+        applyStampToCanvas(frontCanvas, frontUrl, 'front'),
+        applyStampToCanvas(backCanvas, backUrl, 'back'),
+      ]);
+      
+      setCurrentStampUrl(frontUrl);
+      
+      // Update metadata
+      [frontCanvas, backCanvas].forEach(c => {
+        c.getObjects().forEach((obj: any) => {
+          if (obj._isBackground) {
+            obj._stampName = appliedStamp.name;
+            obj._stampCategory = appliedStamp.category;
+          }
+        });
+      });
+      
+      bumpEdits();
+    } catch (err) {
+      console.error('Erro ao atualizar cores da estampa:', err);
+    }
+  };
+
+  const updateSvgColors = async (url: string, colors: Record<string, string>) => {
+    try {
+      const response = await fetch(url);
+      const svgText = await response.text();
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+      
+      Object.entries(colors).forEach(([selector, color]) => {
+        const elements = svgDoc.querySelectorAll(selector);
+        elements.forEach(el => {
+          if (el.hasAttribute('fill')) el.setAttribute('fill', color);
+          if (el.hasAttribute('stroke')) el.setAttribute('stroke', color);
+          (el as SVGElement).style.fill = color;
+          (el as SVGElement).style.stroke = color;
+        });
+      });
+      
+      const serialized = new XMLSerializer().serializeToString(svgDoc);
+      const blob = new Blob([serialized], { type: 'image/svg+xml' });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.warn('SVG color update failed', e);
+      return url;
     }
   };
 
@@ -1253,6 +1332,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       setActiveStampColorId(null);
+      setCurrentStampUrl(appliedStamp.imageUrl);
+      setStampLayerColors({});
     } catch {
       toast.error('Erro ao restaurar estampa');
     }
@@ -2077,6 +2158,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     </div>
                   )}
+
+                  {/* Dynamic SVG Layer Colors - Desktop */}
+                  {appliedStamp?.layerMapping && appliedStamp.layerMapping.length > 0 && (
+                    <div className="mt-3 pt-2 border-t border-border/30">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Personalizar Cores - {appliedStamp.name}</p>
+                      <div className="space-y-2">
+                        {appliedStamp.layerMapping.map((layer, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-muted/20 border border-border/30">
+                            <span className="text-[10px] font-medium text-foreground truncate flex-1">{layer.label}</span>
+                            <input 
+                              type="color" 
+                              value={stampLayerColors[layer.selector] || layer.defaultColor || '#000000'} 
+                              onChange={(e) => handleStampLayerColorChange(layer.selector, e.target.value)}
+                              className="h-6 w-6 rounded border border-border cursor-pointer shrink-0"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === 'patches' && (
@@ -2261,6 +2362,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                               style={{ backgroundColor: c.colorHex }}
                               title={c.colorName}
                             />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dynamic SVG Layer Colors - Mobile */}
+                    {appliedStamp?.layerMapping && appliedStamp.layerMapping.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-border/30">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Personalizar Cores - {appliedStamp.name}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {appliedStamp.layerMapping.map((layer, idx) => (
+                            <div key={idx} className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-muted/20 border border-border/30">
+                              <span className="text-[9px] font-medium text-foreground truncate flex-1">{layer.label}</span>
+                              <input 
+                                type="color" 
+                                value={stampLayerColors[layer.selector] || layer.defaultColor || '#000000'} 
+                                onChange={(e) => handleStampLayerColorChange(layer.selector, e.target.value)}
+                                className="h-7 w-7 rounded border border-border cursor-pointer shrink-0"
+                              />
+                            </div>
                           ))}
                         </div>
                       </div>
