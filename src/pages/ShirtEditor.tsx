@@ -511,32 +511,51 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
   const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
-  const [shirtColors, setShirtColors] = useState<Record<string, string>>({
-    'corpo-frente': '#FFFFFF',
-    'corpo-verso': '#FFFFFF',
-    'manga-esquerda': '#FFFFFF',
-    'manga-direita': '#FFFFFF',
-    'gola': '#FFFFFF',
-    'detalhes-1': '#FFFFFF'
-  });
+  const [shirtColors, setShirtColors] = useState<Record<string, string>>({});
   const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
   const [syncFrontBack, setSyncFrontBack] = useState(true);
   const [dynamicElements, setDynamicElements] = useState<string[]>([]);
+  const originalColorsRef = useRef<Record<string, string>>({});
 
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   useEffect(() => {
     if (!uvBaseUrl) return;
-    scanSvgElements(uvBaseUrl).then(ids => {
-      setDynamicElements(ids);
-      setShirtColors(prev => {
-        const next = { ...prev };
-        ids.forEach(id => {
-          if (!(id in next)) next[id] = '#FFFFFF';
-        });
-        return next;
+    setShirtColors({}); // Clear immediately to show original colors while scanning
+    scanSvgElements(uvBaseUrl).then(({ dynamicIds, colors }) => {
+      setDynamicElements(dynamicIds);
+      
+      const idMap: Record<string, string[]> = {
+        'corpo-frente': ['cor-base'],
+        'corpo-verso': ['cor-base-verso'],
+        'manga-esquerda': ['manga-esquerda'],
+        'manga-direita': ['manga-direita'],
+        'gola': ['gola', 'gola_5'],
+      };
+
+      const scanned: Record<string, string> = {};
+      Object.entries(idMap).forEach(([regionId, svgIds]) => {
+        for (const svgId of svgIds) {
+          if (colors[svgId]) {
+            scanned[regionId] = colors[svgId];
+            break;
+          }
+        }
       });
+
+      dynamicIds.forEach(id => {
+        if (colors[id]) {
+          scanned[id] = colors[id];
+        } else {
+          scanned[id] = '#FFFFFF';
+        }
+      });
+      
+      originalColorsRef.current = scanned;
+      // Initialize state with these original colors so they appear in the UI
+      // and are used by the compositor.
+      setShirtColors(scanned);
     });
   }, [uvBaseUrl]);
 
@@ -2714,18 +2733,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => {
-                    setShirtColors({
-                      'corpo-frente': '#FFFFFF',
-                      'corpo-verso': '#FFFFFF',
-                      'manga-esquerda': '#FFFFFF',
-                      'manga-direita': '#FFFFFF',
-                      'gola': '#FFFFFF',
-                      'detalhes-1': '#FFFFFF'
-                    });
-                    shirtRegions.forEach(r => {
-                      const el = document.getElementById(r.id);
-                      if (el) el.setAttribute('fill', '#FFFFFF');
-                    });
+                    setShirtColors(originalColorsRef.current);
                     bumpEdits();
                   }} 
                   className="w-full gap-1.5 h-8 text-[10px] mt-1"

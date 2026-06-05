@@ -55,24 +55,61 @@ async function getSvgText(url: string): Promise<string> {
   return text;
 }
 
-export async function scanSvgElements(svgUrl: string): Promise<string[]> {
+export async function scanSvgElements(svgUrl: string): Promise<{
+  dynamicIds: string[];
+  colors: Record<string, string>;
+}> {
   const text = await getSvgText(svgUrl);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'image/svg+xml');
   
-  const fixedIds = ['cor-base', 'cor-base-verso', 'manga-esquerda', 'manga-direita', 'gola', 'gola_5', 'contorno'];
+  const colors: Record<string, string> = {};
+  const fixedIds = ['cor-base', 'cor-base-verso', 'manga-esquerda', 'manga-direita', 'gola', 'gola_5'];
   
-  const allIds = [...text.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
-  
-  const elementIds = allIds.filter(id =>
-    id.startsWith('elemento') && !fixedIds.includes(id)
+  const extractFill = (el: Element) => {
+    let color = el.getAttribute('fill');
+    if (!color || color === 'none') {
+      const style = el.getAttribute('style');
+      if (style) {
+        const match = style.match(/fill:\s*([^;"]+)/);
+        if (match) color = match[1].trim();
+      }
+    }
+    // Only accept hex colors for the color picker to avoid UI errors
+    if (color && color.startsWith('#')) {
+      // Normalize to 7-char hex if it's 4-char (#f00 -> #ff0000)
+      if (color.length === 4) {
+        return '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
+      }
+      return color.substring(0, 7);
+    }
+    return null;
+  };
+
+  fixedIds.forEach(id => {
+    const el = doc.getElementById(id);
+    if (el) {
+      const color = extractFill(el);
+      if (color) colors[id] = color;
+    }
+  });
+
+  const allElements = Array.from(doc.querySelectorAll('[id]')).filter(el => 
+    el.id.startsWith('elemento') && !fixedIds.includes(el.id)
   );
-  
-  const unique = [...new Set(elementIds)].sort((a, b) => {
+
+  allElements.forEach(el => {
+    const color = extractFill(el);
+    if (color) colors[el.id] = color;
+  });
+
+  const dynamicIds = [...new Set(allElements.map(el => el.id))].sort((a, b) => {
     const numA = parseInt(a.replace('elemento-', '').replace('elemento', '1')) || 1;
     const numB = parseInt(b.replace('elemento-', '').replace('elemento', '1')) || 1;
     return numA - numB;
   });
   
-  return unique;
+  return { dynamicIds, colors };
 }
 
 export async function composeUvTexture(opts: {
