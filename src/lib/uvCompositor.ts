@@ -45,6 +45,16 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   return imgCache.get(url)!;
 }
 
+const svgCache: Record<string, string> = {};
+
+async function getSvgText(url: string): Promise<string> {
+  if (svgCache[url]) return svgCache[url];
+  const res = await fetch(url);
+  const text = await res.text();
+  svgCache[url] = text;
+  return text;
+}
+
 export async function composeUvTexture(opts: {
   baseUrl: string;
   uvWidth?: number | null;
@@ -58,8 +68,9 @@ export async function composeUvTexture(opts: {
 
   if (opts.shirtColors && Object.keys(opts.shirtColors).length > 0) {
     try {
-      const response = await fetch(opts.baseUrl);
-      let svgText = await response.text();
+      let svgText = await getSvgText(opts.baseUrl);
+      svgText = svgText.slice(); // Ensure we don't mutate cache
+
 
       const idMap: Record<string, string[]> = {
         'corpo-frente': ['cor-base'],
