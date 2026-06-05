@@ -436,69 +436,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     })();
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
-  useEffect(() => {
-    if (!uvBaseUrl) { setBaseSvgContent(null); return; }
-    if (!uvBaseUrl.toLowerCase().endsWith('.svg') && !uvBaseUrl.includes('data:image/svg+xml')) {
-      setBaseSvgContent(null);
-      return;
-    }
-    
-    const fetchBaseSvg = async () => {
-      try {
-        const response = await fetch(toProxyUrl(uvBaseUrl));
-        const text = await response.text();
-        setBaseSvgContent(text);
-      } catch (err) {
-        console.warn("Error fetching base UV SVG:", err);
-      }
-    };
-    
-    fetchBaseSvg();
-  }, [uvBaseUrl]);
-  useEffect(() => {
-    if (!uvBaseUrl) { setProcessedBaseUrl(null); return; }
-    if (!baseSvgContent) { setProcessedBaseUrl(uvBaseUrl); return; }
-
-    const updateBaseColors = () => {
-      try {
-        const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(baseSvgContent, 'image/svg+xml');
-        
-        Object.entries(shirtColors).forEach(([id, color]) => {
-          // Look for element with exact ID or ending with ID (Corel compatibility)
-          const el = svgDoc.getElementById(id) || svgDoc.querySelector(`[id$="${id}"]`);
-          if (el) {
-            el.setAttribute('fill', color);
-            // Also update strokes if they are not none
-            if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-              el.setAttribute('stroke', color);
-            }
-          }
-        });
-
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svgDoc);
-        const blob = new Blob([svgString], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        setProcessedBaseUrl(url);
-        
-        return () => URL.revokeObjectURL(url);
-      } catch (err) {
-        console.warn("Error processing base SVG colors:", err);
-        setProcessedBaseUrl(uvBaseUrl);
-      }
-    };
-
-    return updateBaseColors();
-  }, [uvBaseUrl, baseSvgContent, shirtColors]);
-
-  const uvComposite = useUvCompositor({
-    baseUrl: uvZonesActive ? uvBaseUrl : null,
-    zones: uvMapZones,
-    layers: uvLayers,
-    uvWidth: uvMapDims.w,
-    uvHeight: uvMapDims.h,
-  });
 
   const [textInput, setTextInput] = useState('');
   const [textColor, setTextColor] = useState('#000000');
