@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette, Lock } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -522,21 +522,21 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const updateSvgColor = (oldHex: string, newCmyk: any) => {
+  const updateSvgColor = (key: string, newCmyk: any) => {
     if (!svgContent) return;
     const newHex = cmykToHex(newCmyk);
     const parser = new DOMParser();
     const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-    const updatedSvg = svgAnalyzer.current.updateColor(svgDoc, oldHex, newHex);
+    const updatedSvg = svgAnalyzer.current.updateColor(svgDoc, key, newHex);
     setSvgContent(updatedSvg);
     
     // Atualizar o mapa de cores local para refletir a mudança na UI
     setSvgColors(prev => {
       const next = new Map(prev);
-      const group = next.get(oldHex);
+      const group = next.get(key);
       if (group) {
-        next.delete(oldHex);
-        next.set(newHex, { ...group, hex: newHex, cmyk: newCmyk });
+        // We keep the same key (layer ID or old hex) but update the color values
+        next.set(key, { ...group, hex: newHex, cmyk: newCmyk });
       }
       return next;
     });
