@@ -1357,35 +1357,51 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       const parser = new DOMParser();
       const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       
-      // We handle two types of mapping:
-      // 1. Fixed IDs (cor-base, elemento-1, elemento-2)
-      // 2. Global color substitution (the previous strategy)
+      // Handle mapping from config mode
+      let handledByMapping = false;
       
-      const selectors = ['cor-base', 'elemento-1', 'elemento-2'];
-      let handledById = false;
-
-      selectors.forEach(id => {
-        if (colorMapping[id]) {
-          // Find by ID or ID containing the string (Corel suffix support)
-          const elements = svgDoc.querySelectorAll(`[id="${id}"], [id$="-${id}"], [id*="${id}"]`);
-          if (elements.length > 0) {
-            elements.forEach(el => {
-              el.setAttribute('fill', colorMapping[id]);
-              // Also check for stroke if it's not a path that should only have fill
-              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                el.setAttribute('stroke', colorMapping[id]);
-              }
-            });
-            handledById = true;
+      if (appliedStamp.layerMapping && appliedStamp.layerMapping.length > 0) {
+        appliedStamp.layerMapping.forEach(layer => {
+          const color = colorMapping[layer.selector];
+          if (color) {
+            const elements = svgDoc.querySelectorAll(layer.selector);
+            if (elements.length > 0) {
+              elements.forEach(el => {
+                el.setAttribute('fill', color);
+                if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                  el.setAttribute('stroke', color);
+                }
+              });
+              handledByMapping = true;
+            }
           }
-        }
-      });
+        });
+      }
+
+      // Legacy support for fixed IDs if no mapping matches
+      if (!handledByMapping) {
+        const selectors = ['cor-base', 'elemento-1', 'elemento-2'];
+        selectors.forEach(id => {
+          if (colorMapping[id]) {
+            const elements = svgDoc.querySelectorAll(`[id="${id}"], [id$="-${id}"], [id*="${id}"]`);
+            if (elements.length > 0) {
+              elements.forEach(el => {
+                el.setAttribute('fill', colorMapping[id]);
+                if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                  el.setAttribute('stroke', colorMapping[id]);
+                }
+              });
+              handledByMapping = true;
+            }
+          }
+        });
+      }
 
       let finalSvgText = "";
-      if (handledById) {
+      if (handledByMapping) {
         finalSvgText = new XMLSerializer().serializeToString(svgDoc);
       } else {
-        // Fallback to global color substitution if no IDs matched
+        // Fallback to global color substitution if no mappings matched
         finalSvgText = svgText;
         Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
           if (oldColor === newColor) return;
