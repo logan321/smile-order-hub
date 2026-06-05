@@ -621,6 +621,67 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     uvHeight: uvMapDims.h,
   });
 
+  const InteractiveUvDiagram = ({ svgContent, activeRegion, onSelect, colors }: { 
+    svgContent: string; 
+    activeRegion: string; 
+    onSelect: (id: string) => void; 
+    colors: Record<string, string> 
+  }) => {
+    const [processedSvg, setProcessedSvg] = useState<string>('');
+
+    useEffect(() => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgContent, 'image/svg+xml');
+        
+        // Apply colors
+        Object.entries(colors).forEach(([id, color]) => {
+          const el = doc.getElementById(id) || doc.querySelector(`[id$="${id}"]`);
+          if (el) {
+            el.setAttribute('fill', color);
+            if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+              el.setAttribute('stroke', color);
+            }
+          }
+        });
+
+        // Highlight active
+        if (activeRegion) {
+          const activeEl = doc.getElementById(activeRegion) || doc.querySelector(`[id$="${activeRegion}"]`);
+          if (activeEl) {
+            activeEl.style.stroke = '#2563eb';
+            activeEl.style.strokeWidth = '8px';
+            activeEl.style.paintOrder = 'stroke fill';
+          }
+        }
+
+        setProcessedSvg(new XMLSerializer().serializeToString(doc));
+      } catch (e) {
+        setProcessedSvg(svgContent);
+      }
+    }, [svgContent, colors, activeRegion]);
+
+    const handleClick = (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() === 'svg') return;
+      
+      const id = target.id || '';
+      // Try to find matching region by exact ID or suffix (Corel)
+      const region = shirtRegions.find(r => id === r.id || id.endsWith(r.id));
+      if (region) {
+        onSelect(region.id);
+      }
+    };
+
+    return (
+      <div 
+        className="interactive-uv-container w-full max-h-[180px] flex items-center justify-center p-1"
+        onClick={handleClick}
+        dangerouslySetInnerHTML={{ __html: processedSvg }}
+      />
+    );
+  };
+
   const isPanningRef = useRef(false);
   const lastPanPoint = useRef<{ x: number; y: number } | null>(null);
   const frontWrapRef = useRef<HTMLDivElement>(null);
