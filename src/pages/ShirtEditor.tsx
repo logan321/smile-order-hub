@@ -608,7 +608,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               c.getContext('2d')!.drawImage(img, 0, 0);
               return c;
             })()
-          : await composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null);
+          : await composeUvWithStamp(uv, stampImg ?? null);
 
         const ctx = base.getContext('2d')!;
 
