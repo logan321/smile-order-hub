@@ -534,6 +534,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
+  const [stampBaseColor, setStampBaseColor] = useState('#FFFFFF');
+  const [stampElement1Color, setStampElement1Color] = useState('#FF0000');
+  const [stampElement2Color, setStampElement2Color] = useState('#0000FF');
   const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
@@ -2134,6 +2137,43 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       ))}
                     </div>
                   )}
+
+                  {/* Nova seção solicitada pelo usuário: Cores da Estampa Ativa */}
+                  <div className="mt-4 pt-3 border-t border-border/30">
+                    <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                      <Sparkles className="h-3 w-3 text-accent" />
+                      Cores da Estampa Ativa
+                    </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Cor Base</span>
+                        <input 
+                          type="color" 
+                          value={stampBaseColor} 
+                          onChange={(e) => setStampBaseColor(e.target.value)}
+                          className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 1</span>
+                        <input 
+                          type="color" 
+                          value={stampElement1Color} 
+                          onChange={(e) => setStampElement1Color(e.target.value)}
+                          className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 2</span>
+                        <input 
+                          type="color" 
+                          value={stampElement2Color} 
+                          onChange={(e) => setStampElement2Color(e.target.value)}
+                          className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   {/* Color variants for applied stamp - Desktop */}
                   {appliedStampColors.length > 0 && (
                     <div className="mt-3 pt-2 border-t border-border/30" data-guide-desktop="stamp-color">
@@ -2342,6 +2382,43 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         ))}
                       </div>
                     )}
+
+                    {/* Nova seção solicitada pelo usuário: Cores da Estampa Ativa */}
+                    <div className="mt-4 pt-3 border-t border-border/30">
+                      <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                        <Sparkles className="h-3 w-3 text-accent" />
+                        Cores da Estampa Ativa
+                      </p>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Cor Base</span>
+                          <input 
+                            type="color" 
+                            value={stampBaseColor} 
+                            onChange={(e) => setStampBaseColor(e.target.value)}
+                            className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 1</span>
+                          <input 
+                            type="color" 
+                            value={stampElement1Color} 
+                            onChange={(e) => setStampElement1Color(e.target.value)}
+                            className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 2</span>
+                          <input 
+                            type="color" 
+                            value={stampElement2Color} 
+                            onChange={(e) => setStampElement2Color(e.target.value)}
+                            className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
                     {/* Color variants for applied stamp - Mobile */}
                     {appliedStampColors.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
