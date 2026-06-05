@@ -534,9 +534,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
-  const [stampBaseColor, setStampBaseColor] = useState('#FFFFFF');
-  const [stampElement1Color, setStampElement1Color] = useState('#FF0000');
-  const [stampElement2Color, setStampElement2Color] = useState('#0000FF');
+  const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
   const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
@@ -1198,12 +1196,58 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
+  const extractSvgColors = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const svgText = await response.text();
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+      const colors = new Set<string>();
+      
+      const elements = svgDoc.querySelectorAll('[fill], [stroke], [style]');
+      elements.forEach(el => {
+        const fill = el.getAttribute('fill');
+        const stroke = el.getAttribute('stroke');
+        const style = el.getAttribute('style');
+        
+        const processColor = (c: string | null) => {
+          if (!c || c === 'none' || c === 'inherit' || c === 'currentColor' || c.startsWith('url(')) return;
+          // Basic hex/rgb check
+          if (c.startsWith('#') || c.startsWith('rgb')) {
+            colors.add(c.toUpperCase());
+          }
+        };
+        
+        processColor(fill);
+        processColor(stroke);
+        
+        if (style) {
+          const fillMatch = style.match(/fill:\s*([^;]+)/);
+          const strokeMatch = style.match(/stroke:\s*([^;]+)/);
+          if (fillMatch) processColor(fillMatch[1].trim());
+          if (strokeMatch) processColor(strokeMatch[1].trim());
+        }
+      });
+      
+      const uniqueColors = Array.from(colors);
+      setExtractedSvgColors(uniqueColors);
+      
+      // Initialize state with original colors mapping to themselves
+      const initialColors: Record<string, string> = {};
+      uniqueColors.forEach(c => {
+        initialColors[c] = c;
+      });
+      setStampLayerColors(initialColors);
+    } catch (e) {
+      console.warn('Failed to extract SVG colors', e);
+    }
+  };
+
   const addStamp = async (stamp: Stamp) => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
-    // If the stamp is linked to a different template, swap the active template
-    // so the 3D preview (UV + zones) reflects the template configured for it.
+    
     if (stamp.templateId && stamp.templateId !== selectedTemplate?.id) {
       const linked = allTemplates.find(t => t.id === stamp.templateId);
       if (linked) setSelectedTemplate(linked);
@@ -1214,20 +1258,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(frontCanvas, toProxyUrl(stamp.imageUrl), 'front'),
         applyStampToCanvas(backCanvas, toProxyUrl(backUrl), 'back'),
       ]);
-      // stamp applied silently
-      // Tag stamp metadata on front canvas objects
+      
       frontCanvas.getObjects().forEach((obj: any) => {
         if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
       });
       backCanvas.getObjects().forEach((obj: any) => {
         if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
       });
+      
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
       setStampLayerColors({});
+      setExtractedSvgColors([]);
+      
+      if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
+        await extractSvgColors(toProxyUrl(stamp.imageUrl));
+      }
+      
       setCurrentStampUrl(stamp.imageUrl);
       advanceGuide('stamp-pick', 'stamp-color');
-      // Auto-advance to text-tab if no colors available
       const hasColors = stampColors.some(c => c.stampId === stamp.id);
       if (!hasColors) advanceGuide('stamp-color', 'patches-tab');
     } catch (err) {
@@ -1255,23 +1304,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const handleStampLayerColorChange = async (selector: string, color: string) => {
+  const handleStampLayerColorChange = async (oldColor: string, newColor: string) => {
     if (!appliedStamp) return;
-    const newColors = { ...stampLayerColors, [selector]: color };
-    setStampLayerColors(newColors);
+    const newMapping = { ...stampLayerColors, [oldColor]: newColor };
+    setStampLayerColors(newMapping);
 
-    // Sync state for the specific selectors if they match our standard
-    if (selector === 'cor-base' || selector === '.cor-base') setStampBaseColor(color);
-    else if (selector === 'elemento-1' || selector === '.elemento-1') setStampElement1Color(color);
-    else if (selector === 'elemento-2' || selector === '.elemento-2') setStampElement2Color(color);
-
-    // Only SVG stamps can have dynamic colors
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
 
     try {
-      const frontUrl = await updateSvgColors(toProxyUrl(appliedStamp.imageUrl), newColors);
+      const frontUrl = await updateSvgColors(toProxyUrl(appliedStamp.imageUrl), newMapping);
       const backUrl = appliedStamp.backImageUrl && appliedStamp.backImageUrl.toLowerCase().endsWith('.svg')
-        ? await updateSvgColors(toProxyUrl(appliedStamp.backImageUrl), newColors)
+        ? await updateSvgColors(toProxyUrl(appliedStamp.backImageUrl), newMapping)
         : frontUrl;
 
       const frontCanvas = frontFabricRef.current;
@@ -1283,14 +1326,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
 
-      // When the URL changes (due to colors), we update currentStampUrl
-      // This will trigger useUvCompositor to rebuild the 3D texture
-      setCurrentStampUrl(frontUrl);
-
-      
       setCurrentStampUrl(frontUrl);
       
-      // Update metadata
       [frontCanvas, backCanvas].forEach(c => {
         c.getObjects().forEach((obj: any) => {
           if (obj._isBackground) {
@@ -1306,49 +1343,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const updateSvgColors = async (url: string, colors: Record<string, string>) => {
+  const updateSvgColors = async (url: string, colorMapping: Record<string, string>) => {
     try {
       const response = await fetch(url);
       const svgText = await response.text();
-      const parser = new DOMParser();
-      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       
-      Object.entries(colors).forEach(([selector, color]) => {
-        // CorelDraw often uses attributes of presentation.
-        // We look for IDs matching our keys (cor-base, elemento-1, elemento-2).
-        // Corel might add prefixes like "_12345_cor-base".
-        const cleanId = selector.replace(/^\./, ''); // remove dot from selector if it exists
+      let modifiedSvgText = svgText;
+      
+      // Perform global search and replace for each color
+      Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
+        if (oldColor === newColor) return;
         
-        // Find elements that have an ID containing our target string
-        const elements = Array.from(svgDoc.querySelectorAll(`[id*="${cleanId}"]`));
-        
-        // Also fallback to class selector if present
-        const classElements = svgDoc.querySelectorAll(selector);
-        const allTargetElements = new Set([...elements, ...Array.from(classElements)]);
-
-        allTargetElements.forEach(el => {
-          const element = el as SVGElement;
-          
-          // Set both attribute and style for maximum compatibility
-          element.setAttribute('fill', color);
-          element.style.fill = color;
-          
-          // If it's a line/path that might use stroke instead of fill
-          if (element.hasAttribute('stroke') || element.style.stroke) {
-            element.setAttribute('stroke', color);
-            element.style.stroke = color;
-          }
-          
-          // Clean up conflicting opacity if it hides the new color
-          if (element.getAttribute('fill-opacity') === '0') {
-            element.removeAttribute('fill-opacity');
-          }
-        });
+        // Escape regex characters just in case
+        const escapedOld = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Replace globally, case insensitive to catch all variations
+        const regex = new RegExp(escapedOld, 'gi');
+        modifiedSvgText = modifiedSvgText.replace(regex, newColor);
       });
 
-      
-      const serialized = new XMLSerializer().serializeToString(svgDoc);
-      const blob = new Blob([serialized], { type: 'image/svg+xml' });
+      const blob = new Blob([modifiedSvgText], { type: 'image/svg+xml' });
       return URL.createObjectURL(blob);
     } catch (e) {
       console.warn('SVG color update failed', e);
@@ -2172,43 +2185,31 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
                   )}
 
-                  {/* Nova seção solicitada pelo usuário: Cores da Estampa Ativa */}
-                  <div className="mt-4 pt-3 border-t border-border/30">
-                    <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                      <Sparkles className="h-3 w-3 text-accent" />
-                      Cores da Estampa Ativa
-                    </p>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Cor Base</span>
-                        <input 
-                          type="color" 
-                          value={stampBaseColor} 
-                          onChange={(e) => handleStampLayerColorChange('cor-base', e.target.value)}
-                          className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                        />
+                  {/* Dynamic Color Selection Section */}
+                  {extractedSvgColors.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-border/30">
+                      <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                        <Sparkles className="h-3 w-3 text-accent" />
+                        Cores da Estampa Ativa
+                      </p>
+                      <div className="space-y-2">
+                        {extractedSvgColors.map((color, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                            <div className="flex items-center gap-2">
+                              <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color }} />
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">Camada {idx + 1}</span>
+                            </div>
+                            <input 
+                              type="color" 
+                              value={stampLayerColors[color] || color} 
+                              onChange={(e) => handleStampLayerColorChange(color, e.target.value)}
+                              className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                            />
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 1</span>
-                        <input 
-                          type="color" 
-                          value={stampElement1Color} 
-                          onChange={(e) => handleStampLayerColorChange('elemento-1', e.target.value)}
-                          className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 2</span>
-                        <input 
-                          type="color" 
-                          value={stampElement2Color} 
-                          onChange={(e) => handleStampLayerColorChange('elemento-2', e.target.value)}
-                          className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                        />
-                      </div>
-
                     </div>
-                  </div>
+                  )}
                   {/* Color variants for applied stamp - Desktop */}
                   {appliedStampColors.length > 0 && (
                     <div className="mt-3 pt-2 border-t border-border/30" data-guide-desktop="stamp-color">
@@ -2418,43 +2419,31 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
-                    {/* Nova seção solicitada pelo usuário: Cores da Estampa Ativa */}
-                    <div className="mt-4 pt-3 border-t border-border/30">
-                      <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                        <Sparkles className="h-3 w-3 text-accent" />
-                        Cores da Estampa Ativa
-                      </p>
-                      <div className="grid grid-cols-1 gap-2">
-                        <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Cor Base</span>
-                          <input 
-                            type="color" 
-                            value={stampBaseColor} 
-                            onChange={(e) => handleStampLayerColorChange('cor-base', e.target.value)}
-                            className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                          />
+                    {/* Dynamic Color Selection Section - Mobile */}
+                    {extractedSvgColors.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-border/30">
+                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                          <Sparkles className="h-3 w-3 text-accent" />
+                          Cores da Estampa Ativa
+                        </p>
+                        <div className="grid grid-cols-1 gap-2">
+                          {extractedSvgColors.map((color, idx) => (
+                            <div key={idx} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                              <div className="flex items-center gap-2">
+                                <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color }} />
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">Camada {idx + 1}</span>
+                              </div>
+                              <input 
+                                type="color" 
+                                value={stampLayerColors[color] || color} 
+                                onChange={(e) => handleStampLayerColorChange(color, e.target.value)}
+                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                              />
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 1</span>
-                          <input 
-                            type="color" 
-                            value={stampElement1Color} 
-                            onChange={(e) => handleStampLayerColorChange('elemento-1', e.target.value)}
-                            className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Elemento 2</span>
-                          <input 
-                            type="color" 
-                            value={stampElement2Color} 
-                            onChange={(e) => handleStampLayerColorChange('elemento-2', e.target.value)}
-                            className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                          />
-                        </div>
-
                       </div>
-                    </div>
+                    )}
                     {/* Color variants for applied stamp - Mobile */}
                     {appliedStampColors.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
