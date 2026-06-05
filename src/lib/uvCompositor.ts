@@ -176,23 +176,32 @@ export async function composeUvTexture(opts: {
         svgIds.forEach(id => {
           // Escape ID for regex and add optional Corel suffix (_1, _2, etc.)
           const escapedId = id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          const idPattern = `${escapedId}(?:_[0-9]+)?`;
+          const idPattern = `(?:id=["']${escapedId}(?:_[0-9]+)?["'])`;
           
-          // 1. Matches: id="elemento" ... fill="#..."
-          const attrIdRegex = new RegExp(`(id=["']${idPattern}["'][^>]*?)fill=["'][^"']*?["']`, 'g');
-          svgText = svgText.replace(attrIdRegex, `$1fill="${color}"`);
-          
-          // 2. Matches: id="elemento" ... style="...fill:#...;..."
-          const styleIdRegex = new RegExp(`(id=["']${idPattern}["'][^>]*?style=["'][^"']*?)fill:\\s*[^;"]*(;?)`, 'g');
-          svgText = svgText.replace(styleIdRegex, `$1fill:${color}$2`);
-          
-          // 3. Matches: fill="#..." ... id="elemento"
-          const fillFirstRegex = new RegExp(`fill=["'][^"']*?["']([^>]*?id=["']${idPattern}["'])`, 'g');
-          svgText = svgText.replace(fillFirstRegex, `fill="${color}"$1`);
-          
-          // 4. Matches elements where fill might be a separate attribute after style
-          const styleFillAttrRegex = new RegExp(`(style=["'][^"']*?["'][^>]*?id=["']${idPattern}["'][^>]*?)fill=["'][^"']*?["']`, 'g');
-          svgText = svgText.replace(styleFillAttrRegex, `$1fill="${color}"`);
+          // Caso 1: id vem ANTES do fill na tag
+          svgText = svgText.replace(
+            new RegExp(`(<[^>]+${idPattern}[^>]*?)fill=["'][^"']*?["']`, 'g'),
+            `$1fill="${color}"`
+          );
+
+          // Caso 2: fill vem ANTES do id na tag
+          svgText = svgText.replace(
+            new RegExp(`(<[^>]+?)fill=["'][^"']*?["']([^>]*?${idPattern})`, 'g'),
+            `fill="${color}"$1$2`
+          );
+
+          // Caso 3: id existe mas NÃO tem fill ainda (grupo sem fill definido)
+          // Adiciona fill no grupo: <g id="elemento-2"> → <g id="elemento-2" fill="#FF0000">
+          svgText = svgText.replace(
+            new RegExp(`(<[^>]+${idPattern}(?![^>]*fill=)[^>]*)>`, 'g'),
+            `$1 fill="${color}">`
+          );
+
+          // Caso 4: fill dentro do style inline
+          svgText = svgText.replace(
+            new RegExp(`(<[^>]+${idPattern}[^>]*?style=["'][^"']*?)fill:\\s*[^;"]*(;?)`, 'g'),
+            `$1fill:${color}$2`
+          );
         });
       });
 
