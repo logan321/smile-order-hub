@@ -2654,52 +2654,34 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
-                    {/* Personalização Avançada Mobile (Fase 2) */}
+                    {/* Personalização Avançada Mobile - Estático */}
                     {appliedStamp && (
                       <div className="mt-2 p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-primary" />
-                            <span className="text-[10px] font-bold text-primary uppercase">Ajustes da Arte</span>
-                          </div>
-                          {appliedStamp.imageUrl.toLowerCase().endsWith('.svg') && (
-                            <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">VETOR</span>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <Palette className="h-4 w-4 text-primary" />
+                          <span className="text-[10px] font-bold text-primary uppercase">Cores da Estampa</span>
                         </div>
                         
-                        {appliedStamp.imageUrl.toLowerCase().endsWith('.svg') ? (
-                          <div className="space-y-4">
-                            {/* Color controls */}
-                            {Array.from(svgColors.entries()).length > 0 && (
-                              <div className="space-y-2">
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-                                  <Palette className="h-3 w-3" /> Cores da Estampa (Camadas)
-                                </p>
-                                <div className="grid grid-cols-4 gap-2">
-                                  {Array.from(svgColors.entries()).map(([key, group]) => (
-                                    <div key={key} className="flex flex-col items-center gap-1">
-                                      <button
-                                        onClick={() => {
-                                          const input = document.createElement('input');
-                                          input.type = 'color';
-                                          input.value = group.hex;
-                                          input.onchange = (e) => {
-                                            const newHex = (e.target as HTMLInputElement).value;
-                                            updateSvgColor(key, hexToCmyk(newHex));
-                                          };
-                                          input.click();
-                                        }}
-                                        className="h-10 w-full rounded-lg border-2 border-white shadow-md transition-transform active:scale-90"
-                                        style={{ backgroundColor: group.hex }}
-                                      />
-                                      <span className="text-[7px] font-mono truncate w-full text-center opacity-70">
-                                        {group.groupName || group.hex}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 1, label: 'Cor 1', key: 'cor1' },
+                            { id: 2, label: 'Cor 2', key: 'cor2' },
+                            { id: 3, label: 'Cor 3', key: 'cor3' },
+                            { id: 4, label: 'Cor 4', key: 'cor4' },
+                          ].map((color) => (
+                            <div key={color.id} className="flex items-center justify-between p-2 rounded-lg bg-background border border-border/50">
+                              <span className="text-[9px] font-bold">{color.label}</span>
+                              <input 
+                                type="color" 
+                                value={fixedColors[color.key as keyof typeof fixedColors]} 
+                                onChange={(e) => updateSvgColor(color.id, e.target.value)}
+                                className="h-7 w-7 rounded border border-border cursor-pointer"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                             {/* Text controls */}
                             {svgTexts.length > 0 && (
