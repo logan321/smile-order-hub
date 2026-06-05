@@ -113,8 +113,11 @@ export class SvgAnalyzer {
         });
       }
     });
+    
+    // Sort colors by usage to help UI prioritize
+    const sortedColors = new Map([...colorMap.entries()].sort((a, b) => b[1].usageCount - a[1].usageCount));
 
-    return { colors: colorMap, texts, images, features };
+    return { colors: sortedColors, texts, images, features };
   }
 
   private addColorToMap(map: Map<string, SvgColorGroup>, hex: string, element: SVGElement) {
