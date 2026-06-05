@@ -1488,6 +1488,46 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
   };
 
+  const shirtRegions = [
+    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
+    { id: 'corpo-verso', label: 'Verso' },
+    { id: 'manga-esquerda', label: 'Manga Esquerda' },
+    { id: 'manga-direita', label: 'Manga Direita' },
+    { id: 'gola', label: 'Gola' },
+    { id: 'detalhes-1', label: 'Detalhes' },
+  ];
+
+  const shirtColorPalette = [
+    '#FFFFFF','#000000','#C0C0C0','#808080', '#FF0000','#CC0000','#FF6600','#FF9900', 
+    '#FFFF00','#CCFF00','#00FF00','#009900', '#00FFFF','#0099CC','#0000FF','#000099', 
+    '#FF00FF','#990099','#FF99CC','#FFCC99', '#FF6666','#66FF66','#6666FF','#FFFF99', 
+    '#003366','#006633','#660000','#663300', '#336600','#003300','#330066','#660033', 
+    '#1a1a2e','#16213e','#0f3460','#e94560', '#f5a623','#7ed321','#417505','#9013fe', 
+    '#bd10e0','#4a90e2','#50e3c2','#b8e986', '#000033','#330000','#003300','#333300'
+  ];
+
+  const handleApplyShirtColor = (hex: string) => {
+    const newColors = { ...shirtColors, [activeShirtRegion]: hex };
+    
+    // Sincronização lógica para frente/verso
+    if (syncFrontBack) {
+      if (activeShirtRegion === 'corpo-frente') newColors['corpo-verso'] = hex;
+      if (activeShirtRegion === 'corpo-verso') newColors['corpo-frente'] = hex;
+      if (activeShirtRegion === 'manga-esquerda') newColors['manga-direita'] = hex;
+      if (activeShirtRegion === 'manga-direita') newColors['manga-esquerda'] = hex;
+    }
+    
+    setShirtColors(newColors);
+    
+    // Atualizar visualmente o SVG
+    Object.entries(newColors).forEach(([id, color]) => {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute('fill', color);
+    });
+    
+    bumpEdits();
+  };
+
   // Switch back to original stamp images
   const switchToOriginalStamp = async () => {
     if (!appliedStamp) return;
