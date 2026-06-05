@@ -6,6 +6,7 @@ import { hexToCmyk, CMYK } from './cmykEngine';
  */
 
 export interface SvgColorGroup {
+  id?: string; // For explicit layer mapping
   hex: string;
   cmyk: CMYK;
   elements: SVGElement[];
@@ -14,6 +15,7 @@ export interface SvgColorGroup {
   groupName?: string;
   reason?: string;
   visible?: boolean;
+  isFixed?: boolean;
 }
 
 export interface SvgTextElement {
@@ -32,6 +34,7 @@ export interface SvgImageElement {
   element: SVGImageElement;
   groupName?: string;
   visible?: boolean;
+  isFixed?: boolean;
 }
 
 export interface SvgFeature {
@@ -71,16 +74,21 @@ export class SvgAnalyzer {
     allElements.forEach((el, index) => {
       if (!(el instanceof SVGElement)) return;
 
+      // 1. Check for Explicit Layer Mapping (class="svg-camada-cor-X")
+      const className = el.getAttribute('class') || '';
+      const layerMatch = className.match(/svg-camada-cor-(\d+)/);
+      const layerId = layerMatch ? layerMatch[0] : null;
+
       // Analyze colors
       const fill = el.getAttribute('fill');
       const stroke = el.getAttribute('stroke');
 
       if (fill && fill !== 'none' && fill.startsWith('#')) {
-        this.addColorToMap(colorMap, fill.toUpperCase(), el);
+        this.addColorToMap(colorMap, fill.toUpperCase(), el, layerId);
       }
       
       if (stroke && stroke !== 'none' && stroke.startsWith('#')) {
-        this.addColorToMap(colorMap, stroke.toUpperCase(), el);
+        this.addColorToMap(colorMap, stroke.toUpperCase(), el, layerId);
       }
 
       // Analyze texts
@@ -94,12 +102,15 @@ export class SvgAnalyzer {
         });
       }
 
-      // Analyze images (logos)
+      // Analyze images (logos / fixed parts)
       if (el instanceof SVGImageElement) {
+        const isFixed = className.includes('svg-imagem-fixa') || !layerId;
         images.push({
           id: el.id || `image-${index}`,
           href: el.getAttribute('href') || el.getAttribute('xlink:href') || '',
-          element: el
+          element: el,
+          isFixed: isFixed,
+          groupName: isFixed ? 'Imagem Fixa (Não Editável)' : `Logo ${index + 1}`
         });
       }
 
