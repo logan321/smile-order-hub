@@ -1536,11 +1536,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     
     setShirtColors(newColors);
     
-    // Atualizar visualmente o SVG
-    Object.entries(newColors).forEach(([id, color]) => {
-      const el = document.getElementById(id);
-      if (el) el.setAttribute('fill', color);
-    });
     
     bumpEdits();
   };
