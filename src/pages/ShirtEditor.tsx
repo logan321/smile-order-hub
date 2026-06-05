@@ -1196,12 +1196,58 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
+  const extractSvgColors = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const svgText = await response.text();
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+      const colors = new Set<string>();
+      
+      const elements = svgDoc.querySelectorAll('[fill], [stroke], [style]');
+      elements.forEach(el => {
+        const fill = el.getAttribute('fill');
+        const stroke = el.getAttribute('stroke');
+        const style = el.getAttribute('style');
+        
+        const processColor = (c: string | null) => {
+          if (!c || c === 'none' || c === 'inherit' || c === 'currentColor' || c.startsWith('url(')) return;
+          // Basic hex/rgb check
+          if (c.startsWith('#') || c.startsWith('rgb')) {
+            colors.add(c.toUpperCase());
+          }
+        };
+        
+        processColor(fill);
+        processColor(stroke);
+        
+        if (style) {
+          const fillMatch = style.match(/fill:\s*([^;]+)/);
+          const strokeMatch = style.match(/stroke:\s*([^;]+)/);
+          if (fillMatch) processColor(fillMatch[1].trim());
+          if (strokeMatch) processColor(strokeMatch[1].trim());
+        }
+      });
+      
+      const uniqueColors = Array.from(colors);
+      setExtractedSvgColors(uniqueColors);
+      
+      // Initialize state with original colors mapping to themselves
+      const initialColors: Record<string, string> = {};
+      uniqueColors.forEach(c => {
+        initialColors[c] = c;
+      });
+      setStampLayerColors(initialColors);
+    } catch (e) {
+      console.warn('Failed to extract SVG colors', e);
+    }
+  };
+
   const addStamp = async (stamp: Stamp) => {
     const frontCanvas = frontFabricRef.current;
     const backCanvas = backFabricRef.current;
     if (!frontCanvas || !backCanvas) return;
-    // If the stamp is linked to a different template, swap the active template
-    // so the 3D preview (UV + zones) reflects the template configured for it.
+    
     if (stamp.templateId && stamp.templateId !== selectedTemplate?.id) {
       const linked = allTemplates.find(t => t.id === stamp.templateId);
       if (linked) setSelectedTemplate(linked);
@@ -1212,20 +1258,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(frontCanvas, toProxyUrl(stamp.imageUrl), 'front'),
         applyStampToCanvas(backCanvas, toProxyUrl(backUrl), 'back'),
       ]);
-      // stamp applied silently
-      // Tag stamp metadata on front canvas objects
+      
       frontCanvas.getObjects().forEach((obj: any) => {
         if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
       });
       backCanvas.getObjects().forEach((obj: any) => {
         if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
       });
+      
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
       setStampLayerColors({});
+      setExtractedSvgColors([]);
+      
+      if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
+        await extractSvgColors(toProxyUrl(stamp.imageUrl));
+      }
+      
       setCurrentStampUrl(stamp.imageUrl);
       advanceGuide('stamp-pick', 'stamp-color');
-      // Auto-advance to text-tab if no colors available
       const hasColors = stampColors.some(c => c.stampId === stamp.id);
       if (!hasColors) advanceGuide('stamp-color', 'patches-tab');
     } catch (err) {
