@@ -1559,13 +1559,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   };
 
   const shirtRegions = [
-    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
+    { id: 'corpo-frente', label: 'Frente' },
     { id: 'corpo-verso', label: 'Verso' },
     { id: 'manga-esquerda', label: 'Manga Esquerda' },
     { id: 'manga-direita', label: 'Manga Direita' },
     { id: 'gola', label: 'Gola' },
+    { id: 'cor-base', label: 'Cor Base' },
     { id: 'detalhes-1', label: 'Detalhes' },
   ];
+
 
   const shirtColorPalette = [
     '#FFFFFF','#000000','#C0C0C0','#808080', '#FF0000','#CC0000','#FF6600','#FF9900', 
