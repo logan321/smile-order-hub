@@ -528,13 +528,39 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   useEffect(() => {
     if (!uvBaseUrl) return;
-    scanSvgElements(uvBaseUrl).then(ids => {
-      setDynamicElements(ids);
+    scanSvgElements(uvBaseUrl).then(({ dynamicIds, colors }) => {
+      setDynamicElements(dynamicIds);
+      
+      const idMap: Record<string, string[]> = {
+        'corpo-frente': ['cor-base'],
+        'corpo-verso': ['cor-base-verso'],
+        'manga-esquerda': ['manga-esquerda'],
+        'manga-direita': ['manga-direita'],
+        'gola': ['gola', 'gola_5'],
+      };
+
       setShirtColors(prev => {
         const next = { ...prev };
-        ids.forEach(id => {
-          if (!(id in next)) next[id] = '#FFFFFF';
+        
+        // Map fixed regions to their original SVG colors
+        Object.entries(idMap).forEach(([regionId, svgIds]) => {
+          for (const svgId of svgIds) {
+            if (colors[svgId]) {
+              next[regionId] = colors[svgId];
+              break;
+            }
+          }
         });
+
+        // Map dynamic elements to their original SVG colors
+        dynamicIds.forEach(id => {
+          if (colors[id]) {
+            next[id] = colors[id];
+          } else if (!(id in next)) {
+            next[id] = '#FFFFFF';
+          }
+        });
+        
         return next;
       });
     });
