@@ -2193,7 +2193,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampElement1Color} 
-                          onChange={(e) => handleStampLayerColorChange('.elemento-1', e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('elemento-1', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
@@ -2202,7 +2202,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <input 
                           type="color" 
                           value={stampElement2Color} 
-                          onChange={(e) => handleStampLayerColorChange('.elemento-2', e.target.value)}
+                          onChange={(e) => handleStampLayerColorChange('elemento-2', e.target.value)}
                           className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                         />
                       </div>
