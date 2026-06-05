@@ -533,30 +533,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         'gola': ['gola', 'gola_5'],
       };
 
-      setShirtColors(prev => {
-        const next = { ...prev };
-        
-        // Map fixed regions to their original SVG colors
-        Object.entries(idMap).forEach(([regionId, svgIds]) => {
-          for (const svgId of svgIds) {
-            if (colors[svgId]) {
-              next[regionId] = colors[svgId];
-              break;
-            }
+      const scanned: Record<string, string> = {};
+      Object.entries(idMap).forEach(([regionId, svgIds]) => {
+        for (const svgId of svgIds) {
+          if (colors[svgId]) {
+            scanned[regionId] = colors[svgId];
+            break;
           }
-        });
-
-        // Map dynamic elements to their original SVG colors
-        dynamicIds.forEach(id => {
-          if (colors[id]) {
-            next[id] = colors[id];
-          } else if (!(id in next)) {
-            next[id] = '#FFFFFF';
-          }
-        });
-        
-        return next;
+        }
       });
+
+      dynamicIds.forEach(id => {
+        if (colors[id]) {
+          scanned[id] = colors[id];
+        } else {
+          scanned[id] = '#FFFFFF';
+        }
+      });
+      
+      originalColorsRef.current = scanned;
+      // Initialize state with these original colors so they appear in the UI
+      // and are used by the compositor.
+      setShirtColors(scanned);
     });
   }, [uvBaseUrl]);
 
