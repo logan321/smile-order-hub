@@ -1332,6 +1332,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
       setActiveStampColorId(null);
+      setCurrentStampUrl(appliedStamp.imageUrl);
+      setStampLayerColors({});
     } catch {
       toast.error('Erro ao restaurar estampa');
     }
