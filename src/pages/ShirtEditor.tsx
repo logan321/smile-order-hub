@@ -560,6 +560,38 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   const shirtRegions = useMemo(() => [...fixedRegions, ...dynamicRegions], [fixedRegions, dynamicRegions]);
 
+  const regionButtonsDesktop = useMemo(() => (
+    <div className="grid grid-cols-2 gap-1 mb-3">
+      {shirtRegions.map(region => (
+        <Button
+          key={region.id}
+          variant={activeShirtRegion === region.id ? "default" : "outline"}
+          size="sm"
+          className="h-7 text-[9px] px-1 truncate"
+          onClick={() => setActiveShirtRegion(region.id)}
+        >
+          {region.label}
+        </Button>
+      ))}
+    </div>
+  ), [shirtRegions, activeShirtRegion]);
+
+  const regionButtonsMobile = useMemo(() => (
+    <div className="flex overflow-x-auto gap-1.5 pb-2 mb-3 no-scrollbar">
+      {shirtRegions.map(region => (
+        <Button
+          key={region.id}
+          variant={activeShirtRegion === region.id ? "default" : "outline"}
+          size="sm"
+          className="h-8 text-[10px] px-3 whitespace-nowrap shrink-0"
+          onClick={() => setActiveShirtRegion(region.id)}
+        >
+          {region.label}
+        </Button>
+      ))}
+    </div>
+  ), [shirtRegions, activeShirtRegion]);
+
   const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
   const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
   
