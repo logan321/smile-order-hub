@@ -535,6 +535,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
   const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
+  const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
+  const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
+  const [namingDialog, setNamingDialog] = useState<{ open: boolean; selector: string; name: string }>({ open: false, selector: '', name: '' });
+  const [configMapping, setConfigMapping] = useState<{ selector: string; label: string }[]>([]);
   const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
