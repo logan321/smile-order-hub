@@ -2517,29 +2517,63 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
-                    {/* Corel ID Selection Section - Mobile */}
+                    {/* Configuration & Color Selection Section - Mobile */}
                     {appliedStamp?.imageUrl.toLowerCase().endsWith('.svg') && (
                       <div className="mt-4 pt-3 border-t border-border/30">
-                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                          <Sparkles className="h-3 w-3 text-accent" />
-                          Cores da Estampa Ativa
-                        </p>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-[11px] font-bold text-foreground uppercase flex items-center gap-2">
+                            <Sparkles className="h-3 w-3 text-accent" />
+                            Personalização UV
+                          </p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 px-2 text-[9px] font-bold text-primary"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(toProxyUrl(appliedStamp.imageUrl));
+                                const svgText = await response.text();
+                                setSvgSourceForConfig(svgText);
+                                setConfigMapping(appliedStamp.layerMapping || []);
+                                setUvEditorMode('config');
+                              } catch (err) {
+                                toast.error('Erro ao carregar editor');
+                              }
+                            }}
+                          >
+                            CONFIGURAR
+                          </Button>
+                        </div>
                         <div className="grid grid-cols-1 gap-2">
-                          {[
-                            { id: 'cor-base', label: 'Cor Base' },
-                            { id: 'elemento-1', label: 'Elemento 1' },
-                            { id: 'elemento-2', label: 'Elemento 2' }
-                          ].map((layer) => (
-                            <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
-                              <input 
-                                type="color" 
-                                value={stampLayerColors[layer.id] || '#FFFFFF'} 
-                                onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
-                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                              />
-                            </div>
-                          ))}
+                          {appliedStamp.layerMapping && appliedStamp.layerMapping.length > 0 ? (
+                            appliedStamp.layerMapping.map((layer) => (
+                              <div key={layer.selector} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                                <input 
+                                  type="color" 
+                                  value={stampLayerColors[layer.selector] || layer.defaultColor || '#FFFFFF'} 
+                                  onChange={(e) => handleStampLayerColorChange(layer.selector, e.target.value)}
+                                  className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                                />
+                              </div>
+                            ))
+                          ) : (
+                            [
+                              { id: 'cor-base', label: 'Cor Base' },
+                              { id: 'elemento-1', label: 'Elemento 1' },
+                              { id: 'elemento-2', label: 'Elemento 2' }
+                            ].map((layer) => (
+                              <div key={layer.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{layer.label}</span>
+                                <input 
+                                  type="color" 
+                                  value={stampLayerColors[layer.id] || '#FFFFFF'} 
+                                  onChange={(e) => handleStampLayerColorChange(layer.id, e.target.value)}
+                                  className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                                />
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
