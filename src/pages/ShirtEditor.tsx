@@ -1304,23 +1304,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const handleStampLayerColorChange = async (selector: string, color: string) => {
+  const handleStampLayerColorChange = async (oldColor: string, newColor: string) => {
     if (!appliedStamp) return;
-    const newColors = { ...stampLayerColors, [selector]: color };
-    setStampLayerColors(newColors);
+    const newMapping = { ...stampLayerColors, [oldColor]: newColor };
+    setStampLayerColors(newMapping);
 
-    // Sync state for the specific selectors if they match our standard
-    if (selector === 'cor-base' || selector === '.cor-base') setStampBaseColor(color);
-    else if (selector === 'elemento-1' || selector === '.elemento-1') setStampElement1Color(color);
-    else if (selector === 'elemento-2' || selector === '.elemento-2') setStampElement2Color(color);
-
-    // Only SVG stamps can have dynamic colors
     if (!appliedStamp.imageUrl.toLowerCase().endsWith('.svg')) return;
 
     try {
-      const frontUrl = await updateSvgColors(toProxyUrl(appliedStamp.imageUrl), newColors);
+      const frontUrl = await updateSvgColors(toProxyUrl(appliedStamp.imageUrl), newMapping);
       const backUrl = appliedStamp.backImageUrl && appliedStamp.backImageUrl.toLowerCase().endsWith('.svg')
-        ? await updateSvgColors(toProxyUrl(appliedStamp.backImageUrl), newColors)
+        ? await updateSvgColors(toProxyUrl(appliedStamp.backImageUrl), newMapping)
         : frontUrl;
 
       const frontCanvas = frontFabricRef.current;
@@ -1332,14 +1326,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         applyStampToCanvas(backCanvas, backUrl, 'back'),
       ]);
 
-      // When the URL changes (due to colors), we update currentStampUrl
-      // This will trigger useUvCompositor to rebuild the 3D texture
-      setCurrentStampUrl(frontUrl);
-
-      
       setCurrentStampUrl(frontUrl);
       
-      // Update metadata
       [frontCanvas, backCanvas].forEach(c => {
         c.getObjects().forEach((obj: any) => {
           if (obj._isBackground) {
@@ -1355,49 +1343,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   };
 
-  const updateSvgColors = async (url: string, colors: Record<string, string>) => {
+  const updateSvgColors = async (url: string, colorMapping: Record<string, string>) => {
     try {
       const response = await fetch(url);
       const svgText = await response.text();
-      const parser = new DOMParser();
-      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
       
-      Object.entries(colors).forEach(([selector, color]) => {
-        // CorelDraw often uses attributes of presentation.
-        // We look for IDs matching our keys (cor-base, elemento-1, elemento-2).
-        // Corel might add prefixes like "_12345_cor-base".
-        const cleanId = selector.replace(/^\./, ''); // remove dot from selector if it exists
+      let modifiedSvgText = svgText;
+      
+      // Perform global search and replace for each color
+      Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
+        if (oldColor === newColor) return;
         
-        // Find elements that have an ID containing our target string
-        const elements = Array.from(svgDoc.querySelectorAll(`[id*="${cleanId}"]`));
-        
-        // Also fallback to class selector if present
-        const classElements = svgDoc.querySelectorAll(selector);
-        const allTargetElements = new Set([...elements, ...Array.from(classElements)]);
-
-        allTargetElements.forEach(el => {
-          const element = el as SVGElement;
-          
-          // Set both attribute and style for maximum compatibility
-          element.setAttribute('fill', color);
-          element.style.fill = color;
-          
-          // If it's a line/path that might use stroke instead of fill
-          if (element.hasAttribute('stroke') || element.style.stroke) {
-            element.setAttribute('stroke', color);
-            element.style.stroke = color;
-          }
-          
-          // Clean up conflicting opacity if it hides the new color
-          if (element.getAttribute('fill-opacity') === '0') {
-            element.removeAttribute('fill-opacity');
-          }
-        });
+        // Escape regex characters just in case
+        const escapedOld = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Replace globally, case insensitive to catch all variations
+        const regex = new RegExp(escapedOld, 'gi');
+        modifiedSvgText = modifiedSvgText.replace(regex, newColor);
       });
 
-      
-      const serialized = new XMLSerializer().serializeToString(svgDoc);
-      const blob = new Blob([serialized], { type: 'image/svg+xml' });
+      const blob = new Blob([modifiedSvgText], { type: 'image/svg+xml' });
       return URL.createObjectURL(blob);
     } catch (e) {
       console.warn('SVG color update failed', e);
