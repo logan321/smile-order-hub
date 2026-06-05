@@ -378,28 +378,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
-  // Debounced bump: re-composite the UV texture at most every ~120ms while the
-  // user is typing / dragging. Prevents the editor from re-rendering on every
-  // keystroke, which was causing visible lag in the 3D preview.
-  const bumpTimerRef = useRef<number | null>(null);
-  const bumpEdits = useCallback(() => {
-    if (bumpTimerRef.current != null) return;
-    bumpTimerRef.current = window.setTimeout(() => {
-      bumpTimerRef.current = null;
-      setEditsVersion(v => v + 1);
-    }, 120);
-  }, []);
-
+  // Debounced bump: re-composite the UV texture with a slight delay
+  // Prevents the editor from re-rendering on every mouse move in the color picker.
   const debouncedBump = useMemo(
-    () => debounce(() => bumpEdits(), 80),
-    [bumpEdits]
+    () => debounce(() => setEditsVersion(v => v + 1), 80),
+    []
   );
 
   useEffect(() => () => {
-    if (bumpTimerRef.current != null) {
-      clearTimeout(bumpTimerRef.current);
-      bumpTimerRef.current = null;
-    }
     if (uvTextCommitTimerRef.current != null) {
       clearTimeout(uvTextCommitTimerRef.current);
       uvTextCommitTimerRef.current = null;
@@ -573,6 +559,38 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   })), [dynamicElements]);
 
   const shirtRegions = useMemo(() => [...fixedRegions, ...dynamicRegions], [fixedRegions, dynamicRegions]);
+
+  const regionButtonsDesktop = useMemo(() => (
+    <div className="grid grid-cols-2 gap-1 mb-3">
+      {shirtRegions.map(region => (
+        <Button
+          key={region.id}
+          variant={activeShirtRegion === region.id ? "default" : "outline"}
+          size="sm"
+          className="h-7 text-[9px] px-1 truncate"
+          onClick={() => setActiveShirtRegion(region.id)}
+        >
+          {region.label}
+        </Button>
+      ))}
+    </div>
+  ), [shirtRegions, activeShirtRegion]);
+
+  const regionButtonsMobile = useMemo(() => (
+    <div className="flex overflow-x-auto gap-1.5 pb-2 mb-3 no-scrollbar">
+      {shirtRegions.map(region => (
+        <Button
+          key={region.id}
+          variant={activeShirtRegion === region.id ? "default" : "outline"}
+          size="sm"
+          className="h-8 text-[10px] px-3 whitespace-nowrap shrink-0"
+          onClick={() => setActiveShirtRegion(region.id)}
+        >
+          {region.label}
+        </Button>
+      ))}
+    </div>
+  ), [shirtRegions, activeShirtRegion]);
 
   const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
   const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
@@ -988,13 +1006,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         // Replace rotation control with custom prominent one
         obj.controls.mtr = customMtrControl;
       });
-      canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
-      canvas.on('object:modified', () => bumpEdits());
-      canvas.on('object:moving', () => bumpEdits());
-      canvas.on('object:scaling', () => bumpEdits());
-      canvas.on('object:rotating', () => bumpEdits());
-      canvas.on('text:changed', () => bumpEdits());
-      canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
+      canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) debouncedBump(); });
+      canvas.on('object:modified', () => debouncedBump());
+      canvas.on('object:moving', () => debouncedBump());
+      canvas.on('object:scaling', () => debouncedBump());
+      canvas.on('object:rotating', () => debouncedBump());
+      canvas.on('text:changed', () => debouncedBump());
+      canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) debouncedBump(); });
     };
 
     customizeControls(frontCanvas);
@@ -1429,7 +1447,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         });
       });
       
-      bumpEdits();
+      debouncedBump();
     } catch (err) {
       console.error('Erro ao atualizar cores da estampa:', err);
     }
@@ -1891,7 +1909,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.requestRenderAll();
-      bumpEdits();
+      debouncedBump();
     } catch (e) {
       console.error(e);
       toast.error('Erro ao adicionar emblema');
@@ -1964,7 +1982,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       canvas.add(numObj);
     }
     canvas.requestRenderAll();
-    bumpEdits();
+    debouncedBump();
     setNameInput(''); setNumberInput('');
   };
 
@@ -1991,7 +2009,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         active.dirty = true;
         active.setCoords();
         canvas.requestRenderAll();
-        bumpEdits();
+        debouncedBump();
       };
       applyFont();
     }
@@ -2557,19 +2575,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     </div>
 
                     
-                    <div className="grid grid-cols-2 gap-1 mb-3">
-                      {shirtRegions.map(region => (
-                        <Button
-                          key={region.id}
-                          variant={activeShirtRegion === region.id ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 text-[9px] px-1 truncate"
-                          onClick={() => setActiveShirtRegion(region.id)}
-                        >
-                          {region.label}
-                        </Button>
-                      ))}
-                    </div>
+                    {regionButtonsDesktop}
 
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[9px] text-muted-foreground uppercase font-bold">Cor Livre:</span>
@@ -2734,7 +2740,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   size="sm" 
                   onClick={() => {
                     setShirtColors(originalColorsRef.current);
-                    bumpEdits();
+                    debouncedBump();
                   }} 
                   className="w-full gap-1.5 h-8 text-[10px] mt-1"
                 >
@@ -2872,19 +2878,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
 
 
-                      <div className="flex overflow-x-auto gap-1.5 pb-2 mb-3 no-scrollbar">
-                        {shirtRegions.map(region => (
-                          <Button
-                            key={region.id}
-                            variant={activeShirtRegion === region.id ? "default" : "outline"}
-                            size="sm"
-                            className="h-8 text-[10px] px-3 whitespace-nowrap shrink-0"
-                            onClick={() => setActiveShirtRegion(region.id)}
-                          >
-                            {region.label}
-                          </Button>
-                        ))}
-                      </div>
+                      {regionButtonsMobile}
 
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-[10px] text-muted-foreground uppercase font-bold">Livre:</span>
