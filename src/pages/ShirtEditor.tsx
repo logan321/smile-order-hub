@@ -1543,10 +1543,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
     
     setShirtColors(newColors);
-    
-    
-    bumpEdits();
+    debouncedBump();
   };
+
 
   // Switch back to original stamp images
   const switchToOriginalStamp = async () => {
