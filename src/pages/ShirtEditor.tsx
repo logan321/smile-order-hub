@@ -619,7 +619,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   }, [uvBaseUrl, baseSvgContent, shirtColors]);
 
   const uvComposite = useUvCompositor({
-    baseUrl: uvZonesActive ? processedBaseUrl || uvBaseUrl : null,
+    baseUrl: uvZonesActive ? uvBaseUrl : null,
     zones: uvMapZones,
     layers: uvLayers,
     uvWidth: uvMapDims.w,
