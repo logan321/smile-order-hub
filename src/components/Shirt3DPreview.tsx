@@ -21,6 +21,7 @@ interface Shirt3DPreviewProps {
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
   return useMemo(() => {
     if (canvas) {
+      console.log('3D Preview: Using canvas texture');
       const t = new THREE.CanvasTexture(canvas);
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 16;
@@ -28,10 +29,19 @@ function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | und
       t.needsUpdate = true;
       return t;
     }
-    if (!url) return null;
+    if (!url) {
+      console.log('3D Preview: No URL provided for texture');
+      return null;
+    }
+    console.log('3D Preview: Loading texture from URL:', url);
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
-    const t = loader.load(url);
+    const t = loader.load(
+      url,
+      () => console.log('3D Preview: Texture loaded successfully'),
+      undefined,
+      (err) => console.error('3D Preview: Error loading texture:', err)
+    );
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 16;
     t.flipY = false;
@@ -124,6 +134,8 @@ export default function Shirt3DPreview({
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
+  console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
+
   return (
     <div className="w-full h-full bg-gradient-to-b from-muted/40 to-muted rounded-lg overflow-hidden relative">
       <Canvas
@@ -131,12 +143,13 @@ export default function Shirt3DPreview({
         camera={{ position: cameraPosition, fov: 35 }}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
         dpr={[1, 2]}
+        onError={(err) => console.error('R3F Canvas Error:', err)}
       >
         <color attach="background" args={['#f1f3f6']} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 4, 5]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[-3, 2, -2]} intensity={0.4} />
-        <Suspense fallback={null}>
+        <Suspense fallback={<mesh><boxGeometry /><meshStandardMaterial color="hotpink" /></mesh>}>
           <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
           <Environment preset="studio" background={false} />
