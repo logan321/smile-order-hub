@@ -21,7 +21,7 @@ interface ColorItem {
 }
 
 const StampColorEditor: React.FC<StampColorEditorProps> = ({ stampId, stampName, uvSvgUrl }) => {
-  // console.log('renderizando'); // Adicionado temporariamente para debug de loops de renderização
+
 
   const { mappings, isLoading: isMappingsLoading, saveMappings } = useStampColorMappings(stampId);
   const [svgColors, setSvgColors] = useState<string[]>([]);
