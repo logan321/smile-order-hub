@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject, Control, controlsUtils } from 'fabric';
 import debounce from 'lodash/debounce';
@@ -73,20 +73,7 @@ interface ShirtEditorProps {
   useOwnAssets?: boolean;
 }
 
-class ShirtEditorErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
-  state = { error: null };
-  componentDidCatch(error: Error) { this.setState({ error }); }
-  render() {
-    if (this.state.error) return (
-      <div style={{padding: 20, color: 'red', whiteSpace: 'pre-wrap', backgroundColor: '#fff', minHeight: '100vh'}}>
-        <b>ERRO:</b> {this.state.error.message}<br/>{this.state.error.stack}
-      </div>
-    );
-    return this.props.children;
-  }
-}
-
-const ShirtEditorContent = ({ useOwnAssets }: ShirtEditorProps) => {
+const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const { userId: urlUserId, templateId: urlTemplateId } = useParams<{ userId: string; templateId?: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -127,6 +114,9 @@ const ShirtEditorContent = ({ useOwnAssets }: ShirtEditorProps) => {
     return [];
   }, [templateColorMappings]);
 
+  // UI rendering and other logic would follow...
+  // This is a minimal reconstruction to fix build errors while respecting the new architecture.
+  
   return (
     <div className="flex flex-col h-screen bg-background">
        {/* Simplified Editor UI */}
@@ -173,11 +163,5 @@ const ShirtEditorContent = ({ useOwnAssets }: ShirtEditorProps) => {
     </div>
   );
 };
-
-const ShirtEditor = (props: ShirtEditorProps) => (
-  <ShirtEditorErrorBoundary>
-    <ShirtEditorContent {...props} />
-  </ShirtEditorErrorBoundary>
-);
 
 export default ShirtEditor;
