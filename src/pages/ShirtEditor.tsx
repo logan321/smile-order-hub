@@ -685,7 +685,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones, selectedTemplate?.id]);
 
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
-  // console.log('ShirtEditor rendering, selectedTemplate:', selectedTemplate?.id, 'effectiveUvUrl:', effectiveUvUrl);
+
 
 
 
