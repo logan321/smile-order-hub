@@ -23,6 +23,7 @@ import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import { useUvColorMappings } from '@/hooks/useUvColorMappings';
+import { useStampColorMappings } from '@/hooks/useStampColorMappings';
 import { scanSvgElements, applyColorMapToUv } from '@/lib/uvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
 
@@ -88,6 +89,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [editsVersion, setEditsVersion] = useState(0);
 
   const { data: templateColorMappings } = useUvColorMappings(selectedTemplate?.id);
+  const { data: stampColorMappings } = useStampColorMappings(appliedStamp?.id);
 
   const debouncedBump = useMemo(
     () => debounce(() => setEditsVersion(v => v + 1), 80),
@@ -95,24 +97,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   );
 
   useEffect(() => {
-    if (templateColorMappings && templateColorMappings.length > 0) {
+    const activeMappings = (appliedStamp?.id ? stampColorMappings : templateColorMappings) ?? [];
+    if (activeMappings.length > 0) {
       const initialColors: Record<string, string> = {};
-      templateColorMappings.forEach(m => {
+      activeMappings.forEach(m => {
         initialColors[m.original_color] = m.original_color;
       });
       setShirtColors(initialColors);
     }
-  }, [templateColorMappings]);
+  }, [templateColorMappings, stampColorMappings, appliedStamp?.id]);
 
   const shirtRegions = useMemo(() => {
-    if (templateColorMappings && templateColorMappings.length > 0) {
-      return templateColorMappings.map(m => ({
+    const activeMappings = (appliedStamp?.id ? stampColorMappings : templateColorMappings) ?? [];
+    return activeMappings
+      .filter(m => (m as any).is_editable !== false)
+      .map(m => ({
         id: m.original_color,
         label: m.region_name
       }));
-    }
-    return [];
-  }, [templateColorMappings]);
+  }, [templateColorMappings, stampColorMappings, appliedStamp?.id]);
 
   // UI rendering and other logic would follow...
   // This is a minimal reconstruction to fix build errors while respecting the new architecture.
