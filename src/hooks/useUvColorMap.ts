@@ -9,7 +9,7 @@ export interface UvColorMapping {
   sort_order: number;
 }
 
-export function useUvColorMappings(templateId: string | undefined | null) {
+export function useUvColorMap(templateId: string | undefined | null) {
   return useQuery({
     queryKey: ['uv-color-mappings', templateId],
     queryFn: async () => {
@@ -17,14 +17,14 @@ export function useUvColorMappings(templateId: string | undefined | null) {
       
       const { data, error } = await supabase
         .from('uv_color_mappings')
-        .select('*')
+        .select('original_color, region_name, sort_order')
         .eq('template_id', templateId)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return data as UvColorMapping[];
+      return data as Pick<UvColorMapping, 'original_color' | 'region_name' | 'sort_order'>[];
     },
     enabled: !!templateId,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

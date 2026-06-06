@@ -946,8 +946,8 @@ export type Database = {
           original_color: string
           region_name: string
           sort_order: number | null
+          template_id: string
           updated_at: string
-          uv_map_id: string
         }
         Insert: {
           created_at?: string
@@ -955,8 +955,8 @@ export type Database = {
           original_color: string
           region_name: string
           sort_order?: number | null
+          template_id: string
           updated_at?: string
-          uv_map_id: string
         }
         Update: {
           created_at?: string
@@ -964,15 +964,15 @@ export type Database = {
           original_color?: string
           region_name?: string
           sort_order?: number | null
+          template_id?: string
           updated_at?: string
-          uv_map_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "uv_color_mappings_uv_map_id_fkey"
-            columns: ["uv_map_id"]
+            foreignKeyName: "uv_color_mappings_template_id_fkey"
+            columns: ["template_id"]
             isOneToOne: false
-            referencedRelation: "uv_maps"
+            referencedRelation: "shirt_templates"
             referencedColumns: ["id"]
           },
         ]

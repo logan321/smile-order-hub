@@ -55,46 +55,53 @@ async function getSvgText(url: string): Promise<string> {
   return text;
 }
 
-export function extractColorsFromSvg(svgText: string): string[] {
+/**
+ * Extracts unique hex colors and their occurrence counts from an SVG string.
+ */
+export function extractColorsFromUvSvg(svgText: string): Array<{hex: string, count: number}> {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgText, 'image/svg+xml');
-  const colors = new Set<string>();
+  const colorCounts: Record<string, number> = {};
 
-  const extractColor = (el: Element) => {
-    let color = el.getAttribute('fill');
-    if (!color || color === 'none' || color.startsWith('url')) {
-      const style = el.getAttribute('style');
-      if (style) {
-        const match = style.match(/fill:\s*([^;"]+)/);
-        if (match) color = match[1].trim();
-      }
-    }
-
-    if (color && color.startsWith('#')) {
-      // Normalize to 6-digit hex uppercase
+  const processColor = (color: string | null) => {
+    if (!color || color === 'none' || color.startsWith('url')) return;
+    
+    if (color.startsWith('#')) {
       let hex = color.toUpperCase();
       if (hex.length === 4) {
         hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
       }
-      colors.add(hex.substring(0, 7));
+      const normalized = hex.substring(0, 7);
+      colorCounts[normalized] = (colorCounts[normalized] || 0) + 1;
     }
   };
 
   const elements = doc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, g');
-  elements.forEach(extractColor);
+  elements.forEach(el => {
+    // Check fill attribute
+    processColor(el.getAttribute('fill'));
+    
+    // Check style attribute
+    const style = el.getAttribute('style');
+    if (style) {
+      const fillMatch = style.match(/fill:\s*([^;"]+)/);
+      if (fillMatch) processColor(fillMatch[1].trim());
+    }
+  });
 
-  return Array.from(colors).sort();
+  return Object.entries(colorCounts)
+    .map(([hex, count]) => ({ hex, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 /**
  * Replaces colors in an SVG string based on a mapping of original hex -> new hex.
- * This is the primary way to customize colors in UV maps.
+ * Handles fill="..." and style="fill:..." with case insensitivity.
  */
-export function applyColorMap(svgText: string, colorMap: Record<string, string>): string {
+export function applyColorMapToUv(svgText: string, colorMap: Record<string, string>): string {
   let processedSvg = svgText;
 
   Object.entries(colorMap).forEach(([originalColor, newColor]) => {
-    // Only process hex-based keys
     if (!originalColor.startsWith('#')) return;
 
     const hex = originalColor.toUpperCase();
@@ -103,22 +110,20 @@ export function applyColorMap(svgText: string, colorMap: Record<string, string>)
     const escapedHex = hex.replace('#', '');
     const escapedShortHex = shortHex.replace('#', '');
     
+    // Patterns for #RRGGBB and #RGB, case insensitive, with or without #
     const colorPattern = `(?:#?${escapedHex}|#?${escapedShortHex})`;
 
-    // Replace fill attribute
+    // Replace fill="..."
     processedSvg = processedSvg.replace(
       new RegExp(`fill=["']${colorPattern}["']`, 'gi'),
       `fill="${newColor}"`
     );
 
-    // Replace fill in style
+    // Replace fill: #... in style
     processedSvg = processedSvg.replace(
       new RegExp(`fill:\\s*${colorPattern}`, 'gi'),
       `fill:${newColor}`
     );
-
-    // Also handle cases where elements might have id-based matching if needed, 
-    // but the user specified hex-based is the source of truth now.
   });
 
   return processedSvg;
@@ -129,11 +134,11 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   colors: Record<string, string>;
 }> {
   const text = await getSvgText(svgUrl);
-  const colors = extractColorsFromSvg(text);
+  const colors = extractColorsFromUvSvg(text);
   
   const resultColors: Record<string, string> = {};
-  colors.forEach((color, index) => {
-    resultColors[`color-${index}`] = color;
+  colors.forEach((c, index) => {
+    resultColors[`color-${index}`] = c.hex;
   });
 
   return { dynamicIds: [], colors: resultColors };
@@ -157,8 +162,8 @@ export async function composeUvTexture(opts: {
     try {
       let svgText = await getSvgText(opts.baseUrl);
       
-      // Strictly use hex-based mapping as requested
-      svgText = applyColorMap(svgText, opts.shirtColors);
+      // Use hex-based mapping for UV regions
+      svgText = applyColorMapToUv(svgText, opts.shirtColors);
 
       const blob = new Blob([svgText], { type: 'image/svg+xml' });
       finalBaseUrl = URL.createObjectURL(blob);
