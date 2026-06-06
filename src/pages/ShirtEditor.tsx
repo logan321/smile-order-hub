@@ -1534,14 +1534,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         finalSvgText = new XMLSerializer().serializeToString(svgDoc);
       } else {
         // Fallback to global color substitution if no mappings matched
-        finalSvgText = svgText;
-        Object.entries(colorMapping).forEach(([oldColor, newColor]) => {
-          if (oldColor === newColor) return;
-          const escapedOld = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp(escapedOld, 'gi');
-          finalSvgText = finalSvgText.replace(regex, newColor);
-        });
+        finalSvgText = applyColorMap(svgText, colorMapping);
       }
+
 
       const blob = new Blob([finalSvgText], { type: 'image/svg+xml' });
       return URL.createObjectURL(blob);
