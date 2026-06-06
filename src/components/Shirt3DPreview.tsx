@@ -1,11 +1,15 @@
 import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
 import { Canvas, useLoader } from '@react-three/fiber';
-import { OrbitControls, ContactShadows, Environment } from '@react-three/drei';
+import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+
+
+
 
 interface Shirt3DPreviewProps {
   frontImage: string;
@@ -21,6 +25,7 @@ interface Shirt3DPreviewProps {
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
   return useMemo(() => {
     if (canvas) {
+      console.log('3D Preview: Using canvas texture');
       const t = new THREE.CanvasTexture(canvas);
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 16;
@@ -28,10 +33,19 @@ function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | und
       t.needsUpdate = true;
       return t;
     }
-    if (!url) return null;
+    if (!url) {
+      console.log('3D Preview: No URL provided for texture');
+      return null;
+    }
+    console.log('3D Preview: Loading texture from URL:', url);
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
-    const t = loader.load(url);
+    const t = loader.load(
+      url,
+      () => console.log('3D Preview: Texture loaded successfully'),
+      undefined,
+      (err) => console.error('3D Preview: Error loading texture:', err)
+    );
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 16;
     t.flipY = false;
@@ -124,23 +138,38 @@ export default function Shirt3DPreview({
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
+  console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
+
   return (
-    <div className="w-full h-full bg-gradient-to-b from-muted/40 to-muted rounded-lg overflow-hidden relative">
+    <div className="w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner">
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
-        gl={{ antialias: true, preserveDrawingBuffer: true }}
+        gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
         dpr={[1, 2]}
+        onError={(err) => console.error('R3F Canvas Error:', err)}
+        style={{ background: '#f1f3f6' }}
       >
         <color attach="background" args={['#f1f3f6']} />
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[3, 4, 5]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-3, 2, -2]} intensity={0.4} />
-        <Suspense fallback={null}>
+        <ambientLight intensity={0.8} />
+        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
+        <directionalLight position={[3, 4, 5]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} />
+        <directionalLight position={[-3, 2, -2]} intensity={0.5} />
+        <pointLight position={[0, 5, 0]} intensity={0.5} />
+        
+        <Suspense fallback={
+          <Html center>
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-xs font-medium text-muted-foreground">Carregando 3D...</p>
+            </div>
+          </Html>
+        }>
           <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
-          <Environment preset="studio" background={false} />
+          <Environment preset="city" />
         </Suspense>
+
         <OrbitControls
           ref={orbitRef}
           enablePan={false}

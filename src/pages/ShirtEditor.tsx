@@ -369,6 +369,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
+
+
   // Debounced bump: re-composite the UV texture at most every ~120ms while the
   // user is typing / dragging. Prevents the editor from re-rendering on every
   // keystroke, which was causing visible lag in the 3D preview.
@@ -398,6 +400,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
 
 
+
+
   // ===== UV-based personalization (new pipeline) =====
   // When the selected template's UV map has uv_zones registered by the admin,
   // we render text/image layers directly onto a canvas the size of the UV
@@ -412,6 +416,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // the template has uv_zones registered.
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
+
+
 
   // Fetch uv_zones / dims for the selected template's UV map.
   useEffect(() => {
@@ -676,11 +682,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones, selectedTemplate?.id]);
 
-  // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
-  // Falls back to any registered UV map so 3D always has a texture to paint.
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+
+
+
+
+
+
+
 
   const frontStampRef = useRef<FabricImage | null>(null);
   const backStampRef = useRef<FabricImage | null>(null);
@@ -2020,6 +2031,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           <div className="flex items-center justify-start lg:justify-center gap-2 lg:gap-3 min-w-max mx-auto">
             {([
               { id: 'stamps',   label: 'Estampas',    icon: Shirt },
+              { id: 'patches',  label: 'Peixes',      icon: Sparkles },
+              { id: 'text',     label: 'Textos',      icon: Type },
+              { id: 'name',     label: 'Nome/Nº',     icon: Shirt },
+              { id: 'emblems',  label: 'Emblemas',    icon: ImageIcon },
+              { id: 'logo',     label: 'Logo/Img',    icon: Upload },
+
+
             ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
               const active = activeTab === id;
               return (
