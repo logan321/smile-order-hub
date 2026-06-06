@@ -1,12 +1,13 @@
 import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
 import { Canvas, useLoader } from '@react-three/fiber';
-import { OrbitControls, ContactShadows, Environment } from '@react-three/drei';
-import * as THREE from 'three';
+import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
+import * as THREE from 'THREE';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+
 
 
 interface Shirt3DPreviewProps {
