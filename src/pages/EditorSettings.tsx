@@ -60,6 +60,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [selectedTemplateForMapping, setSelectedTemplateForMapping] = useState<string | null>(null);
 
   useEffect(() => {
     if (targetUserId) {
@@ -488,7 +489,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           </TabsTrigger>
           <TabsTrigger value="color-mappings" className="gap-2">
             <Palette className="h-4 w-4" />
-            Mapear Cores
+            Mapeamento UV
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
@@ -1203,8 +1204,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Selecione o Template</label>
                 <Select 
-                  value={editingNiche || ''} 
-                  onValueChange={(v) => setEditingNiche(v)}
+                  value={selectedTemplateForMapping || ''} 
+                  onValueChange={(v) => setSelectedTemplateForMapping(v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Escolha um template para configurar" />
@@ -1218,8 +1219,32 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               </div>
 
               {(() => {
-                const template = templates.find(t => t.id === editingNiche);
-                return template?.uvMapId && template?.uvMapUrl && (
+                const template = templates.find(t => t.id === selectedTemplateForMapping);
+                if (!template) return null;
+                
+                const isSvg = template.uvMapUrl?.toLowerCase().includes('.svg');
+                
+                if (!template.uvMapId || !template.uvMapUrl) {
+                  return (
+                    <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
+                      <Box className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>Este template não possui um molde UV vinculado.</p>
+                      <p className="text-xs mt-2">Vincule um molde na aba "Templates de Camisa" antes de mapear as cores.</p>
+                    </div>
+                  );
+                }
+
+                if (!isSvg) {
+                  return (
+                    <div className="text-center py-12 text-destructive/80 border border-dashed border-destructive/20 rounded-lg bg-destructive/5">
+                      <Box className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>O molde vinculado não é um arquivo SVG.</p>
+                      <p className="text-xs mt-2 text-muted-foreground">O mapeamento de cores só funciona com moldes em formato SVG.</p>
+                    </div>
+                  );
+                }
+
+                return (
                   <div className="pt-4 border-t border-border/30">
                     <UvColorMappingManager 
                       templateId={template.id} 
@@ -1229,10 +1254,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 );
               })()}
 
-              {!editingNiche && templates.length > 0 && (
-                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
+              {!selectedTemplateForMapping && templates.length > 0 && (
+                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/5">
                   <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                  <p>Selecione um template acima para começar o mapeamento</p>
+                  <p>Selecione um template acima para começar o mapeamento de cores do UV</p>
                 </div>
               )}
             </div>
