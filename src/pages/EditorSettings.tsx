@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil, ImageIcon, Box } from 'lucide-react';
+import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil, ImageIcon, Box, Palette } from 'lucide-react';
 import StampColorManager from '@/components/StampColorManager';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
