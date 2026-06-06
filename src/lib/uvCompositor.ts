@@ -160,7 +160,7 @@ export async function composeUvTexture(opts: {
       const isHexMapping = Object.keys(opts.shirtColors).some(k => k.startsWith('#'));
       
       if (isHexMapping) {
-        svgText = applyColorMap(svgText, opts.shirtColors);
+        svgText = applyColorMapToUv(svgText, opts.shirtColors);
       } else {
         // Legacy ID-based mapping for backward compatibility
         const idMap: Record<string, string[]> = {
