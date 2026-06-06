@@ -485,6 +485,7 @@ export type Database = {
           front_preview_url: string | null
           id: string
           owner_user_id: string
+          selected_colors: Json | null
           template_id: string
         }
         Insert: {
@@ -496,6 +497,7 @@ export type Database = {
           front_preview_url?: string | null
           id?: string
           owner_user_id: string
+          selected_colors?: Json | null
           template_id: string
         }
         Update: {
@@ -507,6 +509,7 @@ export type Database = {
           front_preview_url?: string | null
           id?: string
           owner_user_id?: string
+          selected_colors?: Json | null
           template_id?: string
         }
         Relationships: [
@@ -643,6 +646,47 @@ export type Database = {
           },
         ]
       }
+      stamp_color_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          is_editable: boolean
+          original_color: string
+          region_name: string
+          sort_order: number
+          stamp_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_editable?: boolean
+          original_color: string
+          region_name: string
+          sort_order?: number
+          stamp_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_editable?: boolean
+          original_color?: string
+          region_name?: string
+          sort_order?: number
+          stamp_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stamp_color_mappings_stamp_id_fkey"
+            columns: ["stamp_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stamp_colors: {
         Row: {
           back_image_url: string | null
@@ -734,6 +778,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      template_color_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          original_color: string
+          region_name: string
+          sort_order: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_color: string
+          region_name: string
+          sort_order?: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_color?: string
+          region_name?: string
+          sort_order?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_color_mappings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shirt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       template_zones: {
         Row: {
@@ -935,6 +1017,57 @@ export type Database = {
           whatsapp_number?: string
         }
         Relationships: []
+      }
+      uv_color_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          is_editable: boolean
+          original_color: string
+          region_name: string
+          sort_order: number | null
+          stamp_id: string | null
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_editable?: boolean
+          original_color: string
+          region_name: string
+          sort_order?: number | null
+          stamp_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_editable?: boolean
+          original_color?: string
+          region_name?: string
+          sort_order?: number | null
+          stamp_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uv_color_mappings_stamp_id_fkey"
+            columns: ["stamp_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "uv_color_mappings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shirt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       uv_maps: {
         Row: {
