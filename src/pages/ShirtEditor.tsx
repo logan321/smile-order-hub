@@ -503,7 +503,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [selectedTextStyle, setSelectedTextStyle] = useState<{ name: string; imageUrl: string } | null>(null);
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
-  const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
+  
   
   const [shirtColors, setShirtColors] = useState<Record<string, string>>({});
   const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
