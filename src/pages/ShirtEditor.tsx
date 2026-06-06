@@ -2868,28 +2868,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     )}
 
                     {/* Dynamic Color Selection Section - Mobile (Only if no ID colors used) */}
-                    {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
-                      <div className="mt-4 pt-3 border-t border-border/30">
-                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                          <Sparkles className="h-3 w-3 text-accent" />
-                          Cores Detectadas
-                        </p>
-                        <div className="grid grid-cols-1 gap-2">
-                          {extractedSvgColors.map((color, idx) => (
-                            <div key={idx} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                              <div className="flex items-center gap-2">
-                                <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color }} />
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase">Camada {idx + 1}</span>
-                              </div>
-                              <input 
-                                type="color" 
-                                value={stampLayerColors[color] || color} 
-                                onChange={(e) => handleStampLayerColorChange(color, e.target.value)}
-                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                              />
-                            </div>
-                          ))}
-                        </div>
                     {/* Shirt Color Customization - Mobile */}
                     <div className="mt-4 pt-3 border-t border-border/30">
                       <div className="flex items-center justify-between mb-3">
