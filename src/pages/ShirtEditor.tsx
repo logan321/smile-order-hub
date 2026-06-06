@@ -776,9 +776,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             let processedSvg = svgText;
             Object.entries(stampUvColorChoices).forEach(([original, current]) => {
               if (original.toLowerCase() !== current.toLowerCase()) {
-                processedSvg = processedSvg.replaceAll(original, current)
-                                         .replaceAll(original.toLowerCase(), current)
-                                         .replaceAll(original.toUpperCase(), current);
+                const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedOriginal, 'gi');
+                processedSvg = processedSvg.replace(regex, current);
               }
             });
 
