@@ -2902,41 +2902,47 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <Shirt className="h-3 w-3 text-accent" />
                           Cores da Camisa
                         </p>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={syncFrontBack} 
-                            onChange={e => setSyncFrontBack(e.target.checked)} 
-                            className="h-3.5 w-3.5 rounded border-gray-300 text-primary"
-                          />
-                          <span className="text-[10px] text-muted-foreground font-medium">Sincronizar</span>
-                        </label>
+                        {!activeShirtRegion.startsWith('#') && (
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={syncFrontBack} 
+                              onChange={e => setSyncFrontBack(e.target.checked)} 
+                              className="h-3.5 w-3.5 rounded border-gray-300 text-primary"
+                            />
+                            <span className="text-[10px] text-muted-foreground font-medium">Sincronizar</span>
+                          </label>
+                        )}
                       </div>
-
 
                       {regionButtonsMobile}
 
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Livre:</span>
-                        <input 
-                          type="color" 
-                          value={shirtColors[activeShirtRegion] || '#FFFFFF'} 
-                          onChange={(e) => handleApplyShirtColor(e.target.value)}
-                          className="h-8 w-14 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-10 gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/50">
-                        {shirtColorPalette.map((hex, i) => (
-                          <button
-                            key={i}
-                            className={`h-6 w-full rounded-md border-2 transition-transform active:scale-90 ${shirtColors[activeShirtRegion] === hex ? 'border-primary' : 'border-transparent'}`}
-                            style={{ backgroundColor: hex }}
-                            onClick={() => handleApplyShirtColor(hex)}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                            {activeShirtRegion.startsWith('#') ? 'Cor: ' + activeShirtRegion : 'Cor Livre'}
+                          </span>
+                          <input 
+                            type="color" 
+                            value={shirtColors[activeShirtRegion] || '#FFFFFF'} 
+                            onChange={(e) => handleApplyShirtColor(e.target.value)}
+                            className="h-9 w-16 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                           />
-                        ))}
+                        </div>
+
+                        <div className="grid grid-cols-10 gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/50">
+                          {shirtColorPalette.map((hex, i) => (
+                            <button
+                              key={i}
+                              className={`h-6 w-full rounded-md border-2 transition-transform active:scale-90 ${shirtColors[activeShirtRegion] === hex ? 'border-primary' : 'border-transparent'}`}
+                              style={{ backgroundColor: hex }}
+                              onClick={() => handleApplyShirtColor(hex)}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
+
                   </div>
                 )}
                     {/* Color variants for applied stamp - Mobile */}
