@@ -515,6 +515,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
             <Palette className="h-4 w-4" />
             Mapeamento UV
           </TabsTrigger>
+          <TabsTrigger value="stamp-colors" className="gap-2">
+            <Palette className="h-4 w-4" />
+            Cores das Estampas
+          </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
             Estilos de Texto
