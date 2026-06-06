@@ -62,6 +62,29 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [selectedTemplateForMapping, setSelectedTemplateForMapping] = useState<string | null>(null);
+  const [selectedStampForColors, setSelectedStampForColors] = useState<string | null>(null);
+  const stampUvFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingStampUv, setUploadingStampUv] = useState(false);
+
+  const handleUploadStampUv = async (stampId: string, file: File) => {
+    if (!effectiveUserId) { toast.error('Usuário não identificado'); return; }
+    setUploadingStampUv(true);
+    try {
+      const ts = Date.now();
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${effectiveUserId}/${ts}_stampuv_${safe}`;
+      const { error: upErr } = await supabase.storage.from('stamp-catalog').upload(path, file);
+      if (upErr) throw upErr;
+      const url = supabase.storage.from('stamp-catalog').getPublicUrl(path).data.publicUrl;
+      const { error } = await supabase.from('stamp_catalog').update({ uv_map_url: url } as any).eq('id', stampId);
+      if (error) throw error;
+      await fetchStamps();
+      toast.success('SVG UV da estampa atualizado!');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erro ao enviar SVG');
+    }
+    setUploadingStampUv(false);
+  };
 
   useEffect(() => {
     if (targetUserId) {
