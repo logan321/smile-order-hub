@@ -1,0 +1,1 @@
+ALTER TABLE public.stamp_color_mappings ADD CONSTRAINT stamp_id_original_color_unique UNIQUE (stamp_id, original_color);
