@@ -60,6 +60,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [selectedTemplateForMapping, setSelectedTemplateForMapping] = useState<string | null>(null);
 
   useEffect(() => {
     if (targetUserId) {
@@ -488,7 +489,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           </TabsTrigger>
           <TabsTrigger value="color-mappings" className="gap-2">
             <Palette className="h-4 w-4" />
-            Mapear Cores
+            Mapeamento UV
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
@@ -1203,8 +1204,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Selecione o Template</label>
                 <Select 
-                  value={editingNiche || ''} 
-                  onValueChange={(v) => setEditingNiche(v)}
+                  value={selectedTemplateForMapping || ''} 
+                  onValueChange={(v) => setSelectedTemplateForMapping(v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Escolha um template para configurar" />
@@ -1218,7 +1219,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               </div>
 
               {(() => {
-                const template = templates.find(t => t.id === editingNiche);
+                const template = templates.find(t => t.id === selectedTemplateForMapping);
                 return template?.uvMapId && template?.uvMapUrl && (
                   <div className="pt-4 border-t border-border/30">
                     <UvColorMappingManager 
@@ -1229,7 +1230,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 );
               })()}
 
-              {!editingNiche && templates.length > 0 && (
+              {!selectedTemplateForMapping && templates.length > 0 && (
                 <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
                   <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
                   <p>Selecione um template acima para começar o mapeamento</p>
