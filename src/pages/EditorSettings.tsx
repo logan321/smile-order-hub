@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
 import UvColorMappingManager from '@/components/UvColorMappingManager';
-import StampColorMappingManager from '@/components/StampColorMappingManager';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
@@ -62,29 +61,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [selectedTemplateForMapping, setSelectedTemplateForMapping] = useState<string | null>(null);
-  const [selectedStampForColors, setSelectedStampForColors] = useState<string | null>(null);
-  const stampUvFileRef = useRef<HTMLInputElement>(null);
-  const [uploadingStampUv, setUploadingStampUv] = useState(false);
-
-  const handleUploadStampUv = async (stampId: string, file: File) => {
-    if (!effectiveUserId) { toast.error('Usuário não identificado'); return; }
-    setUploadingStampUv(true);
-    try {
-      const ts = Date.now();
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const path = `${effectiveUserId}/${ts}_stampuv_${safe}`;
-      const { error: upErr } = await supabase.storage.from('stamp-catalog').upload(path, file);
-      if (upErr) throw upErr;
-      const url = supabase.storage.from('stamp-catalog').getPublicUrl(path).data.publicUrl;
-      const { error } = await supabase.from('stamp_catalog').update({ uv_map_url: url } as any).eq('id', stampId);
-      if (error) throw error;
-      await fetchStamps();
-      toast.success('SVG UV da estampa atualizado!');
-    } catch (e: any) {
-      toast.error(e?.message || 'Erro ao enviar SVG');
-    }
-    setUploadingStampUv(false);
-  };
 
   useEffect(() => {
     if (targetUserId) {
@@ -514,10 +490,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           <TabsTrigger value="color-mappings" className="gap-2">
             <Palette className="h-4 w-4" />
             Mapeamento UV
-          </TabsTrigger>
-          <TabsTrigger value="stamp-colors" className="gap-2">
-            <Palette className="h-4 w-4" />
-            Cores das Estampas
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
@@ -1288,99 +1260,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   <p>Selecione um template acima para começar o mapeamento de cores do UV</p>
                 </div>
               )}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Stamp Colors — independent from template UV mapping */}
-        <TabsContent value="stamp-colors">
-          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Palette className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold font-display">Cores das Estampas</h2>
-                <p className="text-sm text-muted-foreground">
-                  Configure as regiões de cor do SVG de UV específico de cada estampa.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Selecione a Estampa</label>
-                <Select
-                  value={selectedStampForColors || ''}
-                  onValueChange={(v) => setSelectedStampForColors(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Escolha uma estampa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stamps.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {(() => {
-                const stamp = stamps.find(s => s.id === selectedStampForColors);
-                if (!stamp) {
-                  return stamps.length > 0 ? (
-                    <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/5">
-                      <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                      <p>Selecione uma estampa acima para configurar suas cores.</p>
-                    </div>
-                  ) : null;
-                }
-
-                const hasSvg = stamp.uvMapUrl && stamp.uvMapUrl.toLowerCase().includes('.svg');
-
-                return (
-                  <div className="space-y-4 pt-4 border-t border-border/30">
-                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/20">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium">SVG de UV desta estampa</p>
-                        <p className="text-[11px] text-muted-foreground truncate">
-                          {stamp.uvMapUrl || 'Nenhum SVG vinculado ainda.'}
-                        </p>
-                      </div>
-                      <div>
-                        <input
-                          ref={stampUvFileRef}
-                          type="file"
-                          accept=".svg,image/svg+xml"
-                          className="hidden"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            e.target.value = '';
-                            if (f) handleUploadStampUv(stamp.id, f);
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => stampUvFileRef.current?.click()}
-                          disabled={uploadingStampUv}
-                        >
-                          <Upload className="h-3.5 w-3.5 mr-2" />
-                          {uploadingStampUv ? 'Enviando...' : (hasSvg ? 'Trocar SVG' : 'Enviar SVG')}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {hasSvg ? (
-                      <StampColorMappingManager stampId={stamp.id} svgUrl={stamp.uvMapUrl!} />
-                    ) : (
-                      <div className="text-center py-10 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
-                        <p className="text-sm">Envie um arquivo SVG de UV para esta estampa para detectar as cores.</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
             </div>
           </div>
         </TabsContent>
