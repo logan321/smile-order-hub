@@ -1413,6 +1413,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       });
       
       setAppliedStamp(stamp);
+      setStampUvColorChoices({}); // Reset choices when stamp changes
       setActiveStampColorId(null);
       setStampLayerColors({});
       setExtractedSvgColors([]);
