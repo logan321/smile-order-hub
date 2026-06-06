@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject, Control, controlsUtils } from 'fabric';
 import debounce from 'lodash/debounce';
@@ -73,7 +73,20 @@ interface ShirtEditorProps {
   useOwnAssets?: boolean;
 }
 
-const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
+class ShirtEditorErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  componentDidCatch(error: Error) { this.setState({ error }); }
+  render() {
+    if (this.state.error) return (
+      <div style={{padding: 20, color: 'red', whiteSpace: 'pre-wrap', backgroundColor: '#fff', minHeight: '100vh'}}>
+        <b>ERRO:</b> {this.state.error.message}<br/>{this.state.error.stack}
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+const ShirtEditorContent = ({ useOwnAssets }: ShirtEditorProps) => {
   const { userId: urlUserId, templateId: urlTemplateId } = useParams<{ userId: string; templateId?: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -160,5 +173,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     </div>
   );
 };
+
+const ShirtEditor = (props: ShirtEditorProps) => (
+  <ShirtEditorErrorBoundary>
+    <ShirtEditorContent {...props} />
+  </ShirtEditorErrorBoundary>
+);
 
 export default ShirtEditor;
