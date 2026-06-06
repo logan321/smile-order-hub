@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shirt, Stamp, Upload, Eye, EyeOff, MapPin, Sparkles, MessageCircle, Plus, Trash2, Save, Link, Copy, Check, Type, Tag, Pencil, ImageIcon, Box, Palette } from 'lucide-react';
 import StampColorManager from '@/components/StampColorManager';
-import StampColorEditor from '@/components/StampColorEditor';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
@@ -33,7 +32,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
   const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, updateUvZones, deleteUvMap, fetchUvMaps } = useUvLibrary(targetUserId);
   const [uvZoneEditorTarget, setUvZoneEditorTarget] = useState<string | null>(null);
-  const [selectedStampIdForColors, setSelectedStampIdForColors] = useState<string | null>(null);
 
   // UV Library form state
   const [newUvCode, setNewUvCode] = useState('');
@@ -491,10 +489,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           <TabsTrigger value="color-mappings" className="gap-2">
             <Palette className="h-4 w-4" />
             Mapear Cores
-          </TabsTrigger>
-          <TabsTrigger value="stamp-color-mappings" className="gap-2">
-            <Palette className="h-4 w-4" />
-            Cores das Estampas
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
@@ -1233,60 +1227,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
                   <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
                   <p>Selecione um template acima para começar o mapeamento</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Stamp Color Mappings */}
-        <TabsContent value="stamp-color-mappings">
-          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Palette className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold font-display">Cores por Estampa</h2>
-                <p className="text-sm text-muted-foreground">Configure as regiões coloríveis de cada estampa usando seu SVG de UV</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">Selecione a Estampa</label>
-                <Select 
-                  value={selectedStampIdForColors || ''} 
-                  onValueChange={(v) => setSelectedStampIdForColors(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Escolha uma estampa para configurar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stamps.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedStampIdForColors && stamps.find(s => s.id === selectedStampIdForColors) && (() => {
-                const stamp = stamps.find(s => s.id === selectedStampIdForColors)!;
-                return (
-                  <div className="pt-4 border-t border-border/30">
-                    <StampColorEditor 
-                      stampId={stamp.id} 
-                      stampName={stamp.name} 
-                      uvSvgUrl={stamp.uvMapUrl ?? null} 
-                    />
-                  </div>
-                );
-              })()}
-
-              {!selectedStampIdForColors && stamps.length > 0 && (
-                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
-                  <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                  <p>Selecione uma estampa acima para começar a configurar as cores</p>
                 </div>
               )}
             </div>
