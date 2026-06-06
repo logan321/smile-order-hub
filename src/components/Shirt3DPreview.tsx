@@ -146,7 +146,8 @@ export default function Shirt3DPreview({
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
-        dpr={[1, 2]}
+        dpr={1}
+        frameloop={rotating ? "always" : "demand"}
       >
         <color attach="background" args={['#f1f3f6']} />
         <ambientLight intensity={0.6} />
@@ -154,8 +155,8 @@ export default function Shirt3DPreview({
         <directionalLight position={[-3, 2, -2]} intensity={0.4} />
         <Suspense fallback={null}>
           <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
-          <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
-          <Environment preset="studio" background={false} />
+          <ContactShadows position={[0, -1.95, 0]} opacity={0.3} scale={4} blur={1.5} far={2} frames={1} />
+          <Environment preset="sunset" background={false} frames={1} />
         </Suspense>
         <OrbitControls
           ref={orbitRef}
@@ -167,6 +168,7 @@ export default function Shirt3DPreview({
           enableDamping
           dampingFactor={0.08}
           makeDefault
+          regress
         />
       </Canvas>
 
