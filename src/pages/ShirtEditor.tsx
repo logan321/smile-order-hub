@@ -24,6 +24,7 @@ import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMocku
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import { useTemplateColors } from '@/hooks/useTemplateColors';
 import { scanSvgElements, applyColorMap } from '@/lib/uvCompositor';
+import { useStampUvColors } from '@/hooks/useStampUvColors';
 import type { UvLayer } from '@/lib/uvCompositor';
 
 import type { UvZone } from '@/hooks/useUvLibrary';
