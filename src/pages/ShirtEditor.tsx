@@ -396,6 +396,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
 
+  // Helper to get actual UV URL used for logic
+  const effectiveUvUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl;
+
+
 
 
   // ===== UV-based personalization (new pipeline) =====
