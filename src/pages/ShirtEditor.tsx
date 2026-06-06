@@ -352,7 +352,7 @@ const customMtrControl = new Control({
 });
 
 const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
-  const { userId: urlUserId } = useParams<{ userId: string }>();
+  const { userId: urlUserId, templateId: urlTemplateId } = useParams<{ userId: string; templateId?: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
   const frontFabricRef = useRef<Canvas | null>(null);
@@ -385,6 +385,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     () => debounce(() => setEditsVersion(v => v + 1), 80),
     []
   );
+
+  useEffect(() => {
+    if (urlTemplateId && templates.length > 0) {
+      const t = templates.find(temp => temp.id === urlTemplateId);
+      if (t) setSelectedTemplate(t);
+    }
+  }, [urlTemplateId, templates]);
 
   useEffect(() => () => {
     if (uvTextCommitTimerRef.current != null) {
