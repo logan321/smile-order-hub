@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
 import TemplateColorMappingManager from '@/components/TemplateColorMappingManager';
+import StampColorMappingManager from '@/components/StampColorMappingManager';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
@@ -815,16 +816,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 {stamps.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                     {stamps.map(s => (
-                      <div key={s.id} className="relative rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-7 w-7 z-10 shadow-md"
-                          onClick={() => { if (confirm(`Remover estampa "${s.name}"?`)) deleteStamp(s.id); }}
-                          title="Remover estampa"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                      <div key={s.id} className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
                         <div className="grid grid-cols-2 gap-1 p-2 bg-background">
                           <img src={s.imageUrl} alt={`${s.name} frente`} className="w-full aspect-[3/4] object-contain rounded" />
                           {s.backImageUrl ? (
@@ -875,10 +867,22 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 ))}
                               </SelectContent>
                             </Select>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (confirm(`Remover estampa "${s.name}"?`)) deleteStamp(s.id); }}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
                           </div>
                         </div>
+                        {s.imageUrl.toLowerCase().endsWith('.svg') && (
+                          <div className="px-3 pb-3 border-t border-border/10 pt-3">
+                            <StampColorMappingManager 
+                              stampId={s.id} 
+                              svgUrl={s.uvMapUrl || s.imageUrl} 
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
+
                   </div>
                 )}
 

@@ -485,6 +485,7 @@ export type Database = {
           front_preview_url: string | null
           id: string
           owner_user_id: string
+          selected_colors: Json | null
           template_id: string
         }
         Insert: {
@@ -496,6 +497,7 @@ export type Database = {
           front_preview_url?: string | null
           id?: string
           owner_user_id: string
+          selected_colors?: Json | null
           template_id: string
         }
         Update: {
@@ -507,6 +509,7 @@ export type Database = {
           front_preview_url?: string | null
           id?: string
           owner_user_id?: string
+          selected_colors?: Json | null
           template_id?: string
         }
         Relationships: [
@@ -639,6 +642,44 @@ export type Database = {
             columns: ["uv_map_id"]
             isOneToOne: false
             referencedRelation: "uv_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stamp_color_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          original_color: string
+          region_name: string
+          sort_order: number
+          stamp_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_color: string
+          region_name: string
+          sort_order?: number
+          stamp_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_color?: string
+          region_name?: string
+          sort_order?: number
+          stamp_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stamp_color_mappings_stamp_id_fkey"
+            columns: ["stamp_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_catalog"
             referencedColumns: ["id"]
           },
         ]
