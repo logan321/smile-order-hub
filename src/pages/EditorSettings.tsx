@@ -1220,7 +1220,31 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
               {(() => {
                 const template = templates.find(t => t.id === selectedTemplateForMapping);
-                return template?.uvMapId && template?.uvMapUrl && (
+                if (!template) return null;
+                
+                const isSvg = template.uvMapUrl?.toLowerCase().endsWith('.svg');
+                
+                if (!template.uvMapId || !template.uvMapUrl) {
+                  return (
+                    <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
+                      <Box className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>Este template não possui um molde UV vinculado.</p>
+                      <p className="text-xs mt-2">Vincule um molde na aba "Templates de Camisa" antes de mapear as cores.</p>
+                    </div>
+                  );
+                }
+
+                if (!isSvg) {
+                  return (
+                    <div className="text-center py-12 text-destructive/80 border border-dashed border-destructive/20 rounded-lg bg-destructive/5">
+                      <Box className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>O molde vinculado não é um arquivo SVG.</p>
+                      <p className="text-xs mt-2 text-muted-foreground">O mapeamento de cores só funciona com moldes em formato SVG.</p>
+                    </div>
+                  );
+                }
+
+                return (
                   <div className="pt-4 border-t border-border/30">
                     <UvColorMappingManager 
                       templateId={template.id} 
@@ -1231,9 +1255,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               })()}
 
               {!selectedTemplateForMapping && templates.length > 0 && (
-                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
+                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/5">
                   <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                  <p>Selecione um template acima para começar o mapeamento</p>
+                  <p>Selecione um template acima para começar o mapeamento de cores do UV</p>
                 </div>
               )}
             </div>
