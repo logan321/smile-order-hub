@@ -408,6 +408,21 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [stampUvColorChoices, setStampUvColorChoices] = useState<Record<string, string>>({});
   const { data: stampUvMappings } = useStampUvColors(appliedStamp?.id);
 
+  useEffect(() => {
+    if (stampUvMappings && stampUvMappings.length > 0) {
+      const defaults: Record<string, string> = {};
+      stampUvMappings.forEach(m => {
+        defaults[m.original_color] = m.original_color;
+      });
+      setStampUvColorChoices(prev => {
+        // Only update if we don't have values already to avoid overwriting user choices
+        const hasValues = Object.keys(prev).length > 0;
+        if (hasValues) return prev;
+        return defaults;
+      });
+    }
+  }, [stampUvMappings]);
+
   // ===== UV-based personalization (new pipeline) =====
   // When the selected template's UV map has uv_zones registered by the admin,
   // we render text/image layers directly onto a canvas the size of the UV
