@@ -382,7 +382,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
   const stampSvgCacheRef = useRef<Record<string, string>>({});
   const lastStampUvBlobRef = useRef<string | null>(null);
-  const stampUvDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [stampUvColorChoices, setStampUvColorChoices] = useState<Record<string, string>>({});
   const [stampUvTrigger, setStampUvTrigger] = useState(0);
 
