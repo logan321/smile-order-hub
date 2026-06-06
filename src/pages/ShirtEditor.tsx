@@ -2037,6 +2037,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               { id: 'emblems',  label: 'Emblemas',    icon: ImageIcon },
               { id: 'logo',     label: 'Logo/Img',    icon: Upload },
 
+
             ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
               const active = activeTab === id;
               return (
