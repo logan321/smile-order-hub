@@ -380,6 +380,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
+  const stampSvgCacheRef = useRef<Record<string, string>>({});
+  const lastStampUvBlobRef = useRef<string | null>(null);
+  const stampUvDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [stampUvColorChoices, setStampUvColorChoices] = useState<Record<string, string>>({});
+  const [stampUvTrigger, setStampUvTrigger] = useState(0);
+
   // Debounced bump: re-composite the UV texture with a slight delay
   // Prevents the editor from re-rendering on every mouse move in the color picker.
   const debouncedBump = useMemo(
@@ -405,7 +411,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // have one linked yet. Without this, 3D used to stay blank for most templates.
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
-  const [stampUvColorChoices, setStampUvColorChoices] = useState<Record<string, string>>({});
   const { data: stampUvMappings } = useStampUvColors(appliedStamp?.id);
 
   useEffect(() => {
@@ -694,6 +699,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     uvWidth: uvMapDims.w,
     uvHeight: uvMapDims.h,
     shirtColors: { ...shirtColors, ...stampUvColorChoices },
+    // Use trigger to force re-composition only when requested (debounced)
+    // We add trigger to the dependencies via useUvCompositor options if needed, 
+    // but here we just rely on stampUvColorChoices being stable until commit.
   });
 
 
@@ -757,11 +765,23 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         // Apply stamp-level dynamic colors if it's an SVG and we have choices
         if (appliedStamp?.uvMapUrl && appliedStamp.uvMapUrl.toLowerCase().endsWith('.svg') && Object.keys(stampUvColorChoices).length > 0) {
           try {
-            const res = await fetch(toProxyUrl(appliedStamp.uvMapUrl));
-            const svgText = await res.text();
+            const cacheKey = appliedStamp.uvMapUrl;
+            let svgText = stampSvgCacheRef.current[cacheKey];
+            if (!svgText) {
+              const res = await fetch(toProxyUrl(appliedStamp.uvMapUrl));
+              svgText = await res.text();
+              stampSvgCacheRef.current[cacheKey] = svgText;
+            }
             const coloredSvg = applyColorMapToUv(svgText, stampUvColorChoices);
             const blob = new Blob([coloredSvg], { type: 'image/svg+xml' });
+            
+            // Clean up previous blob
+            if (lastStampUvBlobRef.current) {
+              URL.revokeObjectURL(lastStampUvBlobRef.current);
+            }
+            
             finalUvUrl = URL.createObjectURL(blob);
+            lastStampUvBlobRef.current = finalUvUrl;
             isDynamic = true;
           } catch (e) {
             console.warn('Failed to apply stamp color mapping', e);
@@ -852,7 +872,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, currentStampUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones, stampUvColorChoices]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, currentStampUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones, stampUvTrigger]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   // Falls back to any registered UV map so 3D always has a texture to paint.
@@ -2573,7 +2593,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                               value={stampUvColorChoices[mapping.original_color] || mapping.original_color} 
                               onChange={(e) => {
                                 setStampUvColorChoices(prev => ({ ...prev, [mapping.original_color]: e.target.value }));
-                                debouncedBump();
+                                if (stampUvDebounceRef.current) clearTimeout(stampUvDebounceRef.current);
+                                stampUvDebounceRef.current = setTimeout(() => {
+                                  setStampUvTrigger(v => v + 1);
+                                  debouncedBump();
+                                }, 300);
                               }}
                               className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                             />
@@ -2953,7 +2977,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                                 value={stampUvColorChoices[mapping.original_color] || mapping.original_color} 
                                 onChange={(e) => {
                                   setStampUvColorChoices(prev => ({ ...prev, [mapping.original_color]: e.target.value }));
-                                  debouncedBump();
+                                  if (stampUvDebounceRef.current) clearTimeout(stampUvDebounceRef.current);
+                                  stampUvDebounceRef.current = setTimeout(() => {
+                                    setStampUvTrigger(v => v + 1);
+                                    debouncedBump();
+                                  }, 300);
                                 }}
                                 className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                               />
