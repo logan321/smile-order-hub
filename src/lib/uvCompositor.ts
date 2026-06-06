@@ -55,91 +55,87 @@ async function getSvgText(url: string): Promise<string> {
   return text;
 }
 
-export async function scanSvgElements(svgUrl: string): Promise<{
-  dynamicIds: string[];
-  colors: Record<string, string>;
-}> {
-  const text = await getSvgText(svgUrl);
+export function extractColorsFromSvg(svgText: string): string[] {
   const parser = new DOMParser();
-  const doc = parser.parseFromString(text, 'image/svg+xml');
+  const doc = parser.parseFromString(svgText, 'image/svg+xml');
+  const colors = new Set<string>();
 
-  // IDs fixos — sempre mapeados para regiões fixas
-  const fixedSvgIds = [
-    'cor-base', 'cor-base-verso',
-    'manga-esquerda', 'manga-direita',
-    'gola', 'gola-2', 'gola-interna', 'gola-externa', 'gola-frente', 'gola-verso'
-  ];
-
-  // IDs que devem ser IGNORADOS (camadas do Corel)
-  const ignoredPatterns = ['Camada', 'CorelCorpID', 'Corel-Layer'];
-
-  const extractFill = (el: Element): string | null => {
+  const extractColor = (el: Element) => {
     let color = el.getAttribute('fill');
-    if (!color || color === 'none') {
+    if (!color || color === 'none' || color.startsWith('url')) {
       const style = el.getAttribute('style');
       if (style) {
         const match = style.match(/fill:\s*([^;"]+)/);
         if (match) color = match[1].trim();
       }
     }
-    if (color && color !== 'none') {
-      if (color.startsWith('#')) {
-        if (color.length === 4) {
-          const r = color[1];
-          const g = color[2];
-          const b = color[3];
-          return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
-        }
-        return color.substring(0, 7).toUpperCase();
+
+    if (color && color.startsWith('#')) {
+      // Normalize to 6-digit hex uppercase
+      let hex = color.toUpperCase();
+      if (hex.length === 4) {
+        hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
       }
+      colors.add(hex.substring(0, 7));
     }
-    return null;
   };
 
-  const colors: Record<string, string> = {};
+  const elements = doc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, g');
+  elements.forEach(extractColor);
 
-  // Extrai cores dos ids fixos
-  fixedSvgIds.forEach(id => {
-    const el = doc.getElementById(id);
-    if (el) {
-      const color = extractFill(el);
-      if (color) colors[id] = color;
-    }
-  });
-
-  // Encontra ids dinâmicos: qualquer id que começa com "elemento"
-  // e não é um id de camada do Corel
-  const allIds = Array.from(doc.querySelectorAll('[id]'))
-    .map(el => el.id)
-    .filter(id => {
-      const isCorelLayer = ignoredPatterns.some(p => id.includes(p));
-      const isFixed = fixedSvgIds.includes(id);
-      return !isCorelLayer && !isFixed && id.startsWith('elemento');
-    });
-
-  // Remove duplicatas e ordena numericamente
-  const uniqueIds = [...new Set(allIds)].sort((a, b) => {
-    const getNum = (s: string) => {
-      const match = s.match(/\d+$/);
-      return match ? parseInt(match[0]) : (s === 'elemento' ? 1 : 0);
-    };
-    return getNum(a) - getNum(b);
-  });
-
-  // Extrai cores dos elementos dinâmicos
-  uniqueIds.forEach(id => {
-    const el = doc.getElementById(id);
-    if (el) {
-      const color = extractFill(el);
-      colors[id] = color || '#FFFFFF';
-    }
-  });
-
-  console.log('IDs fixos encontrados:', fixedSvgIds.filter(id => doc.getElementById(id)));
-  console.log('IDs dinâmicos encontrados:', uniqueIds);
-
-  return { dynamicIds: uniqueIds, colors };
+  return Array.from(colors).sort();
 }
+
+export function applyColorMap(svgText: string, colorMap: Record<string, string>): string {
+  let processedSvg = svgText;
+
+  Object.entries(colorMap).forEach(([originalColor, newColor]) => {
+    const hex = originalColor.toUpperCase();
+    const shortHex = hex.length === 7 ? `#${hex[1]}${hex[3]}${hex[5]}` : hex;
+    
+    // Regex to find fill attributes or style fill properties with the original color
+    // Handles #FFFFFF, #ffffff, #FFF, etc.
+    const escapedHex = hex.replace('#', '');
+    const escapedShortHex = shortHex.replace('#', '');
+    
+    const colorPattern = `(?:#?${escapedHex}|#?${escapedShortHex})`;
+    const colorRegex = new RegExp(colorPattern, 'gi');
+
+    // Simple string replacement for specific color values in fill attributes
+    // This is a broad stroke approach but safe for SVG text if we target fill="..."
+    processedSvg = processedSvg.replace(
+      new RegExp(`fill=["']${colorPattern}["']`, 'gi'),
+      `fill="${newColor}"`
+    );
+
+    processedSvg = processedSvg.replace(
+      new RegExp(`fill:\\s*${colorPattern}`, 'gi'),
+      `fill:${newColor}`
+    );
+  });
+
+  return processedSvg;
+}
+
+export async function scanSvgElements(svgUrl: string): Promise<{
+  dynamicIds: string[];
+  colors: Record<string, string>;
+}> {
+  const text = await getSvgText(svgUrl);
+  const colors = extractColorsFromSvg(text);
+  
+  // Backward compatibility: try to map some common IDs if they exist
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'image/svg+xml');
+  const resultColors: Record<string, string> = {};
+  
+  colors.forEach((color, index) => {
+    resultColors[`color-${index}`] = color;
+  });
+
+  return { dynamicIds: [], colors: resultColors };
+}
+
 
 let persistentCanvas: HTMLCanvasElement | null = null;
 
@@ -157,56 +153,58 @@ export async function composeUvTexture(opts: {
   if (opts.shirtColors && Object.keys(opts.shirtColors).length > 0) {
     try {
       let svgText = await getSvgText(opts.baseUrl);
-      svgText = svgText.slice(); // Ensure we don't mutate cache
+      
+      // Use the new applyColorMap logic if shirtColors keys look like hex values
+      const isHexMapping = Object.keys(opts.shirtColors).some(k => k.startsWith('#'));
+      
+      if (isHexMapping) {
+        svgText = applyColorMap(svgText, opts.shirtColors);
+      } else {
+        // Legacy ID-based mapping for backward compatibility
+        const idMap: Record<string, string[]> = {
+          'corpo-frente':   ['cor-base'],
+          'corpo-verso':    ['cor-base-verso'],
+          'manga-esquerda': ['manga-esquerda'],
+          'manga-direita':  ['manga-direita'],
+          'gola':           ['gola', 'gola-2'],
+          'gola-interna':   ['gola-interna'],
+          'gola-externa':   ['gola-externa'],
+          'gola-frente':    ['gola-frente'],
+          'gola-verso':     ['gola-verso'],
+        };
 
-      const idMap: Record<string, string[]> = {
-        'corpo-frente':   ['cor-base'],
-        'corpo-verso':    ['cor-base-verso'],
-        'manga-esquerda': ['manga-esquerda'],
-        'manga-direita':  ['manga-direita'],
-        'gola':           ['gola', 'gola-2'],
-        'gola-interna':   ['gola-interna'],
-        'gola-externa':   ['gola-externa'],
-        'gola-frente':    ['gola-frente'],
-        'gola-verso':     ['gola-verso'],
-      };
+        Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
+          const svgIds = idMap[regionId] || [regionId];
+          svgIds.forEach(id => {
+            const escapedId = id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const idPattern = `(?:id=["']${escapedId}(?:_[0-9]+)?["'])`;
+            
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+${idPattern}[^>]*?)fill=["'][^"']*?["']`, 'g'),
+              `$1fill="${color}"`
+            );
 
-      Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
-        const svgIds = idMap[regionId] || [regionId];
-        svgIds.forEach(id => {
-          // Escape ID for regex and add optional Corel suffix (_1, _2, etc.)
-          const escapedId = id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-          const idPattern = `(?:id=["']${escapedId}(?:_[0-9]+)?["'])`;
-          
-          // Caso 1: id vem ANTES do fill na tag
-          svgText = svgText.replace(
-            new RegExp(`(<[^>]+${idPattern}[^>]*?)fill=["'][^"']*?["']`, 'g'),
-            `$1fill="${color}"`
-          );
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+?)fill=["'][^"']*?["']([^>]*?${idPattern})`, 'g'),
+              `fill="${color}"$1$2`
+            );
 
-          // Caso 2: fill vem ANTES do id na tag
-          svgText = svgText.replace(
-            new RegExp(`(<[^>]+?)fill=["'][^"']*?["']([^>]*?${idPattern})`, 'g'),
-            `fill="${color}"$1$2`
-          );
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+${idPattern}(?![^>]*fill=)[^>]*)>`, 'g'),
+              `$1 fill="${color}">`
+            );
 
-          // Caso 3: id existe mas NÃO tem fill ainda (grupo sem fill definido)
-          // Adiciona fill no grupo: <g id="elemento-2"> → <g id="elemento-2" fill="#FF0000">
-          svgText = svgText.replace(
-            new RegExp(`(<[^>]+${idPattern}(?![^>]*fill=)[^>]*)>`, 'g'),
-            `$1 fill="${color}">`
-          );
-
-          // Caso 4: fill dentro do style inline
-          svgText = svgText.replace(
-            new RegExp(`(<[^>]+${idPattern}[^>]*?style=["'][^"']*?)fill:\\s*[^;"]*(;?)`, 'g'),
-            `$1fill:${color}$2`
-          );
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+${idPattern}[^>]*?style=["'][^"']*?)fill:\\s*[^;"]*(;?)`, 'g'),
+              `$1fill:${color}$2`
+            );
+          });
         });
-      });
+      }
 
       const blob = new Blob([svgText], { type: 'image/svg+xml' });
       finalBaseUrl = URL.createObjectURL(blob);
+
     } catch (err) {
       console.warn('Failed to process SVG colors, falling back to original', err);
     }
