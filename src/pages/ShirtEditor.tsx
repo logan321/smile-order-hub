@@ -2915,9 +2915,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         </div>
                       </div>
                     </div>
-
-                  </div>
-                )}
                     {/* Color variants for applied stamp - Mobile */}
                     {appliedStampColors.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
