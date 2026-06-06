@@ -396,6 +396,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
 
+  // Helper to get actual UV URL used for logic
+  const effectiveUvUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl;
+
+
   // ===== UV-based personalization (new pipeline) =====
   // When the selected template's UV map has uv_zones registered by the admin,
   // we render text/image layers directly onto a canvas the size of the UV
@@ -2411,12 +2415,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             {/* Desktop zoom bar */}
             <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
               <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-3.5 w-3.5" /></Button>
-              <Slider value={[activeZoom * 100]} onValueChange={([v]) => setActiveZoom(v / 100)} min={30} max={250} step={5} className="w-52" />
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-3.5 w-3.5" /></Button>
-              <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round(activeZoom * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActiveZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }} title="Resetar zoom"><RotateCcw className="h-3.5 w-3.5" /></Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-3.5 w-3.5" /></Button>
+              <Slider value={[(activeView === 'front' ? frontZoom : backZoom) * 100]} onValueChange={([v]) => activeView === 'front' ? setFrontZoom(v / 100) : setBackZoom(v / 100)} min={30} max={250} step={5} className="w-52" />
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-3.5 w-3.5" /></Button>
+              <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round((activeView === 'front' ? frontZoom : backZoom) * 100)}%</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (activeView === 'front') setFrontZoom(1); else setBackZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }} title="Resetar zoom"><RotateCcw className="h-3.5 w-3.5" /></Button>
             </div>
+
             {/* Canvas container — single render, responsive display */}
             <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
               <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${!show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
@@ -2449,6 +2454,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       cameraPosition={cameraPosition}
                       autoRotate={false}
                     />
+
                     
                     {/* View Controls - Integration directly in the main 3D view */}
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
@@ -2572,7 +2578,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   como fonte da textura UV (oculto) e nunca é exibido ao usuário. */}
 
               {/* Floating pan mode button — big and obvious for mobile users */}
-              {activeZoom > 1 && (
+              {(activeView === 'front' ? frontZoom : backZoom) > 1 && (
                 <div className="lg:hidden absolute bottom-3 right-3 flex flex-col items-center gap-2 z-20">
                   <button
                     onClick={() => {
@@ -2592,7 +2598,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   </button>
                   <button
                     onClick={() => {
-                      setActiveZoom(1);
+                      if (activeView === 'front') setFrontZoom(1); else setBackZoom(1);
                       setPanMode(false);
                       const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
                       if (canvas) {
@@ -2607,6 +2613,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   </button>
                 </div>
               )}
+
             </div>
           </div>
         </div>
