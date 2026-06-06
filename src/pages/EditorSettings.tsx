@@ -9,6 +9,7 @@ import StampColorManager from '@/components/StampColorManager';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
+import TemplateColorMappingManager from '@/components/TemplateColorMappingManager';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
@@ -484,6 +485,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           <TabsTrigger value="uvlib" className="gap-2">
             <Box className="h-4 w-4" />
             Biblioteca de UVs
+          </TabsTrigger>
+          <TabsTrigger value="color-mappings" className="gap-2">
+            <Palette className="h-4 w-4" />
+            Mapear Cores
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
@@ -1174,6 +1179,56 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 <Save className="h-4 w-4 mr-2" />
                 Salvar WhatsApp
               </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Color Mappings */}
+        <TabsContent value="color-mappings">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Palette className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">Mapeamento de Cores por Template</h2>
+                <p className="text-sm text-muted-foreground">Defina quais cores do SVG podem ser alteradas pelo cliente</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Selecione o Template</label>
+                <Select 
+                  value={editingNiche || ''} 
+                  onValueChange={(v) => setEditingNiche(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha um template para configurar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editingNiche && templates.find(t => t.id === editingNiche) && (
+                <div className="pt-4 border-t border-border/30">
+                  <TemplateColorMappingManager 
+                    templateId={editingNiche} 
+                    svgUrl={templates.find(t => t.id === editingNiche)!.uvMapUrl!} 
+                  />
+                </div>
+              )}
+
+              {!editingNiche && templates.length > 0 && (
+                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
+                  <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>Selecione um template acima para começar o mapeamento</p>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>
