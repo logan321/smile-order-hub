@@ -1222,7 +1222,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 const template = templates.find(t => t.id === selectedTemplateForMapping);
                 if (!template) return null;
                 
-                const isSvg = template.uvMapUrl?.toLowerCase().endsWith('.svg');
+                const isSvg = template.uvMapUrl?.toLowerCase().includes('.svg');
                 
                 if (!template.uvMapId || !template.uvMapUrl) {
                   return (
