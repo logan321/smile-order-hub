@@ -369,6 +369,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
+  const [uvZonesActive, setUvZonesActive] = useState(false);
+
   // Debounced bump: re-composite the UV texture at most every ~120ms while the
   // user is typing / dragging. Prevents the editor from re-rendering on every
   // keystroke, which was causing visible lag in the 3D preview.
