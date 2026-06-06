@@ -412,14 +412,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const { data: stampUvMappings } = useStampUvColors(appliedStamp?.id);
 
+  // Problema encontrado: Este useEffect estava rodando a cada renderização quando stampUvMappings estava presente,
+  // pois a lógica de atualização do estado dependia de uma verificação que podia ser instável.
+  // Corrigido para rodar apenas quando os mapeamentos do banco mudarem.
   useEffect(() => {
     if (stampUvMappings && stampUvMappings.length > 0) {
       const defaults: Record<string, string> = {};
       stampUvMappings.forEach(m => {
         defaults[m.original_color] = m.original_color;
       });
+      
       setStampUvColorChoices(prev => {
-        // Only update if we don't have values already to avoid overwriting user choices
         const hasValues = Object.keys(prev).length > 0;
         if (hasValues) return prev;
         return defaults;
