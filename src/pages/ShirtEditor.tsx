@@ -683,7 +683,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
 
   // Debug log to check if effectiveUvUrl is correct
-  console.log('ShirtEditor rendering, effectiveUvUrl:', effectiveUvUrl);
+  if (selectedTemplate) {
+    console.log('ShirtEditor rendering, effectiveUvUrl:', effectiveUvUrl);
+  }
+
 
 
   const frontStampRef = useRef<FabricImage | null>(null);
