@@ -779,6 +779,44 @@ export type Database = {
         }
         Relationships: []
       }
+      template_color_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          original_color: string
+          region_name: string
+          sort_order: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_color: string
+          region_name: string
+          sort_order?: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_color?: string
+          region_name?: string
+          sort_order?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_color_mappings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "shirt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template_zones: {
         Row: {
           back_height_percent: number
