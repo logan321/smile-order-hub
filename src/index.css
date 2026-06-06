@@ -167,3 +167,11 @@ canvas.upper-canvas {
   -webkit-touch-callout: none;
   pointer-events: none;
 }
+
+/* Hide Lovable badge */
+#lovable-badge,
+#lovable-badge-v2,
+[id^="lovable-badge"],
+a[href*="lovable.dev"][target="_blank"] {
+  display: none !important;
+}
