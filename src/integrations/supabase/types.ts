@@ -646,6 +646,47 @@ export type Database = {
           },
         ]
       }
+      stamp_color_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          is_editable: boolean
+          original_color: string
+          region_name: string
+          sort_order: number
+          stamp_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_editable?: boolean
+          original_color: string
+          region_name: string
+          sort_order?: number
+          stamp_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_editable?: boolean
+          original_color?: string
+          region_name?: string
+          sort_order?: number
+          stamp_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stamp_color_mappings_stamp_id_fkey"
+            columns: ["stamp_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stamp_colors: {
         Row: {
           back_image_url: string | null
