@@ -22,7 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
-import { scanSvgElements } from '@/lib/uvCompositor';
+import { useTemplateColors } from '@/hooks/useTemplateColors';
+import { scanSvgElements, applyColorMap } from '@/lib/uvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
 
 import type { UvZone } from '@/hooks/useUvLibrary';
@@ -504,13 +505,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const originalColorsRef = useRef<Record<string, string>>({});
 
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  const { data: templateColorMappings, isLoading: loadingMappings } = useTemplateColors(selectedTemplate?.id);
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   useEffect(() => {
     if (!uvBaseUrl) return;
-    setShirtColors({}); // Clear immediately to show original colors while scanning
+    
+    // If we have mappings in the database, use them
+    if (templateColorMappings && templateColorMappings.length > 0) {
+      const initialColors: Record<string, string> = {};
+      templateColorMappings.forEach(m => {
+        initialColors[m.original_color] = m.original_color;
+      });
+      setShirtColors(initialColors);
+      originalColorsRef.current = initialColors;
+      return;
+    }
+
+    // Fallback to legacy scanning if no database mappings exist
+    setShirtColors({});
     scanSvgElements(uvBaseUrl).then(({ dynamicIds, colors }) => {
-      console.log('IDs dinâmicos encontrados no carregamento:', dynamicIds);
       setDynamicElements(dynamicIds);
       
       const idMap: Record<string, string[]> = {
@@ -536,22 +550,24 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       });
 
       dynamicIds.forEach(id => {
-        if (colors[id]) {
-          scanned[id] = colors[id];
-        } else {
-          scanned[id] = '#FFFFFF';
-        }
+        scanned[id] = colors[id] || '#FFFFFF';
       });
       
       originalColorsRef.current = scanned;
-      // Initialize state with these original colors so they appear in the UI
-      // and are used by the compositor.
       setShirtColors(scanned);
     });
-  }, [uvBaseUrl]);
+  }, [uvBaseUrl, templateColorMappings]);
 
-  const fixedRegions = useMemo(() => {
-    const all = [
+
+  const shirtRegions = useMemo(() => {
+    if (templateColorMappings && templateColorMappings.length > 0) {
+      return templateColorMappings.map(m => ({
+        id: m.original_color,
+        label: m.region_name
+      }));
+    }
+
+    const fixed = [
       { id: 'corpo-frente',   label: 'Cor Base (Corpo)' },
       { id: 'corpo-verso',    label: 'Verso' },
       { id: 'manga-esquerda', label: 'Manga Esquerda' },
@@ -561,17 +577,16 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       { id: 'gola-externa',   label: 'Gola Externa' },
       { id: 'gola-frente',    label: 'Gola Frente' },
       { id: 'gola-verso',     label: 'Gola Verso' },
-    ];
-    // Mostra só os que existem no SVG atual (foram encontrados no scan)
-    return all.filter(r => r.id in shirtColors);
-  }, [shirtColors]);
+    ].filter(r => r.id in shirtColors);
 
-  const dynamicRegions = useMemo(() => dynamicElements.map((id, index) => ({
-    id,
-    label: index === 0 ? 'Elemento 1' : `Elemento ${index + 1}`
-  })), [dynamicElements]);
+    const dynamic = dynamicElements.map((id, index) => ({
+      id,
+      label: index === 0 ? 'Elemento 1' : `Elemento ${index + 1}`
+    }));
 
-  const shirtRegions = useMemo(() => [...fixedRegions, ...dynamicRegions], [fixedRegions, dynamicRegions]);
+    return [...fixed, ...dynamic];
+  }, [shirtColors, templateColorMappings, dynamicElements]);
+
 
   const regionButtonsDesktop = useMemo(() => (
     <div className="grid grid-cols-2 gap-1 mb-3">
