@@ -114,10 +114,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     return [];
   }, [templateColorMappings]);
 
-  // Rest of the component logic would go here...
-  // Since I don't have the full original source code in the context, I'm restoring the state before message #752.
-  // The user specifically asked to restore the state before the "blank screen" which was caused by my last edit.
-
   return (
     <div className="flex flex-col h-screen bg-background">
        {/* Simplified Editor UI */}
