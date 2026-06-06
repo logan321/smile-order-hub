@@ -765,11 +765,23 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         // Apply stamp-level dynamic colors if it's an SVG and we have choices
         if (appliedStamp?.uvMapUrl && appliedStamp.uvMapUrl.toLowerCase().endsWith('.svg') && Object.keys(stampUvColorChoices).length > 0) {
           try {
-            const res = await fetch(toProxyUrl(appliedStamp.uvMapUrl));
-            const svgText = await res.text();
+            const cacheKey = appliedStamp.uvMapUrl;
+            let svgText = stampSvgCacheRef.current[cacheKey];
+            if (!svgText) {
+              const res = await fetch(toProxyUrl(appliedStamp.uvMapUrl));
+              svgText = await res.text();
+              stampSvgCacheRef.current[cacheKey] = svgText;
+            }
             const coloredSvg = applyColorMapToUv(svgText, stampUvColorChoices);
             const blob = new Blob([coloredSvg], { type: 'image/svg+xml' });
+            
+            // Clean up previous blob
+            if (lastStampUvBlobRef.current) {
+              URL.revokeObjectURL(lastStampUvBlobRef.current);
+            }
+            
             finalUvUrl = URL.createObjectURL(blob);
+            lastStampUvBlobRef.current = finalUvUrl;
             isDynamic = true;
           } catch (e) {
             console.warn('Failed to apply stamp color mapping', e);
