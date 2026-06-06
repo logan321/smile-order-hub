@@ -751,13 +751,31 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     let alive = true;
     (async () => {
       try {
+        let finalUvUrl = uv;
+        let isDynamic = false;
+        
+        // Apply stamp-level dynamic colors if it's an SVG and we have choices
+        if (appliedStamp?.uvMapUrl && appliedStamp.uvMapUrl.toLowerCase().endsWith('.svg') && Object.keys(stampUvColorChoices).length > 0) {
+          try {
+            const res = await fetch(toProxyUrl(appliedStamp.uvMapUrl));
+            const svgText = await res.text();
+            const coloredSvg = applyColorMap(svgText, stampUvColorChoices);
+            const blob = new Blob([coloredSvg], { type: 'image/svg+xml' });
+            finalUvUrl = URL.createObjectURL(blob);
+            isDynamic = true;
+          } catch (e) {
+            console.warn('Failed to apply stamp color mapping', e);
+          }
+        }
+
         // Start from UV image. If template (not stamp) UV, optionally overlay stamp.
         const base = appliedStamp?.uvMapUrl
           ? await (async () => {
-              const img = await loadUvImage(uv);
+              const img = await loadUvImage(finalUvUrl);
               const c = document.createElement('canvas');
               c.width = img.naturalWidth; c.height = img.naturalHeight;
               c.getContext('2d')!.drawImage(img, 0, 0);
+              if (isDynamic) URL.revokeObjectURL(finalUvUrl);
               return c;
             })()
           : await composeUvWithStamp(uv, stampImg ?? null);
