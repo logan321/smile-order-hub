@@ -2027,6 +2027,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           <div className="flex items-center justify-start lg:justify-center gap-2 lg:gap-3 min-w-max mx-auto">
             {([
               { id: 'stamps',   label: 'Estampas',    icon: Shirt },
+              { id: 'patches',  label: 'Peixes',      icon: Sparkles },
+              { id: 'text',     label: 'Textos',      icon: Type },
+              { id: 'name',     label: 'Nome/Nº',     icon: Shirt },
+              { id: 'emblems',  label: 'Emblemas',    icon: ImageIcon },
+              { id: 'logo',     label: 'Logo/Img',    icon: Upload },
+
             ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
               const active = activeTab === id;
               return (
