@@ -405,6 +405,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // have one linked yet. Without this, 3D used to stay blank for most templates.
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
+  const [stampUvColorChoices, setStampUvColorChoices] = useState<Record<string, string>>({});
+  const { data: stampUvMappings } = useStampUvColors(appliedStamp?.id);
 
   // ===== UV-based personalization (new pipeline) =====
   // When the selected template's UV map has uv_zones registered by the admin,
