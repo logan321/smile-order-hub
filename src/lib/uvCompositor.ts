@@ -55,84 +55,59 @@ async function getSvgText(url: string): Promise<string> {
   return text;
 }
 
-/**
- * Extracts unique hex colors and their occurrence counts from an SVG string.
- */
-export function extractColorsFromUvSvg(svgText: string): Array<{hex: string, count: number}> {
+export function extractColorsFromSvg(svgText: string): string[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgText, 'image/svg+xml');
-  const colorCounts: Record<string, number> = {};
+  const colors = new Set<string>();
 
-  const processColor = (color: string | null) => {
-    if (!color || color === 'none' || color.startsWith('url')) return;
-    
-    if (color.startsWith('#')) {
+  const extractColor = (el: Element) => {
+    let color = el.getAttribute('fill');
+    if (!color || color === 'none' || color.startsWith('url')) {
+      const style = el.getAttribute('style');
+      if (style) {
+        const match = style.match(/fill:\s*([^;"]+)/);
+        if (match) color = match[1].trim();
+      }
+    }
+
+    if (color && color.startsWith('#')) {
+      // Normalize to 6-digit hex uppercase
       let hex = color.toUpperCase();
       if (hex.length === 4) {
         hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
       }
-      const normalized = hex.substring(0, 7);
-      colorCounts[normalized] = (colorCounts[normalized] || 0) + 1;
+      colors.add(hex.substring(0, 7));
     }
   };
 
-  const elements = doc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, g, stop');
-  elements.forEach(el => {
-    // Check fill and stroke attributes
-    processColor(el.getAttribute('fill'));
-    processColor(el.getAttribute('stroke'));
-    
-    // Check style attribute
-    const style = el.getAttribute('style');
-    if (style) {
-      const fillMatch = style.match(/fill:\s*([^;"]+)/);
-      if (fillMatch) processColor(fillMatch[1].trim());
-      
-      const strokeMatch = style.match(/stroke:\s*([^;"]+)/);
-      if (strokeMatch) processColor(strokeMatch[1].trim());
-    }
+  const elements = doc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, g');
+  elements.forEach(extractColor);
 
-    // Check stop-color for gradients
-    if (el.tagName.toLowerCase() === 'stop') {
-      processColor(el.getAttribute('stop-color'));
-      if (style) {
-        const stopMatch = style.match(/stop-color:\s*([^;"]+)/);
-        if (stopMatch) processColor(stopMatch[1].trim());
-      }
-    }
-  });
-
-  return Object.entries(colorCounts)
-    .map(([hex, count]) => ({ hex, count }))
-    .sort((a, b) => b.count - a.count);
+  return Array.from(colors).sort();
 }
 
-/**
- * Replaces colors in an SVG string based on a mapping of original hex -> new hex.
- * Handles fill="..." and style="fill:..." with case insensitivity.
- */
-export function applyColorMapToUv(svgText: string, colorMap: Record<string, string>): string {
+export function applyColorMap(svgText: string, colorMap: Record<string, string>): string {
   let processedSvg = svgText;
 
   Object.entries(colorMap).forEach(([originalColor, newColor]) => {
-    if (!originalColor.startsWith('#')) return;
-
     const hex = originalColor.toUpperCase();
     const shortHex = hex.length === 7 ? `#${hex[1]}${hex[3]}${hex[5]}` : hex;
     
+    // Regex to find fill attributes or style fill properties with the original color
+    // Handles #FFFFFF, #ffffff, #FFF, etc.
     const escapedHex = hex.replace('#', '');
     const escapedShortHex = shortHex.replace('#', '');
     
-    // Patterns for #RRGGBB and #RGB, case insensitive, with or without #
     const colorPattern = `(?:#?${escapedHex}|#?${escapedShortHex})`;
+    const colorRegex = new RegExp(colorPattern, 'gi');
 
-    // Replace fill="..."
+    // Simple string replacement for specific color values in fill attributes
+    // This is a broad stroke approach but safe for SVG text if we target fill="..."
     processedSvg = processedSvg.replace(
       new RegExp(`fill=["']${colorPattern}["']`, 'gi'),
       `fill="${newColor}"`
     );
 
-    // Replace fill: #... in style
     processedSvg = processedSvg.replace(
       new RegExp(`fill:\\s*${colorPattern}`, 'gi'),
       `fill:${newColor}`
@@ -147,11 +122,15 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   colors: Record<string, string>;
 }> {
   const text = await getSvgText(svgUrl);
-  const colors = extractColorsFromUvSvg(text);
+  const colors = extractColorsFromSvg(text);
   
+  // Backward compatibility: try to map some common IDs if they exist
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'image/svg+xml');
   const resultColors: Record<string, string> = {};
-  colors.forEach((c, index) => {
-    resultColors[`color-${index}`] = c.hex;
+  
+  colors.forEach((color, index) => {
+    resultColors[`color-${index}`] = color;
   });
 
   return { dynamicIds: [], colors: resultColors };
@@ -175,8 +154,53 @@ export async function composeUvTexture(opts: {
     try {
       let svgText = await getSvgText(opts.baseUrl);
       
-      // Use hex-based mapping for UV regions
-      svgText = applyColorMapToUv(svgText, opts.shirtColors);
+      // Use the new applyColorMap logic if shirtColors keys look like hex values
+      const isHexMapping = Object.keys(opts.shirtColors).some(k => k.startsWith('#'));
+      
+      if (isHexMapping) {
+        svgText = applyColorMap(svgText, opts.shirtColors);
+      } else {
+        // Legacy ID-based mapping for backward compatibility
+        const idMap: Record<string, string[]> = {
+          'corpo-frente':   ['cor-base'],
+          'corpo-verso':    ['cor-base-verso'],
+          'manga-esquerda': ['manga-esquerda'],
+          'manga-direita':  ['manga-direita'],
+          'gola':           ['gola', 'gola-2'],
+          'gola-interna':   ['gola-interna'],
+          'gola-externa':   ['gola-externa'],
+          'gola-frente':    ['gola-frente'],
+          'gola-verso':     ['gola-verso'],
+        };
+
+        Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
+          const svgIds = idMap[regionId] || [regionId];
+          svgIds.forEach(id => {
+            const escapedId = id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const idPattern = `(?:id=["']${escapedId}(?:_[0-9]+)?["'])`;
+            
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+${idPattern}[^>]*?)fill=["'][^"']*?["']`, 'g'),
+              `$1fill="${color}"`
+            );
+
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+?)fill=["'][^"']*?["']([^>]*?${idPattern})`, 'g'),
+              `fill="${color}"$1$2`
+            );
+
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+${idPattern}(?![^>]*fill=)[^>]*)>`, 'g'),
+              `$1 fill="${color}">`
+            );
+
+            svgText = svgText.replace(
+              new RegExp(`(<[^>]+${idPattern}[^>]*?style=["'][^"']*?)fill:\\s*[^;"]*(;?)`, 'g'),
+              `$1fill:${color}$2`
+            );
+          });
+        });
+      }
 
       const blob = new Blob([svgText], { type: 'image/svg+xml' });
       finalBaseUrl = URL.createObjectURL(blob);

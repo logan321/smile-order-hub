@@ -9,7 +9,7 @@ import StampColorManager from '@/components/StampColorManager';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
-import UvColorMappingManager from '@/components/UvColorMappingManager';
+import TemplateColorMappingManager from '@/components/TemplateColorMappingManager';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
@@ -60,7 +60,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   // Public editor link
   const [editorUserId, setEditorUserId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [selectedTemplateForMapping, setSelectedTemplateForMapping] = useState<string | null>(null);
 
   useEffect(() => {
     if (targetUserId) {
@@ -489,7 +488,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           </TabsTrigger>
           <TabsTrigger value="color-mappings" className="gap-2">
             <Palette className="h-4 w-4" />
-            Mapeamento UV
+            Mapear Cores
           </TabsTrigger>
           <TabsTrigger value="textstyles" className="gap-2">
             <Type className="h-4 w-4" />
@@ -816,7 +815,16 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 {stamps.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                     {stamps.map(s => (
-                      <div key={s.id} className="rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+                      <div key={s.id} className="relative rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-7 w-7 z-10 shadow-md"
+                          onClick={() => { if (confirm(`Remover estampa "${s.name}"?`)) deleteStamp(s.id); }}
+                          title="Remover estampa"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                         <div className="grid grid-cols-2 gap-1 p-2 bg-background">
                           <img src={s.imageUrl} alt={`${s.name} frente`} className="w-full aspect-[3/4] object-contain rounded" />
                           {s.backImageUrl ? (
@@ -867,22 +875,10 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 ))}
                               </SelectContent>
                             </Select>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (confirm(`Remover estampa "${s.name}"?`)) deleteStamp(s.id); }}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
                           </div>
                         </div>
-                        {s.uvMapId && s.uvMapUrl && (
-                          <div className="px-3 pb-3 border-t border-border/10 pt-3">
-                            <UvColorMappingManager 
-                              templateId={s.templateId || ''} 
-                              svgUrl={s.uvMapUrl || ''} 
-                            />
-                          </div>
-                        )}
                       </div>
                     ))}
-
                   </div>
                 )}
 
@@ -1204,8 +1200,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Selecione o Template</label>
                 <Select 
-                  value={selectedTemplateForMapping || ''} 
-                  onValueChange={(v) => setSelectedTemplateForMapping(v)}
+                  value={editingNiche || ''} 
+                  onValueChange={(v) => setEditingNiche(v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Escolha um template para configurar" />
@@ -1218,46 +1214,19 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 </Select>
               </div>
 
-              {(() => {
-                const template = templates.find(t => t.id === selectedTemplateForMapping);
-                if (!template) return null;
-                
-                const isSvg = template.uvMapUrl?.toLowerCase().includes('.svg');
-                
-                if (!template.uvMapId || !template.uvMapUrl) {
-                  return (
-                    <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
-                      <Box className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                      <p>Este template não possui um molde UV vinculado.</p>
-                      <p className="text-xs mt-2">Vincule um molde na aba "Templates de Camisa" antes de mapear as cores.</p>
-                    </div>
-                  );
-                }
+              {editingNiche && templates.find(t => t.id === editingNiche) && (
+                <div className="pt-4 border-t border-border/30">
+                  <TemplateColorMappingManager 
+                    templateId={editingNiche} 
+                    svgUrl={templates.find(t => t.id === editingNiche)!.uvMapUrl!} 
+                  />
+                </div>
+              )}
 
-                if (!isSvg) {
-                  return (
-                    <div className="text-center py-12 text-destructive/80 border border-dashed border-destructive/20 rounded-lg bg-destructive/5">
-                      <Box className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                      <p>O molde vinculado não é um arquivo SVG.</p>
-                      <p className="text-xs mt-2 text-muted-foreground">O mapeamento de cores só funciona com moldes em formato SVG.</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="pt-4 border-t border-border/30">
-                    <UvColorMappingManager 
-                      templateId={template.id} 
-                      svgUrl={template.uvMapUrl} 
-                    />
-                  </div>
-                );
-              })()}
-
-              {!selectedTemplateForMapping && templates.length > 0 && (
-                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/5">
+              {!editingNiche && templates.length > 0 && (
+                <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
                   <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                  <p>Selecione um template acima para começar o mapeamento de cores do UV</p>
+                  <p>Selecione um template acima para começar o mapeamento</p>
                 </div>
               )}
             </div>

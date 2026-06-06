@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface UvColorMapping {
+export interface TemplateColorMapping {
   id: string;
   template_id: string;
   original_color: string;
@@ -9,22 +9,22 @@ export interface UvColorMapping {
   sort_order: number;
 }
 
-export function useUvColorMap(templateId: string | undefined | null) {
+export function useTemplateColors(templateId: string | undefined) {
   return useQuery({
-    queryKey: ['uv-color-mappings', templateId],
+    queryKey: ['template-colors', templateId],
     queryFn: async () => {
       if (!templateId) return [];
       
       const { data, error } = await supabase
-        .from('uv_color_mappings')
-        .select('original_color, region_name, sort_order')
+        .from('template_color_mappings')
+        .select('*')
         .eq('template_id', templateId)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return data as Pick<UvColorMapping, 'original_color' | 'region_name' | 'sort_order'>[];
+      return data as TemplateColorMapping[];
     },
     enabled: !!templateId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
 }
