@@ -943,31 +943,44 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_editable: boolean
           original_color: string
           region_name: string
           sort_order: number | null
-          template_id: string
+          stamp_id: string | null
+          template_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_editable?: boolean
           original_color: string
           region_name: string
           sort_order?: number | null
-          template_id: string
+          stamp_id?: string | null
+          template_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_editable?: boolean
           original_color?: string
           region_name?: string
           sort_order?: number | null
-          template_id?: string
+          stamp_id?: string | null
+          template_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "uv_color_mappings_stamp_id_fkey"
+            columns: ["stamp_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_catalog"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "uv_color_mappings_template_id_fkey"
             columns: ["template_id"]
