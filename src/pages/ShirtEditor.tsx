@@ -416,7 +416,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // the template has uv_zones registered.
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
-  console.log('ShirtEditor pipeline check:', { uvZonesActive, hasFallback: !!fallbackUvUrl, hasTemplateUv: !!selectedTemplate?.uvMapUrl });
+
 
 
   // Fetch uv_zones / dims for the selected template's UV map.
