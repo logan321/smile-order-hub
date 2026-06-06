@@ -1292,6 +1292,99 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
           </div>
         </TabsContent>
 
+        {/* Stamp Colors — independent from template UV mapping */}
+        <TabsContent value="stamp-colors">
+          <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Palette className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold font-display">Cores das Estampas</h2>
+                <p className="text-sm text-muted-foreground">
+                  Configure as regiões de cor do SVG de UV específico de cada estampa.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Selecione a Estampa</label>
+                <Select
+                  value={selectedStampForColors || ''}
+                  onValueChange={(v) => setSelectedStampForColors(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha uma estampa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stamps.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(() => {
+                const stamp = stamps.find(s => s.id === selectedStampForColors);
+                if (!stamp) {
+                  return stamps.length > 0 ? (
+                    <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg bg-muted/5">
+                      <Palette className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>Selecione uma estampa acima para configurar suas cores.</p>
+                    </div>
+                  ) : null;
+                }
+
+                const hasSvg = stamp.uvMapUrl && stamp.uvMapUrl.toLowerCase().includes('.svg');
+
+                return (
+                  <div className="space-y-4 pt-4 border-t border-border/30">
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/20">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium">SVG de UV desta estampa</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {stamp.uvMapUrl || 'Nenhum SVG vinculado ainda.'}
+                        </p>
+                      </div>
+                      <div>
+                        <input
+                          ref={stampUvFileRef}
+                          type="file"
+                          accept=".svg,image/svg+xml"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = '';
+                            if (f) handleUploadStampUv(stamp.id, f);
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => stampUvFileRef.current?.click()}
+                          disabled={uploadingStampUv}
+                        >
+                          <Upload className="h-3.5 w-3.5 mr-2" />
+                          {uploadingStampUv ? 'Enviando...' : (hasSvg ? 'Trocar SVG' : 'Enviar SVG')}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {hasSvg ? (
+                      <StampColorMappingManager stampId={stamp.id} svgUrl={stamp.uvMapUrl!} />
+                    ) : (
+                      <div className="text-center py-10 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
+                        <p className="text-sm">Envie um arquivo SVG de UV para esta estampa para detectar as cores.</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </TabsContent>
+
         {/* Text Styles */}
         <TabsContent value="textstyles">
           <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
