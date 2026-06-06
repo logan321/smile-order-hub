@@ -22,9 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
-import { useTemplateColors } from '@/hooks/useTemplateColors';
+import { useUvColorMappings } from '@/hooks/useUvColorMappings';
 import { scanSvgElements, applyColorMap } from '@/lib/uvCompositor';
-import { useStampColorMappings } from '@/hooks/useStampColorMappings';
 import type { UvLayer } from '@/lib/uvCompositor';
 
 import type { UvZone } from '@/hooks/useUvLibrary';
@@ -505,7 +504,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
-  const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
+  
   const [shirtColors, setShirtColors] = useState<Record<string, string>>({});
   const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
   const [syncFrontBack, setSyncFrontBack] = useState(true);
@@ -513,8 +512,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const originalColorsRef = useRef<Record<string, string>>({});
 
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
-  const { data: stampColorMappings, isLoading: loadingStampMappings } = useStampColorMappings(appliedStamp?.id);
-  const { data: templateColorMappings, isLoading: loadingMappings } = useTemplateColors(selectedTemplate?.id);
+  const { data: stampColorMappings, isLoading: loadingStampMappings } = useUvColorMappings(appliedStamp?.uvMapId);
+  const { data: templateColorMappings, isLoading: loadingMappings } = useUvColorMappings(selectedTemplate?.uvMapId);
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   useEffect(() => {
@@ -1397,7 +1396,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       });
       
       const uniqueColors = Array.from(colors);
-      setExtractedSvgColors(uniqueColors);
       
       // Initialize state with original colors mapping to themselves
       const initialColors: Record<string, string> = {};
@@ -1436,11 +1434,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
       setStampLayerColors({});
-      setExtractedSvgColors([]);
-      
-      if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
-        await extractSvgColors(toProxyUrl(stamp.imageUrl));
-      }
       
       setCurrentStampUrl(stamp.imageUrl);
       advanceGuide('stamp-pick', 'stamp-color');
@@ -2545,30 +2538,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   )}
 
                   {/* Dynamic Color Selection Section - Desktop (Only if no ID colors are used yet) */}
-                  {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
-                    <div className="mt-4 pt-3 border-t border-border/30">
-                      <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                        <Sparkles className="h-3 w-3 text-accent" />
-                        Cores Detectadas
-                      </p>
-                      <div className="space-y-2">
-                        {extractedSvgColors.map((color, idx) => (
-                          <div key={idx} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                            <div className="flex items-center gap-2">
-                              <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color }} />
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase">Camada {idx + 1}</span>
-                            </div>
-                            <input 
-                              type="color" 
-                              value={stampLayerColors[color] || color} 
-                              onChange={(e) => handleStampLayerColorChange(color, e.target.value)}
-                              className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   {/* Color variants for applied stamp - Desktop */}
                   {appliedStampColors.length > 0 && (
                     <div className="mt-3 pt-2 border-t border-border/30" data-guide-desktop="stamp-color">
@@ -2899,28 +2868,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     )}
 
                     {/* Dynamic Color Selection Section - Mobile (Only if no ID colors used) */}
-                    {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
-                      <div className="mt-4 pt-3 border-t border-border/30">
-                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
-                          <Sparkles className="h-3 w-3 text-accent" />
-                          Cores Detectadas
-                        </p>
-                        <div className="grid grid-cols-1 gap-2">
-                          {extractedSvgColors.map((color, idx) => (
-                            <div key={idx} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
-                              <div className="flex items-center gap-2">
-                                <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color }} />
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase">Camada {idx + 1}</span>
-                              </div>
-                              <input 
-                                type="color" 
-                                value={stampLayerColors[color] || color} 
-                                onChange={(e) => handleStampLayerColorChange(color, e.target.value)}
-                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                              />
-                            </div>
-                          ))}
-                        </div>
                     {/* Shirt Color Customization - Mobile */}
                     <div className="mt-4 pt-3 border-t border-border/30">
                       <div className="flex items-center justify-between mb-3">
@@ -2968,9 +2915,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         </div>
                       </div>
                     </div>
-
-                  </div>
-                )}
                     {/* Color variants for applied stamp - Mobile */}
                     {appliedStampColors.length > 0 && (
                       <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">

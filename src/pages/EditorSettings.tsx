@@ -9,8 +9,7 @@ import StampColorManager from '@/components/StampColorManager';
 import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
-import TemplateColorMappingManager from '@/components/TemplateColorMappingManager';
-import StampColorMappingManager from '@/components/StampColorMappingManager';
+import UvColorMappingManager from '@/components/UvColorMappingManager';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
@@ -872,11 +871,11 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                             </Button>
                           </div>
                         </div>
-                        {s.imageUrl.toLowerCase().endsWith('.svg') && (
+                        {s.uvMapId && s.uvMapUrl && (
                           <div className="px-3 pb-3 border-t border-border/10 pt-3">
-                            <StampColorMappingManager 
-                              stampId={s.id} 
-                              svgUrl={s.uvMapUrl || s.imageUrl} 
+                            <UvColorMappingManager 
+                              uvMapId={s.uvMapId} 
+                              svgUrl={s.uvMapUrl} 
                             />
                           </div>
                         )}
@@ -1218,14 +1217,17 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 </Select>
               </div>
 
-              {editingNiche && templates.find(t => t.id === editingNiche) && (
-                <div className="pt-4 border-t border-border/30">
-                  <TemplateColorMappingManager 
-                    templateId={editingNiche} 
-                    svgUrl={templates.find(t => t.id === editingNiche)!.uvMapUrl!} 
-                  />
-                </div>
-              )}
+              {(() => {
+                const template = templates.find(t => t.id === editingNiche);
+                return template?.uvMapId && template?.uvMapUrl && (
+                  <div className="pt-4 border-t border-border/30">
+                    <UvColorMappingManager 
+                      uvMapId={template.uvMapId} 
+                      svgUrl={template.uvMapUrl} 
+                    />
+                  </div>
+                );
+              })()}
 
               {!editingNiche && templates.length > 0 && (
                 <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">

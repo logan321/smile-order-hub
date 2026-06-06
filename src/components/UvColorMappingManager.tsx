@@ -6,8 +6,8 @@ import { extractColorsFromSvg } from '@/lib/uvCompositor';
 import { Save, RefreshCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface StampColorMappingManagerProps {
-  stampId: string;
+interface UvColorMappingManagerProps {
+  uvMapId: string;
   svgUrl: string;
 }
 
@@ -16,7 +16,7 @@ interface ColorCount {
   region_name: string;
 }
 
-export default function StampColorMappingManager({ stampId, svgUrl }: StampColorMappingManagerProps) {
+export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappingManagerProps) {
   const [colors, setColors] = useState<ColorCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,9 +25,9 @@ export default function StampColorMappingManager({ stampId, svgUrl }: StampColor
     setLoading(true);
     try {
       const { data: existingMappings, error: fetchError } = await supabase
-        .from('stamp_color_mappings')
+        .from('uv_color_mappings')
         .select('*')
-        .eq('stamp_id', stampId);
+        .eq('uv_map_id', uvMapId);
 
       if (fetchError) throw fetchError;
 
@@ -53,20 +53,20 @@ export default function StampColorMappingManager({ stampId, svgUrl }: StampColor
 
   useEffect(() => {
     fetchMappings();
-  }, [stampId, svgUrl]);
+  }, [uvMapId, svgUrl]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await supabase
-        .from('stamp_color_mappings')
+        .from('uv_color_mappings')
         .delete()
-        .eq('stamp_id', stampId);
+        .eq('uv_map_id', uvMapId);
 
       const toInsert = colors
         .filter(c => c.region_name.trim() !== '')
         .map((c, index) => ({
-          stamp_id: stampId,
+          uv_map_id: uvMapId,
           original_color: c.hex,
           region_name: c.region_name,
           sort_order: index,
@@ -74,12 +74,12 @@ export default function StampColorMappingManager({ stampId, svgUrl }: StampColor
 
       if (toInsert.length > 0) {
         const { error } = await supabase
-          .from('stamp_color_mappings')
+          .from('uv_color_mappings')
           .insert(toInsert);
         if (error) throw error;
       }
 
-      toast.success('Mapeamento da estampa salvo!');
+      toast.success('Mapeamento UV salvo!');
     } catch (error: any) {
       toast.error('Erro ao salvar: ' + error.message);
     } finally {
@@ -91,33 +91,33 @@ export default function StampColorMappingManager({ stampId, svgUrl }: StampColor
     setColors(prev => prev.map(c => c.hex === hex ? { ...c, region_name: name } : c));
   };
 
-  if (loading) return <div className="flex items-center gap-2 text-muted-foreground py-4"><Loader2 className="h-4 w-4 animate-spin" /> Escaneando cores da estampa...</div>;
+  if (loading) return <div className="flex items-center gap-2 text-muted-foreground py-4"><Loader2 className="h-4 w-4 animate-spin" /> Escaneando cores do UV...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Mapeamento de Cores da Estampa</h3>
-        <Button size="sm" variant="outline" onClick={fetchMappings} disabled={loading} className="h-8">
+        <h3 className="text-sm font-semibold text-white">Mapeamento de Cores do UV</h3>
+        <Button size="sm" variant="outline" onClick={fetchMappings} disabled={loading} className="h-8 border-white/10 text-white hover:bg-white/5">
           <RefreshCcw className="h-3 w-3 mr-2" />
           Recarregar
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
           {colors.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">Nenhuma cor detectada no UV da estampa.</p>
+            <p className="text-xs text-muted-foreground italic">Nenhuma cor detectada no SVG.</p>
           ) : (
             colors.map((color) => (
-              <div key={color.hex} className="flex items-center gap-3 p-2 rounded-lg border border-border/50 bg-[#1a1d2e]">
+              <div key={color.hex} className="flex items-center gap-3 p-2 rounded-lg border border-white/5 bg-[#1a1d2e]">
                 <div 
-                  className="w-7 h-7 rounded border border-white/10 shrink-0" 
-                  style={{ backgroundColor: color.hex }}
+                   className="w-7 h-7 rounded border border-white/10 shrink-0 shadow-inner" 
+                   style={{ backgroundColor: color.hex }}
                 />
                 <div className="flex-1 min-w-0">
                   <Input 
-                    placeholder="Ex: Detalhe Manga, Logo Peixe" 
-                    className="h-7 text-[10px] bg-[#0f1117] border-border/50"
+                    placeholder="Ex: Corpo, Gola, Manga" 
+                    className="h-7 text-[10px] bg-[#0f1117] border-white/10 text-white placeholder:text-muted-foreground/50"
                     value={color.region_name}
                     onChange={(e) => updateRegionName(color.hex, e.target.value)}
                   />
@@ -127,15 +127,17 @@ export default function StampColorMappingManager({ stampId, svgUrl }: StampColor
           )}
         </div>
 
-        <div className="bg-[#0f1117] rounded-xl border border-border/50 p-4 flex flex-col items-center justify-center">
-            <p className="text-[10px] text-muted-foreground mb-2 font-bold uppercase">Preview UV Estampa</p>
-            <img src={svgUrl} alt="UV Preview" className="max-w-full max-h-[300px] object-contain" />
+        <div className="bg-[#0f1117] rounded-xl border border-white/5 p-4 flex flex-col items-center justify-center min-h-[300px]">
+            <p className="text-[10px] text-muted-foreground mb-3 font-bold uppercase tracking-widest">Visualização do UV</p>
+            <div className="relative group">
+              <img src={svgUrl} alt="UV Preview" className="max-w-full max-h-[250px] object-contain transition-transform duration-300 group-hover:scale-105" />
+            </div>
         </div>
       </div>
 
-      <Button onClick={handleSave} disabled={saving} size="sm" className="w-full bg-[#534AB7] hover:bg-[#534AB7]/90 mt-2">
+      <Button onClick={handleSave} disabled={saving} size="sm" className="w-full bg-[#534AB7] hover:bg-[#534AB7]/90 text-white font-medium shadow-lg shadow-indigo-500/10">
         {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-        Salvar Mapeamento da Estampa
+        Salvar Mapeamento UV
       </Button>
     </div>
   );

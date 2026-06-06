@@ -86,32 +86,39 @@ export function extractColorsFromSvg(svgText: string): string[] {
   return Array.from(colors).sort();
 }
 
+/**
+ * Replaces colors in an SVG string based on a mapping of original hex -> new hex.
+ * This is the primary way to customize colors in UV maps.
+ */
 export function applyColorMap(svgText: string, colorMap: Record<string, string>): string {
   let processedSvg = svgText;
 
   Object.entries(colorMap).forEach(([originalColor, newColor]) => {
+    // Only process hex-based keys
+    if (!originalColor.startsWith('#')) return;
+
     const hex = originalColor.toUpperCase();
     const shortHex = hex.length === 7 ? `#${hex[1]}${hex[3]}${hex[5]}` : hex;
     
-    // Regex to find fill attributes or style fill properties with the original color
-    // Handles #FFFFFF, #ffffff, #FFF, etc.
     const escapedHex = hex.replace('#', '');
     const escapedShortHex = shortHex.replace('#', '');
     
     const colorPattern = `(?:#?${escapedHex}|#?${escapedShortHex})`;
-    const colorRegex = new RegExp(colorPattern, 'gi');
 
-    // Simple string replacement for specific color values in fill attributes
-    // This is a broad stroke approach but safe for SVG text if we target fill="..."
+    // Replace fill attribute
     processedSvg = processedSvg.replace(
       new RegExp(`fill=["']${colorPattern}["']`, 'gi'),
       `fill="${newColor}"`
     );
 
+    // Replace fill in style
     processedSvg = processedSvg.replace(
       new RegExp(`fill:\\s*${colorPattern}`, 'gi'),
       `fill:${newColor}`
     );
+
+    // Also handle cases where elements might have id-based matching if needed, 
+    // but the user specified hex-based is the source of truth now.
   });
 
   return processedSvg;
@@ -124,11 +131,7 @@ export async function scanSvgElements(svgUrl: string): Promise<{
   const text = await getSvgText(svgUrl);
   const colors = extractColorsFromSvg(text);
   
-  // Backward compatibility: try to map some common IDs if they exist
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(text, 'image/svg+xml');
   const resultColors: Record<string, string> = {};
-  
   colors.forEach((color, index) => {
     resultColors[`color-${index}`] = color;
   });
@@ -154,53 +157,8 @@ export async function composeUvTexture(opts: {
     try {
       let svgText = await getSvgText(opts.baseUrl);
       
-      // Use the new applyColorMap logic if shirtColors keys look like hex values
-      const isHexMapping = Object.keys(opts.shirtColors).some(k => k.startsWith('#'));
-      
-      if (isHexMapping) {
-        svgText = applyColorMap(svgText, opts.shirtColors);
-      } else {
-        // Legacy ID-based mapping for backward compatibility
-        const idMap: Record<string, string[]> = {
-          'corpo-frente':   ['cor-base'],
-          'corpo-verso':    ['cor-base-verso'],
-          'manga-esquerda': ['manga-esquerda'],
-          'manga-direita':  ['manga-direita'],
-          'gola':           ['gola', 'gola-2'],
-          'gola-interna':   ['gola-interna'],
-          'gola-externa':   ['gola-externa'],
-          'gola-frente':    ['gola-frente'],
-          'gola-verso':     ['gola-verso'],
-        };
-
-        Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
-          const svgIds = idMap[regionId] || [regionId];
-          svgIds.forEach(id => {
-            const escapedId = id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const idPattern = `(?:id=["']${escapedId}(?:_[0-9]+)?["'])`;
-            
-            svgText = svgText.replace(
-              new RegExp(`(<[^>]+${idPattern}[^>]*?)fill=["'][^"']*?["']`, 'g'),
-              `$1fill="${color}"`
-            );
-
-            svgText = svgText.replace(
-              new RegExp(`(<[^>]+?)fill=["'][^"']*?["']([^>]*?${idPattern})`, 'g'),
-              `fill="${color}"$1$2`
-            );
-
-            svgText = svgText.replace(
-              new RegExp(`(<[^>]+${idPattern}(?![^>]*fill=)[^>]*)>`, 'g'),
-              `$1 fill="${color}">`
-            );
-
-            svgText = svgText.replace(
-              new RegExp(`(<[^>]+${idPattern}[^>]*?style=["'][^"']*?)fill:\\s*[^;"]*(;?)`, 'g'),
-              `$1fill:${color}$2`
-            );
-          });
-        });
-      }
+      // Strictly use hex-based mapping as requested
+      svgText = applyColorMap(svgText, opts.shirtColors);
 
       const blob = new Blob([svgText], { type: 'image/svg+xml' });
       finalBaseUrl = URL.createObjectURL(blob);
