@@ -699,6 +699,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     uvWidth: uvMapDims.w,
     uvHeight: uvMapDims.h,
     shirtColors: { ...shirtColors, ...stampUvColorChoices },
+    // Use trigger to force re-composition only when requested (debounced)
+    // We add trigger to the dependencies via useUvCompositor options if needed, 
+    // but here we just rely on stampUvColorChoices being stable until commit.
   });
 
 
