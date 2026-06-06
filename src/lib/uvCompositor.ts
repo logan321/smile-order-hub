@@ -76,16 +76,29 @@ export function extractColorsFromUvSvg(svgText: string): Array<{hex: string, cou
     }
   };
 
-  const elements = doc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, g');
+  const elements = doc.querySelectorAll('path, rect, circle, ellipse, polygon, polyline, g, stop');
   elements.forEach(el => {
-    // Check fill attribute
+    // Check fill and stroke attributes
     processColor(el.getAttribute('fill'));
+    processColor(el.getAttribute('stroke'));
     
     // Check style attribute
     const style = el.getAttribute('style');
     if (style) {
       const fillMatch = style.match(/fill:\s*([^;"]+)/);
       if (fillMatch) processColor(fillMatch[1].trim());
+      
+      const strokeMatch = style.match(/stroke:\s*([^;"]+)/);
+      if (strokeMatch) processColor(strokeMatch[1].trim());
+    }
+
+    // Check stop-color for gradients
+    if (el.tagName.toLowerCase() === 'stop') {
+      processColor(el.getAttribute('stop-color'));
+      if (style) {
+        const stopMatch = style.match(/stop-color:\s*([^;"]+)/);
+        if (stopMatch) processColor(stopMatch[1].trim());
+      }
     }
   });
 
