@@ -943,6 +943,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_editable: boolean
           original_color: string
           region_name: string
           sort_order: number | null
@@ -953,6 +954,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_editable?: boolean
           original_color: string
           region_name: string
           sort_order?: number | null
@@ -963,6 +965,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_editable?: boolean
           original_color?: string
           region_name?: string
           sort_order?: number | null
