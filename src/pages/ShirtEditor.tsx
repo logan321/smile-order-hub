@@ -811,7 +811,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       }
     })();
     return () => { alive = false; };
-  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, currentStampUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones]);
+  }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, currentStampUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones, shirtColors]);
 
   // Effective UV URL passed to <Shirt3DPreview /> — stamp UV wins over template UV.
   // Falls back to any registered UV map so 3D always has a texture to paint.
@@ -2862,7 +2862,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                                 value={shirtColors[region.id] || region.id} 
                                 onChange={(e) => {
                                   setShirtColors(prev => ({ ...prev, [region.id]: e.target.value }));
-                                  triggerTextureUpdate();
+                                  debouncedBump();
                                 }}
                                 className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                               />
