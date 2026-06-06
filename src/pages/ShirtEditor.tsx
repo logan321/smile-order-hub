@@ -3119,7 +3119,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
               {/* 3D principal — sempre que o usuário não está editando em 2D.
                   Se não houver UV, mostra a camisa lisa (sem estampa). */}
-              {!show2DEditor && (
+              {true && (
                 <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
                   <div className="w-full h-full max-w-3xl relative">
                     <Shirt3DPreview
