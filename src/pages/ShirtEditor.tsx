@@ -1558,7 +1558,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         finalSvgText = new XMLSerializer().serializeToString(svgDoc);
       } else {
         // Fallback to global color substitution if no mappings matched
-        finalSvgText = applyColorMap(svgText, colorMapping);
+        finalSvgText = applyColorMapToUv(svgText, colorMapping);
       }
 
 
