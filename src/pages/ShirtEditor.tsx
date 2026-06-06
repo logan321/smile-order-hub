@@ -771,8 +771,18 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               svgText = await res.text();
               stampSvgCacheRef.current[cacheKey] = svgText;
             }
-            const coloredSvg = applyColorMapToUv(svgText, stampUvColorChoices);
-            const blob = new Blob([coloredSvg], { type: 'image/svg+xml' });
+            
+            // Fast approach: string replacement for all active mappings
+            let processedSvg = svgText;
+            Object.entries(stampUvColorChoices).forEach(([original, current]) => {
+              if (original.toLowerCase() !== current.toLowerCase()) {
+                processedSvg = processedSvg.replaceAll(original, current)
+                                         .replaceAll(original.toLowerCase(), current)
+                                         .replaceAll(original.toUpperCase(), current);
+              }
+            });
+
+            const blob = new Blob([processedSvg], { type: 'image/svg+xml' });
             
             // Clean up previous blob
             if (lastStampUvBlobRef.current) {
