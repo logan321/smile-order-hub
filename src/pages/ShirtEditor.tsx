@@ -382,7 +382,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
   const stampSvgCacheRef = useRef<Record<string, string>>({});
   const lastStampUvBlobRef = useRef<string | null>(null);
-  const stampUvDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [stampUvColorChoices, setStampUvColorChoices] = useState<Record<string, string>>({});
   const [stampUvTrigger, setStampUvTrigger] = useState(0);
 
@@ -772,8 +771,18 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               svgText = await res.text();
               stampSvgCacheRef.current[cacheKey] = svgText;
             }
-            const coloredSvg = applyColorMapToUv(svgText, stampUvColorChoices);
-            const blob = new Blob([coloredSvg], { type: 'image/svg+xml' });
+            
+            // Fast approach: string replacement for all active mappings
+            let processedSvg = svgText;
+            Object.entries(stampUvColorChoices).forEach(([original, current]) => {
+              if (original.toLowerCase() !== current.toLowerCase()) {
+                const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedOriginal, 'gi');
+                processedSvg = processedSvg.replace(regex, current);
+              }
+            });
+
+            const blob = new Blob([processedSvg], { type: 'image/svg+xml' });
             
             // Clean up previous blob
             if (lastStampUvBlobRef.current) {
@@ -2593,19 +2602,40 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                               value={stampUvColorChoices[mapping.original_color] || mapping.original_color} 
                               onChange={(e) => {
                                 setStampUvColorChoices(prev => ({ ...prev, [mapping.original_color]: e.target.value }));
-                                if (stampUvDebounceRef.current) clearTimeout(stampUvDebounceRef.current);
-                                stampUvDebounceRef.current = setTimeout(() => {
-                                  setStampUvTrigger(v => v + 1);
-                                  debouncedBump();
-                                }, 300);
                               }}
-                              className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
-                            />
-                          </div>
+                              onBlur={() => {
+                                setStampUvTrigger(v => v + 1);
+                                debouncedBump();
+                              }}
+                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Palette fixed colors for Stamp Colors */}
+                    {stampUvMappings && stampUvMappings.some(m => m.is_editable) && (
+                      <div className="mt-2 grid grid-cols-6 gap-1 p-1 rounded-lg bg-muted/20 border border-border/30">
+                        {shirtColorPalette.slice(0, 12).map((hex, i) => (
+                          <button
+                            key={i}
+                            className="h-6 w-full rounded-sm border border-border transition-transform hover:scale-110"
+                            style={{ backgroundColor: hex }}
+                            onClick={() => {
+                              // Apply to first editable region as a convenience or user can select region
+                              const firstEditable = stampUvMappings.find(m => m.is_editable);
+                              if (firstEditable) {
+                                setStampUvColorChoices(prev => ({ ...prev, [firstEditable.original_color]: hex }));
+                                setStampUvTrigger(v => v + 1);
+                                debouncedBump();
+                              }
+                            }}
+                          />
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Dynamic Color Selection Section - Desktop (Only if no ID colors are used yet) */}
                   {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
@@ -2977,11 +3007,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                                 value={stampUvColorChoices[mapping.original_color] || mapping.original_color} 
                                 onChange={(e) => {
                                   setStampUvColorChoices(prev => ({ ...prev, [mapping.original_color]: e.target.value }));
-                                  if (stampUvDebounceRef.current) clearTimeout(stampUvDebounceRef.current);
-                                  stampUvDebounceRef.current = setTimeout(() => {
-                                    setStampUvTrigger(v => v + 1);
-                                    debouncedBump();
-                                  }, 300);
+                                }}
+                                onBlur={() => {
+                                  setStampUvTrigger(v => v + 1);
+                                  debouncedBump();
                                 }}
                                 className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                               />
