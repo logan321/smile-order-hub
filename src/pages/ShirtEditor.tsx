@@ -24,6 +24,7 @@ import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMocku
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import { useTemplateColors } from '@/hooks/useTemplateColors';
 import { scanSvgElements, applyColorMap } from '@/lib/uvCompositor';
+import { useStampColorMappings } from '@/hooks/useStampColorMappings';
 import type { UvLayer } from '@/lib/uvCompositor';
 
 import type { UvZone } from '@/hooks/useUvLibrary';
@@ -512,14 +513,26 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const originalColorsRef = useRef<Record<string, string>>({});
 
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  const { data: stampColorMappings, isLoading: loadingStampMappings } = useStampColorMappings(appliedStamp?.id);
   const { data: templateColorMappings, isLoading: loadingMappings } = useTemplateColors(selectedTemplate?.id);
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   useEffect(() => {
     if (!uvBaseUrl) return;
     
-    // If we have mappings in the database, use them
-    if (templateColorMappings && templateColorMappings.length > 0) {
+    // 1. Check for Stamp Color Mappings (Priority)
+    if (appliedStamp && stampColorMappings && stampColorMappings.length > 0) {
+      const initialColors: Record<string, string> = {};
+      stampColorMappings.forEach(m => {
+        initialColors[m.original_color] = m.original_color;
+      });
+      setShirtColors(initialColors);
+      originalColorsRef.current = initialColors;
+      return;
+    }
+
+    // 2. Check for Template Color Mappings
+    if (!appliedStamp && templateColorMappings && templateColorMappings.length > 0) {
       const initialColors: Record<string, string> = {};
       templateColorMappings.forEach(m => {
         initialColors[m.original_color] = m.original_color;
@@ -528,6 +541,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       originalColorsRef.current = initialColors;
       return;
     }
+
 
     // Fallback to legacy scanning if no database mappings exist
     setShirtColors({});
@@ -567,12 +581,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
 
   const shirtRegions = useMemo(() => {
-    if (templateColorMappings && templateColorMappings.length > 0) {
+    // 1. Stamp mappings take precedence if a stamp is applied
+    if (appliedStamp && stampColorMappings && stampColorMappings.length > 0) {
+      return stampColorMappings.map(m => ({
+        id: m.original_color,
+        label: m.region_name
+      }));
+    }
+
+    // 2. Template mappings if no stamp or no stamp mappings
+    if (!appliedStamp && templateColorMappings && templateColorMappings.length > 0) {
       return templateColorMappings.map(m => ({
         id: m.original_color,
         label: m.region_name
       }));
     }
+
 
     const fixed = [
       { id: 'corpo-frente',   label: 'Cor Base (Corpo)' },
