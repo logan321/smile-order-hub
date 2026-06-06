@@ -504,7 +504,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [stampColors, setStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
-  const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
+  
   const [shirtColors, setShirtColors] = useState<Record<string, string>>({});
   const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
   const [syncFrontBack, setSyncFrontBack] = useState(true);
@@ -1435,11 +1435,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
       setStampLayerColors({});
-      setExtractedSvgColors([]);
-      
-      if (stamp.imageUrl.toLowerCase().endsWith('.svg')) {
-        await extractSvgColors(toProxyUrl(stamp.imageUrl));
-      }
       
       setCurrentStampUrl(stamp.imageUrl);
       advanceGuide('stamp-pick', 'stamp-color');
