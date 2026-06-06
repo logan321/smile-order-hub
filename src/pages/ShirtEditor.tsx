@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject, Control, controlsUtils } from 'fabric';
-import debounce from 'lodash/debounce';
-
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,9 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
-import { scanSvgElements } from '@/lib/uvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
-
 import type { UvZone } from '@/hooks/useUvLibrary';
 
 // Thumbnail: show only the 2D front image uploaded for the stamp.
@@ -378,14 +374,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
-  // Debounced bump: re-composite the UV texture with a slight delay
-  // Prevents the editor from re-rendering on every mouse move in the color picker.
-  const debouncedBump = useMemo(
-    () => debounce(() => setEditsVersion(v => v + 1), 80),
-    []
-  );
-
+  // Debounced bump: re-composite the UV texture at most every ~120ms while the
+  // user is typing / dragging. Prevents the editor from re-rendering on every
+  // keystroke, which was causing visible lag in the 3D preview.
+  const bumpTimerRef = useRef<number | null>(null);
+  const bumpEdits = useCallback(() => {
+    if (bumpTimerRef.current != null) return;
+    bumpTimerRef.current = window.setTimeout(() => {
+      bumpTimerRef.current = null;
+      setEditsVersion(v => v + 1);
+    }, 120);
+  }, []);
   useEffect(() => () => {
+    if (bumpTimerRef.current != null) {
+      clearTimeout(bumpTimerRef.current);
+      bumpTimerRef.current = null;
+    }
     if (uvTextCommitTimerRef.current != null) {
       clearTimeout(uvTextCommitTimerRef.current);
       uvTextCommitTimerRef.current = null;
@@ -497,107 +501,22 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [stampLayerColors, setStampLayerColors] = useState<Record<string, string>>({});
   const [extractedSvgColors, setExtractedSvgColors] = useState<string[]>([]);
-  const [shirtColors, setShirtColors] = useState<Record<string, string>>({});
+  const [shirtColors, setShirtColors] = useState<Record<string, string>>({
+    'corpo-frente': '#FFFFFF',
+    'corpo-verso': '#FFFFFF',
+    'manga-esquerda': '#FFFFFF',
+    'manga-direita': '#FFFFFF',
+    'gola': '#FFFFFF',
+    'detalhes-1': '#FFFFFF'
+  });
   const [activeShirtRegion, setActiveShirtRegion] = useState<string>('corpo-frente');
   const [syncFrontBack, setSyncFrontBack] = useState(true);
-  const [dynamicElements, setDynamicElements] = useState<string[]>([]);
-  const originalColorsRef = useRef<Record<string, string>>({});
-
-  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
-  const uvZonesActive = Object.keys(uvMapZones).length > 0;
-
-  useEffect(() => {
-    if (!uvBaseUrl) return;
-    setShirtColors({}); // Clear immediately to show original colors while scanning
-    scanSvgElements(uvBaseUrl).then(({ dynamicIds, colors }) => {
-      setDynamicElements(dynamicIds);
-      
-      const idMap: Record<string, string[]> = {
-        'corpo-frente': ['cor-base'],
-        'corpo-verso': ['cor-base-verso'],
-        'manga-esquerda': ['manga-esquerda'],
-        'manga-direita': ['manga-direita'],
-        'gola': ['gola', 'gola_5'],
-      };
-
-      const scanned: Record<string, string> = {};
-      Object.entries(idMap).forEach(([regionId, svgIds]) => {
-        for (const svgId of svgIds) {
-          if (colors[svgId]) {
-            scanned[regionId] = colors[svgId];
-            break;
-          }
-        }
-      });
-
-      dynamicIds.forEach(id => {
-        if (colors[id]) {
-          scanned[id] = colors[id];
-        } else {
-          scanned[id] = '#FFFFFF';
-        }
-      });
-      
-      originalColorsRef.current = scanned;
-      // Initialize state with these original colors so they appear in the UI
-      // and are used by the compositor.
-      setShirtColors(scanned);
-    });
-  }, [uvBaseUrl]);
-
-  const fixedRegions = useMemo(() => [
-    { id: 'corpo-frente', label: 'Cor Base (Corpo)' },
-    { id: 'corpo-verso', label: 'Verso' },
-    { id: 'manga-esquerda', label: 'Manga Esquerda' },
-    { id: 'manga-direita', label: 'Manga Direita' },
-    { id: 'gola', label: 'Gola' },
-  ], []);
-
-  const dynamicRegions = useMemo(() => dynamicElements.map((id, index) => ({
-    id,
-    label: index === 0 ? 'Elemento 1' : `Elemento ${index + 1}`
-  })), [dynamicElements]);
-
-  const shirtRegions = useMemo(() => [...fixedRegions, ...dynamicRegions], [fixedRegions, dynamicRegions]);
-
-  const regionButtonsDesktop = useMemo(() => (
-    <div className="grid grid-cols-2 gap-1 mb-3">
-      {shirtRegions.map(region => (
-        <Button
-          key={region.id}
-          variant={activeShirtRegion === region.id ? "default" : "outline"}
-          size="sm"
-          className="h-7 text-[9px] px-1 truncate"
-          onClick={() => setActiveShirtRegion(region.id)}
-        >
-          {region.label}
-        </Button>
-      ))}
-    </div>
-  ), [shirtRegions, activeShirtRegion]);
-
-  const regionButtonsMobile = useMemo(() => (
-    <div className="flex overflow-x-auto gap-1.5 pb-2 mb-3 no-scrollbar">
-      {shirtRegions.map(region => (
-        <Button
-          key={region.id}
-          variant={activeShirtRegion === region.id ? "default" : "outline"}
-          size="sm"
-          className="h-8 text-[10px] px-3 whitespace-nowrap shrink-0"
-          onClick={() => setActiveShirtRegion(region.id)}
-        >
-          {region.label}
-        </Button>
-      ))}
-    </div>
-  ), [shirtRegions, activeShirtRegion]);
-
   const [uvEditorMode, setUvEditorMode] = useState<'client' | 'config'>('client');
   const [svgSourceForConfig, setSvgSourceForConfig] = useState<string | null>(null);
-  
+  const [baseSvgContent, setBaseSvgContent] = useState<string | null>(null);
   const [namingDialog, setNamingDialog] = useState<{ open: boolean; selector: string; name: string }>({ open: false, selector: '', name: '' });
   const [configMapping, setConfigMapping] = useState<{ selector: string; label: string }[]>([]);
-  
+  const [processedBaseUrl, setProcessedBaseUrl] = useState<string | null>(null);
   const [currentStampUrl, setCurrentStampUrl] = useState<string | null>(null);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [showLogoNotice, setShowLogoNotice] = useState(false);
@@ -611,6 +530,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [backZoom, setBackZoom] = useState(1);
   const [panMode, setPanMode] = useState(false);
 
+  const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
+  const uvZonesActive = Object.keys(uvMapZones).length > 0 || !!baseSvgContent;
 
   useEffect(() => {
     let cancelled = false;
@@ -632,18 +553,144 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
 
+  useEffect(() => {
 
+
+    if (!uvBaseUrl) { setBaseSvgContent(null); return; }
+    if (!uvBaseUrl.toLowerCase().endsWith('.svg') && !uvBaseUrl.includes('data:image/svg+xml')) {
+      setBaseSvgContent(null);
+      return;
+    }
+    
+    const fetchBaseSvg = async () => {
+      try {
+        const response = await fetch(toProxyUrl(uvBaseUrl));
+        const text = await response.text();
+        setBaseSvgContent(text);
+      } catch (err) {
+        console.warn("Error fetching base UV SVG:", err);
+      }
+    };
+    
+    fetchBaseSvg();
+  }, [uvBaseUrl]);
+
+  useEffect(() => {
+    if (!uvBaseUrl) { setProcessedBaseUrl(null); return; }
+    if (!baseSvgContent) { setProcessedBaseUrl(uvBaseUrl); return; }
+
+    const updateBaseColors = () => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(baseSvgContent, 'image/svg+xml');
+        
+        Object.entries(shirtColors).forEach(([id, color]) => {
+          // Look for element with exact ID or ending with ID (Corel compatibility)
+          // Also try matching with spaces instead of hyphens
+          const idWithSpaces = id.replace(/-/g, ' ');
+          const el = doc.getElementById(id) || 
+                     doc.getElementById(idWithSpaces) ||
+                     doc.querySelector(`[id$="${id}"]`) ||
+                     doc.querySelector(`[id$="${idWithSpaces}"]`);
+          
+          if (el) {
+            el.setAttribute('fill', color);
+            // Also update strokes if they are not none
+            if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+              el.setAttribute('stroke', color);
+            }
+          }
+        });
+
+
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(doc);
+        const blob = new Blob([svgString], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        setProcessedBaseUrl(url);
+        
+        return () => URL.revokeObjectURL(url);
+      } catch (err) {
+        console.warn("Error processing base SVG colors:", err);
+        setProcessedBaseUrl(uvBaseUrl);
+      }
+    };
+
+    return updateBaseColors();
+  }, [uvBaseUrl, baseSvgContent, shirtColors]);
 
   const uvComposite = useUvCompositor({
-    baseUrl: uvZonesActive ? uvBaseUrl : null,
+    baseUrl: uvZonesActive ? processedBaseUrl || uvBaseUrl : null,
     zones: uvMapZones,
     layers: uvLayers,
     uvWidth: uvMapDims.w,
     uvHeight: uvMapDims.h,
-    shirtColors,
   });
 
+  const InteractiveUvDiagram = ({ svgContent, activeRegion, onSelect, colors }: { 
+    svgContent: string; 
+    activeRegion: string; 
+    onSelect: (id: string) => void; 
+    colors: Record<string, string> 
+  }) => {
+    const [processedSvg, setProcessedSvg] = useState<string>('');
 
+    useEffect(() => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgContent, 'image/svg+xml');
+        
+        // Apply colors
+        Object.entries(colors).forEach(([id, color]) => {
+          const el = doc.getElementById(id) || doc.querySelector(`[id$="${id}"]`);
+          if (el) {
+            el.setAttribute('fill', color);
+            if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+              el.setAttribute('stroke', color);
+            }
+          }
+        });
+
+        // Highlight active
+        if (activeRegion) {
+          const activeEl = doc.getElementById(activeRegion) || doc.querySelector(`[id$="${activeRegion}"]`);
+          if (activeEl) {
+            activeEl.style.stroke = '#2563eb';
+            activeEl.style.strokeWidth = '8px';
+            activeEl.style.paintOrder = 'stroke fill';
+          }
+        }
+
+        setProcessedSvg(new XMLSerializer().serializeToString(doc));
+      } catch (e) {
+        setProcessedSvg(svgContent);
+      }
+    }, [svgContent, colors, activeRegion]);
+
+    const handleClick = (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() === 'svg') return;
+      
+      const id = target.id || '';
+      // Try to find matching region by exact ID or suffix (Corel)
+      const region = shirtRegions.find(r => {
+        const idWithSpaces = r.id.replace(/-/g, ' ');
+        return id === r.id || id === idWithSpaces || id.endsWith(r.id) || id.endsWith(idWithSpaces);
+      });
+      if (region) {
+        onSelect(region.id);
+      }
+
+    };
+
+    return (
+      <div 
+        className="interactive-uv-container w-full max-h-[180px] flex items-center justify-center p-1"
+        onClick={handleClick}
+        dangerouslySetInnerHTML={{ __html: processedSvg }}
+      />
+    );
+  };
 
   const isPanningRef = useRef(false);
   const lastPanPoint = useRef<{ x: number; y: number } | null>(null);
@@ -1006,13 +1053,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         // Replace rotation control with custom prominent one
         obj.controls.mtr = customMtrControl;
       });
-      canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) debouncedBump(); });
-      canvas.on('object:modified', () => debouncedBump());
-      canvas.on('object:moving', () => debouncedBump());
-      canvas.on('object:scaling', () => debouncedBump());
-      canvas.on('object:rotating', () => debouncedBump());
-      canvas.on('text:changed', () => debouncedBump());
-      canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) debouncedBump(); });
+      canvas.on('object:added', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
+      canvas.on('object:modified', () => bumpEdits());
+      canvas.on('object:moving', () => bumpEdits());
+      canvas.on('object:scaling', () => bumpEdits());
+      canvas.on('object:rotating', () => bumpEdits());
+      canvas.on('text:changed', () => bumpEdits());
+      canvas.on('object:removed', (e) => { if (!(e.target as any)?._isBackground) bumpEdits(); });
     };
 
     customizeControls(frontCanvas);
@@ -1447,7 +1494,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         });
       });
       
-      debouncedBump();
+      bumpEdits();
     } catch (err) {
       console.error('Erro ao atualizar cores da estampa:', err);
     }
@@ -1582,7 +1629,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     });
   };
 
-
+  const shirtRegions = [
+    { id: 'corpo-frente', label: 'Frente' },
+    { id: 'corpo-verso', label: 'Verso' },
+    { id: 'manga-esquerda', label: 'Manga Esquerda' },
+    { id: 'manga-direita', label: 'Manga Direita' },
+    { id: 'gola', label: 'Gola' },
+    { id: 'cor-base', label: 'Cor Base' },
+    { id: 'detalhes-1', label: 'Detalhes' },
+  ];
 
 
   const shirtColorPalette = [
@@ -1606,9 +1661,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
     
     setShirtColors(newColors);
-    debouncedBump();
+    
+    // Atualizar visualmente o SVG
+    Object.entries(newColors).forEach(([id, color]) => {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute('fill', color);
+    });
+    
+    bumpEdits();
   };
-
 
   // Switch back to original stamp images
   const switchToOriginalStamp = async () => {
@@ -1909,7 +1970,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.requestRenderAll();
-      debouncedBump();
+      bumpEdits();
     } catch (e) {
       console.error(e);
       toast.error('Erro ao adicionar emblema');
@@ -1982,7 +2043,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       canvas.add(numObj);
     }
     canvas.requestRenderAll();
-    debouncedBump();
+    bumpEdits();
     setNameInput(''); setNumberInput('');
   };
 
@@ -2009,7 +2070,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         active.dirty = true;
         active.setCoords();
         canvas.requestRenderAll();
-        debouncedBump();
+        bumpEdits();
       };
       applyFont();
     }
@@ -2574,8 +2635,31 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </label>
                     </div>
 
+                    {baseSvgContent && (
+                      <div className="mb-3 border rounded-lg overflow-hidden bg-white/50 p-1">
+                        <p className="text-[9px] text-center text-muted-foreground mb-1 uppercase font-bold">Toque na parte para selecionar</p>
+                        <InteractiveUvDiagram 
+                          svgContent={baseSvgContent} 
+                          activeRegion={activeShirtRegion} 
+                          onSelect={setActiveShirtRegion}
+                          colors={shirtColors}
+                        />
+                      </div>
+                    )}
                     
-                    {regionButtonsDesktop}
+                    <div className="grid grid-cols-2 gap-1 mb-3">
+                      {shirtRegions.map(region => (
+                        <Button
+                          key={region.id}
+                          variant={activeShirtRegion === region.id ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 text-[9px] px-1 truncate"
+                          onClick={() => setActiveShirtRegion(region.id)}
+                        >
+                          {region.label}
+                        </Button>
+                      ))}
+                    </div>
 
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[9px] text-muted-foreground uppercase font-bold">Cor Livre:</span>
@@ -2739,8 +2823,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => {
-                    setShirtColors(originalColorsRef.current);
-                    debouncedBump();
+                    setShirtColors({
+                      'corpo-frente': '#FFFFFF',
+                      'corpo-verso': '#FFFFFF',
+                      'manga-esquerda': '#FFFFFF',
+                      'manga-direita': '#FFFFFF',
+                      'gola': '#FFFFFF',
+                      'detalhes-1': '#FFFFFF'
+                    });
+                    shirtRegions.forEach(r => {
+                      const el = document.getElementById(r.id);
+                      if (el) el.setAttribute('fill', '#FFFFFF');
+                    });
+                    bumpEdits();
                   }} 
                   className="w-full gap-1.5 h-8 text-[10px] mt-1"
                 >
@@ -2876,9 +2971,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           <span className="text-[10px] text-muted-foreground font-medium">Sincronizar</span>
                         </label>
                       </div>
+                      {baseSvgContent && (
+                        <div className="mb-3 border rounded-lg overflow-hidden bg-white/50 p-1">
+                          <p className="text-[9px] text-center text-muted-foreground mb-1 uppercase font-bold">Toque na parte para selecionar</p>
+                          <InteractiveUvDiagram 
+                            svgContent={baseSvgContent} 
+                            activeRegion={activeShirtRegion} 
+                            onSelect={setActiveShirtRegion}
+                            colors={shirtColors}
+                          />
+                        </div>
+                      )}
 
 
-                      {regionButtonsMobile}
+                      <div className="flex overflow-x-auto gap-1.5 pb-2 mb-3 no-scrollbar">
+                        {shirtRegions.map(region => (
+                          <Button
+                            key={region.id}
+                            variant={activeShirtRegion === region.id ? "default" : "outline"}
+                            size="sm"
+                            className="h-8 text-[10px] px-3 whitespace-nowrap shrink-0"
+                            onClick={() => setActiveShirtRegion(region.id)}
+                          >
+                            {region.label}
+                          </Button>
+                        ))}
+                      </div>
 
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-[10px] text-muted-foreground uppercase font-bold">Livre:</span>
@@ -3491,6 +3609,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   outline: 2px solid #2563eb;
                   outline-offset: 2px;
                   filter: brightness(0.8);
+                }
+                .interactive-uv-container svg {
+                  width: 100%;
+                  height: auto;
+                  max-height: 170px;
+                  display: block;
+                }
+                .interactive-uv-container svg * {
+                  cursor: pointer !important;
+                  transition: filter 0.2s, stroke-width 0.2s;
+                  pointer-events: auto !important;
+                }
+                .interactive-uv-container svg *:hover {
+                  filter: brightness(0.9);
                 }
 
               `}} />

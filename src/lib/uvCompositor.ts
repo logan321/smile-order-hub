@@ -45,82 +45,6 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   return imgCache.get(url)!;
 }
 
-const svgCache: Record<string, string> = {};
-
-async function getSvgText(url: string): Promise<string> {
-  if (svgCache[url]) return svgCache[url];
-  const res = await fetch(url);
-  const text = await res.text();
-  svgCache[url] = text;
-  return text;
-}
-
-export async function scanSvgElements(svgUrl: string): Promise<{
-  dynamicIds: string[];
-  colors: Record<string, string>;
-}> {
-  const text = await getSvgText(svgUrl);
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(text, 'image/svg+xml');
-  
-  const colors: Record<string, string> = {};
-  const fixedIds = ['cor-base', 'cor-base-verso', 'manga-esquerda', 'manga-direita', 'gola', 'gola_5'];
-  
-  const extractFill = (el: Element) => {
-    let color = el.getAttribute('fill');
-    if (!color || color === 'none') {
-      const style = el.getAttribute('style');
-      if (style) {
-        const match = style.match(/fill:\s*([^;"]+)/);
-        if (match) color = match[1].trim();
-      }
-    }
-    if (color && color.startsWith('#')) {
-      if (color.length === 4) {
-        return '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
-      }
-      return color.substring(0, 7).toUpperCase();
-    }
-    return null;
-  };
-
-  fixedIds.forEach(id => {
-    const el = doc.getElementById(id);
-    if (el) {
-      const color = extractFill(el);
-      if (color) colors[id] = color;
-    }
-  });
-
-  // Helper to normalize Corel IDs (remove suffixes like _1, _2)
-  const normalizeId = (id: string) => id.split('_')[0];
-
-  const allElementsWithId = Array.from(doc.querySelectorAll('[id]')).filter(el => 
-    el.id.startsWith('elemento') && !fixedIds.includes(el.id)
-  );
-
-  const dynamicIdsMap = new Map<string, string>(); // rootId -> originalId (for color extraction)
-  
-  allElementsWithId.forEach(el => {
-    const rootId = normalizeId(el.id);
-    if (!colors[rootId]) {
-      const color = extractFill(el);
-      if (color) colors[rootId] = color;
-    }
-    dynamicIdsMap.set(rootId, rootId);
-  });
-
-  const dynamicIds = Array.from(dynamicIdsMap.keys()).sort((a, b) => {
-    const numA = parseInt(a.replace('elemento-', '').replace('elemento', '1')) || 1;
-    const numB = parseInt(b.replace('elemento-', '').replace('elemento', '1')) || 1;
-    return numA - numB;
-  });
-  
-  return { dynamicIds, colors };
-}
-
-let persistentCanvas: HTMLCanvasElement | null = null;
-
 export async function composeUvTexture(opts: {
   baseUrl: string;
   uvWidth?: number | null;
@@ -128,71 +52,16 @@ export async function composeUvTexture(opts: {
   zones: Record<string, UvZone>;
   layers: UvLayer[];
   canvas?: HTMLCanvasElement;
-  shirtColors?: Record<string, string>;
 }): Promise<HTMLCanvasElement> {
-  let finalBaseUrl = opts.baseUrl;
-
-  if (opts.shirtColors && Object.keys(opts.shirtColors).length > 0) {
-    try {
-      let svgText = await getSvgText(opts.baseUrl);
-      svgText = svgText.slice(); // Ensure we don't mutate cache
-
-      const idMap: Record<string, string[]> = {
-        'corpo-frente': ['cor-base'],
-        'corpo-verso': ['cor-base-verso'],
-        'manga-esquerda': ['manga-esquerda'],
-        'manga-direita': ['manga-direita'],
-        'gola': ['gola', 'gola_5'],
-      };
-
-      Object.entries(opts.shirtColors).forEach(([regionId, color]) => {
-        const svgIds = idMap[regionId] || [regionId];
-        svgIds.forEach(id => {
-          // Strict ID pattern: Matches exact ID OR ID with Corel suffix (_1, _2, etc.)
-          // Uses word boundary \b or similar logic via negative lookahead to avoid partial matches like 'elemento' matching 'elemento-1'
-          // Corel suffixes are usually _ followed by numbers.
-          const idPattern = `${id}(?:_[0-9]+)?`;
-          
-          // Replace for id="..." fill="..."
-          // Using a more robust regex that ensures the id is exactly what we want (with optional suffix)
-          const attrIdRegex = new RegExp(`(id="${idPattern}"[^>]*?)fill="[^"]*"`, 'g');
-          svgText = svgText.replace(attrIdRegex, `$1fill="${color}"`);
-          
-          // Replace for style="fill:..."
-          const styleIdRegex = new RegExp(`(id="${idPattern}"[^>]*?style="[^"]*?)fill:[^;"]*(;?)`, 'g');
-          svgText = svgText.replace(styleIdRegex, `$1fill:${color}$2`);
-          
-          // Reverse order: fill="..." id="..."
-          const fillFirstRegex = new RegExp(`fill="[^"]*"([^>]*?id="${idPattern}")`, 'g');
-          svgText = svgText.replace(fillFirstRegex, `fill="${color}"$1`);
-        });
-      });
-
-      const blob = new Blob([svgText], { type: 'image/svg+xml' });
-      finalBaseUrl = URL.createObjectURL(blob);
-    } catch (err) {
-      console.warn('Failed to process SVG colors, falling back to original', err);
-    }
-  }
-
-
-  const base = await loadImage(finalBaseUrl);
+  const base = await loadImage(opts.baseUrl);
   const w = opts.uvWidth || base.naturalWidth;
   const h = opts.uvHeight || base.naturalHeight;
-  if (!persistentCanvas && !opts.canvas) {
-    persistentCanvas = document.createElement('canvas');
-  }
-  const canvas = opts.canvas ?? persistentCanvas!;
+  const canvas = opts.canvas ?? document.createElement('canvas');
   if (canvas.width !== w) canvas.width = w;
   if (canvas.height !== h) canvas.height = h;
   const ctx = canvas.getContext('2d')!;
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(base, 0, 0, w, h);
-
-  if (finalBaseUrl !== opts.baseUrl) {
-    URL.revokeObjectURL(finalBaseUrl);
-  }
-
 
   for (const layer of opts.layers) {
     const zone = opts.zones[layer.zoneKey];
