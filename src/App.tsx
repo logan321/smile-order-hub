@@ -112,6 +112,7 @@ const App = () => (
 
             {/* Admin only */}
             <Route path="/admin" element={<ProtectedRoute><AdminRoute><AppLayout><Admin /></AppLayout></AdminRoute></ProtectedRoute>} />
+            <Route path="/admin/stamp-colors" element={<ProtectedRoute><AdminRoute><AppLayout><AdminStampColors /></AppLayout></AdminRoute></ProtectedRoute>} />
             <Route path="/admin/editor/:userId" element={<ProtectedRoute><AdminRoute><AppLayout><AdminEditorConfig /></AppLayout></AdminRoute></ProtectedRoute>} />
 
             {/* Subscription page */}
