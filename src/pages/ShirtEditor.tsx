@@ -2591,41 +2591,49 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <div className="mt-3 pt-2 border-t border-border/30">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase">Cores da Camisa</p>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={syncFrontBack} 
-                          onChange={e => setSyncFrontBack(e.target.checked)} 
-                          className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-[9px] text-muted-foreground font-medium">Sincronizar</span>
-                      </label>
+                      {!activeShirtRegion.startsWith('#') && (
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input type="checkbox" checked={syncFrontBack} onChange={e => setSyncFrontBack(e.target.checked)} className="h-3 w-3 rounded border-gray-300 text-primary focus:ring-primary" />
+                          <span className="text-[9px] text-muted-foreground font-medium">Sincronizar</span>
+                        </label>
+                      )}
                     </div>
 
-                    
                     {regionButtonsDesktop}
 
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[9px] text-muted-foreground uppercase font-bold">Cor Livre:</span>
-                      <input 
-                        type="color" 
-                        value={shirtColors[activeShirtRegion] || '#FFFFFF'} 
-                        onChange={(e) => handleApplyShirtColor(e.target.value)}
-                        className="h-6 w-10 rounded border border-border cursor-pointer shrink-0"
-                      />
-                    </div>
+                    <div className="space-y-3">
+                      <div className="flex flex-col gap-1.5 p-2 rounded-lg border border-border/50 bg-muted/20">
+                        <p className="text-[9px] text-muted-foreground font-mono uppercase truncate">
+                          {activeShirtRegion.startsWith('#') ? 'HEX: ' + activeShirtRegion : 'Personalizar'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="color" 
+                            value={shirtColors[activeShirtRegion] || '#FFFFFF'} 
+                            onChange={(e) => handleApplyShirtColor(e.target.value)}
+                            className="h-8 w-12 rounded border border-border cursor-pointer shrink-0"
+                          />
+                          <Input 
+                            value={shirtColors[activeShirtRegion] || '#FFFFFF'}
+                            onChange={(e) => handleApplyShirtColor(e.target.value)}
+                            className="h-8 text-[10px] font-mono uppercase bg-background"
+                          />
+                        </div>
+                      </div>
 
-                    <div className="grid grid-cols-8 gap-1 p-1 rounded-lg bg-muted/20 border border-border/30">
-                      {shirtColorPalette.map((hex, i) => (
-                        <button
-                          key={i}
-                          className={`h-5 w-full rounded-sm border transition-transform hover:scale-110 ${shirtColors[activeShirtRegion] === hex ? 'border-primary ring-1 ring-primary/30' : 'border-border'}`}
-                          style={{ backgroundColor: hex }}
-                          onClick={() => handleApplyShirtColor(hex)}
-                        />
-                      ))}
+                      <div className="grid grid-cols-4 gap-1 p-1 rounded-lg bg-muted/20 border border-border/30">
+                        {shirtColorPalette.map((hex, i) => (
+                          <button
+                            key={i}
+                            className={`h-6 w-full rounded-sm border transition-transform hover:scale-110 ${shirtColors[activeShirtRegion] === hex ? 'border-primary ring-1 ring-primary/30' : 'border-border'}`}
+                            style={{ backgroundColor: hex }}
+                            onClick={() => handleApplyShirtColor(hex)}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
+
 
                 </div>
               )}
