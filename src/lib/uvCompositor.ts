@@ -86,7 +86,7 @@ export function extractColorsFromSvg(svgText: string): string[] {
   return Array.from(colors).sort();
 }
 
-export function applyColorMap(svgText: string, colorMap: Record<string, string>): string {
+export function applyColorMapToUv(svgText: string, colorMap: Record<string, string>): string {
   let processedSvg = svgText;
 
   Object.entries(colorMap).forEach(([originalColor, newColor]) => {
@@ -99,8 +99,7 @@ export function applyColorMap(svgText: string, colorMap: Record<string, string>)
     const escapedShortHex = shortHex.replace('#', '');
     
     const colorPattern = `(?:#?${escapedHex}|#?${escapedShortHex})`;
-    const colorRegex = new RegExp(colorPattern, 'gi');
-
+    
     // Simple string replacement for specific color values in fill attributes
     // This is a broad stroke approach but safe for SVG text if we target fill="..."
     processedSvg = processedSvg.replace(
@@ -116,6 +115,9 @@ export function applyColorMap(svgText: string, colorMap: Record<string, string>)
 
   return processedSvg;
 }
+
+// Keep the old name as alias for backward compatibility
+export const applyColorMap = applyColorMapToUv;
 
 export async function scanSvgElements(svgUrl: string): Promise<{
   dynamicIds: string[];
