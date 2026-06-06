@@ -680,7 +680,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     return () => { alive = false; };
   }, [selectedTemplate?.uvMapUrl, appliedStamp?.uvMapUrl, appliedStamp?.imageUrl, fallbackUvUrl, editsVersion, templateZones, usingUvZones]);
 
-  // Variable effectiveUvUrl is already defined above
+  const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
 
 
 
