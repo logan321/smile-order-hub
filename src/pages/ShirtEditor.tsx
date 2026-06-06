@@ -2937,6 +2937,32 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     )}
 
+                    {/* New Stamp UV Color Mapping - Mobile */}
+                    {stampUvMappings && stampUvMappings.some(m => m.is_editable) && (
+                      <div className="mt-4 pt-3 border-t border-border/30">
+                        <p className="text-[11px] font-bold text-foreground uppercase mb-3 flex items-center gap-2">
+                          <Palette className="h-3 w-3 text-accent" />
+                          Cores da Estampa
+                        </p>
+                        <div className="grid grid-cols-1 gap-2">
+                          {stampUvMappings.filter(m => m.is_editable).map((mapping) => (
+                            <div key={mapping.id} className="flex items-center justify-between gap-3 p-2 rounded-xl bg-muted/30 border border-border/50">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">{mapping.region_name}</span>
+                              <input 
+                                type="color" 
+                                value={stampUvColorChoices[mapping.original_color] || mapping.original_color} 
+                                onChange={(e) => {
+                                  setStampUvColorChoices(prev => ({ ...prev, [mapping.original_color]: e.target.value }));
+                                  debouncedBump();
+                                }}
+                                className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Dynamic Color Selection Section - Mobile (Only if no ID colors used) */}
                     {extractedSvgColors.length > 0 && !['cor-base', 'elemento-1', 'elemento-2'].some(id => stampLayerColors[id]) && (
                       <div className="mt-4 pt-3 border-t border-border/30">
