@@ -33,6 +33,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
   const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, updateUvZones, deleteUvMap, fetchUvMaps } = useUvLibrary(targetUserId);
   const [uvZoneEditorTarget, setUvZoneEditorTarget] = useState<string | null>(null);
+  const [selectedStampIdForColors, setSelectedStampIdForColors] = useState<string | null>(null);
 
   // UV Library form state
   const [newUvCode, setNewUvCode] = useState('');
