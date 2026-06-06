@@ -380,6 +380,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
+  const stampSvgCacheRef = useRef<Record<string, string>>({});
+  const lastStampUvBlobRef = useRef<string | null>(null);
+  const stampUvDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [stampUvColorChoices, setStampUvColorChoices] = useState<Record<string, string>>({});
+  const [stampUvTrigger, setStampUvTrigger] = useState(0);
+
   // Debounced bump: re-composite the UV texture with a slight delay
   // Prevents the editor from re-rendering on every mouse move in the color picker.
   const debouncedBump = useMemo(
