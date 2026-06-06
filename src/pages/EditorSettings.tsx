@@ -874,8 +874,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         {s.uvMapId && s.uvMapUrl && (
                           <div className="px-3 pb-3 border-t border-border/10 pt-3">
                             <UvColorMappingManager 
-                              uvMapId={s.uvMapId} 
-                              svgUrl={s.uvMapUrl} 
+                              templateId={s.templateId || ''} 
+                              svgUrl={s.uvMapUrl || ''} 
                             />
                           </div>
                         )}
@@ -1222,7 +1222,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                 return template?.uvMapId && template?.uvMapUrl && (
                   <div className="pt-4 border-t border-border/30">
                     <UvColorMappingManager 
-                      uvMapId={template.uvMapId} 
+                      templateId={template.id} 
                       svgUrl={template.uvMapUrl} 
                     />
                   </div>
