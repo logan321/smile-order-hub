@@ -22,9 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
-import { useTemplateColors } from '@/hooks/useTemplateColors';
+import { useUvColorMappings } from '@/hooks/useUvColorMappings';
 import { scanSvgElements, applyColorMap } from '@/lib/uvCompositor';
-import { useStampColorMappings } from '@/hooks/useStampColorMappings';
 import type { UvLayer } from '@/lib/uvCompositor';
 
 import type { UvZone } from '@/hooks/useUvLibrary';
@@ -513,8 +512,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const originalColorsRef = useRef<Record<string, string>>({});
 
   const uvBaseUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? fallbackUvUrl ?? null;
-  const { data: stampColorMappings, isLoading: loadingStampMappings } = useStampColorMappings(appliedStamp?.id);
-  const { data: templateColorMappings, isLoading: loadingMappings } = useTemplateColors(selectedTemplate?.id);
+  const { data: stampColorMappings, isLoading: loadingStampMappings } = useUvColorMappings(appliedStamp?.uvMapId);
+  const { data: templateColorMappings, isLoading: loadingMappings } = useUvColorMappings(selectedTemplate?.uvMapId);
   const uvZonesActive = Object.keys(uvMapZones).length > 0;
 
   useEffect(() => {
