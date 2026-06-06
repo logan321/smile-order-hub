@@ -2985,11 +2985,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                                 value={stampUvColorChoices[mapping.original_color] || mapping.original_color} 
                                 onChange={(e) => {
                                   setStampUvColorChoices(prev => ({ ...prev, [mapping.original_color]: e.target.value }));
-                                  if (stampUvDebounceRef.current) clearTimeout(stampUvDebounceRef.current);
-                                  stampUvDebounceRef.current = setTimeout(() => {
-                                    setStampUvTrigger(v => v + 1);
-                                    debouncedBump();
-                                  }, 300);
+                                }}
+                                onBlur={() => {
+                                  setStampUvTrigger(v => v + 1);
+                                  debouncedBump();
                                 }}
                                 className="h-8 w-12 rounded-lg border-2 border-white shadow-sm cursor-pointer"
                               />
