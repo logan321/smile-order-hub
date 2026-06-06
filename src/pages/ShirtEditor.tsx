@@ -682,10 +682,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   // Falls back to any registered UV map so 3D always has a texture to paint.
   const effectiveUvUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
 
-  // Debug log to check if effectiveUvUrl is correct
-  if (selectedTemplate) {
-    console.log('ShirtEditor rendering, effectiveUvUrl:', effectiveUvUrl);
-  }
 
 
 
