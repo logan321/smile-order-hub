@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useShirtTemplates } from '@/hooks/useShirtTemplates';
 import { useStampCatalog } from '@/hooks/useStampCatalog';
 import TemplateColorMappingManager from '@/components/TemplateColorMappingManager';
+import StampColorMappingManager from '@/components/StampColorMappingManager';
 import { usePatchCatalog } from '@/hooks/usePatchCatalog';
 import { useTextStyles } from '@/hooks/useTextStyles';
 import { useNiches } from '@/hooks/useNiches';
