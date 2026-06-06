@@ -2,22 +2,23 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { extractColorsFromSvg } from '@/lib/uvCompositor';
+import { extractColorsFromUvSvg } from '@/lib/uvCompositor';
 import { Save, RefreshCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UvColorMappingManagerProps {
-  uvMapId: string;
+  templateId: string;
   svgUrl: string;
 }
 
-interface ColorCount {
+interface ColorInfo {
   hex: string;
+  count: number;
   region_name: string;
 }
 
-export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappingManagerProps) {
-  const [colors, setColors] = useState<ColorCount[]>([]);
+export default function UvColorMappingManager({ templateId, svgUrl }: UvColorMappingManagerProps) {
+  const [colors, setColors] = useState<ColorInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -27,23 +28,23 @@ export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappin
       const { data: existingMappings, error: fetchError } = await supabase
         .from('uv_color_mappings')
         .select('*')
-        .eq('uv_map_id', uvMapId);
+        .eq('template_id', templateId);
 
       if (fetchError) throw fetchError;
 
       const res = await fetch(svgUrl);
       const svgText = await res.text();
-      const svgColors = extractColorsFromSvg(svgText);
+      const svgColors = extractColorsFromUvSvg(svgText);
 
-      const colorCounts: ColorCount[] = svgColors.map(hex => {
-        const existing = existingMappings?.find(m => m.original_color.toUpperCase() === hex.toUpperCase());
+      const colorInfos: ColorInfo[] = svgColors.map(c => {
+        const existing = existingMappings?.find(m => m.original_color.toUpperCase() === c.hex.toUpperCase());
         return {
-          hex,
+          ...c,
           region_name: existing?.region_name || '',
         };
       });
 
-      setColors(colorCounts);
+      setColors(colorInfos);
     } catch (error: any) {
       toast.error('Erro ao carregar mapeamentos: ' + error.message);
     } finally {
@@ -53,7 +54,7 @@ export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappin
 
   useEffect(() => {
     fetchMappings();
-  }, [uvMapId, svgUrl]);
+  }, [templateId, svgUrl]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -61,12 +62,12 @@ export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappin
       await supabase
         .from('uv_color_mappings')
         .delete()
-        .eq('uv_map_id', uvMapId);
+        .eq('template_id', templateId);
 
       const toInsert = colors
         .filter(c => c.region_name.trim() !== '')
         .map((c, index) => ({
-          uv_map_id: uvMapId,
+          template_id: templateId,
           original_color: c.hex,
           region_name: c.region_name,
           sort_order: index,
@@ -79,7 +80,7 @@ export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappin
         if (error) throw error;
       }
 
-      toast.success('Mapeamento UV salvo!');
+      toast.success('Mapeamento de Cores do UV salvo!');
     } catch (error: any) {
       toast.error('Erro ao salvar: ' + error.message);
     } finally {
@@ -91,33 +92,55 @@ export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappin
     setColors(prev => prev.map(c => c.hex === hex ? { ...c, region_name: name } : c));
   };
 
-  if (loading) return <div className="flex items-center gap-2 text-muted-foreground py-4"><Loader2 className="h-4 w-4 animate-spin" /> Escaneando cores do UV...</div>;
+  if (loading) return (
+    <div className="flex items-center gap-3 text-muted-foreground py-6 px-4 bg-[#1a1d2e] rounded-lg border border-white/5">
+      <Loader2 className="h-5 w-5 animate-spin text-[#534AB7]" /> 
+      <span className="text-sm font-medium">Escaneando regiões do Molde UV...</span>
+    </div>
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">Mapeamento de Cores do UV</h3>
-        <Button size="sm" variant="outline" onClick={fetchMappings} disabled={loading} className="h-8 border-white/10 text-white hover:bg-white/5">
-          <RefreshCcw className="h-3 w-3 mr-2" />
+    <div className="space-y-6 bg-[#0f1117] p-6 rounded-xl border border-white/5 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/5 pb-4">
+        <div>
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            Mapear Cores do UV
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Defina nomes amigáveis para cada cor hexadecimal encontrada no molde.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={fetchMappings} disabled={loading} className="h-9 border-white/10 text-white hover:bg-white/5 bg-transparent">
+          <RefreshCcw className="h-3.5 w-3.5 mr-2" />
           Recarregar
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-3 custom-scrollbar">
           {colors.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">Nenhuma cor detectada no SVG.</p>
+            <div className="text-center py-12 border border-dashed border-white/10 rounded-xl">
+              <p className="text-sm text-muted-foreground italic">Nenhuma cor detectada no SVG do molde.</p>
+            </div>
           ) : (
             colors.map((color) => (
-              <div key={color.hex} className="flex items-center gap-3 p-2 rounded-lg border border-white/5 bg-[#1a1d2e]">
+              <div key={color.hex} className="group flex items-center gap-4 p-3 rounded-xl border border-white/5 bg-[#1a1d2e] hover:border-[#534AB7]/30 transition-all">
                 <div 
-                   className="w-7 h-7 rounded border border-white/10 shrink-0 shadow-inner" 
-                   style={{ backgroundColor: color.hex }}
-                />
+                   className="w-12 h-12 rounded-lg border border-white/10 shrink-0 shadow-lg flex items-center justify-center text-[10px] font-bold" 
+                   style={{ backgroundColor: color.hex, color: getContrastYIQ(color.hex) }}
+                >
+                  {color.count}
+                </div>
                 <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-tighter">{color.hex}</span>
+                    <span className="text-[9px] text-muted-foreground font-medium uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                      {color.count} {color.count === 1 ? 'elemento' : 'elementos'}
+                    </span>
+                  </div>
                   <Input 
-                    placeholder="Ex: Corpo, Gola, Manga" 
-                    className="h-7 text-[10px] bg-[#0f1117] border-white/10 text-white placeholder:text-muted-foreground/50"
+                    placeholder="Ex: Corpo Frente, Gola, Manga" 
+                    className="h-9 text-xs bg-[#0f1117] border-white/10 text-white placeholder:text-muted-foreground/30 focus:border-[#534AB7] focus:ring-1 focus:ring-[#534AB7]"
                     value={color.region_name}
                     onChange={(e) => updateRegionName(color.hex, e.target.value)}
                   />
@@ -127,18 +150,36 @@ export default function UvColorMappingManager({ uvMapId, svgUrl }: UvColorMappin
           )}
         </div>
 
-        <div className="bg-[#0f1117] rounded-xl border border-white/5 p-4 flex flex-col items-center justify-center min-h-[300px]">
-            <p className="text-[10px] text-muted-foreground mb-3 font-bold uppercase tracking-widest">Visualização do UV</p>
-            <div className="relative group">
-              <img src={svgUrl} alt="UV Preview" className="max-w-full max-h-[250px] object-contain transition-transform duration-300 group-hover:scale-105" />
+        <div className="bg-[#0f1117] rounded-2xl border border-white/5 p-6 flex flex-col items-center justify-center min-h-[400px] shadow-inner relative overflow-hidden">
+            <div className="absolute top-4 left-6">
+               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] opacity-50">Preview do Molde</p>
+            </div>
+            <div className="relative group w-full h-full flex items-center justify-center">
+              <img 
+                src={svgUrl} 
+                alt="UV Preview" 
+                className="max-w-full max-h-[350px] object-contain transition-all duration-500 group-hover:scale-105" 
+              />
             </div>
         </div>
       </div>
 
-      <Button onClick={handleSave} disabled={saving} size="sm" className="w-full bg-[#534AB7] hover:bg-[#534AB7]/90 text-white font-medium shadow-lg shadow-indigo-500/10">
-        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-        Salvar Mapeamento UV
-      </Button>
+      <div className="flex justify-end pt-4 border-t border-white/5">
+        <Button onClick={handleSave} disabled={saving} className="bg-[#534AB7] hover:bg-[#534AB7]/90 text-white font-bold px-8 shadow-xl shadow-indigo-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+          Salvar Mapeamento
+        </Button>
+      </div>
     </div>
   );
+}
+
+// Helper for accessibility/contrast
+function getContrastYIQ(hexcolor: string){
+    hexcolor = hexcolor.replace("#", "");
+    var r = parseInt(hexcolor.substr(0,2),16);
+    var g = parseInt(hexcolor.substr(2,2),16);
+    var b = parseInt(hexcolor.substr(4,2),16);
+    var yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 128) ? 'black' : 'white';
 }
