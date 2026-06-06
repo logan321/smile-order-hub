@@ -1,30 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface TemplateColorMapping {
+export interface UvColorMapping {
   id: string;
-  template_id: string;
+  uv_map_id: string;
   original_color: string;
   region_name: string;
   sort_order: number;
 }
 
-export function useTemplateColors(templateId: string | undefined) {
+export function useUvColorMappings(uvMapId: string | undefined | null) {
   return useQuery({
-    queryKey: ['template-colors', templateId],
+    queryKey: ['uv-color-mappings', uvMapId],
     queryFn: async () => {
-      if (!templateId) return [];
+      if (!uvMapId) return [];
       
       const { data, error } = await supabase
-        .from('template_color_mappings')
+        .from('uv_color_mappings')
         .select('*')
-        .eq('template_id', templateId)
+        .eq('uv_map_id', uvMapId)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return data as TemplateColorMapping[];
+      return data as UvColorMapping[];
     },
-    enabled: !!templateId,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    enabled: !!uvMapId,
+    staleTime: 1000 * 60 * 5,
   });
 }
