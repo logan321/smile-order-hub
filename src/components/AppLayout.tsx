@@ -30,7 +30,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       { label: 'Config. Editor', to: '/config-editor', icon: Palette },
       { label: 'Editor', to: '/meu-editor', icon: Shirt },
     ] : []),
-    ...(isAdmin ? [{ label: 'Admin', to: '/admin', icon: Shield }] : []),
+    ...(isAdmin ? [
+      { label: 'Cores Estampas', to: '/admin/stamp-colors', icon: Palette },
+      { label: 'Admin', to: '/admin', icon: Shield }
+    ] : []),
   ];
 
   const handleLogout = async () => {
