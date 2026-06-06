@@ -23,7 +23,7 @@ import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import { useTemplateColors } from '@/hooks/useTemplateColors';
-import { scanSvgElements, applyColorMap } from '@/lib/uvCompositor';
+import { scanSvgElements, applyColorMapToUv } from '@/lib/uvCompositor';
 import { useStampUvColors } from '@/hooks/useStampUvColors';
 import type { UvLayer } from '@/lib/uvCompositor';
 
@@ -693,7 +693,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     layers: uvLayers,
     uvWidth: uvMapDims.w,
     uvHeight: uvMapDims.h,
-    shirtColors,
+    shirtColors: { ...shirtColors, ...stampUvColorChoices },
   });
 
 
@@ -759,7 +759,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           try {
             const res = await fetch(toProxyUrl(appliedStamp.uvMapUrl));
             const svgText = await res.text();
-            const coloredSvg = applyColorMap(svgText, stampUvColorChoices);
+            const coloredSvg = applyColorMapToUv(svgText, stampUvColorChoices);
             const blob = new Blob([coloredSvg], { type: 'image/svg+xml' });
             finalUvUrl = URL.createObjectURL(blob);
             isDynamic = true;
@@ -1578,7 +1578,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         finalSvgText = new XMLSerializer().serializeToString(svgDoc);
       } else {
         // Fallback to global color substitution if no mappings matched
-        finalSvgText = applyColorMap(svgText, colorMapping);
+        finalSvgText = applyColorMapToUv(svgText, colorMapping);
       }
 
 
