@@ -21,6 +21,7 @@ import SubscriptionPage from "./pages/Subscription";
 import ShirtEditor from "./pages/ShirtEditor";
 import EditorSettings from "./pages/EditorSettings";
 import AdminEditorConfig from "./pages/AdminEditorConfig";
+import AdminStampColors from "./pages/AdminStampColors";
 import Budgets from "./pages/Budgets";
 import NotFound from "./pages/NotFound";
 
