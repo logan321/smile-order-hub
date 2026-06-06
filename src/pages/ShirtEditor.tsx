@@ -69,7 +69,11 @@ type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
 
-const ShirtEditor = () => {
+interface ShirtEditorProps {
+  useOwnAssets?: boolean;
+}
+
+const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const { userId: urlUserId, templateId: urlTemplateId } = useParams<{ userId: string; templateId?: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
