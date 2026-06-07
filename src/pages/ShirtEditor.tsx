@@ -12,7 +12,7 @@ import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-// import logo from '@/assets/logo.png'; // Comentado para usar logo do exemplo se necessário
+import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
