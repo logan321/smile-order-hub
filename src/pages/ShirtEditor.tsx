@@ -1,3 +1,4 @@
+const USE_3D_SYSTEM = true;
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject, Control, controlsUtils } from 'fabric';
@@ -885,6 +886,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
   // Initialize canvases
   useEffect(() => {
+    if (USE_3D_SYSTEM) return;
     if (!selectedTemplate || !frontCanvasRef.current || !backCanvasRef.current) return;
     if (frontFabricRef.current) return;
 
@@ -2039,8 +2041,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       {/* Unified responsive layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Top icon toolbar — visible on mobile & desktop, sits ABOVE the 3D so it never covers the shirt */}
-        <div className="shrink-0 bg-card/80 backdrop-blur border-b border-border/60 px-2 py-2 overflow-x-auto">
-          <div className="flex items-center justify-start lg:justify-center gap-2 lg:gap-3 min-w-max mx-auto">
+        {!USE_3D_SYSTEM && (
+          <div className="shrink-0 bg-card/80 backdrop-blur border-b border-border/60 px-2 py-2 overflow-x-auto">
+            <div className="flex items-center justify-start lg:justify-center gap-2 lg:gap-3 min-w-max mx-auto">
             {([
               { id: 'stamps',   label: 'Estampas',    icon: Shirt },
               { id: 'patches',  label: 'Peixes',      icon: Sparkles },
@@ -2067,10 +2070,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             })}
           </div>
         </div>
+        )}
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
           {/* Desktop sidebar panel */}
-          {activeTab && (
+          {!USE_3D_SYSTEM && activeTab && (
             <aside className="hidden lg:block lg:w-64 lg:border-r border-border bg-card p-3 overflow-y-auto">
               {activeTab === 'stamps' && (
                 <div>
@@ -2250,7 +2254,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           )}
 
           {/* Mobile overlay panel — opens on top of canvas */}
-          {activeTab && (
+          {!USE_3D_SYSTEM && activeTab && (
             <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t-2 border-accent rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-h-[45vh] flex flex-col animate-fade-in">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
                 <p className="text-sm font-bold text-foreground">
@@ -2544,7 +2548,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <Sparkles className="h-4 w-4" />
                       {showUvPanel ? 'Fechar' : 'Personalizar'}
                     </button>
-                    {showUvPanel && (
+                    {USE_3D_SYSTEM && showUvPanel && (
                     <div className="absolute inset-x-2 bottom-2 lg:inset-x-auto lg:top-14 lg:right-2 lg:bottom-2 lg:w-[320px] z-30 max-h-[60vh] lg:max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-xl shadow-2xl p-3 space-y-3 animate-fade-in">
                       <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="h-4 w-4 text-accent" />
