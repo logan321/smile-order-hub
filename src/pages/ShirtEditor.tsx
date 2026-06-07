@@ -248,12 +248,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               <div className="animate-fade-in">
                 <p className="text-xs font-bold text-muted-foreground uppercase mb-4 tracking-wider">Estampas</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {stamps.map(s => (
+                  {stamps.length > 0 ? stamps.map(s => (
                     <button key={s.id} onClick={() => addStamp(s)} className={`group rounded-xl border-2 p-1.5 transition-all bg-card hover:shadow-md ${appliedStamp?.id === s.id ? 'border-[#FF5A00]' : 'border-border/50 hover:border-[#FF5A00]/50'}`}>
                       <StampThumb stampUrl={s.imageUrl} name={s.name} />
                       <p className="text-[10px] text-center mt-1.5 truncate font-bold">{s.name}</p>
                     </button>
-                  ))}
+                  )) : (
+                    <div className="col-span-2 py-8 text-center text-muted-foreground text-xs italic">
+                      Nenhuma estampa encontrada
+                    </div>
+                  )}
                 </div>
               </div>
             )}
