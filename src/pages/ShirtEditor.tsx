@@ -249,7 +249,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               </button>
             </div>
           </aside>
-        )}
 
         <main className="flex-1 relative bg-gradient-to-b from-sky-50 to-green-50 overflow-hidden">
           <div className="absolute inset-0 flex items-center justify-center p-8">
