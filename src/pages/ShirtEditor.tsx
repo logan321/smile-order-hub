@@ -133,8 +133,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setLoading(true);
       try {
         const { data: tData } = await supabase.from('shirt_templates').select('*');
-        const { data: sData } = await (supabase as any).from('stamps').select('*');
-        const { data: pData } = await (supabase as any).from('patches').select('*');
+        const { data: sData } = await (supabase as any).from('stamp_catalog').select('*');
+        const { data: pData } = await (supabase as any).from('patch_catalog').select('*');
         const { data: eData } = await (supabase as any).from('emblems').select('*');
         
         console.log('Templates data:', tData);
