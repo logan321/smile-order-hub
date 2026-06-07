@@ -1674,9 +1674,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, shadowEnabled, shadowColor, shadowBlur, textCurvature, activeView]);
 
-  // Auto-select last text object when text tab is opened (mobile)
+  // Auto-select last text object when name tab is opened (mobile)
   useEffect(() => {
-    if (activeTab !== 'text') return;
+    if (activeTab !== 'name') return;
     const canvas = getActiveCanvas();
     if (!canvas) return;
     const active = canvas.getActiveObject();
@@ -1685,7 +1685,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const objects = canvas.getObjects();
     for (let i = objects.length - 1; i >= 0; i--) {
       const obj = objects[i] as any;
-      if (obj._userElement && obj._elementType === 'text') {
+      if (obj._userElement && obj._elementType === 'name') {
         canvas.setActiveObject(obj);
         canvas.renderAll();
         // Sync UI
