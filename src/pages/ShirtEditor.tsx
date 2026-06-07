@@ -2041,10 +2041,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       </header>
 
       {/* Unified responsive layout */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {/* Top icon toolbar — visible on mobile & desktop, sits ABOVE the 3D so it never covers the shirt */}
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
         {/* Desktop context menu (Camisa, Calção, Meião) */}
-        <div className="hidden lg:flex shrink-0 bg-white border-b border-border px-8 py-3 items-center justify-between">
+        <div className="hidden lg:flex shrink-0 bg-white border-b border-border px-8 py-3 items-center justify-between z-30">
           <div className="flex items-center gap-8">
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
             <div className="flex bg-slate-100 p-1 rounded-lg">
@@ -2062,15 +2061,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         </div>
 
         {/* Mobile Toolbar (Simplified) */}
-        <div className="lg:hidden shrink-0 bg-white border-b border-border/60 px-2 py-2 overflow-x-auto">
+        <div className="lg:hidden shrink-0 bg-white border-b border-border/60 px-2 py-2 overflow-x-auto z-30">
           <div className="flex items-center justify-start gap-2 min-w-max">
-            {/* Same buttons as above but smaller for mobile */}
+            {/* Mobile menu buttons */}
           </div>
         </div>
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5]">
-          {/* Desktop sidebar panel — Lefthand menu like in example */}
-          <aside className="hidden lg:flex lg:flex-col lg:w-20 lg:bg-white lg:border-r border-border shadow-sm z-40">
+          {/* Menu Lateral Esquerdo - FIXO e COMPACTO como no exemplo */}
+          <aside className="hidden lg:flex lg:flex-col lg:w-20 lg:bg-white lg:border-r border-border shadow-sm z-40 h-full">
             <div className="flex flex-col items-center py-4 gap-6">
               {([
                 { id: 'stamps',   label: 'Modelo',    icon: Shirt },
@@ -2085,20 +2084,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <button
                     key={id}
                     onClick={() => setActiveTab(active ? null : id)}
-                    className={`flex flex-col items-center gap-1 group transition-all w-full py-2 ${active ? 'text-[#FF5C00] bg-orange-50/50' : 'text-slate-500 hover:text-[#FF5C00]'}`}
+                    className={`flex flex-col items-center gap-1 group transition-all w-full py-2 relative ${active ? 'text-[#FF5C00] bg-orange-50/50' : 'text-slate-500 hover:text-[#FF5C00]'}`}
                   >
                     <Icon className={`h-6 w-6 transition-transform group-hover:scale-110 ${active ? 'text-[#FF5C00]' : ''}`} />
-                    <span className="text-[10px] font-bold text-center leading-tight px-1 uppercase tracking-tighter">{label}</span>
-                    {active && <div className="absolute left-0 w-1 h-8 bg-[#FF5C00] rounded-r-full" />}
+                    <span className="text-[10px] font-bold text-center leading-tight px-1 uppercase tracking-tighter whitespace-pre-wrap">{label}</span>
+                    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-[#FF5C00] rounded-r-full" />}
                   </button>
                 );
               })}
             </div>
           </aside>
 
-          {/* Secondary panel for selected tool options */}
+          {/* Painel de Opções Lateral - Flutuante ou Adjacente mas não ocupa a tela toda */}
           {activeTab && (
-            <aside className="hidden lg:block lg:w-72 lg:bg-white lg:border-r border-border p-4 overflow-y-auto animate-slide-in shadow-inner">
+            <aside className="hidden lg:block lg:w-72 lg:bg-white lg:border-r border-border p-4 overflow-y-auto animate-slide-in shadow-lg z-30 h-full bg-white/95 backdrop-blur-sm">
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
