@@ -2038,7 +2038,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       </header>
 
       {/* Unified responsive layout */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative z-10">
         {/* Desktop context menu (Camisa, Calção, Meião) */}
         {/* Top bar with Tabs in center-ish and Right actions */}
         <div className="hidden lg:flex shrink-0 bg-white border-b border-slate-200 px-6 py-2 items-center justify-between z-30">
