@@ -132,10 +132,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: tData } = await supabase.from('shirt_templates').select('*');
-        const { data: sData } = await (supabase as any).from('stamp_catalog').select('*');
-        const { data: pData } = await (supabase as any).from('patch_catalog').select('*');
-        const { data: eData } = await (supabase as any).from('emblems').select('*');
+        let templatesQuery = supabase.from('shirt_templates').select('*');
+        let stampsQuery = (supabase as any).from('stamp_catalog').select('*');
+        let patchesQuery = (supabase as any).from('patch_catalog').select('*');
+        let emblemsQuery = (supabase as any).from('emblems').select('*');
+
+        // Se houver um userId na URL, filtramos os dados para esse usuário específico
+        if (urlUserId) {
+          templatesQuery = templatesQuery.eq('user_id', urlUserId);
+          stampsQuery = stampsQuery.eq('user_id', urlUserId);
+          patchesQuery = patchesQuery.eq('user_id', urlUserId);
+          emblemsQuery = emblemsQuery.eq('user_id', urlUserId);
+        }
+
+        const { data: tData } = await templatesQuery;
+        const { data: sData } = await stampsQuery;
+        const { data: pData } = await patchesQuery;
+        const { data: eData } = await emblemsQuery;
         
         console.log('Templates data:', tData);
         console.log('Stamps data:', sData);
