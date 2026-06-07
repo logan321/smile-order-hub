@@ -18,6 +18,7 @@ import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
@@ -93,28 +94,38 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       <div className="flex-1 flex overflow-hidden relative bg-[#f5f5f5] z-10 h-[calc(100dvh-80px)]">
         <aside className="hidden lg:flex lg:flex-col lg:w-[80px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
-          <div className="flex flex-col py-4 gap-1">
-            {[
-              { id: 'stamps', label: 'Estilo', icon: ShirtIcon },
-              { id: 'patches', label: 'Cores', icon: Palette },
-              { id: 'textStyles', label: 'Acabamentos', icon: Scissors },
-              { id: 'name', label: 'Nome/Número', icon: Type },
-              { id: 'emblems', label: 'Escudo', icon: Shield },
-              { id: 'logo', label: 'Upload', icon: Upload },
-            ].map(({ id, label, icon: Icon }) => {
-              const active = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(active ? (null as any) : (id as any))}
-                  className={`flex flex-col items-center gap-1.5 group transition-all w-full py-4 relative border-l-4 ${active ? 'text-[#ea580c] border-[#ea580c] bg-orange-50/40' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
-                >
-                  <Icon className={`h-6 w-6 ${active ? 'text-[#ea580c]' : 'text-slate-500'}`} />
-                  <span className={`text-[10px] font-bold ${active ? 'text-[#ea580c]' : 'text-slate-500'}`}>{label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <TooltipProvider>
+            <div className="flex flex-col py-2 gap-0">
+              {[
+                { id: 'stamps', label: 'Estilo', icon: ShirtIcon },
+                { id: 'patches', label: 'Cores', icon: Palette },
+                { id: 'textStyles', label: 'Acabamentos', icon: Scissors },
+                { id: 'name', label: 'Nome/Número', icon: Type },
+                { id: 'emblems', label: 'Escudo', icon: Shield },
+                { id: 'logo', label: 'Upload', icon: Upload },
+              ].map(({ id, label, icon: Icon }) => {
+                const active = activeTab === id;
+                return (
+                  <Tooltip key={id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setActiveTab(id as ToolbarTab)}
+                        className={`flex flex-col items-center justify-center gap-1 group transition-all w-full py-4 relative border-r-4 ${active ? 'text-[#FF5C00] border-[#FF5C00] bg-orange-50/40' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                      >
+                        <div className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${active ? 'bg-orange-100/50' : 'group-hover:bg-slate-50'}`}>
+                          <Icon className={`h-6 w-6 ${active ? 'text-[#FF5C00]' : 'text-slate-400'}`} />
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase tracking-tighter ${active ? 'text-[#FF5C00]' : 'text-slate-500'}`}>{label}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </TooltipProvider>
         </aside>
 
         {activeTab && (
