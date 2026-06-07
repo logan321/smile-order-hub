@@ -2063,7 +2063,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5]">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5] z-10">
           {/* Floating action buttons in 3D area */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-4 z-40 hidden lg:flex">
             <Button size="sm" onClick={handleWhatsAppQuote} className="gap-2 bg-[#FF5C00] border-2 border-white hover:bg-[#e65200] text-white h-11 px-6 rounded-full font-bold shadow-xl transition-all active:scale-95">
