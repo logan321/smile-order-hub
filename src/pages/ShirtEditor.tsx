@@ -127,76 +127,84 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [emblems, setEmblems] = useState<any[]>([]);
   const [currentPatchLabel, setCurrentPatchLabel] = useState('Peixes');
 
-  // Recupera o mapeamento de zonas para o template selecionado
+  // Recupera as zonas de UV do catálogo de moldes com base na estampa selecionada
   useEffect(() => {
     const fetchZones = async () => {
-      if (!selectedTemplate?.id) return;
+      const currentUvId = appliedStamp?.uvMapId || selectedTemplate?.uvMapId;
+      if (!currentUvId) return;
+
       const { data } = await supabase
-        .from('template_zones')
+        .from('uv_maps' as any)
         .select('*')
-        .eq('template_id', selectedTemplate.id);
+        .eq('id', currentUvId)
+        .single();
       
       if (data) {
-        const zoneMap: Record<string, UvZone> = {};
-        data.forEach((z: any) => {
-          zoneMap[z.zone_key] = {
-            points: z.points as any,
-            label: z.label,
-          };
-        });
-        setUvMapZones(zoneMap);
+        const u = data as any;
+        setUvMapZones((u.uv_zones && typeof u.uv_zones === 'object') ? u.uv_zones as Record<string, UvZone> : {});
+        setUvMapDims({ w: u.uv_width ?? null, h: u.uv_height ?? null });
       }
     };
     fetchZones();
-  }, [selectedTemplate]);
+  }, [appliedStamp, selectedTemplate]);
 
   // Sincroniza as camadas do UV (texto, nome, etc)
   const syncUvLayers = useCallback(() => {
     const layers: UvLayer[] = [];
     
-    // Texto customizado
-    if (textInput) {
+    // Texto customizado - tentamos encontrar uma zona de texto ou usamos a primeira disponível
+    const zoneKeys = Object.keys(uvMapZones);
+    const textZone = zoneKeys.find(k => k.toLowerCase().includes('text')) || zoneKeys[0];
+
+    if (textInput && textZone) {
       layers.push({
         id: 'custom-text',
+        zoneKey: textZone,
         type: 'text',
-        text: textInput,
+        content: textInput,
         fontFamily,
-        fontSize,
+        fontSize: fontSize * 2, // Escala para o molde UV
         color: textColor,
-        stroke: strokeColor,
+        strokeColor,
         strokeWidth,
         curvature: textCurvature,
-        position: { x: 500, y: 500 }, // Posição padrão centralizada no molde
       });
     }
 
-    // Nome e Número
-    if (nameInput) {
+    // Nome e Número - tentamos encontrar zonas específicas
+    const nameZone = zoneKeys.find(k => k.toLowerCase().includes('name')) || zoneKeys[0];
+    const numberZone = zoneKeys.find(k => k.toLowerCase().includes('number')) || zoneKeys[0];
+
+    if (nameInput && nameZone) {
       layers.push({
         id: 'player-name',
+        zoneKey: nameZone,
         type: 'text',
-        text: nameInput,
-        fontFamily,
-        fontSize: fontSize * 1.5,
-        color: textColor,
-        position: { x: 500, y: 300 },
-      });
-    }
-
-    if (numberInput) {
-      layers.push({
-        id: 'player-number',
-        type: 'text',
-        text: numberInput,
+        content: nameInput,
         fontFamily,
         fontSize: fontSize * 3,
         color: textColor,
-        position: { x: 500, y: 600 },
+      });
+    }
+
+    if (numberInput && numberZone) {
+      layers.push({
+        id: 'player-number',
+        zoneKey: numberZone,
+        type: 'text',
+        content: numberInput,
+        fontFamily,
+        fontSize: fontSize * 6,
+        color: textColor,
       });
     }
 
     setUvLayers(layers);
-  }, [textInput, nameInput, numberInput, fontFamily, fontSize, textColor, strokeColor, strokeWidth, textCurvature]);
+  }, [textInput, nameInput, numberInput, fontFamily, fontSize, textColor, strokeColor, strokeWidth, textCurvature, uvMapZones]);
+
+  useEffect(() => {
+    syncUvLayers();
+  }, [syncUvLayers]);
 
   useEffect(() => {
     syncUvLayers();
