@@ -2146,7 +2146,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               )}
               {activeTab === 'patches' && (
                 <div className="patch-protected">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{currentPatchLabel}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Cores / Detalhes</p>
+                  <div className="flex bg-slate-100 p-0.5 rounded-lg mb-4">
+                    <button className="flex-1 py-1.5 text-[10px] font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
+                    <button className="flex-1 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700">Calção</button>
+                    <button className="flex-1 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700">Meião</button>
+                  </div>
                   {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
                     <div className="grid grid-cols-3 gap-2">
                       {patches.map(p => (
