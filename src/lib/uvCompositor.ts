@@ -29,13 +29,6 @@ export type UvLayer =
       offsetX?: number;
       offsetY?: number;
       opacity?: number;
-    }
-  | {
-      id: string;
-      zoneKey: string;
-      type: 'color';
-      color: string;
-      opacity?: number;
     };
 
 const imgCache = new Map<string, Promise<HTMLImageElement>>();
@@ -78,14 +71,11 @@ export async function composeUvTexture(opts: {
     ctx.beginPath();
     ctx.rect(zone.x, zone.y, zone.width, zone.height);
     ctx.clip();
-    const offsetX = 'offsetX' in layer ? (layer.offsetX ?? 0) : 0;
-    const offsetY = 'offsetY' in layer ? (layer.offsetY ?? 0) : 0;
-    const cx = zone.x + zone.width / 2 + offsetX;
-    const cy = zone.y + zone.height / 2 + offsetY;
+    const cx = zone.x + zone.width / 2 + (layer.offsetX ?? 0);
+    const cy = zone.y + zone.height / 2 + (layer.offsetY ?? 0);
     ctx.translate(cx, cy);
-    const rotation = 'rotation' in layer ? (layer.rotation ?? 0) : 0;
-    if (rotation) ctx.rotate(rotation);
-    const scale = 'scale' in layer ? (layer.scale ?? 1) : 1;
+    if (layer.rotation) ctx.rotate(layer.rotation);
+    const scale = layer.scale ?? 1;
 
     if (layer.type === 'text') {
       const family = layer.fontFamily || 'Arial';
@@ -136,7 +126,7 @@ export async function composeUvTexture(opts: {
       }
       ctx.fillStyle = layer.color || '#ffffff';
       drawText(false);
-    } else if (layer.type === 'image') {
+    } else {
       try {
         const img = await loadImage(layer.url);
         ctx.globalAlpha = layer.opacity ?? 1;
@@ -150,11 +140,6 @@ export async function composeUvTexture(opts: {
       } catch (e) {
         // image failed; ignore
       }
-    } else if (layer.type === 'color') {
-      ctx.globalAlpha = layer.opacity ?? 1;
-      ctx.fillStyle = layer.color;
-      // Fill the entire zone (accounting for translation to center)
-      ctx.fillRect(-zone.width / 2, -zone.height / 2, zone.width, zone.height);
     }
     ctx.restore();
   }
