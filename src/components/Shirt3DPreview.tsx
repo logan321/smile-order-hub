@@ -103,7 +103,7 @@ function ShirtModel({
     });
   }, [scene, uvTex, fabricColor]);
 
-  const fitScale = 2.4 / Math.max(size.y, 0.0001);
+  const fitScale = 3.5 / Math.max(size.y, 0.0001);
 
   return (
     <group
@@ -141,16 +141,15 @@ export default function Shirt3DPreview({
   console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
 
   return (
-    <div className="w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner">
+    <div className="w-full h-full bg-gradient-to-b from-sky-100/50 to-green-100/30 rounded-lg overflow-hidden relative border border-border/20 shadow-inner">
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
         gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
         dpr={[1, 2]}
         onError={(err) => console.error('R3F Canvas Error:', err)}
-        style={{ background: '#f1f3f6' }}
+        className="w-full h-full"
       >
-        <color attach="background" args={['#f1f3f6']} />
         <ambientLight intensity={0.8} />
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
         <directionalLight position={[3, 4, 5]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} />
