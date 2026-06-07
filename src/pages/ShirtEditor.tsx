@@ -40,17 +40,19 @@ function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
 const isMisplacedStampTemplate = (template: Template) => {
-  // Filter out items that are clearly UV maps or technical images
-  const isUvPath = (url: string) => /uv-library|uv-map|colorway/i.test(url);
+  const front = template.frontImageUrl || '';
+  const back = template.backImageUrl || '';
+  const name = (template.name || '').trim();
+
+  // 1. Identical front/back usually means it's a UV map reference or placeholder
+  if (front && back && front === back) return true;
   
-  if (template.frontImageUrl === template.backImageUrl) return true;
-  if (isUvPath(template.frontImageUrl) || isUvPath(template.backImageUrl)) return true;
-  
-  // Original logic for stamp codes uploaded as templates
-  return isLikelyStampCode(template.name) && (
-    /colorway/i.test(template.frontImageUrl) ||
-    /colorway/i.test(template.backImageUrl)
-  );
+  // 2. Specifically filter out uv-library paths
+  if (/uv-library|uv-map/i.test(front) || /uv-library|uv-map/i.test(back)) return true;
+
+  // 3. Original logic: name looks like a code AND it's a colorway
+  const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name);
+  return nameLooksLikeCode && (/colorway/i.test(front) || /colorway/i.test(back));
 };
 
 function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }: { front: string; back: string; uvMapUrl: string | null; cameraPosition: [number, number, number]; onCameraChange: (pos: [number, number, number]) => void }) {
