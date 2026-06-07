@@ -2039,7 +2039,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       <main className="flex flex-1 overflow-hidden" style={{height: 'calc(100vh - 56px)'}}>
         {/* Coluna 1: Sidebar fixa de ícones */}
         <nav id="left-sidebar" className="w-20 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 flex flex-col items-center py-4 space-y-6 z-40">
-          {[
+          {([
             { id: 'stamps',   label: 'Estampa',    icon: Shirt },
             { id: 'text',     label: 'Texto',      icon: Type },
             { id: 'name',     label: 'Nome/Nº',    icon: Shirt },
