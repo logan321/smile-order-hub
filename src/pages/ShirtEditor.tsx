@@ -128,127 +128,124 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </TooltipProvider>
         </aside>
 
-        <aside className="hidden lg:flex lg:flex-col lg:w-[300px] lg:bg-white lg:border-r border-border z-30 h-full">
+        <aside className="hidden lg:flex lg:flex-col lg:w-[300px] flex-shrink-0 bg-white border-r border-border h-full">
           <div className="flex-1 overflow-y-auto p-5 space-y-6">
             {!activeTab && (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
                 <Box className="h-8 w-8 opacity-20" />
-                <p className="text-xs font-medium">Selecione uma categoria para editar</p>
+                <p className="text-xs font-medium">Selecione uma categoria</p>
               </div>
             )}
-
-              {/* 1. Personalização UV - Estilo */}
-              {activeTab === 'stamps' && (
-                <>
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Personalização UV</h3>
-                    <div className="space-y-3">
+            
+            {activeTab === 'stamps' && (
+              <div className="space-y-6">
+                {/* Personalização UV */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Personalização UV</h3>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase text-slate-500">Cor</label>
                         <div className="flex gap-2 flex-wrap">
-                          {['#000000', '#FFFFFF', '#FF0000', '#0000FF', '#00FF00'].map(color => (
-                            <button key={color} className="w-6 h-6 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: color }} />
+                          {['#000000', '#FFFFFF', '#FF0000', '#0000FF', '#00FF00'].map(c => (
+                            <button key={c} className="w-6 h-6 rounded-full border border-slate-200" style={{ backgroundColor: c }} />
                           ))}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase text-slate-500">Contorno</label>
-                          <Input className="h-8 text-xs" placeholder="0px" type="number" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase text-slate-500">Espessura</label>
-                          <Input className="h-8 text-xs" placeholder="1" type="number" />
-                        </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase text-slate-500">Contorno</label>
+                        <Input className="h-8 text-xs" placeholder="0px" type="number" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase text-slate-500">Espessura</label>
+                        <Input className="h-8 text-xs" placeholder="1" type="number" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase text-slate-500">Tamanho</label>
                         <Slider defaultValue={[50]} max={100} step={1} />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase text-slate-500">Fonte</label>
-                        <Select defaultValue="Arial">
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Selecione a fonte" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FONT_OPTIONS.map(opt => (
-                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
-                  </div>
-
-                  {/* 2. ESTAMPAS */}
-                  <div className="space-y-4 pt-4 border-t">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Estampas</h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                        <button key={i} className="aspect-square border rounded bg-slate-50 flex items-center justify-center hover:border-orange-500 transition-colors">
-                          <ShirtIcon className="h-8 w-8 text-slate-300" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* 3. DIREITO & 4. NAME_BACK */}
-              {activeTab === 'name' && (
-                <div className="space-y-6">
-                  {/* DIREITO */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Direito</h3>
-                    <div className="space-y-3">
-                      <Input className="h-9 text-xs" placeholder="Texto / nome / nº" />
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8">
-                          <ImageIcon className="h-3 w-3 mr-1" /> Logo
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8 text-destructive border-destructive/20 hover:bg-destructive/10">
-                          <Trash2 className="h-3 w-3 mr-1" /> Limpar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* NAME_BACK */}
-                  <div className="space-y-4 pt-4 border-t">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Name_Back</h3>
-                    <div className="space-y-3">
-                      <Input className="h-9 text-xs" placeholder="Texto / nome / nº" />
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8">
-                          <ImageIcon className="h-3 w-3 mr-1" /> Logo
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8 text-destructive border-destructive/20 hover:bg-destructive/10">
-                          <Trash2 className="h-3 w-3 mr-1" /> Limpar
-                        </Button>
-                      </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase text-slate-500">Fonte</label>
+                      <Select defaultValue="Arial">
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FONT_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
 
-            {/* 5. Botões flutuantes de ferramentas no rodapé do painel */}
-            <div className="p-4 border-t bg-slate-50 flex items-center justify-around">
-              <button className="p-2 rounded-md hover:bg-white transition-colors text-slate-500" title="Texto">
-                <Type className="h-5 w-5" />
-              </button>
-              <button className="p-2 rounded-md hover:bg-white transition-colors text-slate-500" title="Desenhar">
-                <PenTool className="h-5 w-5" />
-              </button>
-              <button className="p-2 rounded-md hover:bg-white transition-colors text-slate-500" title="Mover">
-                <MousePointer2 className="h-5 w-5" />
-              </button>
-              <button className="p-2 rounded-md hover:bg-white transition-colors text-destructive" title="Remover">
-                <Trash2 className="h-5 w-5" />
-              </button>
-            </div>
-          </aside>
+                {/* Estampas */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Estampas</h3>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                      <button key={i} className="aspect-square border rounded bg-slate-50 flex items-center justify-center hover:border-orange-500 transition-colors">
+                        <ShirtIcon className="h-8 w-8 text-slate-300" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {activeTab === 'name' && (
+              <div className="space-y-6">
+                {/* Direito */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Direito</h3>
+                  <Input className="h-9 text-xs" placeholder="Texto / nome / nº" />
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8">
+                      <ImageIcon className="h-3 w-3 mr-1" /> Logo
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8 text-destructive border-destructive/20">
+                      <Trash2 className="h-3 w-3 mr-1" /> Limpar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Name_Back */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Name_Back</h3>
+                  <Input className="h-9 text-xs" placeholder="Texto / nome / nº" />
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8">
+                      <ImageIcon className="h-3 w-3 mr-1" /> Logo
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold uppercase h-8 text-destructive border-destructive/20">
+                      <Trash2 className="h-3 w-3 mr-1" /> Limpar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Botões flutuantes no rodapé do painel */}
+          <div className="p-4 border-t bg-slate-50 flex items-center justify-around flex-shrink-0">
+            <button className="p-2 rounded-md hover:bg-white text-slate-500" title="Texto">
+              <Type className="h-5 w-5" />
+            </button>
+            <button className="p-2 rounded-md hover:bg-white text-slate-500" title="Desenhar">
+              <PenTool className="h-5 w-5" />
+            </button>
+            <button className="p-2 rounded-md hover:bg-white text-slate-500" title="Mover">
+              <MousePointer2 className="h-5 w-5" />
+            </button>
+            <button className="p-2 rounded-md hover:bg-white text-destructive" title="Remover">
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
+        </aside>
 
         <main className="flex-1 relative bg-gradient-to-b from-sky-50 to-green-50 overflow-hidden">
           <div className="absolute inset-0 flex items-center justify-center p-8">
