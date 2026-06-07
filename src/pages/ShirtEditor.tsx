@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -251,7 +251,7 @@ interface Stamp {
   nicheId?: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
+type ToolbarTab = 'stamps' | 'colors' | 'finishings' | 'name' | 'emblems' | 'logo' | 'textStyles' | null;
 type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
@@ -377,6 +377,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
+  const pendingLogoZoneKeyRef = useRef<string>('');
 
 
   // Debounced bump: re-composite the UV texture at most every ~120ms while the
@@ -499,6 +500,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       ]);
     };
     reader.readAsDataURL(file);
+  };
+
+  const setUvLayerColor = (zoneKey: string, color: string) => {
+    setUvLayers(prev => [
+      ...prev.filter(l => !(l.zoneKey === zoneKey && l.type === 'color')),
+      { id: `${zoneKey}_color_${Date.now()}`, zoneKey, type: 'color', color, opacity: 1 } as UvLayer,
+    ]);
   };
 
   const removeUvLayer = (zoneKey: string, type?: 'text' | 'image') => {
@@ -1458,6 +1466,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const currentZoneKey = pendingLogoZoneKeyRef.current;
+    if (currentZoneKey) {
+      setUvLayerImage(currentZoneKey, file);
+      pendingLogoZoneKeyRef.current = '';
+      e.target.value = '';
+      return;
+    }
     e.target.value = '';
     const zonesForSide = templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView));
     if (zonesForSide.length > 0) { setPendingLogoFile(file); setShowZonePicker('logo'); }
@@ -1666,9 +1681,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     }
   }, [textColor, strokeColor, strokeWidth, fontSize, fontFamily, shadowEnabled, shadowColor, shadowBlur, textCurvature, activeView]);
 
-  // Auto-select last text object when text tab is opened (mobile)
+  // Auto-select last text object when name tab is opened (mobile)
   useEffect(() => {
-    if (activeTab !== 'text') return;
+    if (activeTab !== 'name') return;
     const canvas = getActiveCanvas();
     if (!canvas) return;
     const active = canvas.getActiveObject();
@@ -1677,7 +1692,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     const objects = canvas.getObjects();
     for (let i = objects.length - 1; i >= 0; i--) {
       const obj = objects[i] as any;
-      if (obj._userElement && obj._elementType === 'text') {
+      if (obj._userElement && obj._elementType === 'name') {
         canvas.setActiveObject(obj);
         canvas.renderAll();
         // Sync UI
@@ -2034,11 +2049,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         {/* Coluna 1: Sidebar fixa de ícones */}
         <nav id="left-sidebar" className="w-20 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 flex flex-col items-center py-4 space-y-6 z-40">
           {([
-            { id: 'stamps',   label: 'Estampa',    icon: Shirt },
-            { id: 'text',     label: 'Texto',      icon: Type },
-            { id: 'name',     label: 'Nome/Nº',    icon: Shirt },
-            { id: 'emblems',  label: 'Escudo',     icon: ImageIcon },
-            { id: 'logo',     label: 'Upload',     icon: Upload },
+            { id: 'stamps',     label: 'Estampa',      icon: Shirt },
+            { id: 'colors',     label: 'Cores',        icon: Palette },
+            { id: 'finishings', label: 'Acabamento',   icon: Sparkles },
+            { id: 'name',       label: 'Nome/Nº',      icon: Type },
+            { id: 'emblems',    label: 'Escudo',       icon: ImageIcon },
+            { id: 'logo',       label: 'Upload',       icon: Upload },
           ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
             return (
@@ -2062,182 +2078,211 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <div className="p-6">
               <div className="flex items-center gap-2 mb-6">
                  <h2 className="text-lg font-bold uppercase tracking-tight">
-                    {activeTab === 'stamps' ? 'Estampas' : activeTab === 'text' ? 'Textos' : activeTab === 'name' ? 'Nome e Número' : activeTab === 'emblems' ? 'Escudos' : 'Upload'}
+                    {activeTab === 'stamps' ? 'Estampas' : activeTab === 'colors' ? 'Cores' : activeTab === 'finishings' ? 'Acabamentos' : activeTab === 'name' ? 'Nome e Número' : activeTab === 'emblems' ? 'Escudos' : 'Upload'}
                  </h2>
               </div>
+
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
+                    <div className="grid grid-cols-3 gap-2">
                       {stamps.map(s => (
-                        <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
+                        <button key={s.id} onClick={() => { setAppliedStamp(s); }} className={`group rounded-lg border overflow-hidden transition-all bg-background ${appliedStamp?.id === s.id ? 'border-[#FF5A00] ring-1 ring-[#FF5A00]' : 'border-border/50 hover:border-primary/50'}`} title={s.name}>
                           <StampThumb stampUrl={s.imageUrl} name={s.name} />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
                         </button>
                       ))}
                     </div>
                   )}
-                  {/* Color variants for applied stamp - Desktop */}
-                  {appliedStampColors.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-border/30" data-guide-desktop="stamp-color">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={switchToOriginalStamp}
-                          className={`h-8 w-8 rounded-full border-2 transition-all overflow-hidden ${!activeStampColorId ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
-                          title="Original"
-                        >
-                          <img src={appliedStamp?.imageUrl} alt="Original" className="h-full w-full object-cover" />
-                        </button>
-                        {appliedStampColors.map(c => (
-                          <button
-                            key={c.id}
-                            onClick={() => switchStampColor(c)}
-                            className={`h-8 w-8 rounded-full border-2 transition-all ${activeStampColorId === c.id ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
-                            style={{ backgroundColor: c.colorHex }}
-                            title={c.colorName}
+                </div>
+              )}
+
+              {(activeTab === 'colors' || activeTab === 'finishings') && (
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Personalizar Cores</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => {
+                    const isFinish = /gola|punho|vivo|manga|lateral/i.test(key);
+                    return activeTab === 'finishings' ? isFinish : !isFinish && !/nome|numero|número|escudo|emblema|logo/i.test(key);
+                  }).map(([key, zone]) => {
+                    const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'color');
+                    return (
+                      <div key={key} className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/10">
+                        <label className="text-xs font-bold uppercase tracking-wide flex justify-between">
+                          {key}
+                          {layer && <span className="text-[10px] text-[#FF5A00]">Ativo</span>}
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={layer?.type === 'color' ? layer.color : '#ffffff'}
+                            onChange={e => setUvLayerColor(key, e.target.value)}
+                            className="h-10 w-10 rounded-lg border border-border cursor-pointer shadow-sm"
                           />
-                        ))}
+                          <Input
+                            value={layer?.type === 'color' ? layer.color : '#ffffff'}
+                            onChange={e => setUvLayerColor(key, e.target.value)}
+                            className="h-9 font-mono text-xs uppercase"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               )}
-              {activeTab === 'patches' && (
-                <div className="patch-protected">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{currentPatchLabel}</p>
-                  {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2">
-                      {patches.map(p => (
-                        <button key={p.id} onClick={() => handlePatchClick(p)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
-                          <div className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
-                          <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
-                          <div className="pb-0.5 px-0.5 relative z-10"><p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors select-none">{p.name}</p></div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {activeTab === 'text' && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar texto</p>
-                  <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto... (Enter para quebrar linha)" className="min-h-[60px] text-sm resize-none" rows={2} />
-                  <div className="flex gap-2">
-                    <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-16 text-xs" min={10} max={72} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input type="checkbox" checked={shadowEnabled} onChange={e => setShadowEnabled(e.target.checked)} className="rounded" />
-                      <span className="text-[10px] text-muted-foreground">Sombra</span>
-                    </label>
-                    {shadowEnabled && (
-                      <>
-                        <input type="color" value={shadowColor} onChange={e => setShadowColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
-                        <Input type="number" value={shadowBlur} onChange={e => setShadowBlur(Number(e.target.value))} className="h-7 w-12 text-xs" min={1} max={20} />
-                      </>
-                    )}
-                  </div>
-                  {selectedTextStyle && (
-                    <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/30">
-                      <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded protected-img" />
-                      <span className="text-[10px] text-foreground font-medium flex-1 truncate">{selectedTextStyle.name}</span>
-                      <button onClick={() => setSelectedTextStyle(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
-                    </div>
-                  )}
-                  {textStyles.length > 0 && (
-                    <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> {selectedTextStyle ? 'Trocar Estilo' : 'Estilos de Texto'}</Button>
-                  )}
-                  <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
-                </div>
-              )}
-              {activeTab === 'text' && (
-                <div className="px-0 pt-2 -mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] text-muted-foreground uppercase font-semibold">Curvatura (arco)</label>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
-                  </div>
-                  <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
-                  <p className="text-[9px] text-muted-foreground/70 mt-1">-100 = arco para baixo · 0 = reto · 100 = arco para cima</p>
-                </div>
-              )}
+
               {activeTab === 'name' && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Nome e número</p>
-                  <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Nome (ex: SILVA)" className="h-9 text-sm uppercase" maxLength={20} />
-                  <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="Número (opcional)" className="h-9 text-sm" maxLength={3} />
-                  <div className="flex gap-2">
-                    <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
-                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={10} max={120} /></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <Button size="sm" variant="outline" onClick={() => addNamePreset('arc')} className="h-8 text-xs">Esportivo (arco)</Button>
-                    <Button size="sm" variant="outline" onClick={() => addNamePreset('straight')} className="h-8 text-xs">Reto</Button>
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Personalizar Nome e Número</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => /nome|numero|número/i.test(key)).map(([key, zone]) => {
+                    const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'text');
+                    return (
+                      <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{key}</label>
+                        <Input
+                          value={uvTextDrafts[key] ?? (layer?.type === 'text' ? layer.content : '')}
+                          onChange={e => setUvLayerText(key, e.target.value)}
+                          placeholder={`Digite o ${key.toLowerCase()}...`}
+                          className="h-10 font-bold text-base"
+                        />
+                        <div className="flex items-center gap-3 pt-1">
+                          <div className="flex flex-col gap-1 flex-1">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Cor</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="color"
+                                value={textColor}
+                                onChange={e => { setTextColor(e.target.value); if (layer) commitUvLayerText(key, (uvTextDrafts[key] ?? (layer.type === 'text' ? layer.content : ''))); }}
+                                className="h-8 w-8 rounded-full border border-border cursor-pointer"
+                              />
+                              <Input
+                                value={textColor}
+                                onChange={e => { setTextColor(e.target.value); if (layer) commitUvLayerText(key, (uvTextDrafts[key] ?? (layer.type === 'text' ? layer.content : ''))); }}
+                                className="h-8 font-mono text-[10px] uppercase w-20"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Global styling for texts */}
+                  <div className="pt-4 border-t border-border/30 space-y-4">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Estilo Global</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] text-muted-foreground">Fonte</span>
+                        <Select value={fontFamily} onValueChange={setFontFamily}>
+                          <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {FONT_OPTIONS.map(f => (
+                              <SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] text-muted-foreground">Arco</span>
+                        <div className="flex items-center gap-2 h-9 px-2 bg-muted/50 rounded-md">
+                          <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} className="flex-1" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
+
               {activeTab === 'emblems' && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Emblemas</p>
-                  {emblems.length === 0 ? (
-                    <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
-                  ) : (
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Escudos e Emblemas</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => /escudo|emblema|logo/i.test(key)).map(([key, zone]) => {
+                    const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'image');
+                    return (
+                      <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{key}</label>
+                        <div
+                          onClick={() => { pendingLogoZoneKeyRef.current = key; logoInputRef.current?.click(); }}
+                          className="group relative h-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-[#FF5A00] transition-all overflow-hidden bg-white"
+                        >
+                          {layer?.type === 'image' ? (
+                            <>
+                              <img src={layer.url} alt="Logo" className="h-full w-full object-contain p-2" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">Trocar Imagem</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1.5 text-muted-foreground group-hover:text-[#FF5A00]">
+                              <Upload className="h-6 w-6" />
+                              <span className="text-[10px] font-bold uppercase">Clique para enviar</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Catalog emblems fallback */}
+                  <div className="pt-4 border-t border-border/30">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase mb-3">Catálogo de Emblemas</p>
                     <div className="grid grid-cols-3 gap-2">
-                      {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
-                        <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={em.name}>
-                          <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 protected-img bg-muted/10" />
-                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                      {emblems.map(em => (
+                        <button key={em.id} onClick={() => { 
+                          const firstZoneKey = Object.keys(uvMapZones).find(k => /escudo|emblema|logo/i.test(k));
+                          if (firstZoneKey) {
+                            setUvLayers(prev => [
+                              ...prev.filter(l => !(l.zoneKey === firstZoneKey && l.type === 'image')),
+                              { id: `${firstZoneKey}_image_${Date.now()}`, zoneKey: firstZoneKey, type: 'image', url: em.imageUrl, scale: 0.9, opacity: 1 } as UvLayer,
+                            ]);
+                          } else {
+                            placeEmblemFromUrl(em.imageUrl);
+                          }
+                        }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-[#FF5A00] transition-all bg-white p-1">
+                          <img src={em.imageUrl} className="w-full aspect-square object-contain" />
                         </button>
                       ))}
                     </div>
-                  )}
-                  {clientEmblems.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Meus emblemas</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {clientEmblems.map(em => (
-                          <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-primary/40 overflow-hidden bg-background">
-                            <img src={em.imageUrl} className="w-full aspect-square object-contain p-1 bg-muted/10" />
-                            <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div onClick={() => emblemInputRef.current?.click()} className="flex items-center gap-2 px-3 py-3 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-                    <Upload className="h-5 w-5 text-muted-foreground" />
-                    <div><span className="text-xs text-muted-foreground">Enviar meu emblema</span><span className="text-[9px] text-muted-foreground/60 block">PNG, JPG, SVG</span></div>
                   </div>
-                  <input ref={emblemInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleEmblemUpload} className="hidden" />
                 </div>
               )}
+
               {activeTab === 'logo' && (
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Uploads</p>
                   <div
-                    onClick={() => setShowLogoNotice(true)}
-                    className="flex flex-col gap-2 items-center py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <div className="text-center"><span className="text-sm text-muted-foreground">Enviar logo ou imagem</span><span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span></div>
+                    onClick={() => { pendingLogoZoneKeyRef.current = ''; logoInputRef.current?.click(); }}
+                    className="flex flex-col gap-2 items-center py-8 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-[#FF5A00] hover:bg-orange-50/30 transition-all bg-white"
+                  >
+                    <Upload className="h-10 w-10 text-muted-foreground group-hover:text-[#FF5A00]" />
+                    <div className="text-center">
+                      <span className="text-sm font-bold text-muted-foreground block">ENVIAR LOGO</span>
+                      <span className="text-[10px] text-muted-foreground/60 uppercase">PNG, JPG, SVG ou WebP</span>
+                    </div>
                   </div>
-                  <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
-                  <p className="text-[10px] text-muted-foreground text-center">A imagem será aplicada no lado <strong>{activeView === 'front' ? 'Frente' : 'Costas'}</strong></p>
                 </div>
               )}
-              <div className="mt-4 pt-3 border-t border-border/30">
-                <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
+
+              <div className="mt-8 pt-4 border-t border-border/30">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setUvLayers([]);
+                    const canvas = getActiveCanvas();
+                    if (canvas) {
+                      canvas.getObjects().forEach(obj => {
+                        if ((obj as any)._userElement) canvas.remove(obj);
+                      });
+                      canvas.renderAll();
+                    }
+                    toast.success('Edições limpas');
+                  }} 
+                  className="w-full gap-2 text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/20 h-9 text-xs font-bold uppercase"
+                >
+                  <Trash2 className="h-4 w-4" /> 
+                  Limpar Tudo
+                </Button>
               </div>
             </div>
           </aside>
