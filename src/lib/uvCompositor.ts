@@ -29,6 +29,13 @@ export type UvLayer =
       offsetX?: number;
       offsetY?: number;
       opacity?: number;
+    }
+  | {
+      id: string;
+      zoneKey: string;
+      type: 'color';
+      color: string;
+      opacity?: number;
     };
 
 const imgCache = new Map<string, Promise<HTMLImageElement>>();
