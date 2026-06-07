@@ -47,12 +47,13 @@ const isMisplacedStampTemplate = (template: Template) => {
   // 1. Identical front/back usually means it's a UV map reference or placeholder
   if (front && back && front === back) return true;
   
-  // 2. Specifically filter out uv-library paths
-  if (/uv-library|uv-map/i.test(front) || /uv-library|uv-map/i.test(back)) return true;
+  // 2. Specifically filter out technical paths
+  // If it's in a uv-library or has "Colorway" in the URL, it's likely a source asset, not a display template
+  if (/uv-library|uv-map|Colorway/i.test(front) || /uv-library|uv-map|Colorway/i.test(back)) return true;
 
-  // 3. Original logic: name looks like a code AND it's a colorway
+  // 3. Logic: name looks like a code (e.g., A123)
   const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name);
-  return nameLooksLikeCode && (/colorway/i.test(front) || /colorway/i.test(back));
+  return nameLooksLikeCode;
 };
 
 function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }: { front: string; back: string; uvMapUrl: string | null; cameraPosition: [number, number, number]; onCameraChange: (pos: [number, number, number]) => void }) {
@@ -824,7 +825,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         nicheId: s.niche_id ?? null,
       })).filter((s: any) => !/\/uv-library\//i.test(s.imageUrl || '')) ?? [];
       const recoveredStamps = misplacedStampTemplates
-        .filter(t => !/uv-library|uv-map/i.test(t.frontImageUrl || '') && t.frontImageUrl !== t.backImageUrl)
+        .filter(t => !/uv-library|uv-map|Colorway/i.test(t.frontImageUrl || '') && t.frontImageUrl !== t.backImageUrl)
         .map(t => ({
           id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
           uvMapId: t.uvMapId, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
