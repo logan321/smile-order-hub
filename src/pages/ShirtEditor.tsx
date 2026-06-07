@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Settings } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -78,7 +78,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
 interface Niche { id: string; name: string; icon: string; patchLabel: string; coverImageUrl: string; backgroundImageUrl: string; }
 interface Template { id: string; name: string; frontImageUrl: string; backImageUrl: string; uvMapUrl: string | null; uvMapId?: string | null; userId: string; nicheId: string | null; }
 interface Stamp { id: string; name: string; category: string; imageUrl: string; backImageUrl: string | null; uvMapUrl?: string | null; uvMapId?: string | null; templateId?: string | null; nicheId?: string | null; }
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | '3d' | null;
 type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
@@ -114,6 +114,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [appliedStampColors, setAppliedStampColors] = useState<StampColor[]>([]);
   const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
+  const [fabricColor, setFabricColor] = useState('#ffffff');
   const [textColor, setTextColor] = useState('#000000');
   const [strokeColor, setStrokeColor] = useState('#FFFFFF');
   const [strokeWidth, setStrokeWidth] = useState(0);
@@ -401,6 +402,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             { id: 'patches', label: 'Acab.', icon: Sparkles },
             { id: 'emblems', label: 'Escudo', icon: Box },
             { id: 'logo', label: 'Upload', icon: Upload },
+            { id: '3d', label: 'Ajuste 3D', icon: Settings },
           ].map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
             return (
@@ -485,15 +487,56 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               </div>
             )}
 
-            {activeTab === 'logo' && (
-              <div className="space-y-5 animate-fade-in">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Upload</p>
-                <div className="border-2 border-dashed rounded-2xl py-10 flex flex-col items-center gap-3 hover:border-[#FF5A00] transition-all cursor-pointer">
-                  <Upload className="h-8 w-8 text-[#FF5A00]" />
-                  <span className="text-xs font-black">ENVIAR ARQUIVO</span>
+            {activeTab === '3d' && (
+              <div className="space-y-6 animate-fade-in">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ajustes do Simulador</p>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground">Cor do Tecido</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {['#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'].map(color => (
+                        <button
+                          key={color}
+                          onClick={() => setFabricColor(color)}
+                          className={`w-8 h-8 rounded-full border-2 ${fabricColor === color ? 'border-[#FF5A00]' : 'border-transparent'}`}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                      <input 
+                        type="color" 
+                        value={fabricColor} 
+                        onChange={(e) => setFabricColor(e.target.value)}
+                        className="w-8 h-8 rounded-full cursor-pointer overflow-hidden border-none p-0"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground">Posição da Câmera</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setCameraPosition([0, 0.1, 5.2])}>Frente</Button>
+                      <Button variant="outline" size="sm" onClick={() => setCameraPosition([0, 0.1, -5.2])}>Costas</Button>
+                      <Button variant="outline" size="sm" onClick={() => setCameraPosition([5.2, 0.1, 0])}>Direita</Button>
+                      <Button variant="outline" size="sm" onClick={() => setCameraPosition([-5.2, 0.1, 0])}>Esquerda</Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <label className="text-[10px] font-bold uppercase text-muted-foreground">Rotação Automática</label>
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex justify-between items-center"
+                      onClick={() => handleOpen3D()}
+                    >
+                      Alternar Vista
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
+
 
             <div className="mt-8 pt-4 border-t border-border/50">
               <Button variant="outline" onClick={() => {
@@ -527,6 +570,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               uvCanvas={uvZonesActive ? uvComposite.canvas : null}
               uvVersion={uvZonesActive ? uvComposite.version : 0}
               cameraPosition={cameraPosition}
+              fabricColor={fabricColor}
               autoRotate={false}
             />
           </div>
