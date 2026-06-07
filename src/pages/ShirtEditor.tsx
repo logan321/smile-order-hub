@@ -5,12 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette, Scissors, Shield } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt as ShirtIcon, Sparkles, X, Hand, Box, Palette, Scissors, Shield } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
@@ -154,7 +155,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
         <div className="h-px bg-slate-200 mx-2 my-1" />
         <div className="flex flex-col gap-3 p-2">
            <div className="flex items-center justify-between gap-4">
-             <Shirt className="h-4 w-4 text-slate-400" />
+             <ShirtIcon className="h-4 w-4 text-slate-400" />
              <div className="h-4 w-8 bg-[#FF5C00] rounded-full relative"><div className="absolute right-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
            </div>
            <div className="flex items-center justify-between gap-4 opacity-40">
@@ -2067,18 +2068,44 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative z-10">
         {/* Desktop context menu (Camisa, Calção, Meião) */}
         {/* Top bar with Tabs in center-ish and Right actions */}
-        <div className="hidden lg:flex shrink-0 bg-white border-b border-slate-200 px-6 py-2 items-center justify-between z-30">
-          <div className="flex items-center gap-6">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
-            <div className="flex bg-slate-100 p-0.5 rounded-lg">
-              <button className="px-4 py-1 text-[10px] font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
-              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Calção</button>
-              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Meião</button>
+        <div className="hidden lg:flex flex-col shrink-0 bg-white border-b z-30">
+          <div className="px-4 py-2 flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ShirtIcon className="h-4 w-4" />
+              Modelos / Estampas
             </div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="sync" className="h-4 w-4 accent-[#FF5C00]" />
-              <label htmlFor="sync" className="text-[10px] font-bold text-slate-700">Sincronizar Camisa e Calção</label>
+            <div className="flex gap-2">
+              <button className="px-3 py-1 text-sm rounded-full bg-orange-100 text-orange-700">Camisa</button>
+              <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Calção</button>
+              <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Meião</button>
             </div>
+            <div className="ml-auto flex items-center gap-2 text-xs">
+              <span className="text-gray-500">Sincronizar Camisa e Calção</span>
+              <Switch />
+            </div>
+          </div>
+          
+          {/* Stamps thumbnails horizontal bar */}
+          <div className="px-4 py-3 bg-slate-50/50 border-t overflow-x-auto">
+            {stamps.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2 text-center">Nenhuma estampa disponível</p>
+            ) : (
+              <div className="flex gap-3 min-w-max">
+                {stamps.map(s => (
+                  <button 
+                    key={s.id} 
+                    onClick={() => addStamp(s)} 
+                    className="group flex flex-col items-center w-20 rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background shrink-0" 
+                    title={s.name}
+                  >
+                    <div className="w-full aspect-square">
+                      <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                    </div>
+                    <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors w-full">{s.name}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -2089,11 +2116,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5] z-10 h-[calc(100dvh-80px)]">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5] z-10 h-full">
           <aside className="hidden lg:flex lg:flex-col lg:w-[220px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
             <div className="flex flex-col py-4 gap-1">
               {([
-                { id: 'stamps',   label: 'Estilo',       icon: Shirt },
+                { id: 'stamps',   label: 'Estilo',       icon: ShirtIcon },
                 { id: 'patches',  label: 'Cores',        icon: Palette },
                 { id: 'textStyles', label: 'Acabamentos',  icon: Scissors },
                 { id: 'name',     label: 'Nome/Número',  icon: Type },
@@ -2122,16 +2149,21 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               <aside className="hidden lg:block lg:w-[320px] lg:bg-white lg:border-r border-border p-5 overflow-y-auto animate-slide-in shadow-xl z-50 h-full absolute left-[220px] top-0 bottom-0 bg-white/95 backdrop-blur-sm">
                 {activeTab === 'stamps' && (
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
-                  {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-2 gap-3" data-guide-desktop="stamp-pick">
-                      {stamps.map(s => (
-                        <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
-                        </button>
-                      ))}
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Estampa Selecionada</p>
+                  {appliedStamp ? (
+                    <div className="rounded-lg border border-primary/20 p-3 bg-primary/5 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded border bg-white overflow-hidden shrink-0">
+                          <img src={appliedStamp.imageUrl} alt={appliedStamp.name} className="h-full w-full object-contain p-1" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate">{appliedStamp.name}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase">Estampa aplicada</p>
+                        </div>
+                      </div>
                     </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-4 text-center italic">Selecione uma estampa na barra superior</p>
                   )}
                   {/* Color variants for applied stamp - Desktop */}
                   {appliedStampColors.length > 0 && (
@@ -2546,7 +2578,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
                         onClick={() => setCameraPosition([0, 0.1, 5.2])}
                       >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                        <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                         <span className="text-[10px] font-bold uppercase">Frente</span>
                       </Button>
                       <Button 
@@ -2555,7 +2587,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
                         onClick={() => setCameraPosition([0, 0.1, -5.2])}
                       >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                        <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                         <span className="text-[10px] font-bold uppercase">Costas</span>
                       </Button>
                       <Button 
@@ -2565,7 +2597,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         onClick={() => setCameraPosition([-5.2, 0.1, 0])}
                       >
                         <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                          <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                           <div className="absolute inset-0 flex items-center justify-center bg-transparent">
                             <span className="text-[10px] font-black translate-y-[-1px]">LE</span>
                           </div>
@@ -2579,7 +2611,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         onClick={() => setCameraPosition([5.2, 0.1, 0])}
                       >
                         <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                          <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                           <div className="absolute inset-0 flex items-center justify-center bg-transparent">
                             <span className="text-[10px] font-black translate-y-[-1px]">LD</span>
                           </div>
@@ -2726,13 +2758,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             {!patchSideChoice && (
               <div className="space-y-2 mb-4">
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('front')}>
-                  <Shirt className="h-4 w-4" /> Apenas Frente
+                  <ShirtIcon className="h-4 w-4" /> Apenas Frente
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('back')}>
-                  <Shirt className="h-4 w-4" /> Apenas Costas
+                  <ShirtIcon className="h-4 w-4" /> Apenas Costas
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('both')}>
-                  <Shirt className="h-4 w-4" /> Frente e Costas
+                  <ShirtIcon className="h-4 w-4" /> Frente e Costas
                 </Button>
               </div>
             )}
