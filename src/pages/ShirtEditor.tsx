@@ -2101,10 +2101,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </Button>
           </div>
 
-          <aside className="hidden lg:flex lg:flex-col lg:w-[100px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
-            <div className="flex flex-col items-center py-2 gap-2">
+          <aside className="hidden lg:flex lg:flex-col lg:w-[220px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
+            <div className="flex flex-col py-4 gap-1">
               {([
-                { id: 'stamps',   label: 'Modelo',       icon: Shirt },
+                { id: 'stamps',   label: 'Estilo',       icon: Shirt },
                 { id: 'patches',  label: 'Cores',        icon: Palette },
                 { id: 'textStyles', label: 'Acabamentos',  icon: Scissors },
                 { id: 'name',     label: 'Nome/Número',  icon: Type },
@@ -2116,19 +2116,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <button
                     key={id}
                     onClick={() => setActiveTab(active ? null : id)}
-                    className={`flex flex-col items-center gap-1.5 group transition-all w-full py-4 relative border-l-4 ${active ? 'text-[#FF5C00] border-[#FF5C00] bg-orange-50/30' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                    className={`flex flex-col items-center gap-1.5 group transition-all w-full py-5 relative border-l-[6px] ${active ? 'text-[#ea580c] border-[#ea580c] bg-orange-50/40' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
                   >
-                    <Icon className={`h-7 w-7 transition-transform group-hover:scale-110 ${active ? 'text-[#FF5C00]' : 'text-slate-500'}`} />
-                    <span className={`text-[11px] font-bold text-center leading-tight px-1 transition-colors ${active ? 'text-[#FF5C00]' : 'text-slate-500 group-hover:text-slate-700'}`}>{label}</span>
+                    <Icon className={`h-8 w-8 transition-transform group-hover:scale-110 ${active ? 'text-[#ea580c]' : 'text-slate-500'}`} />
+                    <span className={`text-[12px] font-bold text-center leading-tight px-1 transition-colors ${active ? 'text-[#ea580c]' : 'text-slate-500 group-hover:text-slate-700'}`}>{label}</span>
                   </button>
                 );
               })}
             </div>
           </aside>
 
-          {/* Painel de Opções Lateral - Flutuante ou Adjacente mas não ocupa a tela toda */}
+          {/* Painel de Opções Lateral - Flutuante à direita da sidebar */}
           {activeTab && (
-            <aside className="hidden lg:block lg:w-72 lg:bg-white lg:border-r border-border p-4 overflow-y-auto animate-slide-in shadow-lg z-50 h-full absolute left-[100px] top-0 bottom-0 bg-white/95 backdrop-blur-sm">
+            <aside className="hidden lg:block lg:w-[320px] lg:bg-white lg:border-r border-border p-5 overflow-y-auto animate-slide-in shadow-xl z-50 h-full absolute left-[220px] top-0 bottom-0 bg-white/95 backdrop-blur-sm">
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
