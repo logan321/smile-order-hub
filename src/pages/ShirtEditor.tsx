@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette, Scissors, Shield } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -2037,28 +2037,28 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Top header — dark, vibrant */}
-      <header className="bg-[#FF5C00] px-4 py-2 flex items-center justify-between shrink-0 shadow-md z-50 h-16">
-        <div className="flex items-center gap-4">
-          <img src="/public/uploads/colado-1780852436800.png" alt="Logo" className="h-10 w-auto brightness-0 invert" />
-        </div>
-        
-        {/* Central Circular Icons Menu like in example */}
-        <div className="hidden lg:flex items-center gap-1">
-          {[1,2,3,4,5].map(i => (
-            <div key={i} className="h-10 w-10 rounded-full border-2 border-white/40 flex items-center justify-center text-white/60 hover:border-white hover:text-white transition-all cursor-pointer">
-              <Shirt className="h-5 w-5" />
-            </div>
-          ))}
-          <button className="ml-4 bg-white text-[#FF5C00] text-[10px] font-bold px-3 py-1 rounded-md uppercase">Ver Todos</button>
-        </div>
-
-        <div className="flex items-center gap-3">
+      <header className="bg-[#FF5C00] px-4 py-2 flex items-center justify-center shrink-0 shadow-md z-50 h-20 relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-white hover:bg-white/10 hidden md:flex items-center">
             <ChevronLeft className="h-4 w-4" />
-            <span className="ml-1 text-[10px] font-bold uppercase">Início</span>
+            <span className="ml-1 text-[10px] font-bold uppercase tracking-wider">Início</span>
           </Button>
+        </div>
+        
+        <img src="/public/uploads/colado-1780852849619.png" alt="Logo" className="h-14 w-auto brightness-0 invert" />
+
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+          {/* Central Circular Icons Menu - Moved to header right or kept hidden as per latest design requirement */}
+          <div className="hidden lg:flex items-center gap-1 mr-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-9 w-9 rounded-full border border-white/30 flex items-center justify-center text-white/50 hover:border-white hover:text-white transition-all cursor-pointer">
+                <Shirt className="h-4 w-4" />
+              </div>
+            ))}
+            <button className="ml-2 bg-white text-[#FF5C00] text-[9px] font-black px-2.5 py-1 rounded uppercase tracking-tighter">Ver Todos</button>
+          </div>
           <div className="h-6 w-px bg-white/20 hidden md:block" />
-          <span className="text-[10px] font-bold text-white uppercase tracking-wider hidden md:inline truncate max-w-[100px]">{selectedTemplate.name}</span>
+          <span className="text-[10px] font-black text-white uppercase tracking-tighter hidden md:inline truncate max-w-[100px]">{selectedTemplate.name}</span>
         </div>
       </header>
 
@@ -2101,26 +2101,25 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </Button>
           </div>
 
-          <aside className="hidden lg:flex lg:flex-col lg:w-20 lg:bg-white lg:border-r border-border shadow-sm z-40 h-full">
-            <div className="flex flex-col items-center py-4 gap-6">
+          <aside className="hidden lg:flex lg:flex-col lg:w-[100px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
+            <div className="flex flex-col items-center py-2 gap-2">
               {([
-                { id: 'stamps',   label: 'Modelo',    icon: Shirt },
-                { id: 'patches',  label: 'Cores',     icon: Sparkles },
-                { id: 'textStyles', label: 'Acabamentos', icon: Box },
-                { id: 'name',     label: 'Nome/Número', icon: Type },
-                { id: 'emblems',  label: 'Escudo',    icon: ImageIcon },
-                { id: 'logo',     label: 'Upload',    icon: Upload },
+                { id: 'stamps',   label: 'Modelo',       icon: Shirt },
+                { id: 'patches',  label: 'Cores',        icon: Palette },
+                { id: 'textStyles', label: 'Acabamentos',  icon: Scissors },
+                { id: 'name',     label: 'Nome/Número',  icon: Type },
+                { id: 'emblems',  label: 'Escudo',       icon: Shield },
+                { id: 'logo',     label: 'Upload',       icon: Upload },
               ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
                 const active = activeTab === id;
                 return (
                   <button
                     key={id}
                     onClick={() => setActiveTab(active ? null : id)}
-                    className={`flex flex-col items-center gap-1 group transition-all w-full py-2 relative ${active ? 'text-[#FF5C00] bg-orange-50/50' : 'text-slate-500 hover:text-[#FF5C00]'}`}
+                    className={`flex flex-col items-center gap-1.5 group transition-all w-full py-4 relative border-l-4 ${active ? 'text-[#FF5C00] border-[#FF5C00] bg-orange-50/30' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
                   >
-                    <Icon className={`h-6 w-6 transition-transform group-hover:scale-110 ${active ? 'text-[#FF5C00]' : ''}`} />
-                    <span className="text-[10px] font-bold text-center leading-tight px-1 uppercase tracking-tighter whitespace-pre-wrap">{label}</span>
-                    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-[#FF5C00] rounded-r-full" />}
+                    <Icon className={`h-7 w-7 transition-transform group-hover:scale-110 ${active ? 'text-[#FF5C00]' : 'text-slate-500'}`} />
+                    <span className={`text-[11px] font-bold text-center leading-tight px-1 transition-colors ${active ? 'text-[#FF5C00]' : 'text-slate-500 group-hover:text-slate-700'}`}>{label}</span>
                   </button>
                 );
               })}
