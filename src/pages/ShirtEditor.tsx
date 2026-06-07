@@ -155,7 +155,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
         <div className="h-px bg-slate-200 mx-2 my-1" />
         <div className="flex flex-col gap-3 p-2">
            <div className="flex items-center justify-between gap-4">
-             <Shirt className="h-4 w-4 text-slate-400" />
+             <ShirtIcon className="h-4 w-4 text-slate-400" />
              <div className="h-4 w-8 bg-[#FF5C00] rounded-full relative"><div className="absolute right-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
            </div>
            <div className="flex items-center justify-between gap-4 opacity-40">
@@ -2548,7 +2548,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
                         onClick={() => setCameraPosition([0, 0.1, 5.2])}
                       >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                        <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                         <span className="text-[10px] font-bold uppercase">Frente</span>
                       </Button>
                       <Button 
@@ -2557,7 +2557,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
                         onClick={() => setCameraPosition([0, 0.1, -5.2])}
                       >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                        <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                         <span className="text-[10px] font-bold uppercase">Costas</span>
                       </Button>
                       <Button 
@@ -2567,7 +2567,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         onClick={() => setCameraPosition([-5.2, 0.1, 0])}
                       >
                         <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                          <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                           <div className="absolute inset-0 flex items-center justify-center bg-transparent">
                             <span className="text-[10px] font-black translate-y-[-1px]">LE</span>
                           </div>
@@ -2581,7 +2581,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         onClick={() => setCameraPosition([5.2, 0.1, 0])}
                       >
                         <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                          <ShirtIcon className="h-5 w-5 mb-0.5 text-primary" />
                           <div className="absolute inset-0 flex items-center justify-center bg-transparent">
                             <span className="text-[10px] font-black translate-y-[-1px]">LD</span>
                           </div>
@@ -2728,13 +2728,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             {!patchSideChoice && (
               <div className="space-y-2 mb-4">
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('front')}>
-                  <Shirt className="h-4 w-4" /> Apenas Frente
+                  <ShirtIcon className="h-4 w-4" /> Apenas Frente
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('back')}>
-                  <Shirt className="h-4 w-4" /> Apenas Costas
+                  <ShirtIcon className="h-4 w-4" /> Apenas Costas
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2" onClick={() => handlePatchSideSelect('both')}>
-                  <Shirt className="h-4 w-4" /> Frente e Costas
+                  <ShirtIcon className="h-4 w-4" /> Frente e Costas
                 </Button>
               </div>
             )}
