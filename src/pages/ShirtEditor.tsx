@@ -268,10 +268,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </main>
       </div>
 
-      <footer className="hidden lg:flex bg-[#2D2D2D] text-white px-8 py-3 items-center justify-between z-50">
-        <div className="text-[10px] font-medium text-slate-400">2025 Jumptec. Todos os direitos reservados.</div>
-        <span className="text-xs font-black uppercase italic">Jumptec</span>
-      </footer>
     </div>
   );
 };
