@@ -39,11 +39,21 @@ function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
 
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
-const isMisplacedStampTemplate = (template: Template) =>
-  isLikelyStampCode(template.name) && (
-    /colorway/i.test(template.frontImageUrl) ||
-    /colorway/i.test(template.backImageUrl)
-  );
+const isMisplacedStampTemplate = (template: Template) => {
+  const front = template.frontImageUrl || '';
+  const back = template.backImageUrl || '';
+  const name = (template.name || '').trim();
+
+  // 1. Identical front/back usually means it's a UV map reference or placeholder
+  if (front && back && front === back) return true;
+  
+  // 2. Specifically filter out uv-library paths
+  if (/uv-library|uv-map/i.test(front) || /uv-library|uv-map/i.test(back)) return true;
+
+  // 3. Original logic: name looks like a code AND it's a colorway
+  const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name);
+  return nameLooksLikeCode && (/colorway/i.test(front) || /colorway/i.test(back));
+};
 
 function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }: { front: string; back: string; uvMapUrl: string | null; cameraPosition: [number, number, number]; onCameraChange: (pos: [number, number, number]) => void }) {
   return (
@@ -813,10 +823,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         templateId: s.template_id ?? null,
         nicheId: s.niche_id ?? null,
       })).filter((s: any) => !/\/uv-library\//i.test(s.imageUrl || '')) ?? [];
-      const recoveredStamps = misplacedStampTemplates.map(t => ({
-        id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
-        uvMapId: t.uvMapId, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
-      }));
+      const recoveredStamps = misplacedStampTemplates
+        .filter(t => !/uv-library|uv-map/i.test(t.frontImageUrl || '') && t.frontImageUrl !== t.backImageUrl)
+        .map(t => ({
+          id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
+          uvMapId: t.uvMapId, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
+        }));
       const allS = [...recoveredStamps, ...catalogStamps];
       setAllStamps(allS);
       setStamps(allS);
