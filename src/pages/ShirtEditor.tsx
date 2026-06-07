@@ -2697,10 +2697,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         );
                       })}
                     </div>
-                    </div>
                   )}
                 </div>
-              )}
               )}
 
               {/* Editor agora é 100% 3D — o canvas 2D continua existindo apenas
