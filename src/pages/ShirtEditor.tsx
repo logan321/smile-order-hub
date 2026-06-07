@@ -2322,6 +2322,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </Button>
           </div>
 
+          {/* Hidden 2D Canvases for Fabric.js baking */}
+          <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
+            <canvas ref={frontCanvasRef} />
+            <canvas ref={backCanvasRef} />
+          </div>
+
           {/* Canvas 3D que ocupa 100% do espaço restante */}
           <div className="flex-1 w-full h-full">
             <Shirt3DPreview
