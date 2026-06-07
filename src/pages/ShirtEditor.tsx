@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Settings } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Settings, Map } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -78,7 +78,7 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
 interface Niche { id: string; name: string; icon: string; patchLabel: string; coverImageUrl: string; backgroundImageUrl: string; }
 interface Template { id: string; name: string; frontImageUrl: string; backImageUrl: string; uvMapUrl: string | null; uvMapId?: string | null; userId: string; nicheId: string | null; }
 interface Stamp { id: string; name: string; category: string; imageUrl: string; backImageUrl: string | null; uvMapUrl?: string | null; uvMapId?: string | null; templateId?: string | null; nicheId?: string | null; }
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | '3d' | null;
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | '3d' | 'uv' | null;
 type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
@@ -405,6 +405,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             { id: 'emblems', label: 'Escudo', icon: Box },
             { id: 'logo', label: 'Upload', icon: Upload },
             { id: '3d', label: 'Ajuste 3D', icon: Settings },
+            { id: 'uv', label: 'Zonas UV', icon: Map },
           ].map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
             return (
@@ -536,6 +537,55 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     </Button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'uv' && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Zonas do Molde (UV)</p>
+                  <Map className="h-4 w-4 text-[#FF5A00]" />
+                </div>
+                
+                <div className="bg-orange-50 border border-orange-100 rounded-lg p-3">
+                  <p className="text-[10px] text-orange-800 font-medium leading-relaxed">
+                    Estas são as áreas mapeadas no molde 3D onde você pode aplicar textos e logos.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {Object.keys(uvMapZones).length > 0 ? (
+                    Object.entries(uvMapZones).map(([key, zone]) => (
+                      <div key={key} className="p-3 border rounded-xl bg-card hover:border-[#FF5A00]/30 transition-all">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-black uppercase tracking-tight">{key}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">ATIVO</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground italic">
+                          Coordenadas: {Math.round(zone.x)}, {Math.round(zone.y)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center border-2 border-dashed rounded-xl">
+                      <p className="text-xs text-muted-foreground">Nenhuma zona UV detectada neste molde.</p>
+                    </div>
+                  )}
+                </div>
+
+                {effectiveUvUrl && (
+                  <div className="pt-4 border-t">
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Molde Base</p>
+                    <div className="relative aspect-video bg-muted rounded-lg overflow-hidden border">
+                      <img src={effectiveUvUrl} className="w-full h-full object-contain" alt="UV Map" />
+                      <div className="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <Button variant="secondary" size="sm" className="h-7 text-[10px]" onClick={() => window.open(effectiveUvUrl, '_blank')}>
+                          VER ORIGINAL
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
