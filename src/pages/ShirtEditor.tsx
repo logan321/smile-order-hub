@@ -42,15 +42,21 @@ const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]
 const isMisplacedStampTemplate = (template: Template) => {
   const front = template.frontImageUrl || '';
   const back = template.backImageUrl || '';
+  const name = (template.name || '').trim();
 
   // 1. Identical front/back usually means it's a technical placeholder or UV source
-  // We filter these out to ensure only actual shirt mockups appear in the selection.
   if (front && back && front === back) return true;
   
   // 2. Filter out explicit uv-library paths
   if (/uv-library|uv-map/i.test(front) || /uv-library|uv-map/i.test(back)) return true;
 
-  return false;
+  // 3. Filter out items that look like specific stamp designs (like the one in your screenshot)
+  // These should be in the "Estampas" catalog, not here in the template selection.
+  // We identify them by technical filenames or names that look like product codes.
+  const isColorway = /Colorway/i.test(front) || /Colorway/i.test(back);
+  const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name);
+  
+  return isColorway || nameLooksLikeCode;
 };
 
 function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }: { front: string; back: string; uvMapUrl: string | null; cameraPosition: [number, number, number]; onCameraChange: (pos: [number, number, number]) => void }) {
