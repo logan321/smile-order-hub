@@ -1904,7 +1904,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
-            <img src={logo} alt="Logo" className="h-10 w-auto mx-auto mb-3" />
+            <img src="/public/uploads/colado-1780851991485.png" alt="Logo" className="h-16 w-auto mx-auto mb-3" />
             <h1 className="text-2xl font-bold font-display">Editor de Camisas</h1>
             <p className="text-muted-foreground mt-1">Escolha o segmento para começar</p>
           </div>
@@ -1953,7 +1953,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
-            <img src={logo} alt="Logo" className="h-10 w-auto mx-auto mb-3" />
+            <img src="/public/uploads/colado-1780851991485.png" alt="Logo" className="h-16 w-auto mx-auto mb-3" />
             {selectedNiche && (
               <button onClick={handleBackToNiches} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
                 <ChevronLeft className="h-4 w-4" /> Voltar aos segmentos
@@ -2013,11 +2013,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Top header — dark, vibrant */}
       <header className="bg-[#FF5C00] px-4 py-3 flex items-center justify-between shrink-0 shadow-md z-50">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <img src="/public/uploads/colado-1780851991485.png" alt="Logo" className="h-10 w-auto brightness-0 invert" />
+          <div className="h-8 w-px bg-white/20 hidden md:block" />
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-white hover:bg-white/10">
             <ChevronLeft className="h-4 w-4" />
-            <span className="hidden sm:inline ml-1">Voltar</span>
+            <span className="hidden md:inline ml-1">Voltar ao Início</span>
           </Button>
+        </div>
           <span className="text-sm font-bold text-white uppercase tracking-wider hidden md:inline">{selectedTemplate.name}</span>
         </div>
         <div className="flex items-center gap-2">
