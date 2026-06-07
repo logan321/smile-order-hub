@@ -2239,7 +2239,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   {emblems.length === 0 ? (
                     <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
                         <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={em.name}>
                           <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 protected-img bg-muted/10" />
