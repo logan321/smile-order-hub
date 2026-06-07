@@ -127,6 +127,89 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [emblems, setEmblems] = useState<any[]>([]);
   const [currentPatchLabel, setCurrentPatchLabel] = useState('Peixes');
 
+  // Recupera as zonas de UV do catálogo de moldes com base na estampa selecionada
+  useEffect(() => {
+    const fetchZones = async () => {
+      const currentUvId = appliedStamp?.uvMapId || selectedTemplate?.uvMapId;
+      if (!currentUvId) return;
+
+      const { data } = await supabase
+        .from('uv_maps' as any)
+        .select('*')
+        .eq('id', currentUvId)
+        .single();
+      
+      if (data) {
+        const u = data as any;
+        setUvMapZones((u.uv_zones && typeof u.uv_zones === 'object') ? u.uv_zones as Record<string, UvZone> : {});
+        setUvMapDims({ w: u.uv_width ?? null, h: u.uv_height ?? null });
+      }
+    };
+    fetchZones();
+  }, [appliedStamp, selectedTemplate]);
+
+  // Sincroniza as camadas do UV (texto, nome, etc)
+  const syncUvLayers = useCallback(() => {
+    const layers: UvLayer[] = [];
+    
+    // Texto customizado - tentamos encontrar uma zona de texto ou usamos a primeira disponível
+    const zoneKeys = Object.keys(uvMapZones);
+    const textZone = zoneKeys.find(k => k.toLowerCase().includes('text')) || zoneKeys[0];
+
+    if (textInput && textZone) {
+      layers.push({
+        id: 'custom-text',
+        zoneKey: textZone,
+        type: 'text',
+        content: textInput,
+        fontFamily,
+        fontSize: fontSize * 2, // Escala para o molde UV
+        color: textColor,
+        strokeColor,
+        strokeWidth,
+        curvature: textCurvature,
+      });
+    }
+
+    // Nome e Número - tentamos encontrar zonas específicas
+    const nameZone = zoneKeys.find(k => k.toLowerCase().includes('name')) || zoneKeys[0];
+    const numberZone = zoneKeys.find(k => k.toLowerCase().includes('number')) || zoneKeys[0];
+
+    if (nameInput && nameZone) {
+      layers.push({
+        id: 'player-name',
+        zoneKey: nameZone,
+        type: 'text',
+        content: nameInput,
+        fontFamily,
+        fontSize: fontSize * 3,
+        color: textColor,
+      });
+    }
+
+    if (numberInput && numberZone) {
+      layers.push({
+        id: 'player-number',
+        zoneKey: numberZone,
+        type: 'text',
+        content: numberInput,
+        fontFamily,
+        fontSize: fontSize * 6,
+        color: textColor,
+      });
+    }
+
+    setUvLayers(layers);
+  }, [textInput, nameInput, numberInput, fontFamily, fontSize, textColor, strokeColor, strokeWidth, textCurvature, uvMapZones]);
+
+  useEffect(() => {
+    syncUvLayers();
+  }, [syncUvLayers]);
+
+  useEffect(() => {
+    syncUvLayers();
+  }, [syncUvLayers]);
+
   // Load Data
   useEffect(() => {
     const fetchData = async () => {
@@ -227,10 +310,59 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleDownload = () => toast.info("Baixando...");
   const handleOpen3D = () => setCameraPosition([0, 0.1, cameraPosition[2] === 5.2 ? -5.2 : 5.2]);
   const deleteSelected = () => toast.info("Removendo selecionado...");
-  const handleAddTextClick = () => toast.success("Texto adicionado!");
-  const addNamePreset = (type: string) => toast.success(`Nome ${type} adicionado!`);
-  const handlePatchClick = (p: any) => toast.success(`${p.name} selecionado`);
-  const placeEmblemFromUrl = (url: string) => toast.success("Emblema adicionado");
+  const handleAddTextClick = () => {
+    if (!textInput) {
+      toast.error("Digite um texto primeiro");
+      return;
+    }
+    syncUvLayers();
+    toast.success("Texto aplicado ao 3D!");
+  };
+
+  const addNamePreset = (type: string) => {
+    syncUvLayers();
+    toast.success(`Estilo ${type} aplicado!`);
+  };
+
+  const handlePatchClick = (p: any) => {
+    const zoneKeys = Object.keys(uvMapZones);
+    const patchZone = zoneKeys.find(k => k.toLowerCase().includes('patch') || k.toLowerCase().includes('logo')) || zoneKeys[0];
+    
+    if (!patchZone) {
+      toast.error("Nenhuma zona de UV encontrada para este template");
+      return;
+    }
+
+    const patchLayer: UvLayer = {
+      id: `patch-${p.id}`,
+      zoneKey: patchZone,
+      type: 'image',
+      url: p.imageUrl,
+      scale: 0.8
+    };
+    setUvLayers(prev => [...prev, patchLayer]);
+    toast.success(`${p.name} adicionado ao UV`);
+  };
+
+  const placeEmblemFromUrl = (url: string) => {
+    const zoneKeys = Object.keys(uvMapZones);
+    const emblemZone = zoneKeys.find(k => k.toLowerCase().includes('emblem') || k.toLowerCase().includes('escudo')) || zoneKeys[0];
+    
+    if (!emblemZone) {
+      toast.error("Zona de UV para emblema não encontrada");
+      return;
+    }
+
+    const emblemLayer: UvLayer = {
+      id: `emblem-${Date.now()}`,
+      zoneKey: emblemZone,
+      type: 'image',
+      url: url,
+      scale: 0.6
+    };
+    setUvLayers(prev => [...prev, emblemLayer]);
+    toast.success("Escudo adicionado");
+  };
   const switchToOriginalStamp = () => setActiveStampColorId(null);
   const switchStampColor = (c: any) => setActiveStampColorId(c.id);
   const handleLogoUpload = () => toast.info("Enviando logo...");
@@ -364,7 +496,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             )}
 
             <div className="mt-8 pt-4 border-t border-border/50">
-              <Button variant="outline" onClick={deleteSelected} className="w-full text-destructive hover:bg-destructive/10">REMOVER SELECIONADO</Button>
+              <Button variant="outline" onClick={() => {
+                setUvLayers([]);
+                setTextInput('');
+                setNameInput('');
+                setNumberInput('');
+                toast.info("Personalizações removidas");
+              }} className="w-full text-destructive hover:bg-destructive/10">REMOVER TUDO</Button>
             </div>
           </div>
         </aside>
