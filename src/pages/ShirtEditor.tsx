@@ -2089,7 +2089,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5] z-10">
           <aside className="hidden lg:flex lg:flex-col lg:w-[220px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
             <div className="flex flex-col py-4 gap-1">
               {([
