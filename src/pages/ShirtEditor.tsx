@@ -2037,28 +2037,29 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Top header — dark, vibrant */}
-      <header className="bg-[#FF5C00] px-4 py-2 flex items-center justify-center shrink-0 shadow-md z-50 h-20 relative">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+      <header className="bg-[#FF5C00] px-4 py-2 flex items-center justify-between shrink-0 shadow-md z-50 h-20 relative">
+        <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-white hover:bg-white/10 hidden md:flex items-center">
             <ChevronLeft className="h-4 w-4" />
             <span className="ml-1 text-[10px] font-bold uppercase tracking-wider">Início</span>
           </Button>
+          <img src="/public/uploads/colado-1780852849619.png" alt="Logo" className="h-14 w-auto brightness-0 invert" />
         </div>
-        
-        <img src="/public/uploads/colado-1780852849619.png" alt="Logo" className="h-14 w-auto brightness-0 invert" />
 
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
-          {/* Central Circular Icons Menu - Moved to header right or kept hidden as per latest design requirement */}
-          <div className="hidden lg:flex items-center gap-1 mr-4">
-            {[1,2,3,4].map(i => (
-              <div key={i} className="h-9 w-9 rounded-full border border-white/30 flex items-center justify-center text-white/50 hover:border-white hover:text-white transition-all cursor-pointer">
-                <Shirt className="h-4 w-4" />
-              </div>
-            ))}
-            <button className="ml-2 bg-white text-[#FF5C00] text-[9px] font-black px-2.5 py-1 rounded uppercase tracking-tighter">Ver Todos</button>
-          </div>
-          <div className="h-6 w-px bg-white/20 hidden md:block" />
-          <span className="text-[10px] font-black text-white uppercase tracking-tighter hidden md:inline truncate max-w-[100px]">{selectedTemplate.name}</span>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={handleWhatsAppQuote} 
+            className="bg-white text-[#FF5C00] hover:bg-white/90 rounded-full px-6 font-bold transition-all active:scale-95"
+          >
+            Enviar Orçamento
+          </Button>
+          <Button 
+            onClick={handleDownload} 
+            disabled={downloading} 
+            className="bg-blue-600 text-white hover:bg-blue-700 rounded-full px-6 font-bold transition-all active:scale-95"
+          >
+            {downloading ? 'Salvando...' : 'Salvar Simulação'}
+          </Button>
         </div>
       </header>
 
