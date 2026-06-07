@@ -2128,7 +2128,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
           {/* Painel de Opções Lateral - Flutuante ou Adjacente mas não ocupa a tela toda */}
           {activeTab && (
-            <aside className="hidden lg:block lg:w-72 lg:bg-white lg:border-r border-border p-4 overflow-y-auto animate-slide-in shadow-lg z-30 h-full bg-white/95 backdrop-blur-sm">
+            <aside className="hidden lg:block lg:w-72 lg:bg-white lg:border-r border-border p-4 overflow-y-auto animate-slide-in shadow-lg z-50 h-full absolute left-[100px] top-0 bottom-0 bg-white/95 backdrop-blur-sm">
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
