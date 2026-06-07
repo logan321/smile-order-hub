@@ -2517,7 +2517,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
       </main>
-    </div>
+
 
 
       {/* Patch side + zone picker modal */}
