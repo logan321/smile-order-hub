@@ -45,7 +45,7 @@ const FONT_OPTIONS = [
 
 type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
 
-const ShirtEditor = () => {
+const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
   const [stamps, setStamps] = useState<any[]>([]);
