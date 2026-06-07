@@ -240,7 +240,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                <Shirt3DPreview 
                  frontImage=""
                  backImage=""
-                 className="w-full h-full"
                />
             </div>
           </div>
