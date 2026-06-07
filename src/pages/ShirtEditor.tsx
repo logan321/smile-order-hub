@@ -2098,12 +2098,45 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               )}
 
-              {(activeTab === 'colors' || activeTab === 'finishings') && (
+              {activeTab === 'colors' && (
                 <div className="space-y-6">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Personalizar Cores</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Cores da Estampa</p>
+                  <p className="text-[11px] text-muted-foreground">Selecione uma cor para as zonas da estampa.</p>
                   {Object.entries(uvMapZones).filter(([key, z]) => {
-                    const isFinish = /gola|punho|vivo|manga|lateral/i.test(key);
-                    return activeTab === 'finishings' ? isFinish : !isFinish && !/nome|numero|número|escudo|emblema|logo/i.test(key);
+                    return !/gola|punho|vivo|manga|lateral|nome|numero|número|escudo|emblema|logo/i.test(key);
+                  }).map(([key, zone]) => {
+                    const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'color');
+                    return (
+                      <div key={key} className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/10">
+                        <label className="text-xs font-bold uppercase tracking-wide flex justify-between">
+                          {key}
+                          {layer && <span className="text-[10px] text-[#FF5A00]">Ativo</span>}
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={layer?.type === 'color' ? layer.color : '#ffffff'}
+                            onChange={e => setUvLayerColor(key, e.target.value)}
+                            className="h-10 w-10 rounded-lg border border-border cursor-pointer shadow-sm"
+                          />
+                          <Input
+                            value={layer?.type === 'color' ? layer.color : '#ffffff'}
+                            onChange={e => setUvLayerColor(key, e.target.value)}
+                            className="h-9 font-mono text-xs uppercase"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {activeTab === 'finishings' && (
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Modelos e Acabamento</p>
+                  <p className="text-[11px] text-muted-foreground italic">Selecione o estilo de gola e acabamento.</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => {
+                    return /gola|punho|vivo|manga|lateral/i.test(key);
                   }).map(([key, zone]) => {
                     const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'color');
                     return (
@@ -2195,8 +2228,42 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
               {activeTab === 'emblems' && (
                 <div className="space-y-6">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Escudos e Emblemas</p>
-                  {Object.entries(uvMapZones).filter(([key, z]) => /escudo|emblema|logo/i.test(key)).map(([key, zone]) => {
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Escudos</p>
+                  <p className="text-[11px] text-muted-foreground">Envie o escudo do seu time para as zonas marcadas.</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => /escudo|emblema/i.test(key)).map(([key, zone]) => {
+                    const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'image');
+                    return (
+                      <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{key}</label>
+                        <div
+                          onClick={() => { pendingLogoZoneKeyRef.current = key; logoInputRef.current?.click(); }}
+                          className="group relative h-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-[#FF5A00] transition-all overflow-hidden bg-white"
+                        >
+                          {layer?.type === 'image' ? (
+                            <>
+                              <img src={layer.url} alt="Logo" className="h-full w-full object-contain p-2" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">Trocar Imagem</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1.5 text-muted-foreground group-hover:text-[#FF5A00]">
+                              <Upload className="h-6 w-6" />
+                              <span className="text-[10px] font-bold uppercase">Clique para enviar</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {activeTab === 'logo' && (
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Upload de Patrocínios</p>
+                  <p className="text-[11px] text-muted-foreground">Envie logotipos de patrocinadores para as zonas de marcação.</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => /logo|patrocinio/i.test(key)).map(([key, zone]) => {
                     const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'image');
                     return (
                       <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
@@ -2223,43 +2290,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     );
                   })}
                   
-                  {/* Catalog emblems fallback */}
-                  <div className="pt-4 border-t border-border/30">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase mb-3">Catálogo de Emblemas</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {emblems.map(em => (
-                        <button key={em.id} onClick={() => { 
-                          const firstZoneKey = Object.keys(uvMapZones).find(k => /escudo|emblema|logo/i.test(k));
-                          if (firstZoneKey) {
-                            setUvLayers(prev => [
-                              ...prev.filter(l => !(l.zoneKey === firstZoneKey && l.type === 'image')),
-                              { id: `${firstZoneKey}_image_${Date.now()}`, zoneKey: firstZoneKey, type: 'image', url: em.imageUrl, scale: 0.9, opacity: 1 } as UvLayer,
-                            ]);
-                          } else {
-                            placeEmblemFromUrl(em.imageUrl);
-                          }
-                        }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-[#FF5A00] transition-all bg-white p-1">
-                          <img src={em.imageUrl} className="w-full aspect-square object-contain" />
-                        </button>
-                      ))}
+                  {/* General upload if no specific logo zone is found or for generic placement */}
+                  {Object.entries(uvMapZones).filter(([key, z]) => /logo|patrocinio/i.test(key)).length === 0 && (
+                    <div
+                      onClick={() => { pendingLogoZoneKeyRef.current = ''; logoInputRef.current?.click(); }}
+                      className="flex flex-col gap-2 items-center py-8 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-[#FF5A00] hover:bg-orange-50/30 transition-all bg-white"
+                    >
+                      <Upload className="h-10 w-10 text-muted-foreground group-hover:text-[#FF5A00]" />
+                      <div className="text-center">
+                        <span className="text-sm font-bold text-muted-foreground block">ENVIAR ARQUIVO</span>
+                        <span className="text-[10px] text-muted-foreground/60 uppercase">PNG, JPG ou SVG</span>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'logo' && (
-                <div className="space-y-6">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Uploads</p>
-                  <div
-                    onClick={() => { pendingLogoZoneKeyRef.current = ''; logoInputRef.current?.click(); }}
-                    className="flex flex-col gap-2 items-center py-8 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-[#FF5A00] hover:bg-orange-50/30 transition-all bg-white"
-                  >
-                    <Upload className="h-10 w-10 text-muted-foreground group-hover:text-[#FF5A00]" />
-                    <div className="text-center">
-                      <span className="text-sm font-bold text-muted-foreground block">ENVIAR LOGO</span>
-                      <span className="text-[10px] text-muted-foreground/60 uppercase">PNG, JPG, SVG ou WebP</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 
