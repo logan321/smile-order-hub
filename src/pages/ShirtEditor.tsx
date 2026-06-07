@@ -234,14 +234,24 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </aside>
         )}
 
-        <main className="flex-1 relative overflow-hidden">
-          <div className="w-full h-full flex items-center justify-center p-4">
-             <div className="w-full h-full max-w-4xl bg-gradient-to-b from-sky-100/50 to-green-100/30 rounded-2xl shadow-inner relative">
-                {/* 3D Simulation Mockup */}
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-medium">
-                   Visualização 3D (Simulador Ativo)
-                </div>
-             </div>
+        <main className="flex-1 relative bg-gradient-to-b from-sky-50 to-green-50 overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center p-8">
+            <div className="w-full h-full max-h-[80vh] flex items-center justify-center relative">
+               <Shirt3DPreview 
+                 template={selectedTemplate} 
+                 appliedStamp={appliedStamp}
+                 className="w-full h-full"
+               />
+            </div>
+          </div>
+          
+          <div className="absolute top-4 right-4 flex gap-2 z-20">
+            <Button variant="secondary" className="bg-white hover:bg-slate-50 text-slate-700 px-6 py-2 rounded-full shadow-md border-0 font-bold text-xs uppercase tracking-wider">
+              Girar
+            </Button>
+            <Button variant="secondary" onClick={() => setShow3D(false)} className="bg-white hover:bg-slate-50 text-slate-700 px-6 py-2 rounded-full shadow-md border-0 font-bold text-xs uppercase tracking-wider">
+              Fechar
+            </Button>
           </div>
         </main>
       </div>
