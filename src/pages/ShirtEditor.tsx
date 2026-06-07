@@ -2020,7 +2020,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden md:inline ml-1">Voltar ao Início</span>
           </Button>
-        </div>
           <span className="text-sm font-bold text-white uppercase tracking-wider hidden md:inline">{selectedTemplate.name}</span>
         </div>
         <div className="flex items-center gap-2">
