@@ -325,28 +325,43 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   };
 
   const handlePatchClick = (p: any) => {
-    // Adiciona o acabamento como uma camada de imagem no UV
+    const zoneKeys = Object.keys(uvMapZones);
+    const patchZone = zoneKeys.find(k => k.toLowerCase().includes('patch') || k.toLowerCase().includes('logo')) || zoneKeys[0];
+    
+    if (!patchZone) {
+      toast.error("Nenhuma zona de UV encontrada para este template");
+      return;
+    }
+
     const patchLayer: UvLayer = {
       id: `patch-${p.id}`,
+      zoneKey: patchZone,
       type: 'image',
       url: p.imageUrl,
-      position: { x: 200, y: 200 }, // Posição padrão
-      scale: 0.5
+      scale: 0.8
     };
     setUvLayers(prev => [...prev, patchLayer]);
-    toast.success(`${p.name} adicionado`);
+    toast.success(`${p.name} adicionado ao UV`);
   };
 
   const placeEmblemFromUrl = (url: string) => {
+    const zoneKeys = Object.keys(uvMapZones);
+    const emblemZone = zoneKeys.find(k => k.toLowerCase().includes('emblem') || k.toLowerCase().includes('escudo')) || zoneKeys[0];
+    
+    if (!emblemZone) {
+      toast.error("Zona de UV para emblema não encontrada");
+      return;
+    }
+
     const emblemLayer: UvLayer = {
       id: `emblem-${Date.now()}`,
+      zoneKey: emblemZone,
       type: 'image',
       url: url,
-      position: { x: 800, y: 200 },
-      scale: 0.3
+      scale: 0.6
     };
     setUvLayers(prev => [...prev, emblemLayer]);
-    toast.success("Emblema adicionado");
+    toast.success("Escudo adicionado");
   };
   const switchToOriginalStamp = () => setActiveStampColorId(null);
   const switchStampColor = (c: any) => setActiveStampColorId(c.id);
