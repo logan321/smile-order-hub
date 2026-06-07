@@ -2068,19 +2068,44 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative z-10">
         {/* Desktop context menu (Camisa, Calção, Meião) */}
         {/* Top bar with Tabs in center-ish and Right actions */}
-        <div className="hidden lg:flex shrink-0 bg-white border-b px-4 py-2 flex items-center gap-4 z-30">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <ShirtIcon className="h-4 w-4" />
-            Modelos / Estampas
+        <div className="hidden lg:flex flex-col shrink-0 bg-white border-b z-30">
+          <div className="px-4 py-2 flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ShirtIcon className="h-4 w-4" />
+              Modelos / Estampas
+            </div>
+            <div className="flex gap-2">
+              <button className="px-3 py-1 text-sm rounded-full bg-orange-100 text-orange-700">Camisa</button>
+              <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Calção</button>
+              <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Meião</button>
+            </div>
+            <div className="ml-auto flex items-center gap-2 text-xs">
+              <span className="text-gray-500">Sincronizar Camisa e Calção</span>
+              <Switch />
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 text-sm rounded-full bg-orange-100 text-orange-700">Camisa</button>
-            <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Calção</button>
-            <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Meião</button>
-          </div>
-          <div className="ml-auto flex items-center gap-2 text-xs">
-            <span className="text-gray-500">Sincronizar Camisa e Calção</span>
-            <Switch />
+          
+          {/* Stamps thumbnails horizontal bar */}
+          <div className="px-4 py-3 bg-slate-50/50 border-t overflow-x-auto">
+            {stamps.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2 text-center">Nenhuma estampa disponível</p>
+            ) : (
+              <div className="flex gap-3 min-w-max">
+                {stamps.map(s => (
+                  <button 
+                    key={s.id} 
+                    onClick={() => addStamp(s)} 
+                    className="group flex flex-col items-center w-20 rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background shrink-0" 
+                    title={s.name}
+                  >
+                    <div className="w-full aspect-square">
+                      <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                    </div>
+                    <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors w-full">{s.name}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -2124,16 +2149,21 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               <aside className="hidden lg:block lg:w-[320px] lg:bg-white lg:border-r border-border p-5 overflow-y-auto animate-slide-in shadow-xl z-50 h-full absolute left-[220px] top-0 bottom-0 bg-white/95 backdrop-blur-sm">
                 {activeTab === 'stamps' && (
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
-                  {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-4 gap-3" data-guide-desktop="stamp-pick">
-                      {stamps.map(s => (
-                        <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                          <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
-                        </button>
-                      ))}
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Estampa Selecionada</p>
+                  {appliedStamp ? (
+                    <div className="rounded-lg border border-primary/20 p-3 bg-primary/5 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded border bg-white overflow-hidden shrink-0">
+                          <img src={appliedStamp.imageUrl} alt={appliedStamp.name} className="h-full w-full object-contain p-1" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate">{appliedStamp.name}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase">Estampa aplicada</p>
+                        </div>
+                      </div>
                     </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground py-4 text-center italic">Selecione uma estampa na barra superior</p>
                   )}
                   {/* Color variants for applied stamp - Desktop */}
                   {appliedStampColors.length > 0 && (
