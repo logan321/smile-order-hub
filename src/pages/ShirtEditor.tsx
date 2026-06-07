@@ -2311,7 +2311,8 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
               </div>
             </aside>
-          )}
+          </>
+        )}
 
           {/* Mobile overlay panel — opens on top of canvas */}
           {activeTab && (
