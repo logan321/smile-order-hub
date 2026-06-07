@@ -2131,7 +2131,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <>
               <div className="fixed inset-0 bg-black/5 z-40 hidden lg:block" onClick={() => setActiveTab(null)} />
               <aside className="hidden lg:block lg:w-[320px] lg:bg-white lg:border-r border-border p-5 overflow-y-auto animate-slide-in shadow-xl z-50 h-full absolute left-[220px] top-0 bottom-0 bg-white/95 backdrop-blur-sm">
-              {activeTab === 'stamps' && (
+                {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
