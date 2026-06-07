@@ -2261,17 +2261,48 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
               {activeTab === 'logo' && (
                 <div className="space-y-6">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Uploads</p>
-                  <div
-                    onClick={() => { pendingLogoZoneKeyRef.current = ''; logoInputRef.current?.click(); }}
-                    className="flex flex-col gap-2 items-center py-8 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-[#FF5A00] hover:bg-orange-50/30 transition-all bg-white"
-                  >
-                    <Upload className="h-10 w-10 text-muted-foreground group-hover:text-[#FF5A00]" />
-                    <div className="text-center">
-                      <span className="text-sm font-bold text-muted-foreground block">ENVIAR LOGO</span>
-                      <span className="text-[10px] text-muted-foreground/60 uppercase">PNG, JPG, SVG ou WebP</span>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Upload de Patrocínios</p>
+                  <p className="text-[11px] text-muted-foreground">Envie logotipos de patrocinadores para as zonas de marcação.</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => /logo|patrocinio/i.test(key)).map(([key, zone]) => {
+                    const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'image');
+                    return (
+                      <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{key}</label>
+                        <div
+                          onClick={() => { pendingLogoZoneKeyRef.current = key; logoInputRef.current?.click(); }}
+                          className="group relative h-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-[#FF5A00] transition-all overflow-hidden bg-white"
+                        >
+                          {layer?.type === 'image' ? (
+                            <>
+                              <img src={layer.url} alt="Logo" className="h-full w-full object-contain p-2" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">Trocar Imagem</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1.5 text-muted-foreground group-hover:text-[#FF5A00]">
+                              <Upload className="h-6 w-6" />
+                              <span className="text-[10px] font-bold uppercase">Clique para enviar</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* General upload if no specific logo zone is found or for generic placement */}
+                  {Object.entries(uvMapZones).filter(([key, z]) => /logo|patrocinio/i.test(key)).length === 0 && (
+                    <div
+                      onClick={() => { pendingLogoZoneKeyRef.current = ''; logoInputRef.current?.click(); }}
+                      className="flex flex-col gap-2 items-center py-8 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-[#FF5A00] hover:bg-orange-50/30 transition-all bg-white"
+                    >
+                      <Upload className="h-10 w-10 text-muted-foreground group-hover:text-[#FF5A00]" />
+                      <div className="text-center">
+                        <span className="text-sm font-bold text-muted-foreground block">ENVIAR ARQUIVO</span>
+                        <span className="text-[10px] text-muted-foreground/60 uppercase">PNG, JPG ou SVG</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
