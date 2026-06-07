@@ -359,7 +359,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const backFabricRef = useRef<Canvas | null>(null);
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>(null);
-  const [showUvPanel, setShowUvPanel] = useState(false);
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [allTemplates, setAllTemplates] = useState<Template[]>([]);
@@ -376,7 +375,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [preview3D, setPreview3D] = useState<{ front: string; back: string } | null>(null);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
-  const [show2DEditor, setShow2DEditor] = useState(false);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
 
@@ -2029,10 +2027,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">{downloading ? 'Baixando...' : 'Baixar'}</span>
           </Button>
-          <Button onClick={handleOpen3D} size="sm" variant="secondary" className="gap-1 h-9 px-3 rounded-full shadow-sm">
-            <Box className="h-4 w-4" />
-            <span className="hidden sm:inline">Ver 3D</span>
-          </Button>
         </div>
       </header>
 
@@ -2250,185 +2244,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         )}
 
 
-          {/* Mobile overlay panel — opens on top of canvas */}
-          {activeTab && (
-            <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 bg-card border-t-2 border-accent rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-h-[45vh] flex flex-col animate-fade-in">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-                <p className="text-sm font-bold text-foreground">
-                  {activeTab === 'stamps' ? '🎨 Estampas' : activeTab === 'patches' ? `🏷️ ${currentPatchLabel}` : activeTab === 'text' ? '✏️ Texto' : activeTab === 'name' ? '👕 Nome' : activeTab === 'emblems' ? '🏅 Emblemas' : activeTab === 'logo' ? '📤 Logo / Imagem' : ''}
-                </p>
-                <button onClick={() => setActiveTab(null)} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors">
-                  <X className="h-5 w-5 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3">
-                {activeTab === 'stamps' && (
-                  <div>
-                    {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                      <div className="grid grid-cols-4 gap-2" data-guide-mobile="stamp-pick">
-                        {stamps.map(s => (
-                          <button key={s.id} onClick={() => { addStamp(s); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
-                            <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                            <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{s.name}</p>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {/* Color variants for applied stamp - Mobile */}
-                    {appliedStampColors.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-border/30" data-guide-mobile="stamp-color">
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => { switchToOriginalStamp(); }}
-                            className={`h-9 w-9 rounded-full border-2 transition-all overflow-hidden ${!activeStampColorId ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
-                            title="Original"
-                          >
-                            <img src={appliedStamp?.imageUrl} alt="Original" className="h-full w-full object-cover" />
-                          </button>
-                          {appliedStampColors.map(c => (
-                            <button
-                              key={c.id}
-                              onClick={() => { switchStampColor(c); }}
-                              className={`h-9 w-9 rounded-full border-2 transition-all ${activeStampColorId === c.id ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
-                              style={{ backgroundColor: c.colorHex }}
-                              title={c.colorName}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {activeTab === 'patches' && (
-                  <div className="patch-protected">
-                    {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
-                      <div className="grid grid-cols-4 gap-2">
-                        {patches.map(p => (
-                          <button key={p.id} onClick={() => { handlePatchClick(p); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
-                            <div className="w-full aspect-square p-0.5 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
-                            <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
-                            <div className="pb-0.5 px-0.5 relative z-10"><p className="text-[8px] text-center text-muted-foreground truncate select-none">{p.name}</p></div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {activeTab === 'text' && (
-                  <div className="space-y-2">
-                    <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto... (Enter para quebrar linha)" className="min-h-[60px] text-sm resize-none" rows={2} />
-                    <div className="flex gap-2">
-                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                      <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-14 text-xs" min={10} max={72} />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 text-xs" min={0} max={10} /></div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={shadowEnabled} onChange={e => setShadowEnabled(e.target.checked)} className="rounded" />
-                        <span className="text-[10px] text-muted-foreground">Sombra</span>
-                      </label>
-                      {shadowEnabled && (
-                        <>
-                          <input type="color" value={shadowColor} onChange={e => setShadowColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
-                          <Input type="number" value={shadowBlur} onChange={e => setShadowBlur(Number(e.target.value))} className="h-7 w-12 text-xs" min={1} max={20} />
-                        </>
-                      )}
-                    </div>
-                    {selectedTextStyle && (
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/30">
-                        <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded protected-img" />
-                        <span className="text-[10px] text-foreground font-medium flex-1 truncate">{selectedTextStyle.name}</span>
-                        <button onClick={() => setSelectedTextStyle(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
-                      </div>
-                    )}
-                    {textStyles.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> {selectedTextStyle ? 'Trocar Estilo' : 'Estilos de Texto'}</Button>
-                    )}
-                    <Button size="sm" onClick={() => { handleAddTextClick(); }} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
-                    <div className="pt-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[10px] text-muted-foreground uppercase font-semibold">Curvatura (arco)</label>
-                        <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
-                      </div>
-                      <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
-                    </div>
-                  </div>
-                )}
-                {activeTab === 'name' && (
-                  <div className="space-y-2">
-                    <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Nome (ex: SILVA)" className="h-9 text-sm uppercase" maxLength={20} />
-                    <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="Número (opcional)" className="h-9 text-sm" maxLength={3} />
-                    <div className="flex gap-2">
-                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                      <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-14 text-xs" min={10} max={120} />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                      <div className="flex items-center gap-1"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-12 text-xs" min={0} max={10} /></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button size="sm" variant="outline" onClick={() => addNamePreset('arc')} className="h-8 text-xs">Esportivo (arco)</Button>
-                      <Button size="sm" variant="outline" onClick={() => addNamePreset('straight')} className="h-8 text-xs">Reto</Button>
-                    </div>
-                  </div>
-                )}
-                {activeTab === 'emblems' && (
-                  <div className="space-y-3">
-                    {emblems.length === 0 ? (
-                      <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
-                    ) : (
-                      <div className="grid grid-cols-4 gap-2">
-                        {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
-                          <button key={em.id} onClick={() => { placeEmblemFromUrl(em.imageUrl); setActiveTab(null); }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 bg-background" title={em.name}>
-                            <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 bg-muted/10" />
-                            <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {clientEmblems.length > 0 && (
-                      <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Meus emblemas</p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {clientEmblems.map(em => (
-                            <button key={em.id} onClick={() => { placeEmblemFromUrl(em.imageUrl); setActiveTab(null); }} className="group rounded-lg border border-primary/40 overflow-hidden bg-background">
-                              <img src={em.imageUrl} className="w-full aspect-square object-contain p-1 bg-muted/10" />
-                              <p className="text-[8px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div onClick={() => emblemInputRef.current?.click()} className="flex items-center gap-2 px-3 py-3 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-                      <Upload className="h-5 w-5 text-muted-foreground" />
-                      <div><span className="text-xs text-muted-foreground">Enviar meu emblema</span></div>
-                    </div>
-                    <input ref={emblemInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleEmblemUpload} className="hidden" />
-                  </div>
-                )}
-                {activeTab === 'logo' && (
-                  <div className="space-y-3">
-                    <div
-                      onClick={() => setShowLogoNotice(true)}
-                      className="flex items-center gap-3 px-4 py-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
-                      <Upload className="h-6 w-6 text-muted-foreground" />
-                      <div><span className="text-sm text-muted-foreground">Enviar logo ou imagem</span><span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span></div>
-                    </div>
-                    <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
-                  </div>
-                )}
-                <div className="mt-3 pt-2 border-t border-border/30">
-                  <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
-                </div>
-              </div>
-            </div>
-          )}
 
         {/* Coluna 3: Canvas 3D */}
         <div id="canvas-container" className="flex-1 relative bg-gray-50 flex flex-col overflow-hidden min-h-0">
@@ -2503,6 +2318,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             >
               <RotateCcw className="h-5 w-5" />
             </Button>
+          </div>
+
+          {/* Hidden 2D Canvases for Fabric.js baking */}
+          <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
+            <canvas ref={frontCanvasRef} />
+            <canvas ref={backCanvasRef} />
           </div>
 
           {/* Canvas 3D que ocupa 100% do espaço restante */}
@@ -2657,25 +2478,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       )}
       {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
 
-      <Dialog open={show3D} onOpenChange={setShow3D}>
-        <DialogContent className="max-w-3xl w-[95vw] h-[85vh] p-4 flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Box className="h-5 w-5 text-primary" />
-              Pré-visualização da camisa
-            </DialogTitle>
-          </DialogHeader>
-          {preview3D && (
-            <Preview3DTabs
-              front={preview3D.front}
-              back={preview3D.back}
-              uvMapUrl={selectedTemplate?.uvMapUrl ?? null}
-              cameraPosition={cameraPosition}
-              onCameraChange={setCameraPosition}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
