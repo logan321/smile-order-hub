@@ -25,12 +25,23 @@ import type { UvZone } from '@/hooks/useUvLibrary';
 
 // Thumbnail: show only the 2D front image uploaded for the stamp.
 function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
+  const [error, setError] = useState(false);
+  
+  if (error || !stampUrl) {
+    return (
+      <div className="w-full aspect-square flex items-center justify-center bg-muted/20 rounded-lg">
+        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <img
       src={stampUrl}
       alt={name}
       loading="lazy"
       decoding="async"
+      onError={() => setError(true)}
       className="w-full aspect-square object-contain p-1 protected-img bg-muted/10"
     />
   );
