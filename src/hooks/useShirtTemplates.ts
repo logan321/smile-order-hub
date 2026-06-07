@@ -15,17 +15,14 @@ export interface ShirtTemplate {
 const isLikelyStampTemplateRow = (t: Record<string, string | null | undefined>) => {
   const front = t.front_image_url || '';
   const back = t.back_image_url || '';
-  const name = (t.name || '').trim();
 
-  // 1. Identical front/back usually means it's a UV map reference or placeholder
+  // 1. Identical front/back usually means it's a technical placeholder
   if (front && back && front === back) return true;
   
-  // 2. Specifically filter out technical paths
-  if (/uv-library|uv-map|Colorway/i.test(front) || /uv-library|uv-map|Colorway/i.test(back)) return true;
+  // 2. Filter out explicit uv-library paths
+  if (/uv-library|uv-map/i.test(front) || /uv-library|uv-map/i.test(back)) return true;
 
-  // 3. Logic: name looks like a code
-  const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name);
-  return nameLooksLikeCode;
+  return false;
 };
 
 export function useShirtTemplates(targetUserId?: string) {
