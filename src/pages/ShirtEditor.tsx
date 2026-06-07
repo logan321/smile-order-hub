@@ -2228,8 +2228,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
 
               {activeTab === 'emblems' && (
                 <div className="space-y-6">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Escudos e Emblemas</p>
-                  {Object.entries(uvMapZones).filter(([key, z]) => /escudo|emblema|logo/i.test(key)).map(([key, zone]) => {
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Escudos</p>
+                  <p className="text-[11px] text-muted-foreground">Envie o escudo do seu time para as zonas marcadas.</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => /escudo|emblema/i.test(key)).map(([key, zone]) => {
                     const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'image');
                     return (
                       <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
@@ -2255,28 +2256,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     );
                   })}
-                  
-                  {/* Catalog emblems fallback */}
-                  <div className="pt-4 border-t border-border/30">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase mb-3">Catálogo de Emblemas</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {emblems.map(em => (
-                        <button key={em.id} onClick={() => { 
-                          const firstZoneKey = Object.keys(uvMapZones).find(k => /escudo|emblema|logo/i.test(k));
-                          if (firstZoneKey) {
-                            setUvLayers(prev => [
-                              ...prev.filter(l => !(l.zoneKey === firstZoneKey && l.type === 'image')),
-                              { id: `${firstZoneKey}_image_${Date.now()}`, zoneKey: firstZoneKey, type: 'image', url: em.imageUrl, scale: 0.9, opacity: 1 } as UvLayer,
-                            ]);
-                          } else {
-                            placeEmblemFromUrl(em.imageUrl);
-                          }
-                        }} className="group rounded-lg border border-border/50 overflow-hidden hover:border-[#FF5A00] transition-all bg-white p-1">
-                          <img src={em.imageUrl} className="w-full aspect-square object-contain" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
 
