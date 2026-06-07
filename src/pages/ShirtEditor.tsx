@@ -2036,42 +2036,41 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         </div>
       </header>
 
-      {/* Unified responsive layout */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {/* Top icon toolbar — visible on mobile & desktop, sits ABOVE the 3D so it never covers the shirt */}
-        <div className="shrink-0 bg-card/80 backdrop-blur border-b border-border/60 px-2 py-2 overflow-x-auto">
-          <div className="flex items-center justify-start lg:justify-center gap-2 lg:gap-3 min-w-max mx-auto">
-            {([
-              { id: 'stamps',   label: 'Estampas',    icon: Shirt },
-              { id: 'patches',  label: 'Peixes',      icon: Sparkles },
-              { id: 'text',     label: 'Textos',      icon: Type },
-              { id: 'name',     label: 'Nome/Nº',     icon: Shirt },
-              { id: 'emblems',  label: 'Emblemas',    icon: ImageIcon },
-              { id: 'logo',     label: 'Logo/Img',    icon: Upload },
+      <main className="flex flex-1 overflow-hidden" style={{height: 'calc(100vh - 56px)'}}>
+        {/* Coluna 1: Sidebar fixa de ícones */}
+        <nav id="left-sidebar" className="w-20 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 flex flex-col items-center py-4 space-y-6 z-40">
+          {([
+            { id: 'stamps',   label: 'Estampa',    icon: Shirt },
+            { id: 'text',     label: 'Texto',      icon: Type },
+            { id: 'name',     label: 'Nome/Nº',    icon: Shirt },
+            { id: 'emblems',  label: 'Escudo',     icon: ImageIcon },
+            { id: 'logo',     label: 'Upload',     icon: Upload },
+          ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
+            const active = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveTab(active ? null : id)}
+                className={`flex flex-col items-center gap-1.5 transition-colors ${active ? 'text-[#FF5A00]' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center transition-all ${active ? 'bg-orange-50' : 'bg-transparent'}`}>
+                  <Icon className={`h-6 w-6 ${active ? 'text-[#FF5A00]' : ''}`} />
+                </div>
+                <span className="text-[10px] font-bold uppercase">{label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-
-            ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
-              const active = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(active ? null : id)}
-                  className={`flex flex-col items-center justify-center gap-1 px-1 py-1 rounded-xl transition-all active:scale-95 ${active ? 'text-accent' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  <span className={`h-12 w-12 lg:h-14 lg:w-14 rounded-2xl border-2 flex items-center justify-center shadow-sm transition-all ${active ? 'bg-accent text-accent-foreground border-accent shadow-md' : 'bg-background border-accent/60 text-accent'}`}>
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <span className={`text-[10px] lg:text-[11px] font-semibold leading-none px-1.5 py-0.5 rounded-full ${active ? 'bg-accent/15 text-accent' : 'text-foreground/80'}`}>{label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-          {/* Desktop sidebar panel */}
-          {activeTab && (
-            <aside className="hidden lg:block lg:w-64 lg:border-r border-border bg-card p-3 overflow-y-auto">
+        {/* Coluna 2: Painel Dinâmico */}
+        {activeTab && (
+          <aside id="dynamicSidebar" className="w-80 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 overflow-y-auto z-30">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                 <h2 className="text-lg font-bold uppercase tracking-tight">
+                    {activeTab === 'stamps' ? 'Estampas' : activeTab === 'text' ? 'Textos' : activeTab === 'name' ? 'Nome e Número' : activeTab === 'emblems' ? 'Escudos' : 'Upload'}
+                 </h2>
+              </div>
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
@@ -2246,8 +2245,10 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               <div className="mt-4 pt-3 border-t border-border/30">
                 <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
               </div>
-            </aside>
-          )}
+            </div>
+          </aside>
+        )}
+
 
           {/* Mobile overlay panel — opens on top of canvas */}
           {activeTab && (
@@ -2429,225 +2430,97 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
             </div>
           )}
 
-          {/* Canvas area */}
-            <div className={`flex-1 flex flex-col overflow-hidden min-h-0 relative ${!selectedNiche?.backgroundImageUrl ? 'bg-gradient-to-b from-muted/50 to-muted/20' : ''}`}
-              style={selectedNiche?.backgroundImageUrl ? {
-                backgroundImage: `url(${selectedNiche.backgroundImageUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-              } : undefined}>
-              {selectedNiche?.backgroundImageUrl && (
-                <div className="absolute inset-0 bg-background/50 pointer-events-none z-0" />
-              )}
-            {/* Desktop zoom bar */}
-            <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-3.5 w-3.5" /></Button>
-              <Slider value={[(activeView === 'front' ? frontZoom : backZoom) * 100]} onValueChange={([v]) => activeView === 'front' ? setFrontZoom(v / 100) : setBackZoom(v / 100)} min={30} max={250} step={5} className="w-52" />
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-3.5 w-3.5" /></Button>
-              <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round((activeView === 'front' ? frontZoom : backZoom) * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (activeView === 'front') setFrontZoom(1); else setBackZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }} title="Resetar zoom"><RotateCcw className="h-3.5 w-3.5" /></Button>
-            </div>
+        {/* Coluna 3: Canvas 3D */}
+        <div id="canvas-container" className="flex-1 relative bg-gray-50 flex flex-col overflow-hidden min-h-0">
+          {/* Controles absolute conforme pedido */}
+          <div className="absolute top-4 left-4 z-40">
+            <Button 
+              variant="secondary" 
+              className="shadow-lg font-bold gap-2"
+              onClick={() => {
+                // Alternar entre visões frontais/traseiras como um "girar"
+                setCameraPosition(prev => prev[2] > 0 ? [0, 0.1, -5.2] : [0, 0.1, 5.2]);
+              }}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Girar Camisa
+            </Button>
+          </div>
 
-            {/* Canvas container — single render, responsive display */}
-            <div ref={mobileCanvasContainerRef} className="flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative">
-              <div className={`relative flex-shrink-0 lg:flex lg:gap-5 lg:items-center lg:justify-center ${!show2DEditor ? 'invisible absolute pointer-events-none' : ''}`}
-                style={{ transform: `scale(${mobileScale})`, transformOrigin: 'center center' }}>
-                <div ref={frontWrapRef}
-                  className={`${activeView === 'front' ? 'block' : 'hidden lg:block'} ${activeView !== 'front' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
-                  onClick={() => setActiveView('front')}>
-                  <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider hidden lg:block">Frente</p>
-                  <div className="rounded-xl overflow-hidden"><canvas ref={frontCanvasRef} /></div>
-                </div>
-                <div ref={backWrapRef}
-                  className={`${activeView === 'back' ? 'block' : 'hidden lg:block'} ${activeView !== 'back' ? 'lg:opacity-50 lg:hover:opacity-75' : 'lg:ring-2 lg:ring-primary lg:ring-offset-2 lg:rounded-xl'} lg:cursor-pointer lg:transition-all lg:flex-shrink-0`}
-                  onClick={() => setActiveView('back')}>
-                  <p className="text-center text-[10px] text-muted-foreground mb-1 font-medium uppercase tracking-wider hidden lg:block">Costas</p>
-                  <div className="rounded-xl overflow-hidden"><canvas ref={backCanvasRef} /></div>
-                </div>
-              </div>
+          <div className="absolute top-4 right-4 z-40 flex gap-2">
+            <Button variant="secondary" className="shadow-lg font-semibold">Salvar Simulação</Button>
+            <Button 
+              className="bg-[#FF5A00] hover:bg-[#E65100] text-white shadow-lg font-bold px-6"
+              onClick={handleWhatsAppQuote}
+            >
+              Enviar Orçamento
+            </Button>
+          </div>
 
-              {/* 3D principal — sempre que o usuário não está editando em 2D.
-                  Se não houver UV, mostra a camisa lisa (sem estampa). */}
-              {!show2DEditor && (
-                <div className="absolute inset-0 flex items-center justify-center p-2 lg:p-4">
-                  <div className="w-full h-full max-w-3xl relative">
-                    <Shirt3DPreview
-                      frontImage={selectedTemplate.frontImageUrl}
-                      backImage={selectedTemplate.backImageUrl}
-                      uvMapUrl={effectiveUvUrl}
-                      uvCanvas={uvZonesActive ? uvComposite.canvas : uv3DCanvas}
-                      uvVersion={uvZonesActive ? uvComposite.version : uvTextureVersion}
-                      cameraPosition={cameraPosition}
-                      autoRotate={false}
-                    />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="shadow-md h-10 w-10"
+              onClick={() => {
+                const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+                if (canvas) {
+                  const zoom = canvas.getZoom();
+                  canvas.setZoom(Math.min(zoom * 1.1, 5));
+                  canvas.requestRenderAll();
+                }
+              }}
+            >
+              <ZoomIn className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="shadow-md h-10 w-10"
+              onClick={() => {
+                const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
+                if (canvas) {
+                  const zoom = canvas.getZoom();
+                  canvas.setZoom(Math.max(zoom / 1.1, 0.5));
+                  canvas.requestRenderAll();
+                }
+              }}
+            >
+              <ZoomOut className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="shadow-md h-10 w-10"
+              onClick={() => {
+                setCameraPosition(prev => {
+                  if (prev[0] === 0 && prev[2] > 0) return [5.2, 0.1, 0];
+                  if (prev[0] > 0) return [0, 0.1, -5.2];
+                  if (prev[2] < 0) return [-5.2, 0.1, 0];
+                  return [0, 0.1, 5.2];
+                });
+              }}
+            >
+              <RotateCcw className="h-5 w-5" />
+            </Button>
+          </div>
 
-                    
-                    {/* View Controls - Integration directly in the main 3D view */}
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
-                        onClick={() => setCameraPosition([0, 0.1, 5.2])}
-                      >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                        <span className="text-[10px] font-bold uppercase">Frente</span>
-                      </Button>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
-                        onClick={() => setCameraPosition([0, 0.1, -5.2])}
-                      >
-                        <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                        <span className="text-[10px] font-bold uppercase">Costas</span>
-                      </Button>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
-                        onClick={() => setCameraPosition([-5.2, 0.1, 0])}
-                      >
-                        <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-                            <span className="text-[10px] font-black translate-y-[-1px]">LE</span>
-                          </div>
-                        </div>
-                        <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Esquerda</span></span>
-                      </Button>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-primary bg-background/90 backdrop-blur"
-                        onClick={() => setCameraPosition([5.2, 0.1, 0])}
-                      >
-                        <div className="relative flex items-center justify-center">
-                          <Shirt className="h-5 w-5 mb-0.5 text-primary" />
-                          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
-                            <span className="text-[10px] font-black translate-y-[-1px]">LD</span>
-                          </div>
-                        </div>
-                        <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Direita</span></span>
-                      </Button>
-                    </div>
-                  </div>
-                  {uvZonesActive && (
-                    <>
-                    {/* Toggle button — small, top-right, never covers the shirt */}
-                    <button
-                      onClick={() => setShowUvPanel(p => !p)}
-                      className="absolute top-2 right-2 z-40 h-10 px-3 rounded-full bg-accent text-accent-foreground shadow-lg flex items-center gap-1.5 text-xs font-bold active:scale-95"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      {showUvPanel ? 'Fechar' : 'Personalizar'}
-                    </button>
-                    {showUvPanel && (
-                    <div className="absolute inset-x-2 bottom-2 lg:inset-x-auto lg:top-14 lg:right-2 lg:bottom-2 lg:w-[320px] z-30 max-h-[60vh] lg:max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-xl shadow-2xl p-3 space-y-3 animate-fade-in">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="h-4 w-4 text-accent" />
-                        <p className="text-sm font-bold">Personalização UV</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={20} /></div>
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={8} max={220} /></div>
-                      </div>
-                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                      {stamps.length > 0 && (
-                        <div className="space-y-1.5 pt-1 border-t border-border/40">
-                          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Estampa</label>
-                          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                            {stamps.map(s => (
-                              <button
-                                key={s.id}
-                                onClick={() => addStamp(s)}
-                                className={`flex-shrink-0 h-14 w-14 rounded-md border-2 overflow-hidden bg-muted transition-all ${appliedStamp?.id === s.id ? 'border-primary ring-2 ring-primary/30' : 'border-border/50 hover:border-primary/50'}`}
-                                title={s.name}
-                              >
-                                <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {Object.keys(uvMapZones).map((zoneKey) => {
-                        const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
-                        const imageLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image');
-                        return (
-                          <div key={zoneKey} className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-2">
-                            <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{zoneKey}</label>
-                            <Input
-                              value={uvTextDrafts[zoneKey] ?? layer?.content ?? ''}
-                              onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                              placeholder="Texto / nome / nº"
-                              className="h-8 text-sm"
-                            />
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs" onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()}><Upload className="h-3.5 w-3.5" /> Logo</Button>
-                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs text-destructive" onClick={() => removeUvLayer(zoneKey)}><Trash2 className="h-3.5 w-3.5" /> Limpar</Button>
-                            </div>
-                            <input id={`uv-file-${zoneKey}`} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); e.currentTarget.value = ''; }} />
-                            {imageLayer && <p className="text-[10px] text-muted-foreground">Logo/imagem aplicada</p>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Editor agora é 100% 3D — o canvas 2D continua existindo apenas
-                  como fonte da textura UV (oculto) e nunca é exibido ao usuário. */}
-
-              {/* Floating pan mode button — big and obvious for mobile users */}
-              {(activeView === 'front' ? frontZoom : backZoom) > 1 && (
-                <div className="lg:hidden absolute bottom-3 right-3 flex flex-col items-center gap-2 z-20">
-                  <button
-                    onClick={() => {
-                      setPanMode(prev => !prev);
-                      // Deselect objects when entering pan mode
-                      const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
-                      if (!panMode && canvas) { canvas.discardActiveObject(); canvas.requestRenderAll(); }
-                    }}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-full shadow-xl text-sm font-bold transition-all active:scale-95 ${
-                      panMode
-                        ? 'bg-accent text-accent-foreground ring-2 ring-accent ring-offset-2'
-                        : 'bg-sidebar text-sidebar-foreground'
-                    }`}
-                  >
-                    <Hand className="h-5 w-5" />
-                    {panMode ? 'Movendo ✓' : 'Mover Camisa'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (activeView === 'front') setFrontZoom(1); else setBackZoom(1);
-                      setPanMode(false);
-                      const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current;
-                      if (canvas) {
-                        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-                        canvas.requestRenderAll();
-                      }
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-destructive/90 text-destructive-foreground shadow-lg text-xs font-medium active:scale-95"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    Resetar
-                  </button>
-                </div>
-              )}
-
-            </div>
+          {/* Canvas 3D que ocupa 100% do espaço restante */}
+          <div className="flex-1 w-full h-full">
+            <Shirt3DPreview
+              frontImage={selectedTemplate.frontImageUrl}
+              backImage={selectedTemplate.backImageUrl}
+              uvMapUrl={effectiveUvUrl}
+              uvCanvas={uvZonesActive ? uvComposite.canvas : uv3DCanvas}
+              uvVersion={uvZonesActive ? uvComposite.version : uvTextureVersion}
+              cameraPosition={cameraPosition}
+              autoRotate={false}
+            />
           </div>
         </div>
+      </main>
 
-        {/* Botões 2D removidos do mobile. */}
-      </div>
+
 
       {/* Patch side + zone picker modal */}
       {pendingPatch && (
