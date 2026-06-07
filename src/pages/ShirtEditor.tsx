@@ -2656,23 +2656,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       </div>
                     </div>
                     )}
-                    </main>
-                  </div>
-                    <div className="absolute inset-x-2 bottom-2 lg:inset-x-auto lg:top-14 lg:right-2 lg:bottom-2 lg:w-[320px] z-30 max-h-[60vh] lg:max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-xl shadow-2xl p-3 space-y-3 animate-fade-in">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="h-4 w-4 text-accent" />
-                        <p className="text-sm font-bold">Personalização UV</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={20} /></div>
-                        <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={8} max={220} /></div>
-                      </div>
-                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                      {stamps.length > 0 && (
-                        <div className="space-y-1.5 pt-1 border-t border-border/40">
-                          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Estampa</label>
+                  </main>
+                </div>
+              )}
+            </div>
+          )}
                           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                             {stamps.map(s => (
                               <button
