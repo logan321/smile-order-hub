@@ -2175,23 +2175,45 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <Input
                           value={uvTextDrafts[key] ?? (layer?.type === 'text' ? layer.content : '')}
                           onChange={e => setUvLayerText(key, e.target.value)}
+                          onBlur={e => commitUvLayerText(key, e.target.value)}
                           placeholder={`Digite o ${key.toLowerCase()}...`}
                           className="h-10 font-bold text-base"
                         />
-                        <div className="flex items-center gap-3 pt-1">
-                          <div className="flex flex-col gap-1 flex-1">
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div className="flex flex-col gap-1">
                             <span className="text-[10px] uppercase font-bold text-muted-foreground">Cor</span>
                             <div className="flex items-center gap-2">
                               <input
                                 type="color"
                                 value={textColor}
-                                onChange={e => { setTextColor(e.target.value); if (layer) commitUvLayerText(key, (uvTextDrafts[key] ?? (layer.type === 'text' ? layer.content : ''))); }}
+                                onChange={e => { 
+                                  const newColor = e.target.value;
+                                  setTextColor(newColor); 
+                                  if (layer) {
+                                    setUvLayers(prev => prev.map(l => 
+                                      l.zoneKey === key && l.type === 'text' ? { ...l, color: newColor } : l
+                                    ));
+                                  }
+                                }}
                                 className="h-8 w-8 rounded-full border border-border cursor-pointer"
                               />
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Tamanho</span>
+                            <div className="flex items-center gap-2">
                               <Input
-                                value={textColor}
-                                onChange={e => { setTextColor(e.target.value); if (layer) commitUvLayerText(key, (uvTextDrafts[key] ?? (layer.type === 'text' ? layer.content : ''))); }}
-                                className="h-8 font-mono text-[10px] uppercase w-20"
+                                type="number"
+                                value={layer?.type === 'text' ? (layer as any).fontSize || 40 : 40}
+                                onChange={e => {
+                                  const size = parseInt(e.target.value);
+                                  if (layer) {
+                                    setUvLayers(prev => prev.map(l => 
+                                      l.zoneKey === key && l.type === 'text' ? { ...l, fontSize: size } : l
+                                    ));
+                                  }
+                                }}
+                                className="h-8 text-[11px] w-full"
                               />
                             </div>
                           </div>
@@ -2203,11 +2225,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   {/* Global styling for texts */}
                   <div className="pt-4 border-t border-border/30 space-y-4">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Estilo Global</p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-3">
                       <div className="space-y-1.5">
-                        <span className="text-[10px] text-muted-foreground">Fonte</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Fonte</span>
                         <Select value={fontFamily} onValueChange={setFontFamily}>
-                          <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-10 text-xs bg-white"><SelectValue /></SelectTrigger>
                           <SelectContent className="max-h-60">
                             {FONT_OPTIONS.map(f => (
                               <SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>
@@ -2215,12 +2237,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] text-muted-foreground">Arco</span>
-                        <div className="flex items-center gap-2 h-9 px-2 bg-muted/50 rounded-md">
-                          <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} className="flex-1" />
-                        </div>
-                      </div>
+                      
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="w-full gap-2 h-10 uppercase font-bold text-xs"
+                        onClick={() => {
+                          setUvLayers(prev => prev.filter(l => !/nome|numero|número/i.test(l.zoneKey)));
+                          setUvTextDrafts({});
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Limpar Tudo
+                      </Button>
                     </div>
                   </div>
                 </div>
