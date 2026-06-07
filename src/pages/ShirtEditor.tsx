@@ -2273,12 +2273,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           <button className="absolute top-4 left-4" onClick={() => setCameraPosition([0, 0.1, 5.2])}>Girar Camisa</button>
         </div>
       </main>
-              {activeTab === 'stamps' && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
-                  {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
-                      {stamps.map(s => (
+    </div>
+  );
+};
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                           <StampThumb stampUrl={s.imageUrl} name={s.name} />
                           <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
