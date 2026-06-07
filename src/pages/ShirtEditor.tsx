@@ -120,16 +120,39 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const { data: tData } = await supabase.from('shirt_templates').select('*');
-      const { data: sData } = await (supabase as any).from('stamps').select('*');
-      const { data: pData } = await (supabase as any).from('patches').select('*');
-      const { data: eData } = await (supabase as any).from('emblems').select('*');
-      
-      setTemplates((tData as any[])?.filter(t => !isMisplacedStampTemplate(t)) || []);
-      setStamps((sData as any) || []);
-      setPatches(pData || []);
-      setEmblems(eData || []);
-      setLoading(false);
+      try {
+        const { data: tData } = await supabase.from('shirt_templates').select('*');
+        const { data: sData } = await (supabase as any).from('stamps').select('*');
+        const { data: pData } = await (supabase as any).from('patches').select('*');
+        const { data: eData } = await (supabase as any).from('emblems').select('*');
+        
+        console.log('Templates data:', tData);
+        console.log('Stamps data:', sData);
+        
+        const validTemplates = (tData as any[])?.filter(t => !isMisplacedStampTemplate(t)) || [];
+        setTemplates(validTemplates);
+        
+        // Map stamps to ensure they have the required fields if missing
+        const mappedStamps = (sData as any[])?.map(s => ({
+          ...s,
+          imageUrl: s.imageUrl || s.front_image_url || '',
+          backImageUrl: s.backImageUrl || s.back_image_url || null,
+          category: s.category || 'Geral'
+        })) || [];
+        
+        setStamps(mappedStamps);
+        setPatches(pData || []);
+        setEmblems(eData || []);
+        
+        // Auto-select first template for testing if none selected
+        if (validTemplates.length > 0 && !selectedTemplate) {
+          setSelectedTemplate(validTemplates[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -317,8 +340,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </div>
 
           <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-50">
-            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]"><ZoomIn className="h-6 w-6" /></button>
-            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]"><ZoomOut className="h-6 w-6" /></button>
+            <button 
+              className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]"
+              onClick={() => setCameraPosition(prev => [prev[0], prev[1], Math.max(2, prev[2] - 1)])}
+            >
+              <ZoomIn className="h-6 w-6" />
+            </button>
+            <button 
+              className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]"
+              onClick={() => setCameraPosition(prev => [prev[0], prev[1], Math.min(10, prev[2] + 1)])}
+            >
+              <ZoomOut className="h-6 w-6" />
+            </button>
             <div className="h-px bg-gray-200 w-8 mx-auto" />
             <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]" onClick={() => setCameraPosition([0, 0.1, 5.2])}><span className="text-[10px] font-black">FR</span></button>
             <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]" onClick={() => setCameraPosition([0, 0.1, -5.2])}><span className="text-[10px] font-black">CO</span></button>
