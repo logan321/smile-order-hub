@@ -12,7 +12,7 @@ import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import logo from '@/assets/logo.png';
+// import logo from '@/assets/logo.png'; // Comentado para usar logo do exemplo se necessário
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
@@ -71,11 +71,11 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
         <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-[12px] z-10">
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[12px] shadow-sm border border-border relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] transition-all duration-200 group active:bg-accent"
             onClick={() => onCameraChange([0, 0.1, 5.2])}
           >
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
-            <div className="mb-1 text-[#4F7BFF] transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-l-[12px]" />
+            <div className="mb-1 text-primary transition-colors">
               <div className="relative w-7 h-7 flex items-center justify-center">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.62 1.96V10a6 6 0 003.1 5.25L12 22l6.9-6.75A6 6 0 0022 10V5.42a2 2 0 00-1.62-1.96z" />
@@ -88,11 +88,11 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
           
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[12px] shadow-sm border border-border relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] transition-all duration-200 group active:bg-accent"
             onClick={() => onCameraChange([0, 0.1, -5.2])}
           >
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
-            <div className="mb-1 text-[#4F7BFF] transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-l-[12px]" />
+            <div className="mb-1 text-primary transition-colors">
               <div className="relative w-7 h-7 flex items-center justify-center">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.62 1.96V10a6 6 0 003.1 5.25L12 22l6.9-6.75A6 6 0 0022 10V5.42a2 2 0 00-1.62-1.96z" />
@@ -105,11 +105,11 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[12px] shadow-sm border border-border relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] transition-all duration-200 group active:bg-accent"
             onClick={() => onCameraChange([-5.2, 0.1, 0])}
           >
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
-            <div className="mb-1 text-[#4F7BFF] transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-l-[12px]" />
+            <div className="mb-1 text-primary transition-colors">
               <div className="relative w-7 h-7 flex items-center justify-center">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22L5 15.25A6 6 0 012 10V5.42a2 2 0 011.62-1.96L8 2M12 22v-6.5M8 2c.5 1 1 2 4 2M10 10c-1 0-2 1-2 2v4" />
@@ -124,11 +124,11 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
 
           <Button 
             variant="outline" 
-            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[16px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] border-none relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] hover:shadow-[0_12px_28px_rgba(79,123,255,0.05)] transition-all duration-200 group active:bg-[#F0F6FF]"
+            className="flex flex-col items-center justify-center h-[88px] w-[64px] p-0 bg-white rounded-[12px] shadow-sm border border-border relative overflow-hidden hover:translate-x-[2px] hover:scale-[1.03] transition-all duration-200 group active:bg-accent"
             onClick={() => onCameraChange([5.2, 0.1, 0])}
           >
-            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#4F7BFF] to-[#8EB8FF] rounded-l-[16px]" />
-            <div className="mb-1 text-[#4F7BFF] transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-primary rounded-l-[12px]" />
+            <div className="mb-1 text-primary transition-colors">
               <div className="relative w-7 h-7 flex items-center justify-center">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'scaleX(-1)' }}>
                   <path d="M12 22L5 15.25A6 6 0 012 10V5.42a2 2 0 011.62-1.96L8 2M12 22v-6.5M8 2c.5 1 1 2 4 2M10 10c-1 0-2 1-2 2v4" />
@@ -293,7 +293,7 @@ const renderRotateIcon = (ctx: CanvasRenderingContext2D, left: number, top: numb
   // Background circle
   ctx.beginPath();
   ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-  ctx.fillStyle = '#f59e0b';
+  ctx.fillStyle = '#000000';
   ctx.fill();
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
