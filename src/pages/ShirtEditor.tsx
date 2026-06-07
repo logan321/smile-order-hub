@@ -127,6 +127,81 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [emblems, setEmblems] = useState<any[]>([]);
   const [currentPatchLabel, setCurrentPatchLabel] = useState('Peixes');
 
+  // Recupera o mapeamento de zonas para o template selecionado
+  useEffect(() => {
+    const fetchZones = async () => {
+      if (!selectedTemplate?.id) return;
+      const { data } = await supabase
+        .from('template_zones')
+        .select('*')
+        .eq('template_id', selectedTemplate.id);
+      
+      if (data) {
+        const zoneMap: Record<string, UvZone> = {};
+        data.forEach((z: any) => {
+          zoneMap[z.zone_key] = {
+            points: z.points as any,
+            label: z.label,
+          };
+        });
+        setUvMapZones(zoneMap);
+      }
+    };
+    fetchZones();
+  }, [selectedTemplate]);
+
+  // Sincroniza as camadas do UV (texto, nome, etc)
+  const syncUvLayers = useCallback(() => {
+    const layers: UvLayer[] = [];
+    
+    // Texto customizado
+    if (textInput) {
+      layers.push({
+        id: 'custom-text',
+        type: 'text',
+        text: textInput,
+        fontFamily,
+        fontSize,
+        color: textColor,
+        stroke: strokeColor,
+        strokeWidth,
+        curvature: textCurvature,
+        position: { x: 500, y: 500 }, // Posição padrão centralizada no molde
+      });
+    }
+
+    // Nome e Número
+    if (nameInput) {
+      layers.push({
+        id: 'player-name',
+        type: 'text',
+        text: nameInput,
+        fontFamily,
+        fontSize: fontSize * 1.5,
+        color: textColor,
+        position: { x: 500, y: 300 },
+      });
+    }
+
+    if (numberInput) {
+      layers.push({
+        id: 'player-number',
+        type: 'text',
+        text: numberInput,
+        fontFamily,
+        fontSize: fontSize * 3,
+        color: textColor,
+        position: { x: 500, y: 600 },
+      });
+    }
+
+    setUvLayers(layers);
+  }, [textInput, nameInput, numberInput, fontFamily, fontSize, textColor, strokeColor, strokeWidth, textCurvature]);
+
+  useEffect(() => {
+    syncUvLayers();
+  }, [syncUvLayers]);
+
   // Load Data
   useEffect(() => {
     const fetchData = async () => {
@@ -227,10 +302,44 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleDownload = () => toast.info("Baixando...");
   const handleOpen3D = () => setCameraPosition([0, 0.1, cameraPosition[2] === 5.2 ? -5.2 : 5.2]);
   const deleteSelected = () => toast.info("Removendo selecionado...");
-  const handleAddTextClick = () => toast.success("Texto adicionado!");
-  const addNamePreset = (type: string) => toast.success(`Nome ${type} adicionado!`);
-  const handlePatchClick = (p: any) => toast.success(`${p.name} selecionado`);
-  const placeEmblemFromUrl = (url: string) => toast.success("Emblema adicionado");
+  const handleAddTextClick = () => {
+    if (!textInput) {
+      toast.error("Digite um texto primeiro");
+      return;
+    }
+    syncUvLayers();
+    toast.success("Texto aplicado ao 3D!");
+  };
+
+  const addNamePreset = (type: string) => {
+    syncUvLayers();
+    toast.success(`Estilo ${type} aplicado!`);
+  };
+
+  const handlePatchClick = (p: any) => {
+    // Adiciona o acabamento como uma camada de imagem no UV
+    const patchLayer: UvLayer = {
+      id: `patch-${p.id}`,
+      type: 'image',
+      url: p.imageUrl,
+      position: { x: 200, y: 200 }, // Posição padrão
+      scale: 0.5
+    };
+    setUvLayers(prev => [...prev, patchLayer]);
+    toast.success(`${p.name} adicionado`);
+  };
+
+  const placeEmblemFromUrl = (url: string) => {
+    const emblemLayer: UvLayer = {
+      id: `emblem-${Date.now()}`,
+      type: 'image',
+      url: url,
+      position: { x: 800, y: 200 },
+      scale: 0.3
+    };
+    setUvLayers(prev => [...prev, emblemLayer]);
+    toast.success("Emblema adicionado");
+  };
   const switchToOriginalStamp = () => setActiveStampColorId(null);
   const switchStampColor = (c: any) => setActiveStampColorId(c.id);
   const handleLogoUpload = () => toast.info("Enviando logo...");
@@ -364,7 +473,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             )}
 
             <div className="mt-8 pt-4 border-t border-border/50">
-              <Button variant="outline" onClick={deleteSelected} className="w-full text-destructive hover:bg-destructive/10">REMOVER SELECIONADO</Button>
+              <Button variant="outline" onClick={() => {
+                setUvLayers([]);
+                setTextInput('');
+                setNameInput('');
+                setNumberInput('');
+                toast.info("Personalizações removidas");
+              }} className="w-full text-destructive hover:bg-destructive/10">REMOVER TUDO</Button>
             </div>
           </div>
         </aside>
