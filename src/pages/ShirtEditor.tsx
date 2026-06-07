@@ -68,31 +68,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </Button>
           <img src="/public/uploads/colado-1780852849619.png" alt="Logo" className="h-14 w-auto brightness-0 invert" />
         </div>
-        <div className="flex items-center gap-3">
-          <Button className="bg-white text-[#FF5C00] hover:bg-white/90 rounded-full px-6 font-bold">Enviar Orçamento</Button>
-          <Button className="bg-blue-600 text-white hover:bg-blue-700 rounded-full px-6 font-bold">Salvar Simulação</Button>
-        </div>
       </header>
 
-      <div className="hidden lg:flex flex-col shrink-0 bg-white border-b z-30">
-        <div className="px-4 py-2 flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <ShirtIcon className="h-4 w-4" />
-            Modelos / Estampas
-          </div>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 text-sm rounded-full bg-orange-100 text-orange-700">Camisa</button>
-            <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Calção</button>
-            <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Meião</button>
-          </div>
-          <div className="ml-auto flex items-center gap-2 text-xs">
-            <span className="text-gray-500">Sincronizar Camisa e Calção</span>
-            <Switch />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden relative bg-[#f5f5f5] z-10 h-[calc(100dvh-80px)]">
+      <div className="flex-1 flex overflow-hidden relative bg-[#f5f5f5] z-10">
         <aside className="hidden lg:flex lg:flex-col lg:w-[80px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
           <TooltipProvider>
             <div className="flex flex-col py-2 gap-0">
@@ -247,23 +225,27 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </div>
         </aside>
 
-        <main className="flex-1 relative bg-gradient-to-b from-sky-50 to-green-50 overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center p-8">
-            <div className="w-full h-full max-h-[80vh] flex items-center justify-center relative">
+        <main className="flex-1 relative bg-[#1A1A1A] overflow-hidden">
+          {/* Top Bar for Canvas Actions */}
+          <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20 bg-black/20 backdrop-blur-sm">
+            <div className="flex gap-2">
+              <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-0 font-bold text-xs uppercase tracking-wider rounded-full px-6">
+                Girar Camisa
+              </Button>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button className="bg-white text-[#FF5C00] hover:bg-white/90 rounded-full px-6 font-bold">Enviar Orçamento</Button>
+              <Button className="bg-blue-600 text-white hover:bg-blue-700 rounded-full px-6 font-bold">Salvar Simulação</Button>
+            </div>
+          </div>
+
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center relative">
                <Shirt3DPreview 
                  frontImage=""
                  backImage=""
                />
             </div>
-          </div>
-          
-          <div className="absolute top-4 right-4 flex gap-2 z-20">
-            <Button variant="secondary" className="bg-white hover:bg-slate-50 text-slate-700 px-6 py-2 rounded-full shadow-md border-0 font-bold text-xs uppercase tracking-wider">
-              Girar
-            </Button>
-            <Button variant="secondary" onClick={() => setShow3D(false)} className="bg-white hover:bg-slate-50 text-slate-700 px-6 py-2 rounded-full shadow-md border-0 font-bold text-xs uppercase tracking-wider">
-              Fechar
-            </Button>
           </div>
         </main>
       </div>
