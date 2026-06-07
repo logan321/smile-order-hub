@@ -2404,49 +2404,24 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                         <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={8} max={220} /></div>
                       </div>
                       <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
-                      {stamps.length > 0 && (
-                        <div className="space-y-1.5 pt-1 border-t border-border/40">
-                          <label className="text-[10px] text-muted-foreground uppercase font-semibold">Estampa</label>
-                          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                            {stamps.map(s => (
-                              <button
-                                key={s.id}
-                                onClick={() => addStamp(s)}
-                                className={`flex-shrink-0 h-14 w-14 rounded-md border-2 overflow-hidden bg-muted transition-all ${appliedStamp?.id === s.id ? 'border-primary ring-2 ring-primary/30' : 'border-border/50 hover:border-primary/50'}`}
-                                title={s.name}
-                              >
-                                <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {Object.keys(uvMapZones).map((zoneKey) => {
-                        const layer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'text') as Extract<UvLayer, { type: 'text' }> | undefined;
-                        const imageLayer = uvLayers.find(l => l.zoneKey === zoneKey && l.type === 'image');
-                        return (
-                          <div key={zoneKey} className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-2">
-                            <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{zoneKey}</label>
-                            <Input
-                              value={uvTextDrafts[zoneKey] ?? layer?.content ?? ''}
-                              onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                              placeholder="Texto / nome / nº"
-                              className="h-8 text-sm"
-                            />
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs" onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()}><Upload className="h-3.5 w-3.5" /> Logo</Button>
-                              <Button variant="outline" size="sm" className="h-8 flex-1 gap-1 text-xs text-destructive" onClick={() => removeUvLayer(zoneKey)}><Trash2 className="h-3.5 w-3.5" /> Limpar</Button>
-                            </div>
-                            <input id={`uv-file-${zoneKey}`} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); e.currentTarget.value = ''; }} />
-                            {imageLayer && <p className="text-[10px] text-muted-foreground">Logo/imagem aplicada</p>}
-                          </div>
-                        );
-                      })}
+              {/* O conteúdo do dynamicSidebar é renderizado condicionalmente com base em activeTab */}
+              <div className="space-y-6">
+                {activeTab === 'stamps' && (
+                  <div>
+                    <h3 className="font-semibold mb-4">Escolha uma estampa</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {stamps.map(s => (
+                        <button key={s.id} onClick={() => addStamp(s)} className="border rounded-lg p-2 hover:border-orange-500">
+                          <img src={s.imageUrl} className="w-full aspect-square object-contain" />
+                          <p className="text-xs text-center mt-1">{s.name}</p>
+                        </button>
+                      ))}
                     </div>
-                    )}
-                    </>
-                  )}
-                </div>
+                  </div>
+                )}
+                {/* Outras seções aqui... */}
+              </div>
+
               )}
 
               {/* Editor agora é 100% 3D — o canvas 2D continua existindo apenas
