@@ -2480,25 +2480,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       )}
       {guideEnabled && <EditorGuide step={guideStep} onSkip={skipGuideStep} onDismissAll={dismissGuide} />}
 
-      <Dialog open={show3D} onOpenChange={setShow3D}>
-        <DialogContent className="max-w-3xl w-[95vw] h-[85vh] p-4 flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Box className="h-5 w-5 text-primary" />
-              Pré-visualização da camisa
-            </DialogTitle>
-          </DialogHeader>
-          {preview3D && (
-            <Preview3DTabs
-              front={preview3D.front}
-              back={preview3D.back}
-              uvMapUrl={selectedTemplate?.uvMapUrl ?? null}
-              cameraPosition={cameraPosition}
-              onCameraChange={setCameraPosition}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
