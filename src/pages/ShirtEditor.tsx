@@ -2077,7 +2077,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
 
           <aside className="hidden lg:flex lg:flex-col lg:w-20 lg:bg-white lg:border-r border-border shadow-sm z-40 h-full">
-          <aside className="hidden lg:flex lg:flex-col lg:w-20 lg:bg-white lg:border-r border-border shadow-sm z-40 h-full">
             <div className="flex flex-col items-center py-4 gap-6">
               {([
                 { id: 'stamps',   label: 'Modelo',    icon: Shirt },
