@@ -121,12 +121,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     const fetchData = async () => {
       setLoading(true);
       const { data: tData } = await supabase.from('shirt_templates').select('*');
-      const { data: sData } = await supabase.from('stamps').select('*');
-      const { data: pData } = await supabase.from('patches').select('*');
-      const { data: eData } = await supabase.from('emblems').select('*');
+      const { data: sData } = await (supabase as any).from('stamps').select('*');
+      const { data: pData } = await (supabase as any).from('patches').select('*');
+      const { data: eData } = await (supabase as any).from('emblems').select('*');
       
       setTemplates((tData as any[])?.filter(t => !isMisplacedStampTemplate(t)) || []);
-      setStamps(sData || []);
+      setStamps((sData as any) || []);
       setPatches(pData || []);
       setEmblems(eData || []);
       setLoading(false);
