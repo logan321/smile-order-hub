@@ -39,11 +39,19 @@ function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
 
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
-const isMisplacedStampTemplate = (template: Template) =>
-  isLikelyStampCode(template.name) && (
+const isMisplacedStampTemplate = (template: Template) => {
+  // Filter out items that are clearly UV maps or technical images
+  const isUvPath = (url: string) => /uv-library|uv-map|colorway/i.test(url);
+  
+  if (template.frontImageUrl === template.backImageUrl) return true;
+  if (isUvPath(template.frontImageUrl) || isUvPath(template.backImageUrl)) return true;
+  
+  // Original logic for stamp codes uploaded as templates
+  return isLikelyStampCode(template.name) && (
     /colorway/i.test(template.frontImageUrl) ||
     /colorway/i.test(template.backImageUrl)
   );
+};
 
 function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }: { front: string; back: string; uvMapUrl: string | null; cameraPosition: [number, number, number]; onCameraChange: (pos: [number, number, number]) => void }) {
   return (
