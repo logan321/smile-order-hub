@@ -2116,8 +2116,9 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5] z-10 h-full">
-          <aside className="hidden lg:flex lg:flex-col lg:w-[220px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
+        <div className="flex-1 flex overflow-hidden relative bg-[#f5f5f5] z-10 h-full">
+          {/* Sidebar ícones - sempre visível */}
+          <aside className="hidden lg:flex lg:flex-col lg:w-[80px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
             <div className="flex flex-col py-4 gap-1">
               {([
                 { id: 'stamps',   label: 'Estilo',       icon: ShirtIcon },
@@ -2132,22 +2133,20 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   <button
                     key={id}
                     onClick={() => setActiveTab(active ? null : id)}
-                    className={`flex flex-col items-center gap-1.5 group transition-all w-full py-5 relative border-l-[6px] ${active ? 'text-[#ea580c] border-[#ea580c] bg-orange-50/40' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
+                    className={`flex flex-col items-center gap-1.5 group transition-all w-full py-4 relative border-l-4 ${active ? 'text-[#ea580c] border-[#ea580c] bg-orange-50/40' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
                   >
-                    <Icon className={`h-8 w-8 transition-transform group-hover:scale-110 ${active ? 'text-[#ea580c]' : 'text-slate-500'}`} />
-                    <span className={`text-[12px] font-bold text-center leading-tight px-1 transition-colors ${active ? 'text-[#ea580c]' : 'text-slate-500 group-hover:text-slate-700'}`}>{label}</span>
+                    <Icon className={`h-6 w-6 transition-transform group-hover:scale-110 ${active ? 'text-[#ea580c]' : 'text-slate-500'}`} />
+                    <span className={`text-[10px] font-bold text-center leading-tight px-1 transition-colors ${active ? 'text-[#ea580c]' : 'text-slate-500 group-hover:text-slate-700'}`}>{label}</span>
                   </button>
                 );
               })}
             </div>
           </aside>
 
-          {/* Painel de Opções Lateral - Flutuante à direita da sidebar */}
+          {/* Painel de edição - coluna fixa, NUNCA overlay */}
           {activeTab && (
-            <>
-              <div className="fixed inset-0 bg-black/5 z-40 hidden lg:block" onClick={() => setActiveTab(null)} />
-              <aside className="hidden lg:block lg:w-[320px] lg:bg-white lg:border-r border-border p-5 overflow-y-auto animate-slide-in shadow-xl z-50 h-full absolute left-[220px] top-0 bottom-0 bg-white/95 backdrop-blur-sm">
-                {activeTab === 'stamps' && (
+            <aside className="hidden lg:block lg:w-[320px] lg:bg-white lg:border-r border-border p-5 overflow-y-auto z-30 h-full bg-white">
+              {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Estampa Selecionada</p>
                   {appliedStamp ? (
