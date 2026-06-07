@@ -2043,20 +2043,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       {/* Unified responsive layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
         {/* Desktop context menu (Camisa, Calção, Meião) */}
-        <div className="hidden lg:flex shrink-0 bg-white border-b border-border px-8 py-3 items-center justify-between z-30">
-          <div className="flex items-center gap-8">
-            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
-            <div className="flex bg-slate-100 p-1 rounded-lg">
-              <button className="px-4 py-1.5 text-xs font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
-              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600">Calção</button>
-              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600">Meião</button>
+        {/* Top bar with Tabs in center-ish and Right actions */}
+        <div className="hidden lg:flex shrink-0 bg-white border-b border-slate-200 px-6 py-2 items-center justify-between z-30">
+          <div className="flex items-center gap-6">
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
+            <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              <button className="px-4 py-1 text-[10px] font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
+              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Calção</button>
+              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Meião</button>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-200">
-               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-               <span className="text-[10px] font-bold text-slate-600 uppercase">Atendimento online (WhatsApp)</span>
-             </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="sync" className="h-4 w-4 accent-[#FF5C00]" />
+              <label htmlFor="sync" className="text-[10px] font-bold text-slate-700">Sincronizar Camisa e Calção</label>
+            </div>
           </div>
         </div>
 
