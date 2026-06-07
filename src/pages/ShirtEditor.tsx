@@ -2548,7 +2548,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                       <Sparkles className="h-4 w-4" />
                       {showUvPanel ? 'Fechar' : 'Personalizar'}
                     </button>
-                    {showUvPanel && (
+                    {USE_3D_SYSTEM && showUvPanel && (
                     <div className="absolute inset-x-2 bottom-2 lg:inset-x-auto lg:top-14 lg:right-2 lg:bottom-2 lg:w-[320px] z-30 max-h-[60vh] lg:max-h-[80%] overflow-y-auto bg-card/95 backdrop-blur border border-border rounded-xl shadow-2xl p-3 space-y-3 animate-fade-in">
                       <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="h-4 w-4 text-accent" />
