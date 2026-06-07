@@ -2229,10 +2229,82 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                <Button onClick={handleOpen3D} variant="secondary">Girar Camisa</Button>
             </div>
 
-            {/* Conteúdo do Preview 3D permanece igual */}
-            <div className="w-full h-full">
-              {/* ... render 3D ... */}
+            <div className="w-full h-full relative group">
+              <Shirt3DPreview
+                frontImage={selectedTemplate.frontImageUrl}
+                backImage={selectedTemplate.backImageUrl}
+                uvMapUrl={effectiveUvUrl}
+                uvCanvas={uvZonesActive ? uvComposite.canvas : uv3DCanvas}
+                uvVersion={uvZonesActive ? uvComposite.version : uvTextureVersion}
+                cameraPosition={cameraPosition}
+                autoRotate={false}
+              />
+              
+              {/* Controles de Visualização Jumptec style */}
+              <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-[#FF5A00] bg-background/90 backdrop-blur"
+                  onClick={() => setCameraPosition([0, 0.1, 5.2])}
+                >
+                  <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                  <span className="text-[10px] font-bold uppercase">Frente</span>
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-[#FF5A00] bg-background/90 backdrop-blur"
+                  onClick={() => setCameraPosition([0, 0.1, -5.2])}
+                >
+                  <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                  <span className="text-[10px] font-bold uppercase">Costas</span>
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-[#FF5A00] bg-background/90 backdrop-blur"
+                  onClick={() => setCameraPosition([-5.2, 0.1, 0])}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+                      <span className="text-[10px] font-black translate-y-[-1px]">LE</span>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Esquerda</span></span>
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="flex flex-col h-14 w-14 p-0 shadow-xl border-2 border-primary/20 hover:border-[#FF5A00] bg-background/90 backdrop-blur"
+                  onClick={() => setCameraPosition([5.2, 0.1, 0])}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <Shirt className="h-5 w-5 mb-0.5 text-primary" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+                      <span className="text-[10px] font-black translate-y-[-1px]">LD</span>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-bold uppercase leading-[1.05] text-center px-0.5 flex flex-col"><span>Lateral</span><span>Direita</span></span>
+                </Button>
+              </div>
+
+              {/* Botões de Zoom à Direita */}
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30">
+                <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00] transition-colors border-2 border-transparent active:scale-95" title="Aumentar Zoom">
+                  <ZoomIn className="h-6 w-6" />
+                </button>
+                <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00] transition-colors border-2 border-transparent active:scale-95" title="Diminuir Zoom">
+                  <ZoomOut className="h-6 w-6" />
+                </button>
+                <div className="h-px bg-gray-200 w-8 mx-auto" />
+                <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00] transition-colors border-2 border-transparent active:scale-95" onClick={() => { setCameraPosition([0, 0.1, 5.2]); setActiveView('front'); }} title="Resetar Visualização">
+                  <RotateCcw className="h-5 w-5" />
+                </button>
+              </div>
             </div>
+
           </div>
         </main>
 
