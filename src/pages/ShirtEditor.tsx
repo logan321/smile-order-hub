@@ -143,9 +143,29 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
         </div>
       </div>
       <p className="text-xs text-muted-foreground text-center mt-1">Arraste para girar · Use a roda do mouse / pinça para dar zoom</p>
-    </div>
-  );
-}
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-40 bg-white/90 backdrop-blur rounded-xl shadow-xl border border-slate-200 p-1.5 hidden lg:flex">
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ZoomIn className="h-5 w-5" /></button>
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ZoomOut className="h-5 w-5" /></button>
+        <div className="h-px bg-slate-200 mx-2 my-1" />
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ChevronLeft className="h-5 w-5 rotate-90" /></button>
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ChevronLeft className="h-5 w-5 -rotate-90" /></button>
+        <div className="h-px bg-slate-200 mx-2 my-1" />
+        <div className="flex flex-col gap-3 p-2">
+           <div className="flex items-center justify-between gap-4">
+             <Shirt className="h-4 w-4 text-slate-400" />
+             <div className="h-4 w-8 bg-[#FF5C00] rounded-full relative"><div className="absolute right-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
+           </div>
+           <div className="flex items-center justify-between gap-4 opacity-40">
+             <Box className="h-4 w-4 text-slate-400" />
+             <div className="h-4 w-8 bg-slate-200 rounded-full relative"><div className="absolute left-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
+           </div>
+           <div className="flex items-center justify-between gap-4 opacity-40">
+             <MapPin className="h-4 w-4 text-slate-400" />
+             <div className="h-4 w-8 bg-slate-200 rounded-full relative"><div className="absolute left-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
+           </div>
+        </div>
+      </div>
+      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground/60 text-center uppercase tracking-widest font-bold">Arraste para girar · Use a roda do mouse para zoom</p>
 
 
 interface ShirtEditorProps {
