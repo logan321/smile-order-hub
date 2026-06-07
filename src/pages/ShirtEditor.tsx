@@ -2070,9 +2070,150 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <h2 className="text-lg font-bold capitalize">{activeTab}</h2>
                 <button onClick={() => setActiveTab(null)}><X className="h-5 w-5" /></button>
               </div>
-              
-              {/* O conteúdo das seções aqui seria o mesmo, apenas movido para dentro */}
-              {/* (O conteúdo será preservado mantendo a lógica atual) */}
+              {/* Painel Dinâmico: Estampas */}
+              {activeTab === 'stamps' && (
+                <div className="animate-fade-in">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-4">Escolha uma estampa</p>
+                  {stamps.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center bg-muted/20 rounded-lg">Nenhuma estampa disponível</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {stamps.map(s => (
+                        <button key={s.id} onClick={() => addStamp(s)} className={`group rounded-xl border-2 p-1.5 transition-all bg-card hover:shadow-md ${appliedStamp?.id === s.id ? 'border-[#FF5A00] ring-2 ring-orange-100' : 'border-border/50 hover:border-[#FF5A00]/50'}`}>
+                          <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                          <p className="text-[10px] text-center text-muted-foreground mt-1.5 truncate group-hover:text-[#FF5A00] font-bold">{s.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {appliedStampColors.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-border/50">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase mb-3 tracking-wider">Cores disponíveis</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={switchToOriginalStamp} className={`h-8 w-8 rounded-full border-2 transition-all overflow-hidden ${!activeStampColorId ? 'border-[#FF5A00] ring-2 ring-orange-100 scale-110' : 'border-border'}`} title="Original">
+                          <img src={appliedStamp?.imageUrl} className="h-full w-full object-cover" />
+                        </button>
+                        {appliedStampColors.map(c => (
+                          <button key={c.id} onClick={() => switchStampColor(c)} className={`h-8 w-8 rounded-full border-2 transition-all ${activeStampColorId === c.id ? 'border-[#FF5A00] ring-2 ring-orange-100 scale-110' : 'border-border'}`} style={{ backgroundColor: c.colorHex }} title={c.colorName} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Painel Dinâmico: Texto */}
+              {activeTab === 'text' && (
+                <div className="space-y-5 animate-fade-in">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Personalizar Texto</p>
+                  <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto aqui..." className="min-h-[100px] text-sm resize-none focus:ring-[#FF5A00]" rows={3} />
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Fonte</label>
+                      <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-10"><SelectValue /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">Cor</label>
+                        <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-10 w-full rounded-lg border border-border cursor-pointer p-1" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase">Tamanho</label>
+                        <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-10" min={10} max={100} />
+                      </div>
+                    </div>
+                  </div>
+                  <Button size="lg" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full bg-[#FF5A00] hover:bg-[#e65100] font-bold gap-2"><Type className="h-4 w-4" /> ADICIONAR AO 3D</Button>
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Curvatura (Arco)</label>
+                      <span className="text-[10px] font-mono font-bold text-[#FF5A00]">{textCurvature}</span>
+                    </div>
+                    <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} className="py-2" />
+                  </div>
+                </div>
+              )}
+
+              {/* Painel Dinâmico: Nome e Número */}
+              {activeTab === 'name' && (
+                <div className="space-y-5 animate-fade-in">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Identificação</p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Nome do Jogador</label>
+                      <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="SILVA" className="h-11 uppercase font-black" maxLength={20} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Número</label>
+                      <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="10" className="h-11 text-xl font-black" maxLength={3} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <Button variant="outline" onClick={() => addNamePreset('arc')} className="h-12 text-xs font-bold border-2 hover:border-[#FF5A00] hover:text-[#FF5A00]">ESPORTIVO (ARCO)</Button>
+                    <Button variant="outline" onClick={() => addNamePreset('straight')} className="h-12 text-xs font-bold border-2 hover:border-[#FF5A00] hover:text-[#FF5A00]">PADRÃO (RETO)</Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Painel Dinâmico: Acabamentos / Peixes */}
+              {activeTab === 'patches' && (
+                <div className="animate-fade-in">
+                  <p className="text-xs font-bold text-muted-foreground uppercase mb-4 tracking-wider">{currentPatchLabel}</p>
+                  {patches.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center bg-muted/20 rounded-lg">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {patches.map(p => (
+                        <button key={p.id} onClick={() => handlePatchClick(p)} className="group rounded-xl border-2 border-border/50 p-1.5 transition-all bg-card hover:border-[#FF5A00] hover:shadow-md">
+                          <div className="w-full aspect-square bg-center bg-contain bg-no-repeat" style={{ backgroundImage: `url(${p.imageUrl})` }} />
+                          <p className="text-[9px] text-center text-muted-foreground mt-1 truncate font-bold group-hover:text-[#FF5A00]">{p.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Painel Dinâmico: Escudos / Emblemas */}
+              {activeTab === 'emblems' && (
+                <div className="space-y-5 animate-fade-in">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Escudos e Emblemas</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
+                      <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-xl border-2 border-border/50 p-1.5 transition-all bg-card hover:border-[#FF5A00]">
+                        <img src={em.imageUrl} className="w-full aspect-square object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                  <div onClick={() => emblemInputRef.current?.click()} className="flex flex-col items-center gap-2 py-6 border-2 border-dashed border-border rounded-2xl cursor-pointer hover:border-[#FF5A00] hover:bg-orange-50/30 transition-all">
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-[10px] font-black uppercase text-muted-foreground">Enviar meu escudo</span>
+                  </div>
+                  <input ref={emblemInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleEmblemUpload} className="hidden" />
+                </div>
+              )}
+
+              {/* Painel Dinâmico: Upload */}
+              {activeTab === 'logo' && (
+                <div className="space-y-5 animate-fade-in">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Importar Imagens</p>
+                  <div onClick={() => setShowLogoNotice(true)} className="flex flex-col items-center gap-3 py-10 border-2 border-dashed border-border rounded-2xl cursor-pointer hover:border-[#FF5A00] hover:bg-orange-50/30 transition-all">
+                    <div className="p-4 bg-orange-50 rounded-full text-[#FF5A00]"><Upload className="h-8 w-8" /></div>
+                    <div className="text-center">
+                      <span className="text-xs font-black uppercase block mb-1">Escolher Arquivo</span>
+                      <span className="text-[10px] text-muted-foreground uppercase">PNG, JPG ou SVG</span>
+                    </div>
+                  </div>
+                  <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                  <p className="text-[10px] text-muted-foreground text-center font-medium italic">A imagem será aplicada na <strong>{activeView === 'front' ? 'FRENTE' : 'COSTAS'}</strong> da camisa.</p>
+                </div>
+              )}
+
+              {/* Botão Global de Remover Selecionado */}
+              <div className="mt-8 pt-4 border-t border-border/50">
+                <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-2 text-destructive border-2 border-destructive/20 hover:bg-destructive/10 h-10 font-bold uppercase text-[10px] tracking-widest"><Trash2 className="h-4 w-4" /> REMOVER SELECIONADO</Button>
+              </div>
+
             </aside>
           )}
 
