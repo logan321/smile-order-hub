@@ -2109,7 +2109,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
+                    <div className="grid grid-cols-2 gap-3" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                           <StampThumb stampUrl={s.imageUrl} name={s.name} />
@@ -2153,7 +2153,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     <button className="flex-1 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700">Meião</button>
                   </div>
                   {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {patches.map(p => (
                         <button key={p.id} onClick={() => handlePatchClick(p)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
                           <div className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
