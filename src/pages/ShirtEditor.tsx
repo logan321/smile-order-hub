@@ -137,18 +137,32 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         let patchesQuery = (supabase as any).from('patch_catalog').select('*');
         let emblemsQuery = (supabase as any).from('emblems').select('*');
 
-        // Se houver um userId na URL, filtramos os dados para esse usuário específico
-        if (urlUserId) {
-          templatesQuery = templatesQuery.eq('user_id', urlUserId);
-          stampsQuery = stampsQuery.eq('user_id', urlUserId);
-          patchesQuery = patchesQuery.eq('user_id', urlUserId);
-          emblemsQuery = emblemsQuery.eq('user_id', urlUserId);
+        // Determina qual ID de usuário usar para o filtro
+        let filterUserId = urlUserId;
+        
+        if (useOwnAssets) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.id) {
+            filterUserId = session.user.id;
+          }
         }
 
-        const { data: tData } = await templatesQuery;
-        const { data: sData } = await stampsQuery;
-        const { data: pData } = await patchesQuery;
-        const { data: eData } = await emblemsQuery;
+        console.log('Filtrando dados para o usuário:', filterUserId);
+
+        // Se tivermos um ID para filtrar (seja da URL ou da sessão), aplicamos o filtro
+        if (filterUserId) {
+          templatesQuery = templatesQuery.eq('user_id', filterUserId);
+          stampsQuery = stampsQuery.eq('user_id', filterUserId);
+          patchesQuery = patchesQuery.eq('user_id', filterUserId);
+          emblemsQuery = emblemsQuery.eq('user_id', filterUserId);
+        }
+
+        const [{ data: tData }, { data: sData }, { data: pData }, { data: eData }] = await Promise.all([
+          templatesQuery,
+          stampsQuery,
+          patchesQuery,
+          emblemsQuery
+        ]);
         
         console.log('Templates data:', tData);
         console.log('Stamps data:', sData);
