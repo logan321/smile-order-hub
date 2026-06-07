@@ -2661,7 +2661,6 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 )}
               </div>
             )}
-            )}
                           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                             {stamps.map(s => (
                               <button
