@@ -823,10 +823,12 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         templateId: s.template_id ?? null,
         nicheId: s.niche_id ?? null,
       })).filter((s: any) => !/\/uv-library\//i.test(s.imageUrl || '')) ?? [];
-      const recoveredStamps = misplacedStampTemplates.map(t => ({
-        id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
-        uvMapId: t.uvMapId, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
-      }));
+      const recoveredStamps = misplacedStampTemplates
+        .filter(t => !/uv-library|uv-map/i.test(t.frontImageUrl || '') && t.frontImageUrl !== t.backImageUrl)
+        .map(t => ({
+          id: `template-${t.id}`, name: t.name, category: 'Geral', imageUrl: t.frontImageUrl, backImageUrl: t.backImageUrl,
+          uvMapId: t.uvMapId, uvMapUrl: t.uvMapUrl, nicheId: t.nicheId,
+        }));
       const allS = [...recoveredStamps, ...catalogStamps];
       setAllStamps(allS);
       setStamps(allS);
