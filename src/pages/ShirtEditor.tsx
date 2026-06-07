@@ -153,9 +153,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const syncUvLayers = useCallback(() => {
     const layers: UvLayer[] = [];
     
-    // Texto customizado - tentamos encontrar uma zona de texto ou usamos a primeira disponível
     const zoneKeys = Object.keys(uvMapZones);
-    const textZone = zoneKeys.find(k => k.toLowerCase().includes('text')) || zoneKeys[0];
+    if (zoneKeys.length === 0) return;
+
+    // Tentamos encontrar zonas específicas para cada tipo de conteúdo
+    const textZone = zoneKeys.find(k => k.toLowerCase().includes('text') || k.toLowerCase().includes('texto')) || zoneKeys[0];
+    const nameZone = zoneKeys.find(k => k.toLowerCase().includes('name') || k.toLowerCase().includes('nome')) || zoneKeys[1] || zoneKeys[0];
+    const numberZone = zoneKeys.find(k => k.toLowerCase().includes('number') || k.toLowerCase().includes('numero')) || zoneKeys[2] || zoneKeys[0];
+
+    console.log('Syncing UV Layers. Found zones:', { textZone, nameZone, numberZone });
 
     if (textInput && textZone) {
       layers.push({
@@ -164,17 +170,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         type: 'text',
         content: textInput,
         fontFamily,
-        fontSize: fontSize * 2, // Escala para o molde UV
+        fontSize: fontSize * 2.5,
         color: textColor,
         strokeColor,
         strokeWidth,
         curvature: textCurvature,
       });
     }
-
-    // Nome e Número - tentamos encontrar zonas específicas
-    const nameZone = zoneKeys.find(k => k.toLowerCase().includes('name')) || zoneKeys[0];
-    const numberZone = zoneKeys.find(k => k.toLowerCase().includes('number')) || zoneKeys[0];
 
     if (nameInput && nameZone) {
       layers.push({
@@ -183,7 +185,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         type: 'text',
         content: nameInput,
         fontFamily,
-        fontSize: fontSize * 3,
+        fontSize: fontSize * 3.5,
         color: textColor,
       });
     }
@@ -200,16 +202,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       });
     }
 
-    setUvLayers(layers);
+    // Mantemos as camadas de imagens (patches/emblemas) que já existiam
+    setUvLayers(prev => {
+      const imageLayers = prev.filter(l => l.type === 'image');
+      return [...imageLayers, ...layers];
+    });
   }, [textInput, nameInput, numberInput, fontFamily, fontSize, textColor, strokeColor, strokeWidth, textCurvature, uvMapZones]);
 
   useEffect(() => {
     syncUvLayers();
-  }, [syncUvLayers]);
-
-  useEffect(() => {
-    syncUvLayers();
-  }, [syncUvLayers]);
+  }, [textInput, nameInput, numberInput, fontFamily, fontSize, textColor, strokeColor, strokeWidth, textCurvature, uvMapZones, syncUvLayers]);
 
   // Load Data
   useEffect(() => {
