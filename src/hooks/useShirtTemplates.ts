@@ -17,17 +17,15 @@ const isLikelyStampTemplateRow = (t: Record<string, string | null | undefined>) 
   const back = t.back_image_url || '';
   const name = (t.name || '').trim();
 
-  // 1. Identical front/back usually means it's a technical placeholder or UV source
+  // 1. Identical front/back usually means it's a UV map reference or placeholder
   if (front && back && front === back) return true;
   
-  // 2. Filter out explicit uv-library paths
+  // 2. Specifically filter out uv-library paths
   if (/uv-library|uv-map/i.test(front) || /uv-library|uv-map/i.test(back)) return true;
 
-  // 3. Filter out designs (Colorways) from template selection
-  const isColorway = /Colorway/i.test(front) || /Colorway/i.test(back);
+  // 3. Original logic: name looks like a code AND it's a colorway/stamp
   const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name);
-  
-  return isColorway || nameLooksLikeCode;
+  return nameLooksLikeCode && /colorway|estampa|stamp/i.test(`${front} ${back}`);
 };
 
 export function useShirtTemplates(targetUserId?: string) {
