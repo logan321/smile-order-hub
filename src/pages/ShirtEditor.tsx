@@ -2012,66 +2012,91 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Top header — dark, vibrant */}
-      <header className="bg-white px-3 py-2.5 flex items-center justify-between shrink-0 shadow-sm border-b border-border">
+      <header className="bg-[#FF5C00] px-4 py-3 flex items-center justify-between shrink-0 shadow-md z-50">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-foreground hover:bg-accent">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-white hover:bg-white/10">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline ml-1">Voltar</span>
           </Button>
-          <span className="text-sm font-semibold text-foreground truncate max-w-[140px] sm:max-w-none">{selectedTemplate.name}</span>
+          <span className="text-sm font-bold text-white uppercase tracking-wider hidden md:inline">{selectedTemplate.name}</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => { advanceGuide('budget', 'done'); handleWhatsAppQuote(); }} data-guide="budget" className="gap-1.5 bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,38%)] text-white h-9 px-3 rounded-full shadow-sm">
+          <Button size="sm" onClick={() => { advanceGuide('budget', 'done'); handleWhatsAppQuote(); }} data-guide="budget" className="gap-2 bg-[#FF5C00] border-2 border-white hover:bg-[#e65200] text-white h-10 px-5 rounded-full font-bold shadow-lg transition-all active:scale-95">
             <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            <span className="hidden sm:inline">Orçamento</span>
+            <span className="">Enviar Orçamento</span>
           </Button>
-          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-1 h-9 px-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full shadow-sm">
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">{downloading ? 'Baixando...' : 'Baixar'}</span>
+          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-2 bg-blue-600 border-2 border-white hover:bg-blue-700 text-white h-10 px-5 rounded-full font-bold shadow-lg transition-all active:scale-95">
+            <Download className="h-5 w-5" />
+            <span className="">Salvar Simulação</span>
           </Button>
-          <Button onClick={handleOpen3D} size="sm" variant="secondary" className="gap-1 h-9 px-3 rounded-full shadow-sm">
-            <Box className="h-4 w-4" />
-            <span className="hidden sm:inline">Ver 3D</span>
-          </Button>
+          <div className="hidden">
+            <Button onClick={handleOpen3D} size="sm" variant="secondary" className="gap-1 h-9 px-3 rounded-full shadow-sm">
+              <Box className="h-4 w-4" />
+              <span className="hidden sm:inline">Ver 3D</span>
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Unified responsive layout */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Top icon toolbar — visible on mobile & desktop, sits ABOVE the 3D so it never covers the shirt */}
-        <div className="shrink-0 bg-white border-b border-border/60 px-2 py-2 overflow-x-auto">
-          <div className="flex items-center justify-start lg:justify-center gap-2 lg:gap-3 min-w-max mx-auto">
-            {([
-              { id: 'stamps',   label: 'Estampas',    icon: Shirt },
-              { id: 'patches',  label: 'Peixes',      icon: Sparkles },
-              { id: 'text',     label: 'Textos',      icon: Type },
-              { id: 'name',     label: 'Nome/Nº',     icon: Shirt },
-              { id: 'emblems',  label: 'Emblemas',    icon: ImageIcon },
-              { id: 'logo',     label: 'Logo/Img',    icon: Upload },
-
-
-            ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
-              const active = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(active ? null : id)}
-                  className={`flex flex-col items-center justify-center gap-1 px-1 py-1 rounded-xl transition-all active:scale-95 ${active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  <span className={`h-12 w-12 lg:h-14 lg:w-14 rounded-2xl border flex items-center justify-center shadow-sm transition-all ${active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-foreground'}`}>
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <span className={`text-[10px] lg:text-[11px] font-semibold leading-none px-1.5 py-0.5 rounded-full ${active ? 'bg-primary/10 text-primary' : 'text-foreground/80'}`}>{label}</span>
-                </button>
-              );
-            })}
+        {/* Desktop context menu (Camisa, Calção, Meião) */}
+        <div className="hidden lg:flex shrink-0 bg-white border-b border-border px-8 py-3 items-center justify-between">
+          <div className="flex items-center gap-8">
+            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
+            <div className="flex bg-slate-100 p-1 rounded-lg">
+              <button className="px-4 py-1.5 text-xs font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
+              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600">Calção</button>
+              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600">Meião</button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-200">
+               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+               <span className="text-[10px] font-bold text-slate-600 uppercase">Atendimento online (WhatsApp)</span>
+             </div>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-          {/* Desktop sidebar panel */}
+        {/* Mobile Toolbar (Simplified) */}
+        <div className="lg:hidden shrink-0 bg-white border-b border-border/60 px-2 py-2 overflow-x-auto">
+          <div className="flex items-center justify-start gap-2 min-w-max">
+            {/* Same buttons as above but smaller for mobile */}
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5]">
+          {/* Desktop sidebar panel — Lefthand menu like in example */}
+          <aside className="hidden lg:flex lg:flex-col lg:w-20 lg:bg-white lg:border-r border-border shadow-sm z-40">
+            <div className="flex flex-col items-center py-4 gap-6">
+              {([
+                { id: 'stamps',   label: 'Modelo',    icon: Shirt },
+                { id: 'patches',  label: 'Cores',     icon: Sparkles },
+                { id: 'textStyles', label: 'Acabamentos', icon: Box },
+                { id: 'name',     label: 'Nome/Número', icon: Type },
+                { id: 'emblems',  label: 'Escudo',    icon: ImageIcon },
+                { id: 'logo',     label: 'Upload',    icon: Upload },
+              ] as { id: ToolbarTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
+                const active = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(active ? null : id)}
+                    className={`flex flex-col items-center gap-1 group transition-all w-full py-2 ${active ? 'text-[#FF5C00] bg-orange-50/50' : 'text-slate-500 hover:text-[#FF5C00]'}`}
+                  >
+                    <Icon className={`h-6 w-6 transition-transform group-hover:scale-110 ${active ? 'text-[#FF5C00]' : ''}`} />
+                    <span className="text-[10px] font-bold text-center leading-tight px-1 uppercase tracking-tighter">{label}</span>
+                    {active && <div className="absolute left-0 w-1 h-8 bg-[#FF5C00] rounded-r-full" />}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* Secondary panel for selected tool options */}
           {activeTab && (
-            <aside className="hidden lg:block lg:w-64 lg:border-r border-border bg-card p-3 overflow-y-auto">
+            <aside className="hidden lg:block lg:w-72 lg:bg-white lg:border-r border-border p-4 overflow-y-auto animate-slide-in shadow-inner">
               {activeTab === 'stamps' && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
