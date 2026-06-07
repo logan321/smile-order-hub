@@ -44,7 +44,7 @@ interface Template { id: string; name: string; frontImageUrl: string; backImageU
 interface Stamp { id: string; name: string; imageUrl: string; }
 type ToolbarTab = 'stamps' | 'text' | 'name' | 'patches' | 'emblems' | 'logo' | null;
 
-const ShirtEditor = () => {
+const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const { userId } = useParams();
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
