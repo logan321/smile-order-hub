@@ -144,12 +144,21 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         setTemplates(validTemplates);
         
         // Map stamps to ensure they have the required fields if missing
-        const mappedStamps = (sData as any[])?.map(s => ({
-          ...s,
-          imageUrl: s.imageUrl || s.front_image_url || '',
-          backImageUrl: s.backImageUrl || s.back_image_url || null,
-          category: s.category || 'Geral'
-        })) || [];
+        const mappedStamps = (sData as any[])
+          ?.filter(s => {
+            // Se for um "uv-map" ou tiver cara de template técnico, filtramos do menu lateral
+            const name = (s.name || '').toLowerCase();
+            const url = (s.front_image_url || s.imageUrl || '').toLowerCase();
+            if (name.includes('uv') || url.includes('uv-map')) return false;
+            return true;
+          })
+          ?.map(s => ({
+            ...s,
+            imageUrl: s.front_image_url || s.imageUrl || '', // Miniatura para o menu
+            uvMapUrl: s.uv_map_url || s.uvMapUrl || null,    // Molde para o 3D
+            backImageUrl: s.back_image_url || s.backImageUrl || null,
+            category: s.category || 'Geral'
+          })) || [];
         
         setStamps(mappedStamps);
         setPatches(pData || []);
