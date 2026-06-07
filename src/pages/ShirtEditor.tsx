@@ -2077,9 +2077,181 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                 {activeTab === 'stamps' && 'Estampas'}
                 {activeTab === 'text' && 'Textos'}
-                {/* ... outros títulos */}
+                {activeTab === 'name' && 'Nome/Nº'}
+                {activeTab === 'emblems' && 'Escudo'}
+                {activeTab === 'logo' && 'Upload'}
+                {activeTab === 'patches' && currentPatchLabel}
               </h2>
-              {/* O conteúdo do painel lateral existente vem aqui */}
+              {/* O conteúdo do painel lateral existente */}
+              {activeTab === 'stamps' && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
+                  {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
+                    <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
+                      {stamps.map(s => (
+                        <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
+                          <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5 group-hover:text-primary transition-colors">{s.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {appliedStampColors.length > 0 && (
+                    <div className="mt-3 pt-2 border-t border-border/30" data-guide-desktop="stamp-color">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Cores - {appliedStamp?.name}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={switchToOriginalStamp}
+                          className={`h-8 w-8 rounded-full border-2 transition-all overflow-hidden ${!activeStampColorId ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
+                          title="Original"
+                        >
+                          <img src={appliedStamp?.imageUrl} alt="Original" className="h-full w-full object-cover" />
+                        </button>
+                        {appliedStampColors.map(c => (
+                          <button
+                            key={c.id}
+                            onClick={() => switchStampColor(c)}
+                            className={`h-8 w-8 rounded-full border-2 transition-all ${activeStampColorId === c.id ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:border-primary/50'}`}
+                            style={{ backgroundColor: c.colorHex }}
+                            title={c.colorName}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'patches' && (
+                <div className="patch-protected">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{currentPatchLabel}</p>
+                  {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {patches.map(p => (
+                        <button key={p.id} onClick={() => handlePatchClick(p)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
+                          <div className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
+                          <div className="absolute inset-0" onDragStart={e => e.preventDefault()} />
+                          <div className="pb-0.5 px-0.5 relative z-10"><p className="text-[9px] text-center text-muted-foreground truncate group-hover:text-primary transition-colors select-none">{p.name}</p></div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'text' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar texto</p>
+                  <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto... (Enter para quebrar linha)" className="min-h-[60px] text-sm resize-none" rows={2} />
+                  <div className="flex gap-2">
+                    <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-8 w-16 text-xs" min={10} max={72} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground whitespace-nowrap">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" checked={shadowEnabled} onChange={e => setShadowEnabled(e.target.checked)} className="rounded" />
+                      <span className="text-[10px] text-muted-foreground">Sombra</span>
+                    </label>
+                    {shadowEnabled && (
+                      <>
+                        <input type="color" value={shadowColor} onChange={e => setShadowColor(e.target.value)} className="h-6 w-6 rounded border border-border cursor-pointer" />
+                        <Input type="number" value={shadowBlur} onChange={e => setShadowBlur(Number(e.target.value))} className="h-7 w-12 text-xs" min={1} max={20} />
+                      </>
+                    )}
+                  </div>
+                  <div className="px-0 pt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-muted-foreground uppercase font-semibold">Curvatura (arco)</label>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{textCurvature}</span>
+                    </div>
+                    <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} step={1} />
+                  </div>
+                  {selectedTextStyle && (
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/30">
+                      <img src={selectedTextStyle.imageUrl} alt={selectedTextStyle.name} className="h-8 w-12 object-contain rounded protected-img" />
+                      <span className="text-[10px] text-foreground font-medium flex-1 truncate">{selectedTextStyle.name}</span>
+                      <button onClick={() => setSelectedTextStyle(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  )}
+                  {textStyles.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={() => setShowTextStylesOverlay(true)} className="w-full gap-1.5 h-8 mb-1"><Sparkles className="h-3.5 w-3.5" /> {selectedTextStyle ? 'Trocar Estilo' : 'Estilos de Texto'}</Button>
+                  )}
+                  <Button size="sm" onClick={handleAddTextClick} disabled={!textInput.trim()} className="w-full gap-1.5 h-8"><Type className="h-3.5 w-3.5" /> Adicionar</Button>
+                </div>
+              )}
+              {activeTab === 'name' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Nome e número</p>
+                  <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="Nome (ex: SILVA)" className="h-9 text-sm uppercase" maxLength={20} />
+                  <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="Número (opcional)" className="h-9 text-sm" maxLength={3} />
+                  <div className="flex gap-2">
+                    <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Fonte" /></SelectTrigger><SelectContent className="max-h-60">{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} className="text-xs" style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent></Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Cor</label><input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Contorno</label><input type="color" value={strokeColor} onChange={e => setStrokeColor(e.target.value)} className="h-7 w-7 rounded border border-border cursor-pointer" /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Esp.</label><Input type="number" value={strokeWidth} onChange={e => setStrokeWidth(Number(e.target.value))} className="h-7 w-16 text-xs" min={0} max={10} /></div>
+                    <div className="flex items-center gap-1.5"><label className="text-[10px] text-muted-foreground">Tam.</label><Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-7 w-16 text-xs" min={10} max={120} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button size="sm" variant="outline" onClick={() => addNamePreset('arc')} className="h-8 text-xs">Esportivo (arco)</Button>
+                    <Button size="sm" variant="outline" onClick={() => addNamePreset('straight')} className="h-8 text-xs">Reto</Button>
+                  </div>
+                </div>
+              )}
+              {activeTab === 'emblems' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Emblemas</p>
+                  {emblems.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
+                        <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={em.name}>
+                          <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 protected-img bg-muted/10" />
+                          <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {clientEmblems.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Meus emblemas</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {clientEmblems.map(em => (
+                          <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-primary/40 overflow-hidden bg-background">
+                            <img src={em.imageUrl} className="w-full aspect-square object-contain p-1 bg-muted/10" />
+                            <p className="text-[9px] text-center text-muted-foreground pb-0.5 truncate px-0.5">{em.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div onClick={() => emblemInputRef.current?.click()} className="flex items-center gap-2 px-3 py-3 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <div><span className="text-xs text-muted-foreground">Enviar meu emblema</span></div>
+                  </div>
+                  <input ref={emblemInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleEmblemUpload} className="hidden" />
+                </div>
+              )}
+              {activeTab === 'logo' && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Enviar logo ou imagem</p>
+                  <div
+                    onClick={() => setShowLogoNotice(true)}
+                    className="flex flex-col gap-2 items-center py-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <div className="text-center"><span className="text-sm text-muted-foreground">Enviar logo ou imagem</span><span className="text-[10px] text-muted-foreground/60 block">PNG, JPG, SVG ou WebP</span></div>
+                  </div>
+                  <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoUpload} className="hidden" />
+                </div>
+              )}
+              <div className="mt-4 pt-3 border-t border-border/30">
+                <Button variant="outline" size="sm" onClick={deleteSelected} className="w-full gap-1.5 text-destructive h-8 text-xs"><Trash2 className="h-3.5 w-3.5" /> Remover selecionado</Button>
+              </div>
             </div>
           )}
         </div>
