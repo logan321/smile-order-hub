@@ -613,13 +613,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
         // Start from UV image. If template (not stamp) UV, optionally overlay stamp.
         const base = appliedStamp?.uvMapUrl
           ? await (async () => {
-              const img = await loadUvImage(uv);
+              const proxyUv = toProxyUrl(uv);
+              const img = await loadUvImage(proxyUv);
               const c = document.createElement('canvas');
               c.width = img.naturalWidth; c.height = img.naturalHeight;
               c.getContext('2d')!.drawImage(img, 0, 0);
               return c;
             })()
-          : await composeUvWithStamp(uv, appliedStamp?.imageUrl ?? null);
+          : await composeUvWithStamp(toProxyUrl(uv), appliedStamp?.imageUrl ? toProxyUrl(appliedStamp.imageUrl) : null);
 
         const ctx = base.getContext('2d')!;
 
@@ -1214,31 +1215,40 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   };
 
   const addStamp = async (stamp: Stamp) => {
-    const frontCanvas = frontFabricRef.current;
-    const backCanvas = backFabricRef.current;
-    if (!frontCanvas || !backCanvas) return;
     // If the stamp is linked to a different template, swap the active template
     // so the 3D preview (UV + zones) reflects the template configured for it.
     if (stamp.templateId && stamp.templateId !== selectedTemplate?.id) {
       const linked = allTemplates.find(t => t.id === stamp.templateId);
       if (linked) setSelectedTemplate(linked);
     }
-    const backUrl = stamp.backImageUrl || stamp.imageUrl;
+
     try {
-      await Promise.all([
-        applyStampToCanvas(frontCanvas, toProxyUrl(stamp.imageUrl), 'front'),
-        applyStampToCanvas(backCanvas, toProxyUrl(backUrl), 'back'),
-      ]);
-      // stamp applied silently
-      // Tag stamp metadata on front canvas objects
-      frontCanvas.getObjects().forEach((obj: any) => {
-        if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
-      });
-      backCanvas.getObjects().forEach((obj: any) => {
-        if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
-      });
       setAppliedStamp(stamp);
       setActiveStampColorId(null);
+      
+      // Force 3D refresh since we are in USE_3D_SYSTEM mode
+      if (USE_3D_SYSTEM) {
+        setUvTextureVersion(v => v + 1);
+      } else {
+        // Legacy 2D system support (only if USE_3D_SYSTEM is false)
+        const frontCanvas = frontFabricRef.current;
+        const backCanvas = backFabricRef.current;
+        if (frontCanvas && backCanvas) {
+          const backUrl = stamp.backImageUrl || stamp.imageUrl;
+          await Promise.all([
+            applyStampToCanvas(frontCanvas, toProxyUrl(stamp.imageUrl), 'front'),
+            applyStampToCanvas(backCanvas, toProxyUrl(backUrl), 'back'),
+          ]);
+          
+          frontCanvas.getObjects().forEach((obj: any) => {
+            if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
+          });
+          backCanvas.getObjects().forEach((obj: any) => {
+            if (obj._isBackground) { obj._stampName = stamp.name; obj._stampCategory = stamp.category; }
+          });
+        }
+      }
+
       advanceGuide('stamp-pick', 'stamp-color');
       // Auto-advance to text-tab if no colors available
       const hasColors = stampColors.some(c => c.stampId === stamp.id);
