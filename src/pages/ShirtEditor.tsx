@@ -143,6 +143,31 @@ function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }
         </div>
       </div>
       <p className="text-xs text-muted-foreground text-center mt-1">Arraste para girar · Use a roda do mouse / pinça para dar zoom</p>
+      
+      {/* Right Controls Panel - Desktop ONLY */}
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-[60] bg-white/90 backdrop-blur rounded-xl shadow-xl border border-slate-200 p-1.5 hidden lg:flex">
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ZoomIn className="h-5 w-5" /></button>
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ZoomOut className="h-5 w-5" /></button>
+        <div className="h-px bg-slate-200 mx-2 my-1" />
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ChevronLeft className="h-5 w-5 rotate-90" /></button>
+        <button className="h-10 w-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><ChevronLeft className="h-5 w-5 -rotate-90" /></button>
+        <div className="h-px bg-slate-200 mx-2 my-1" />
+        <div className="flex flex-col gap-3 p-2">
+           <div className="flex items-center justify-between gap-4">
+             <Shirt className="h-4 w-4 text-slate-400" />
+             <div className="h-4 w-8 bg-[#FF5C00] rounded-full relative"><div className="absolute right-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
+           </div>
+           <div className="flex items-center justify-between gap-4 opacity-40">
+             <Box className="h-4 w-4 text-slate-400" />
+             <div className="h-4 w-8 bg-slate-200 rounded-full relative"><div className="absolute left-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
+           </div>
+           <div className="flex items-center justify-between gap-4 opacity-40">
+             <MapPin className="h-4 w-4 text-slate-400" />
+             <div className="h-4 w-8 bg-slate-200 rounded-full relative"><div className="absolute left-0.5 top-0.5 h-3 w-3 bg-white rounded-full" /></div>
+           </div>
+        </div>
+      </div>
+      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground/60 text-center uppercase tracking-widest font-bold">Arraste para girar · Use a roda do mouse para zoom</p>
     </div>
   );
 }
@@ -2012,51 +2037,47 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Top header — dark, vibrant */}
-      <header className="bg-[#FF5C00] px-4 py-3 flex items-center justify-between shrink-0 shadow-md z-50">
+      <header className="bg-[#FF5C00] px-4 py-2 flex items-center justify-between shrink-0 shadow-md z-50 h-16">
         <div className="flex items-center gap-4">
-          <img src="/public/uploads/colado-1780851991485.png" alt="Logo" className="h-10 w-auto brightness-0 invert" />
-          <div className="h-8 w-px bg-white/20 hidden md:block" />
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-white hover:bg-white/10">
-            <ChevronLeft className="h-4 w-4" />
-            <span className="hidden md:inline ml-1">Voltar ao Início</span>
-          </Button>
-          <span className="text-sm font-bold text-white uppercase tracking-wider hidden md:inline">{selectedTemplate.name}</span>
+          <img src="/public/uploads/colado-1780852436800.png" alt="Logo" className="h-10 w-auto brightness-0 invert" />
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => { advanceGuide('budget', 'done'); handleWhatsAppQuote(); }} data-guide="budget" className="gap-2 bg-[#FF5C00] border-2 border-white hover:bg-[#e65200] text-white h-10 px-5 rounded-full font-bold shadow-lg transition-all active:scale-95">
-            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            <span className="">Enviar Orçamento</span>
+        
+        {/* Central Circular Icons Menu like in example */}
+        <div className="hidden lg:flex items-center gap-1">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-10 w-10 rounded-full border-2 border-white/40 flex items-center justify-center text-white/60 hover:border-white hover:text-white transition-all cursor-pointer">
+              <Shirt className="h-5 w-5" />
+            </div>
+          ))}
+          <button className="ml-4 bg-white text-[#FF5C00] text-[10px] font-bold px-3 py-1 rounded-md uppercase">Ver Todos</button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="h-8 px-2 text-white hover:bg-white/10 hidden md:flex items-center">
+            <ChevronLeft className="h-4 w-4" />
+            <span className="ml-1 text-[10px] font-bold uppercase">Início</span>
           </Button>
-          <Button onClick={handleDownload} disabled={downloading} size="sm" className="gap-2 bg-blue-600 border-2 border-white hover:bg-blue-700 text-white h-10 px-5 rounded-full font-bold shadow-lg transition-all active:scale-95">
-            <Download className="h-5 w-5" />
-            <span className="">Salvar Simulação</span>
-          </Button>
-          <div className="hidden">
-            <Button onClick={handleOpen3D} size="sm" variant="secondary" className="gap-1 h-9 px-3 rounded-full shadow-sm">
-              <Box className="h-4 w-4" />
-              <span className="hidden sm:inline">Ver 3D</span>
-            </Button>
-          </div>
+          <div className="h-6 w-px bg-white/20 hidden md:block" />
+          <span className="text-[10px] font-bold text-white uppercase tracking-wider hidden md:inline truncate max-w-[100px]">{selectedTemplate.name}</span>
         </div>
       </header>
 
       {/* Unified responsive layout */}
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative z-10">
         {/* Desktop context menu (Camisa, Calção, Meião) */}
-        <div className="hidden lg:flex shrink-0 bg-white border-b border-border px-8 py-3 items-center justify-between z-30">
-          <div className="flex items-center gap-8">
-            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
-            <div className="flex bg-slate-100 p-1 rounded-lg">
-              <button className="px-4 py-1.5 text-xs font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
-              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600">Calção</button>
-              <button className="px-4 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600">Meião</button>
+        {/* Top bar with Tabs in center-ish and Right actions */}
+        <div className="hidden lg:flex shrink-0 bg-white border-b border-slate-200 px-6 py-2 items-center justify-between z-30">
+          <div className="flex items-center gap-6">
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
+            <div className="flex bg-slate-100 p-0.5 rounded-lg">
+              <button className="px-4 py-1 text-[10px] font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
+              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Calção</button>
+              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Meião</button>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-             <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-200">
-               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-               <span className="text-[10px] font-bold text-slate-600 uppercase">Atendimento online (WhatsApp)</span>
-             </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="sync" className="h-4 w-4 accent-[#FF5C00]" />
+              <label htmlFor="sync" className="text-[10px] font-bold text-slate-700">Sincronizar Camisa e Calção</label>
+            </div>
           </div>
         </div>
 
@@ -2067,8 +2088,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5]">
-          {/* Menu Lateral Esquerdo - FIXO e COMPACTO como no exemplo */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#f5f5f5] z-10">
+          {/* Floating action buttons in 3D area */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-4 z-[60] hidden lg:flex">
+            <Button size="sm" onClick={handleWhatsAppQuote} className="gap-2 bg-[#FF5C00] border-2 border-white hover:bg-[#e65200] text-white h-11 px-6 rounded-full font-bold shadow-xl transition-all active:scale-95">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              <span>Enviar Orçamento</span>
+            </Button>
+            <Button size="sm" onClick={handleDownload} disabled={downloading} className="gap-2 bg-[#2D60FF] border-2 border-white hover:bg-[#1E4DFF] text-white h-11 px-6 rounded-full font-bold shadow-xl transition-all active:scale-95">
+              <Download className="h-5 w-5" />
+              <span>Salvar Simulação</span>
+            </Button>
+          </div>
+
           <aside className="hidden lg:flex lg:flex-col lg:w-20 lg:bg-white lg:border-r border-border shadow-sm z-40 h-full">
             <div className="flex flex-col items-center py-4 gap-6">
               {([
@@ -2102,7 +2134,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2" data-guide-desktop="stamp-pick">
+                    <div className="grid grid-cols-2 gap-3" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                           <StampThumb stampUrl={s.imageUrl} name={s.name} />
@@ -2139,9 +2171,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               )}
               {activeTab === 'patches' && (
                 <div className="patch-protected">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">{currentPatchLabel}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Cores / Detalhes</p>
+                  <div className="flex bg-slate-100 p-0.5 rounded-lg mb-4">
+                    <button className="flex-1 py-1.5 text-[10px] font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
+                    <button className="flex-1 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700">Calção</button>
+                    <button className="flex-1 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700">Meião</button>
+                  </div>
                   {patches.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhum {currentPatchLabel.toLowerCase()} disponível</p>) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {patches.map(p => (
                         <button key={p.id} onClick={() => handlePatchClick(p)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background relative" title={p.name} onContextMenu={e => e.preventDefault()}>
                           <div className="w-full aspect-square p-1 bg-center bg-contain bg-no-repeat select-none" style={{ backgroundImage: `url(${p.imageUrl})` }} draggable={false} aria-hidden="true" />
@@ -2227,7 +2264,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                   {emblems.length === 0 ? (
                     <p className="text-[10px] text-muted-foreground text-center py-2">Nenhum emblema disponível</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {emblems.filter(e => !selectedNiche || !e.nicheId || e.nicheId === selectedNiche.id).map(em => (
                         <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={em.name}>
                           <img src={em.imageUrl} loading="lazy" className="w-full aspect-square object-contain p-1 protected-img bg-muted/10" />
@@ -2829,6 +2866,14 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           )}
         </DialogContent>
       </Dialog>
+      <footer className="hidden lg:flex bg-[#2D2D2D] text-white px-8 py-3 items-center justify-between z-50">
+        <div className="text-[10px] font-medium text-slate-400">
+          2025 Jumptec. Todos os direitos reservados.
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-black tracking-tighter uppercase italic">Jumptec</span>
+        </div>
+      </footer>
     </div>
   );
 };
