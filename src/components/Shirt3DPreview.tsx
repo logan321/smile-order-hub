@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Minus, RotateCcw, Maximize } from 'lucide-react';
 
 
 
@@ -128,6 +128,40 @@ export default function Shirt3DPreview({
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
 
+  const handleZoomIn = () => {
+    if (orbitRef.current) {
+      orbitRef.current.dollyIn(1.2);
+      orbitRef.current.update();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (orbitRef.current) {
+      orbitRef.current.dollyOut(1.2);
+      orbitRef.current.update();
+    }
+  };
+
+  const handleReset = () => {
+    if (orbitRef.current) {
+      const [x, y, z] = cameraPosition;
+      orbitRef.current.object.position.set(x, y, z);
+      orbitRef.current.target.set(0, 0, 0);
+      orbitRef.current.update();
+    }
+  };
+
+  const handleFullscreen = () => {
+    const container = orbitRef.current?.domElement?.parentElement;
+    if (container) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        container.requestFullscreen();
+      }
+    }
+  };
+
   useEffect(() => {
     if (orbitRef.current) {
       const [x, y, z] = cameraPosition;
@@ -182,14 +216,45 @@ export default function Shirt3DPreview({
         />
       </Canvas>
 
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+        <button 
+          onClick={handleZoomIn}
+          className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          title="Aumentar Zoom"
+        >
+          <Plus className="h-5 w-5 text-slate-600" />
+        </button>
+        <button 
+          onClick={handleZoomOut}
+          className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          title="Diminuir Zoom"
+        >
+          <Minus className="h-5 w-5 text-slate-600" />
+        </button>
+        <button 
+          onClick={handleReset}
+          className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          title="Resetar Câmera"
+        >
+          <RotateCcw className="h-5 w-5 text-slate-600" />
+        </button>
+        <button 
+          onClick={handleFullscreen}
+          className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          title="Tela Cheia"
+        >
+          <Maximize className="h-5 w-5 text-slate-600" />
+        </button>
+      </div>
+
       <div className="absolute top-2 right-2 flex gap-2">
         <Button
           size="sm"
           variant="secondary"
-          className="h-8 px-2 shadow-sm"
+          className="h-8 px-2 shadow-sm bg-white/80 backdrop-blur-sm"
           onClick={() => setRotating((r) => !r)}
         >
-          {rotating ? 'Pausar' : 'Girar'}
+          {rotating ? 'Pausar Rotação' : 'Girar Camisa'}
         </Button>
       </div>
 
