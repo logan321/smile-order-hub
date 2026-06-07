@@ -2059,14 +2059,17 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <div className="absolute inset-0 bg-background/50 pointer-events-none z-0" />
               )}
             {/* Desktop zoom bar */}
-            <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-3.5 w-3.5" /></Button>
-              <Slider value={[(activeView === 'front' ? frontZoom : backZoom) * 100]} onValueChange={([v]) => activeView === 'front' ? setFrontZoom(v / 100) : setBackZoom(v / 100)} min={30} max={250} step={5} className="w-52" />
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-3.5 w-3.5" /></Button>
-              <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round((activeView === 'front' ? frontZoom : backZoom) * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (activeView === 'front') setFrontZoom(1); else setBackZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }} title="Resetar zoom"><RotateCcw className="h-3.5 w-3.5" /></Button>
-            </div>
+            {show2DEditor && (
+              <div className="hidden lg:flex items-center justify-center gap-3 py-1.5 px-4 bg-card/50 border-b border-border/30">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">{activeView === 'front' ? 'Frente' : 'Costas'}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.max(0.3, Math.round((z - 0.15) * 100) / 100))}><ZoomOut className="h-3.5 w-3.5" /></Button>
+                <Slider value={[(activeView === 'front' ? frontZoom : backZoom) * 100]} onValueChange={([v]) => activeView === 'front' ? setFrontZoom(v / 100) : setBackZoom(v / 100)} min={30} max={250} step={5} className="w-52" />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFrontZoom(z => Math.min(2.5, Math.round((z + 0.15) * 100) / 100))}><ZoomIn className="h-3.5 w-3.5" /></Button>
+                <span className="text-xs font-medium text-muted-foreground w-10 text-center">{Math.round((activeView === 'front' ? frontZoom : backZoom) * 100)}%</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (activeView === 'front') setFrontZoom(1); else setBackZoom(1); const canvas = activeView === 'front' ? frontFabricRef.current : backFabricRef.current; if (canvas) { const vpt = canvas.viewportTransform!; vpt[4] = 0; vpt[5] = 0; canvas.requestRenderAll(); } }} title="Resetar zoom"><RotateCcw className="h-3.5 w-3.5" /></Button>
+              </div>
+            )}
+
 
             {/* Canvas container — single render, responsive display */}
             <div ref={mobileCanvasContainerRef} className={`flex-1 overflow-hidden p-0 lg:p-4 flex items-center justify-center relative ${!show2DEditor ? 'pointer-events-none' : ''}`}>
