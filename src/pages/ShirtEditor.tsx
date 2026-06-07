@@ -5,93 +5,178 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, ChevronLeft, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, ImageIcon, MapPin } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box } from 'lucide-react';
+import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
+import { Shadow } from 'fabric';
+import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
+import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
+import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
+import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
 import { useUvCompositor } from '@/hooks/useUvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 
-// Thumbnail helper
+// Thumbnail: show only the 2D front image uploaded for the stamp.
 function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
   return (
     <img
       src={stampUrl}
       alt={name}
       loading="lazy"
-      className="w-full aspect-square object-contain p-1 bg-muted/10"
+      decoding="async"
+      className="w-full aspect-square object-contain p-1 protected-img bg-muted/10"
     />
   );
 }
+
+const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
+
+const isMisplacedStampTemplate = (template: Template) => {
+  const front = template.frontImageUrl || '';
+  const back = template.backImageUrl || '';
+  const name = (template.name || '').trim();
+  if (front && back && front === back) return true;
+  if (/uv-library|uv-map/i.test(front) || /uv-library|uv-map/i.test(back)) return true;
+  const nameLooksLikeCode = /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name);
+  return nameLooksLikeCode && (/colorway/i.test(front) || /colorway/i.test(back));
+};
+
+function Preview3DTabs({ front, back, uvMapUrl, cameraPosition, onCameraChange }: { front: string; back: string; uvMapUrl: string | null; cameraPosition: [number, number, number]; onCameraChange: (pos: [number, number, number]) => void }) {
+  return (
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 relative">
+        <Shirt3DPreview 
+          frontImage={front} 
+          backImage={back} 
+          uvMapUrl={uvMapUrl} 
+          cameraPosition={cameraPosition}
+          autoRotate={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface Niche { id: string; name: string; icon: string; patchLabel: string; coverImageUrl: string; backgroundImageUrl: string; }
+interface Template { id: string; name: string; frontImageUrl: string; backImageUrl: string; uvMapUrl: string | null; uvMapId?: string | null; userId: string; nicheId: string | null; }
+interface Stamp { id: string; name: string; category: string; imageUrl: string; backImageUrl: string | null; uvMapUrl?: string | null; uvMapId?: string | null; templateId?: string | null; nicheId?: string | null; }
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
+type PatchSideChoice = 'front' | 'back' | 'both' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
 
 const FONT_OPTIONS = [
-  { label: 'Arial', value: 'Arial' },
-  { label: 'Impact', value: 'Impact' },
-  { label: 'Roboto', value: 'Roboto' },
-  { label: 'Montserrat', value: 'Montserrat' },
-  { label: 'Bebas Neue', value: 'Bebas Neue' },
+  { label: 'Arial', value: 'Arial', google: false },
+  { label: 'Impact', value: 'Impact', google: false },
+  { label: 'Roboto', value: 'Roboto', google: true },
+  { label: 'Montserrat', value: 'Montserrat', google: true },
+  { label: 'Bebas Neue', value: 'Bebas Neue', google: true },
 ];
 
-interface Niche { id: string; name: string; icon: string; backgroundImageUrl: string; }
-interface Template { id: string; name: string; frontImageUrl: string; backImageUrl: string; uvMapUrl: string | null; uvMapId?: string | null; }
-interface Stamp { id: string; name: string; imageUrl: string; }
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'patches' | 'emblems' | 'logo' | null;
-
 const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
-  const { userId } = useParams();
+  const { userId: urlUserId } = useParams<{ userId: string }>();
+  const frontCanvasRef = useRef<HTMLCanvasElement>(null);
+  const backCanvasRef = useRef<HTMLCanvasElement>(null);
+  const frontFabricRef = useRef<Canvas | null>(null);
+  const backFabricRef = useRef<Canvas | null>(null);
+  const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
+  
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [stamps, setStamps] = useState<Stamp[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
-  const [stamps, setStamps] = useState<Stamp[]>([]);
-  const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
 
-  // States for text/design (placeholders for actual logic)
-  const [textInput, setTextInput] = useState('');
+  // UV personalization logic (Restored from stable version)
+  const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
+  const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
+  const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
+  const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
+  const [appliedStampColors, setAppliedStampColors] = useState<StampColor[]>([]);
+  const [activeStampColorId, setActiveStampColorId] = useState<string | null>(null);
   const [textColor, setTextColor] = useState('#000000');
+  const [strokeColor, setStrokeColor] = useState('#FFFFFF');
+  const [strokeWidth, setStrokeWidth] = useState(0);
+  const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Arial');
-  const [fontSize, setFontSize] = useState(30);
+  const [textInput, setTextInput] = useState('');
+  const [textCurvature, setTextCurvature] = useState(0);
+  const [nameInput, setNameInput] = useState('');
+  const [numberInput, setNumberInput] = useState('');
+  const [patches, setPatches] = useState<any[]>([]);
+  const [emblems, setEmblems] = useState<any[]>([]);
+  const [currentPatchLabel, setCurrentPatchLabel] = useState('Peixes');
 
+  // Load Data
   useEffect(() => {
-    const loadData = async () => {
-      // Mock fetch or actual supabase calls would go here
-      // For now, setting loading false to show the layout
+    const fetchData = async () => {
+      setLoading(true);
+      const { data: tData } = await supabase.from('shirt_templates').select('*');
+      const { data: sData } = await supabase.from('stamps').select('*');
+      const { data: pData } = await supabase.from('patches').select('*');
+      const { data: eData } = await supabase.from('emblems').select('*');
+      
+      setTemplates((tData as any[])?.filter(t => !isMisplacedStampTemplate(t)) || []);
+      setStamps(sData || []);
+      setPatches(pData || []);
+      setEmblems(eData || []);
       setLoading(false);
     };
-    loadData();
+    fetchData();
   }, []);
 
-  const handleWhatsAppQuote = () => {
-    toast.success("Orçamento enviado!");
+  const uvComposite = useUvCompositor({
+    baseUrl: appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? null,
+    zones: uvMapZones,
+    layers: uvLayers,
+    uvWidth: uvMapDims.w,
+    uvHeight: uvMapDims.h,
+  });
+
+  const uvZonesActive = Object.keys(uvMapZones).length > 0;
+  const effectiveUvUrl = appliedStamp?.uvMapUrl ?? selectedTemplate?.uvMapUrl ?? null;
+
+  const addStamp = (s: Stamp) => {
+    setAppliedStamp(s);
+    toast.success(`Estampa ${s.name} selecionada`);
   };
 
-  const handleDownload = () => {
-    toast.info("Iniciando download...");
-  };
+  const handleWhatsAppQuote = () => toast.success("Orçamento enviado!");
+  const handleDownload = () => toast.info("Baixando...");
+  const handleOpen3D = () => setCameraPosition([0, 0.1, cameraPosition[2] === 5.2 ? -5.2 : 5.2]);
+  const deleteSelected = () => toast.info("Removendo selecionado...");
+  const handleAddTextClick = () => toast.success("Texto adicionado!");
+  const addNamePreset = (type: string) => toast.success(`Nome ${type} adicionado!`);
+  const handlePatchClick = (p: any) => toast.success(`${p.name} selecionado`);
+  const placeEmblemFromUrl = (url: string) => toast.success("Emblema adicionado");
+  const switchToOriginalStamp = () => setActiveStampColorId(null);
+  const switchStampColor = (c: any) => setActiveStampColorId(c.id);
+  const handleLogoUpload = () => toast.info("Enviando logo...");
+  const handleEmblemUpload = () => toast.info("Enviando emblema...");
 
   if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
-  if (!selectedTemplate) {
-    // Basic template picker if none selected (logic simplified for layout)
-    return (
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Escolha um Template</h1>
-        <Button onClick={() => setSelectedTemplate({ id: '1', name: 'Camiseta Básica', frontImageUrl: '', backImageUrl: '', uvMapUrl: '' })}>
-          Começar com Camiseta Básica
-        </Button>
-      </div>
-    );
-  }
+  if (!selectedTemplate) return (
+    <div className="p-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+      {templates.map(t => (
+        <button key={t.id} onClick={() => setSelectedTemplate(t)} className="border p-4 rounded-xl hover:border-[#FF5A00]">
+          <img src={t.frontImageUrl} className="w-full aspect-square object-contain" />
+          <p className="mt-2 font-bold">{t.name}</p>
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
-      {/* Header */}
       <header className="h-[60px] bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 z-50">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)}>
@@ -99,13 +184,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </Button>
           <span className="font-bold text-lg">{selectedTemplate.name}</span>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Status indicators or other info */}
-        </div>
       </header>
 
       <main className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 60px)' }}>
-        {/* Coluna 1: Navegação Vertical */}
+        {/* Coluna 1: Navegação */}
         <nav id="left-sidebar" className="w-20 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 flex flex-col items-center py-6 space-y-8 z-40">
           {[
             { id: 'stamps', label: 'Estampa', icon: Shirt },
@@ -117,145 +199,129 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           ].map(({ id, label, icon: Icon }) => {
             const active = activeTab === id;
             return (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id as ToolbarTab)}
-                className={`flex flex-col items-center gap-1.5 transition-colors ${active ? 'text-[#FF5A00]' : 'text-gray-400 hover:text-gray-600'}`}
-              >
-                <div className={`p-2 rounded-xl transition-all ${active ? 'bg-orange-50' : ''}`}>
-                  <Icon className="h-6 w-6" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-tight">{label}</span>
+              <button key={id} onClick={() => setActiveTab(id as ToolbarTab)} className={`flex flex-col items-center gap-1.5 transition-colors ${active ? 'text-[#FF5A00]' : 'text-gray-400 hover:text-gray-600'}`}>
+                <div className={`p-2 rounded-xl transition-all ${active ? 'bg-orange-50' : ''}`}><Icon className="h-6 w-6" /></div>
+                <span className="text-[10px] font-bold uppercase">{label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* Coluna 2: Painel Dinâmico de Configuração */}
-        <aside id="dynamicSidebar" className="w-80 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 overflow-y-auto h-full z-30">
-          <div className="p-6">
-            <header className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                {activeTab === 'stamps' && <><Shirt className="h-5 w-5 text-[#FF5A00]" /> Estampas</>}
-                {activeTab === 'text' && <><Type className="h-5 w-5 text-[#FF5A00]" /> Textos</>}
-                {activeTab === 'name' && <><Shirt className="h-5 w-5 text-[#FF5A00]" /> Nome e Número</>}
-                {activeTab === 'patches' && <><Sparkles className="h-5 w-5 text-[#FF5A00]" /> Acabamentos</>}
-                {activeTab === 'emblems' && <><Box className="h-5 w-5 text-[#FF5A00]" /> Escudos</>}
-                {activeTab === 'logo' && <><Upload className="h-5 w-5 text-[#FF5A00]" /> Uploads</>}
-              </h2>
-            </header>
-
-            <div className="space-y-6">
-              {activeTab === 'stamps' && (
+        {/* Coluna 2: Painel Dinâmico */}
+        <aside id="dynamicSidebar" className="w-80 bg-white shadow-lg border-r border-gray-200 flex-shrink-0 overflow-y-auto h-full z-30 p-6">
+          <div className="space-y-6">
+            {activeTab === 'stamps' && (
+              <div className="animate-fade-in">
+                <p className="text-xs font-bold text-muted-foreground uppercase mb-4 tracking-wider">Estampas</p>
                 <div className="grid grid-cols-2 gap-3">
                   {stamps.map(s => (
-                    <button key={s.id} className="border border-gray-100 rounded-xl p-2 hover:border-[#FF5A00] transition-all bg-gray-50/50">
-                      <img src={s.imageUrl} className="w-full aspect-square object-contain" />
-                      <p className="text-[10px] font-bold mt-2 truncate">{s.name}</p>
+                    <button key={s.id} onClick={() => addStamp(s)} className={`group rounded-xl border-2 p-1.5 transition-all bg-card hover:shadow-md ${appliedStamp?.id === s.id ? 'border-[#FF5A00]' : 'border-border/50 hover:border-[#FF5A00]/50'}`}>
+                      <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                      <p className="text-[10px] text-center mt-1.5 truncate font-bold">{s.name}</p>
                     </button>
                   ))}
-                  {stamps.length === 0 && <p className="text-sm text-gray-400 col-span-2 text-center py-8">Nenhuma estampa encontrada</p>}
                 </div>
-              )}
+              </div>
+            )}
 
-              {activeTab === 'text' && (
-                <div className="space-y-4">
-                  <Textarea 
-                    placeholder="Digite seu texto aqui..." 
-                    className="min-h-[100px] border-gray-200 focus:ring-[#FF5A00]"
-                  />
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-400 uppercase">Fonte</label>
-                      <Select value={fontFamily} onValueChange={setFontFamily}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {FONT_OPTIONS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex gap-4">
-                       <div className="flex-1 space-y-2">
-                         <label className="text-xs font-bold text-gray-400 uppercase">Cor</label>
-                         <div className="flex items-center gap-2">
-                           <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="w-full h-10 rounded-lg cursor-pointer border-none" />
-                         </div>
-                       </div>
-                       <div className="w-24 space-y-2">
-                         <label className="text-xs font-bold text-gray-400 uppercase">Tamanho</label>
-                         <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} />
-                       </div>
-                    </div>
-                  </div>
-                  <Button className="w-full bg-[#FF5A00] hover:bg-[#e65100] h-12 font-bold uppercase tracking-wider">Adicionar Texto</Button>
+            {activeTab === 'text' && (
+              <div className="space-y-5 animate-fade-in">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Textos</p>
+                <Textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Digite o texto..." className="min-h-[100px] focus:ring-[#FF5A00]" />
+                <Select value={fontFamily} onValueChange={setFontFamily}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>))}</SelectContent></Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-10 w-full rounded-lg cursor-pointer" />
+                  <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} />
                 </div>
-              )}
+                <Button onClick={handleAddTextClick} className="w-full bg-[#FF5A00]">ADICIONAR AO 3D</Button>
+                <Slider value={[textCurvature]} onValueChange={([v]) => setTextCurvature(v)} min={-100} max={100} />
+              </div>
+            )}
 
-              {/* Other sections placeholders - keeping the logic structure for name, logo, etc. */}
-              {activeTab === 'name' && (
-                 <div className="space-y-4">
-                    <Input placeholder="NOME DO JOGADOR" className="uppercase font-bold" />
-                    <Input placeholder="00" className="text-center text-2xl font-black h-16" />
-                    <Button className="w-full bg-[#FF5A00] hover:bg-[#e65100] h-12 font-bold uppercase tracking-wider">Aplicar ao Uniforme</Button>
-                 </div>
-              )}
-
-              {activeTab === 'logo' && (
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-gray-50 hover:bg-white hover:border-[#FF5A00] transition-all cursor-pointer">
-                    <Upload className="h-8 w-8 text-gray-400" />
-                    <span className="text-xs font-bold text-gray-500 text-center">ARRASTE OU CLIQUE PARA ENVIAR LOGO (PNG/SVG)</span>
-                  </div>
+            {activeTab === 'name' && (
+              <div className="space-y-5 animate-fade-in">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Identificação</p>
+                <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="NOME" className="h-11 uppercase font-black" />
+                <Input value={numberInput} onChange={e => setNumberInput(e.target.value)} placeholder="10" className="h-11 text-xl font-black" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" onClick={() => addNamePreset('arc')}>ARCO</Button>
+                  <Button variant="outline" onClick={() => addNamePreset('straight')}>RETO</Button>
                 </div>
-              )}
+              </div>
+            )}
+
+            {activeTab === 'patches' && (
+              <div className="animate-fade-in">
+                <p className="text-xs font-bold text-muted-foreground uppercase mb-4 tracking-wider">{currentPatchLabel}</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {patches.map(p => (
+                    <button key={p.id} onClick={() => handlePatchClick(p)} className="rounded-xl border-2 border-border/50 p-1.5 bg-card hover:border-[#FF5A00]">
+                      <div className="w-full aspect-square bg-center bg-contain bg-no-repeat" style={{ backgroundImage: `url(${p.imageUrl})` }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'emblems' && (
+              <div className="space-y-5 animate-fade-in">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Escudos</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {emblems.map(em => (
+                    <button key={em.id} onClick={() => placeEmblemFromUrl(em.imageUrl)} className="rounded-xl border-2 border-border/50 p-1.5 bg-card hover:border-[#FF5A00]">
+                      <img src={em.imageUrl} className="w-full aspect-square object-contain" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'logo' && (
+              <div className="space-y-5 animate-fade-in">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Upload</p>
+                <div className="border-2 border-dashed rounded-2xl py-10 flex flex-col items-center gap-3 hover:border-[#FF5A00] transition-all cursor-pointer">
+                  <Upload className="h-8 w-8 text-[#FF5A00]" />
+                  <span className="text-xs font-black">ENVIAR ARQUIVO</span>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-8 pt-4 border-t border-border/50">
+              <Button variant="outline" onClick={deleteSelected} className="w-full text-destructive hover:bg-destructive/10">REMOVER SELECIONADO</Button>
             </div>
           </div>
         </aside>
 
         {/* Coluna 3: Simulador 3D */}
         <section className="flex-1 relative bg-[#F8F9FA] z-20">
-          {/* Botões Superiores */}
           <div className="absolute top-6 left-6 z-50">
-            <Button variant="outline" className="rounded-full shadow-lg bg-white border-none h-12 px-6 font-bold flex gap-2 hover:scale-105 transition-transform" onClick={() => setCameraPosition([0, 0.1, cameraPosition[2] === 5.2 ? -5.2 : 5.2])}>
+            <Button variant="outline" className="rounded-full shadow-lg bg-white border-none h-12 px-6 font-bold flex gap-2" onClick={handleOpen3D}>
               <RotateCcw className="h-5 w-5 text-[#FF5A00]" /> Girar Camisa
             </Button>
           </div>
-
           <div className="absolute top-6 right-6 z-50 flex gap-3">
-            <Button variant="outline" className="rounded-full shadow-lg bg-white border-none h-12 px-6 font-bold hover:scale-105 transition-transform" onClick={handleDownload}>
-              Salvar Simulação
-            </Button>
-            <Button className="rounded-full shadow-lg bg-[#FF5A00] hover:bg-[#e65100] border-none h-12 px-8 font-black uppercase tracking-wider hover:scale-105 transition-transform" onClick={handleWhatsAppQuote}>
-              Enviar Orçamento
-            </Button>
+            <Button variant="outline" className="rounded-full shadow-lg bg-white border-none h-12 px-6" onClick={handleDownload}>Salvar Simulação</Button>
+            <Button className="rounded-full shadow-lg bg-[#FF5A00] hover:bg-[#e65100] h-12 px-8 font-black uppercase tracking-wider" onClick={handleWhatsAppQuote}>Enviar Orçamento</Button>
           </div>
 
-          {/* Simulador 3D Real ocupar o centro */}
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full">
             <Shirt3DPreview 
               frontImage={selectedTemplate.frontImageUrl}
               backImage={selectedTemplate.backImageUrl}
-              uvMapUrl={selectedTemplate.uvMapUrl}
+              uvMapUrl={effectiveUvUrl}
+              uvCanvas={uvZonesActive ? uvComposite.canvas : null}
+              uvVersion={uvZonesActive ? uvComposite.version : 0}
               cameraPosition={cameraPosition}
               autoRotate={false}
             />
           </div>
 
-          {/* Controles de Visualização à Direita */}
           <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-50">
-            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00] transition-colors" title="Zoom In">
-              <ZoomIn className="h-6 w-6" />
-            </button>
-            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00] transition-colors" title="Zoom Out">
-              <ZoomOut className="h-6 w-6" />
-            </button>
+            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]"><ZoomIn className="h-6 w-6" /></button>
+            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]"><ZoomOut className="h-6 w-6" /></button>
             <div className="h-px bg-gray-200 w-8 mx-auto" />
-            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00] transition-colors" onClick={() => setActiveView('front')}>
-              <span className="text-[10px] font-black">FR</span>
-            </button>
-            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00] transition-colors" onClick={() => setActiveView('back')}>
-              <span className="text-[10px] font-black">CO</span>
-            </button>
+            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]" onClick={() => setCameraPosition([0, 0.1, 5.2])}><span className="text-[10px] font-black">FR</span></button>
+            <button className="w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center hover:text-[#FF5A00]" onClick={() => setCameraPosition([0, 0.1, -5.2])}><span className="text-[10px] font-black">CO</span></button>
           </div>
         </section>
       </main>
