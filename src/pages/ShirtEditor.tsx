@@ -238,8 +238,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           <div className="absolute inset-0 flex items-center justify-center p-8">
             <div className="w-full h-full max-h-[80vh] flex items-center justify-center relative">
                <Shirt3DPreview 
-                 template={selectedTemplate} 
-                 appliedStamp={appliedStamp}
+                 frontImage=""
+                 backImage=""
                  className="w-full h-full"
                />
             </div>
