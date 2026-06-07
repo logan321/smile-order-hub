@@ -1466,6 +1466,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const currentZoneKey = pendingLogoZoneKeyRef.current;
+    if (currentZoneKey) {
+      setUvLayerImage(currentZoneKey, file);
+      pendingLogoZoneKeyRef.current = '';
+      e.target.value = '';
+      return;
+    }
     e.target.value = '';
     const zonesForSide = templateZones.filter(z => !z.patchOnly && zoneMatchesSide(z, activeView));
     if (zonesForSide.length > 0) { setPendingLogoFile(file); setShowZonePicker('logo'); }
