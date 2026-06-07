@@ -146,16 +146,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         // Map stamps to ensure they have the required fields if missing
         const mappedStamps = (sData as any[])
           ?.filter(s => {
-            // Se for um "uv-map" ou tiver cara de template técnico, filtramos do menu lateral
+            // Regra estrita: apenas o que estiver explicitamente no catálogo de estampas
+            // Filtramos qualquer coisa que contenha "uv" no nome ou na URL, ou que pareça ser um molde técnico
             const name = (s.name || '').toLowerCase();
-            const url = (s.front_image_url || s.imageUrl || '').toLowerCase();
-            if (name.includes('uv') || url.includes('uv-map')) return false;
-            return true;
+            const url = (s.image_url || s.imageUrl || s.front_image_url || '').toLowerCase();
+            if (name.includes('uv') || name.includes('map') || url.includes('uv-map') || url.includes('technical')) return false;
+            
+            // Garante que tenha uma imagem válida para exibir
+            return !!url;
           })
           ?.map(s => ({
             ...s,
-            imageUrl: s.front_image_url || s.imageUrl || '', // Miniatura para o menu
-            uvMapUrl: s.uv_map_url || s.uvMapUrl || null,    // Molde para o 3D
+            imageUrl: s.image_url || s.front_image_url || s.imageUrl || '', 
+            uvMapUrl: s.uv_map_url || s.uvMapUrl || null,
             backImageUrl: s.back_image_url || s.backImageUrl || null,
             category: s.category || 'Geral'
           })) || [];
@@ -164,7 +167,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         setPatches(pData || []);
         setEmblems(eData || []);
         
-        // Auto-select first template for testing if none selected
+        // Auto-select first template if none selected
         if (validTemplates.length > 0 && !selectedTemplate) {
           setSelectedTemplate(validTemplates[0]);
         }
