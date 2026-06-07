@@ -91,7 +91,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative bg-[#f5f5f5] z-10 h-full">
+      <div className="flex-1 flex overflow-hidden relative bg-[#f5f5f5] z-10 h-[calc(100dvh-80px)]">
         <aside className="hidden lg:flex lg:flex-col lg:w-[80px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
           <div className="flex flex-col py-4 gap-1">
             {[
