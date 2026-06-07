@@ -501,6 +501,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
     reader.readAsDataURL(file);
   };
 
+  const setUvLayerColor = (zoneKey: string, color: string) => {
+    setUvLayers(prev => [
+      ...prev.filter(l => !(l.zoneKey === zoneKey && l.type === 'color')),
+      { id: `${zoneKey}_color_${Date.now()}`, zoneKey, type: 'color', color, opacity: 1 } as UvLayer,
+    ]);
+  };
+
   const removeUvLayer = (zoneKey: string, type?: 'text' | 'image') => {
     setUvLayers(prev => prev.filter(l => l.zoneKey !== zoneKey || (type ? l.type !== type : false)));
     if (!type || type === 'text') setUvTextDrafts(prev => ({ ...prev, [zoneKey]: '' }));
