@@ -128,9 +128,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </TooltipProvider>
         </aside>
 
-        {activeTab && (
-          <aside className="hidden lg:flex lg:flex-col lg:w-[300px] lg:bg-white lg:border-r border-border z-30 h-full">
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <aside className="hidden lg:flex lg:flex-col lg:w-[300px] lg:bg-white lg:border-r border-border z-30 h-full">
+          <div className="flex-1 overflow-y-auto p-5 space-y-6">
+            {!activeTab && (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
+                <Box className="h-8 w-8 opacity-20" />
+                <p className="text-xs font-medium">Selecione uma categoria para editar</p>
+              </div>
+            )}
+
               {/* 1. Personalização UV - Estilo */}
               {activeTab === 'stamps' && (
                 <>
