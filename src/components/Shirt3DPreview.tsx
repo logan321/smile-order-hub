@@ -123,7 +123,7 @@ export default function Shirt3DPreview({
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
-  cameraPosition = [0, 0.1, 5.2],
+  cameraPosition = [0, 0.1, 4.0],
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
