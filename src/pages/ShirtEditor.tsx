@@ -2094,15 +2094,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               {(activeTab === 'colors' || activeTab === 'finishings') && (
                 <div className="space-y-6">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Personalizar Cores</p>
-                  {Object.entries(uvMapZones).filter(([_, z]) => {
-                    const isFinish = /gola|punho|vivo|manga|lateral/i.test(z.name);
-                    return activeTab === 'finishings' ? isFinish : !isFinish && !/nome|numero|número|escudo|emblema|logo/i.test(z.name);
+                  {Object.entries(uvMapZones).filter(([key, z]) => {
+                    const isFinish = /gola|punho|vivo|manga|lateral/i.test(key);
+                    return activeTab === 'finishings' ? isFinish : !isFinish && !/nome|numero|número|escudo|emblema|logo/i.test(key);
                   }).map(([key, zone]) => {
                     const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'color');
                     return (
                       <div key={key} className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/10">
                         <label className="text-xs font-bold uppercase tracking-wide flex justify-between">
-                          {zone.name}
+                          {key}
                           {layer && <span className="text-[10px] text-[#FF5A00]">Ativo</span>}
                         </label>
                         <div className="flex items-center gap-3">
@@ -2127,15 +2127,15 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               {activeTab === 'name' && (
                 <div className="space-y-6">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Personalizar Nome e Número</p>
-                  {Object.entries(uvMapZones).filter(([_, z]) => /nome|numero|número/i.test(z.name)).map(([key, zone]) => {
+                  {Object.entries(uvMapZones).filter(([key, z]) => /nome|numero|número/i.test(key)).map(([key, zone]) => {
                     const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'text');
                     return (
                       <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{zone.name}</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{key}</label>
                         <Input
                           value={uvTextDrafts[key] ?? (layer?.type === 'text' ? layer.content : '')}
                           onChange={e => setUvLayerText(key, e.target.value)}
-                          placeholder={`Digite o ${zone.name.toLowerCase()}...`}
+                          placeholder={`Digite o ${key.toLowerCase()}...`}
                           className="h-10 font-bold text-base"
                         />
                         <div className="flex items-center gap-3 pt-1">
@@ -2189,11 +2189,11 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
               {activeTab === 'emblems' && (
                 <div className="space-y-6">
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Escudos e Emblemas</p>
-                  {Object.entries(uvMapZones).filter(([_, z]) => /escudo|emblema|logo/i.test(z.name)).map(([key, zone]) => {
+                  {Object.entries(uvMapZones).filter(([key, z]) => /escudo|emblema|logo/i.test(key)).map(([key, zone]) => {
                     const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'image');
                     return (
                       <div key={key} className="space-y-3 p-4 rounded-xl border border-border/50 bg-muted/10 shadow-sm">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{zone.name}</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{key}</label>
                         <div
                           onClick={() => { pendingLogoZoneKeyRef.current = key; logoInputRef.current?.click(); }}
                           className="group relative h-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-[#FF5A00] transition-all overflow-hidden bg-white"
@@ -2216,14 +2216,13 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                     );
                   })}
                   
-                  {/* Catalog emblems fallback if no specific zones or as extra */}
+                  {/* Catalog emblems fallback */}
                   <div className="pt-4 border-t border-border/30">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase mb-3">Catálogo de Emblemas</p>
                     <div className="grid grid-cols-3 gap-2">
                       {emblems.map(em => (
                         <button key={em.id} onClick={() => { 
-                          // If there's an active logo/emblem zone, apply to it
-                          const firstZoneKey = Object.keys(uvMapZones).find(k => /escudo|emblema|logo/i.test(uvMapZones[k].name));
+                          const firstZoneKey = Object.keys(uvMapZones).find(k => /escudo|emblema|logo/i.test(k));
                           if (firstZoneKey) {
                             setUvLayers(prev => [
                               ...prev.filter(l => !(l.zoneKey === firstZoneKey && l.type === 'image')),
