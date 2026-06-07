@@ -5,12 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Palette, Scissors, Shield } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt as ShirtIcon, Sparkles, X, Hand, Box, Palette, Scissors, Shield } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
@@ -2067,18 +2068,19 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative z-10">
         {/* Desktop context menu (Camisa, Calção, Meião) */}
         {/* Top bar with Tabs in center-ish and Right actions */}
-        <div className="hidden lg:flex shrink-0 bg-white border-b border-slate-200 px-6 py-2 items-center justify-between z-30">
-          <div className="flex items-center gap-6">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Modelos / Estampas</h2>
-            <div className="flex bg-slate-100 p-0.5 rounded-lg">
-              <button className="px-4 py-1 text-[10px] font-bold bg-white text-[#FF5C00] rounded shadow-sm">Camisa</button>
-              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Calção</button>
-              <button className="px-4 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700">Meião</button>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="sync" className="h-4 w-4 accent-[#FF5C00]" />
-              <label htmlFor="sync" className="text-[10px] font-bold text-slate-700">Sincronizar Camisa e Calção</label>
-            </div>
+        <div className="hidden lg:flex shrink-0 bg-white border-b px-4 py-2 flex items-center gap-4 z-30">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ShirtIcon className="h-4 w-4" />
+            Modelos / Estampas
+          </div>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 text-sm rounded-full bg-orange-100 text-orange-700">Camisa</button>
+            <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Calção</button>
+            <button className="px-3 py-1 text-sm rounded-full text-gray-500 hover:bg-gray-100">Meião</button>
+          </div>
+          <div className="ml-auto flex items-center gap-2 text-xs">
+            <span className="text-gray-500">Sincronizar Camisa e Calção</span>
+            <Switch />
           </div>
         </div>
 
@@ -2093,7 +2095,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
           <aside className="hidden lg:flex lg:flex-col lg:w-[220px] lg:bg-white lg:border-r border-slate-200 shadow-sm z-40 h-full">
             <div className="flex flex-col py-4 gap-1">
               {([
-                { id: 'stamps',   label: 'Estilo',       icon: Shirt },
+                { id: 'stamps',   label: 'Estilo',       icon: ShirtIcon },
                 { id: 'patches',  label: 'Cores',        icon: Palette },
                 { id: 'textStyles', label: 'Acabamentos',  icon: Scissors },
                 { id: 'name',     label: 'Nome/Número',  icon: Type },
@@ -2124,7 +2126,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Escolha uma estampa</p>
                   {stamps.length === 0 ? (<p className="text-xs text-muted-foreground py-4 text-center">Nenhuma estampa disponível</p>) : (
-                    <div className="grid grid-cols-2 gap-3" data-guide-desktop="stamp-pick">
+                    <div className="grid grid-cols-4 gap-3" data-guide-desktop="stamp-pick">
                       {stamps.map(s => (
                         <button key={s.id} onClick={() => addStamp(s)} className="group rounded-lg border border-border/50 overflow-hidden hover:border-primary/50 hover:shadow-sm transition-all bg-background" title={s.name}>
                           <StampThumb stampUrl={s.imageUrl} name={s.name} />
