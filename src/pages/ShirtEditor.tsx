@@ -377,6 +377,7 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
   const [editsVersion, setEditsVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
+  const pendingLogoZoneKeyRef = useRef<string>('');
 
 
   // Debounced bump: re-composite the UV texture at most every ~120ms while the
