@@ -2098,12 +2098,45 @@ const ShirtEditor = ({ useOwnAssets }: ShirtEditorProps) => {
                 </div>
               )}
 
-              {(activeTab === 'colors' || activeTab === 'finishings') && (
+              {activeTab === 'colors' && (
                 <div className="space-y-6">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">Personalizar Cores</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Cores da Estampa</p>
+                  <p className="text-[11px] text-muted-foreground">Selecione uma cor para as zonas da estampa.</p>
                   {Object.entries(uvMapZones).filter(([key, z]) => {
-                    const isFinish = /gola|punho|vivo|manga|lateral/i.test(key);
-                    return activeTab === 'finishings' ? isFinish : !isFinish && !/nome|numero|número|escudo|emblema|logo/i.test(key);
+                    return !/gola|punho|vivo|manga|lateral|nome|numero|número|escudo|emblema|logo/i.test(key);
+                  }).map(([key, zone]) => {
+                    const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'color');
+                    return (
+                      <div key={key} className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/10">
+                        <label className="text-xs font-bold uppercase tracking-wide flex justify-between">
+                          {key}
+                          {layer && <span className="text-[10px] text-[#FF5A00]">Ativo</span>}
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={layer?.type === 'color' ? layer.color : '#ffffff'}
+                            onChange={e => setUvLayerColor(key, e.target.value)}
+                            className="h-10 w-10 rounded-lg border border-border cursor-pointer shadow-sm"
+                          />
+                          <Input
+                            value={layer?.type === 'color' ? layer.color : '#ffffff'}
+                            onChange={e => setUvLayerColor(key, e.target.value)}
+                            className="h-9 font-mono text-xs uppercase"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {activeTab === 'finishings' && (
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Modelos e Acabamento</p>
+                  <p className="text-[11px] text-muted-foreground italic">Selecione o estilo de gola e acabamento.</p>
+                  {Object.entries(uvMapZones).filter(([key, z]) => {
+                    return /gola|punho|vivo|manga|lateral/i.test(key);
                   }).map(([key, zone]) => {
                     const layer = uvLayers.find(l => l.zoneKey === key && l.type === 'color');
                     return (
