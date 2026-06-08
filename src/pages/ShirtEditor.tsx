@@ -183,6 +183,77 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
 
+  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+    setElementPositions(prev => {
+      let next = { ...prev };
+      
+      if (tipo === 'nome') {
+        next.nome = novaPosicao;
+        if (novaPosicao === next.escudo) {
+          next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+        }
+      } else if (tipo === 'escudo') {
+        next.escudo = novaPosicao;
+        if (novaPosicao === next.nome) {
+          if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
+            next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+          }
+        }
+      } else {
+        next.numero = novaPosicao;
+      }
+      
+      return next;
+    });
+
+    setIsTransitioning(true);
+    setTimeout(() => setIsTransitioning(false), 400);
+    setUvTextureVersion(v => v + 1);
+  }, []);
+
+  useEffect(() => {
+    setUvLayers(prev => {
+      const newLayers = [...prev];
+      
+      const updateOrAddLayer = (id: string, zoneKey: string, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
+        const zone = uvMapZones[zoneKey];
+        if (!zone) return;
+        
+        const existingIdx = newLayers.findIndex(l => l.id === id);
+        const calculatedFontSize = (fontSize / 100) * zone.height;
+        
+        const layer: UvLayer = {
+          id,
+          zoneKey,
+          type,
+          content,
+          color: textColor,
+          fontFamily,
+          fontSize: calculatedFontSize,
+          fontWeight: 900,
+          ...extra
+        } as UvLayer;
+
+        if (existingIdx >= 0) {
+          newLayers[existingIdx] = layer;
+        } else if (content || (type === 'image' && (extra as any).url)) {
+          newLayers.push(layer);
+        }
+      };
+
+      const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
+      updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text');
+      
+      const numeroContent = uvTextDrafts['numero'] || '10';
+      updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
+
+      const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
+      updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { url: shieldSvg, scale: 0.8, opacity: 1 } as any);
+
+      return newLayers;
+    });
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts]);
+
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
     zones: uvMapZones,
