@@ -22,6 +22,8 @@ interface Shirt3DPreviewProps {
   autoRotate?: boolean;
   cameraPosition?: [number, number, number];
   className?: string;
+  animatingElement?: any;
+  onAnimationComplete?: () => void;
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
@@ -63,35 +65,42 @@ function ShirtModel({
   uvCanvas,
   uvVersion,
   fabricColor,
+  animatingElement,
+  onAnimationComplete,
 }: {
   uvImage: string | null;
   uvCanvas: HTMLCanvasElement | null | undefined;
   uvVersion?: number;
   fabricColor: string;
+  animatingElement?: any;
+  onAnimationComplete?: () => void;
 }) {
   const gltf = useLoader(GLTFLoader, shirtModel.url, (loader) => {
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 
   const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
-  const prevTextureRef = useRef<THREE.Texture | null>(null);
-  const mixFactorRef = useRef(1);
-  const rawProgressRef = useRef(1);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayTextureRef = useRef<THREE.CanvasTexture | null>(null);
+  const animatingStateRef = useRef<any>(null);
+
+  if (!overlayCanvasRef.current && typeof document !== 'undefined') {
+    overlayCanvasRef.current = document.createElement('canvas');
+    overlayCanvasRef.current.width = 1024;
+    overlayCanvasRef.current.height = 1024;
+    overlayTextureRef.current = new THREE.CanvasTexture(overlayCanvasRef.current);
+    overlayTextureRef.current.flipY = false;
+  }
+
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   useEffect(() => {
-    const color = new THREE.Color(fabricColor);
-    const oldTex = prevTextureRef.current;
-    
-    // Se temos uma nova textura e já tínhamos uma anterior, iniciamos o crossfade
-    if (uvTex && oldTex && oldTex !== uvTex) {
-      mixFactorRef.current = 0;
-      rawProgressRef.current = 0;
-    } else {
-      mixFactorRef.current = 1;
-      rawProgressRef.current = 1;
-    }
+    animatingStateRef.current = animatingElement;
+  }, [animatingElement]);
 
+  useEffect(() => {
+    const color = new THREE.Color(fabricColor);
+    
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!(mesh as any).isMesh) return;
@@ -104,23 +113,17 @@ function ShirtModel({
         side: THREE.DoubleSide,
       });
 
-      // Injeta lógica de crossfade no shader
       mat.onBeforeCompile = (shader) => {
-        shader.uniforms.tPrev = { value: oldTex || uvTex };
-        shader.uniforms.uMix = { value: mixFactorRef.current };
+        shader.uniforms.tOverlay = { value: overlayTextureRef.current };
         shader.fragmentShader = `
-          uniform sampler2D tPrev;
-          uniform float uMix;
+          uniform sampler2D tOverlay;
           ${shader.fragmentShader.replace(
             '#include <map_fragment>',
             `
             #ifdef USE_MAP
-              float mixEased = uMix;
-              // A aplicação da textura já usa o mix linear que o THREE espera para cores, 
-              // mas podemos animar as coordenadas UV se quisermos um efeito de movimento.
               vec4 texelColor = texture2D( map, vMapUv );
-              vec4 prevColor = texture2D( tPrev, vMapUv );
-              texelColor = mix(prevColor, texelColor, mixEased);
+              vec4 overlayColor = texture2D( tOverlay, vMapUv );
+              texelColor = mix(texelColor, overlayColor, overlayColor.a);
               diffuseColor *= texelColor;
             #endif
             `
@@ -134,28 +137,58 @@ function ShirtModel({
       mesh.receiveShadow = true;
       (mat as any).envMapIntensity = 0.1;
     });
-
-    prevTextureRef.current = uvTex;
   }, [scene, uvTex, fabricColor]);
 
   useFrame((state, delta) => {
-    if (rawProgressRef.current < 1) {
-      rawProgressRef.current = Math.min(1, rawProgressRef.current + delta / 0.9); // 900ms
-      
-      // Easing ease-in-out suave
-      const r = rawProgressRef.current;
-      mixFactorRef.current = r < 0.5 
-        ? 2 * r * r 
-        : 1 - Math.pow(-2 * r + 2, 2) / 2;
+    const anim = animatingStateRef.current;
+    const canvas = overlayCanvasRef.current;
+    const texture = overlayTextureRef.current;
+    if (!canvas || !texture) return;
 
-      scene.traverse((obj) => {
-        const mesh = obj as THREE.Mesh;
-        if (!(mesh as any).isMesh) return;
-        const mat = mesh.material as any;
-        if (mat && mat.userData.shader) {
-          mat.userData.shader.uniforms.uMix.value = mixFactorRef.current;
-        }
-      });
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (anim && anim.progress < 1) {
+      anim.progress = Math.min(1, anim.progress + delta / 0.6); // 600ms
+      
+      const p = anim.progress;
+      const t = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+
+      const currentX = anim.fromUV.x + (anim.toUV.x - anim.fromUV.x) * t;
+      const currentY = anim.fromUV.y + (anim.toUV.y - anim.fromUV.y) * t;
+      const currentW = anim.fromUV.w + (anim.toUV.w - anim.fromUV.w) * t;
+      const currentH = anim.fromUV.h + (anim.toUV.h - anim.fromUV.h) * t;
+
+      // Desenha o elemento no overlay
+      const x = currentX * canvas.width;
+      const y = currentY * canvas.height;
+      const w = currentW * canvas.width;
+      const h = currentH * canvas.height;
+
+      ctx.save();
+      ctx.translate(x, y);
+      
+      const layer = anim.layer;
+      if (layer.type === 'text') {
+        ctx.fillStyle = layer.color || '#ffffff';
+        const fontSize = (layer.fontSize || 50) * (canvas.width / 1024); // Ajuste proporcional ao canvas
+        ctx.font = `${layer.fontWeight || 900} ${fontSize}px ${layer.fontFamily || 'Impact'}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(layer.content, 0, 0);
+      } else if (layer.type === 'image') {
+        // Para simplificar no overlay, vamos carregar a imagem se possível ou pular
+        // Idealmente usaríamos uma cache, mas para o efeito de "texto deslizando" o foco é o texto
+      }
+      ctx.restore();
+      
+      texture.needsUpdate = true;
+
+      if (anim.progress >= 1) {
+        onAnimationComplete?.();
+      }
+    } else {
+      texture.needsUpdate = true;
     }
   });
 
@@ -190,6 +223,8 @@ export default function Shirt3DPreview({
   autoRotate = true,
   cameraPosition = [0, 0.1, 5.2],
   className,
+  animatingElement,
+  onAnimationComplete,
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
@@ -231,7 +266,14 @@ export default function Shirt3DPreview({
             </div>
           </Html>
         }>
-          <ShirtModel uvImage={uvImage} uvCanvas={uvCanvas} uvVersion={uvVersion} fabricColor={fabricColor} />
+          <ShirtModel 
+            uvImage={uvImage} 
+            uvCanvas={uvCanvas} 
+            uvVersion={uvVersion} 
+            fabricColor={fabricColor} 
+            animatingElement={animatingElement}
+            onAnimationComplete={onAnimationComplete}
+          />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
           <Environment preset="city" />
         </Suspense>

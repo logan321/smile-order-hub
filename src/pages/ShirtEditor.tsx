@@ -118,6 +118,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
+  const [animatingElement, setAnimatingElement] = useState<any>(null);
   
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
 
@@ -185,7 +186,41 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
-    console.log('moveElement chamado:', tipo, novaPosicao, 'posição atual:', elementPositions);
+    const zonaAntigaKey = elementPositions[tipo];
+    const zonaAntiga = uvMapZones[zonaAntigaKey];
+    const zonaNova = uvMapZones[novaPosicao];
+    const uvWidth = uvMapDims.w;
+    const uvHeight = uvMapDims.h;
+
+    if (zonaAntiga && zonaNova && uvWidth && uvHeight) {
+      // Coordenadas UV do centro das zonas
+      const fromUV = {
+        x: (zonaAntiga.x + zonaAntiga.width / 2) / uvWidth,
+        y: (zonaAntiga.y + zonaAntiga.height / 2) / uvHeight,
+        w: zonaAntiga.width / uvWidth,
+        h: zonaAntiga.height / uvHeight
+      };
+      const toUV = {
+        x: (zonaNova.x + zonaNova.width / 2) / uvWidth,
+        y: (zonaNova.y + zonaNova.height / 2) / uvHeight,
+        w: zonaNova.width / uvWidth,
+        h: zonaNova.height / uvHeight
+      };
+
+      const layerId = tipo === 'nome' ? 'layer_nome' : tipo === 'numero' ? 'layer_numero' : 'layer_escudo';
+      const layer = uvLayers.find(l => l.id === layerId);
+
+      if (layer) {
+        setAnimatingElement({
+          tipo,
+          fromUV,
+          toUV,
+          progress: 0,
+          layer: { ...layer }
+        });
+      }
+    }
+
     setElementPositions(prev => {
       let next = { ...prev };
       
@@ -215,13 +250,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     setUvLayers(prev => {
-      const newLayers = [...prev];
+      const newLayers = [];
+      const animatingLayerId = animatingElement?.layer?.id;
       
       const updateOrAddLayer = (id: string, zoneKey: string, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
+        if (id === animatingLayerId) return; // Não adiciona no canvas principal se estiver animando overlay
+
         const zone = uvMapZones[zoneKey];
         if (!zone) return;
         
-        const existingIdx = newLayers.findIndex(l => l.id === id);
         const calculatedFontSize = (fontSize / 100) * zone.height;
         
         const layer: UvLayer = {
@@ -236,11 +273,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           ...extra
         } as UvLayer;
 
-        if (existingIdx >= 0) {
-          newLayers[existingIdx] = layer;
-        } else if (content || (type === 'image' && (extra as any).url)) {
-          newLayers.push(layer);
-        }
+        newLayers.push(layer);
       };
 
       const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
@@ -252,9 +285,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
       updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { url: shieldSvg, scale: 0.8, opacity: 1 } as any);
 
+      // Adiciona outros textos livres
+      Object.keys(uvTextDrafts).forEach(k => {
+        if (['nome', 'numero'].includes(k)) return;
+        const content = uvTextDrafts[k];
+        if (content) updateOrAddLayer(`free_${k}`, k, content, 'text');
+      });
+
       return newLayers;
     });
-  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts]);
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id]);
 
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
@@ -572,6 +612,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               backImage={selectedTemplate?.backImageUrl || ''} 
               uvCanvas={uv3DCanvas}
               uvVersion={uvTextureVersion}
+              animatingElement={animatingElement}
+              onAnimationComplete={() => setAnimatingElement(null)}
               cameraPosition={cameraPosition}
               autoRotate={false}
               className={cn("transition-opacity duration-300")}
