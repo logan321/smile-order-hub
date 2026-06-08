@@ -67,10 +67,17 @@ export async function composeUvTexture(opts: {
     const zone = opts.zones[layer.zoneKey];
     if (!zone) continue;
     ctx.save();
-    // Clip to zone
-    ctx.beginPath();
-    ctx.rect(zone.x, zone.y, zone.width, zone.height);
-    ctx.clip();
+    
+    // Check if it's the escudo layer to decide whether to clip
+    const isEscudo = layer.id === 'layer_escudo';
+    
+    if (!isEscudo) {
+      // Clip to zone for other layers
+      ctx.beginPath();
+      ctx.rect(zone.x, zone.y, zone.width, zone.height);
+      ctx.clip();
+    }
+    
     const cx = zone.x + zone.width / 2 + (layer.offsetX ?? 0);
     const cy = zone.y + zone.height / 2 + (layer.offsetY ?? 0);
     ctx.translate(cx, cy);
