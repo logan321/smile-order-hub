@@ -76,6 +76,7 @@ function ShirtModel({
   const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
   const prevTextureRef = useRef<THREE.Texture | null>(null);
   const mixFactorRef = useRef(1);
+  const rawProgressRef = useRef(1);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   useEffect(() => {
@@ -85,8 +86,10 @@ function ShirtModel({
     // Se temos uma nova textura e já tínhamos uma anterior, iniciamos o crossfade
     if (uvTex && oldTex && oldTex !== uvTex) {
       mixFactorRef.current = 0;
+      rawProgressRef.current = 0;
     } else {
       mixFactorRef.current = 1;
+      rawProgressRef.current = 1;
     }
 
     scene.traverse((obj) => {
@@ -112,9 +115,12 @@ function ShirtModel({
             '#include <map_fragment>',
             `
             #ifdef USE_MAP
+              float mixEased = uMix;
+              // A aplicação da textura já usa o mix linear que o THREE espera para cores, 
+              // mas podemos animar as coordenadas UV se quisermos um efeito de movimento.
               vec4 texelColor = texture2D( map, vMapUv );
               vec4 prevColor = texture2D( tPrev, vMapUv );
-              texelColor = mix(prevColor, texelColor, uMix);
+              texelColor = mix(prevColor, texelColor, mixEased);
               diffuseColor *= texelColor;
             #endif
             `
@@ -133,8 +139,15 @@ function ShirtModel({
   }, [scene, uvTex, fabricColor]);
 
   useFrame((state, delta) => {
-    if (mixFactorRef.current < 1) {
-      mixFactorRef.current = Math.min(1, mixFactorRef.current + delta / 0.3); // 300ms
+    if (rawProgressRef.current < 1) {
+      rawProgressRef.current = Math.min(1, rawProgressRef.current + delta / 0.9); // 900ms
+      
+      // Easing ease-in-out suave
+      const r = rawProgressRef.current;
+      mixFactorRef.current = r < 0.5 
+        ? 2 * r * r 
+        : 1 - Math.pow(-2 * r + 2, 2) / 2;
+
       scene.traverse((obj) => {
         const mesh = obj as THREE.Mesh;
         if (!(mesh as any).isMesh) return;

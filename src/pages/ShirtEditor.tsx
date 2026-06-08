@@ -183,7 +183,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
 
-  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+  const moveElementRef = useRef<any>(null);
+  moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
     setElementPositions(prev => {
       let next = { ...prev };
       
@@ -206,6 +207,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       return next;
     });
     setUvTextureVersion(v => v + 1);
+  };
+
+  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+    moveElementRef.current?.(tipo, novaPosicao);
   }, []);
 
   useEffect(() => {
