@@ -683,7 +683,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                     : "border-gray-100 bg-white"
                                 )}
                               >
-                                <svg viewBox="0 0 71.6 58.5" width="80" height="70" style={{ shapeRendering: 'geometricprecision' }}>
+                                <svg viewBox="0 0 71.6 58.5" width="80" height="70" style={{ shapeRendering: 'geometricPrecision' }}>
                                   <path fill="var(--shirt-color)" d="M55.4,58.5H16.2V23.7l-7.1,4L0,13.1L14.9,3l13-3L28,0c2.6,0.7,5.3,1,7.9,1c2.6,0,5.2-0.3,7.7-1l0.2,0l13,3l14.9,10.2l-9.1,14.5l-7.1-4V58.5z M17.6,57H54V21.2l8.1,4.5l7.6-12.2L56.1,4.3L43.8,1.5c-2.6,0.6-5.2,1-7.9,1c-2.7,0-5.4-0.3-8.1-1L15.5,4.3L1.9,13.5l7.6,12.2l8.1-4.5V57z"/>
                                   {pos.id === 'costas_topo' ? (
                                     <>
@@ -732,7 +732,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                     : "border-gray-100 bg-white"
                                 )}
                               >
-                                <svg viewBox="0 0 72.5 59.5" width="80" height="70" style={{ shapeRendering: 'geometricprecision' }}>
+                                <svg viewBox="0 0 72.5 59.5" width="80" height="70" style={{ shapeRendering: 'geometricPrecision' }}>
                                   <path fill="var(--shirt-color)" d="M56.1,59.5H16.4V24.2l-7.2,4.1L0,13.4L15.1,3.1L28.5,0l0.3,0.4c1.7,2.6,4.5,4,7.5,4.1h0c2.9,0,5.7-1.5,7.4-4.1L44,0l13.4,3.1l15.1,10.3l-9.2,14.8l-7.2-4.1V59.5z M17.9,58h36.7V21.6l8.2,4.6l7.7-12.4L56.8,4.5L44.6,1.7c-2,2.7-5.1,4.3-8.4,4.3h-0.1c-3.3,0-6.3-1.6-8.4-4.3L15.7,4.5L2,13.9l7.7,12.4l8.2-4.6V58z"/>
                                   <text 
                                     x={pos.id === 'peito_centro' ? '36.2' : pos.id === 'peito_direito' ? '25' : '48'} 
