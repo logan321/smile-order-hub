@@ -88,6 +88,7 @@ function ShirtModel({
   // Inicializa o canvas overlay e a textura uma única vez
   if (!overlayCanvasRef.current && typeof document !== 'undefined') {
     const canvas = document.createElement('canvas');
+    // Dimensões exatas do UV original para evitar distorção e garantir consistência do fontSize
     canvas.width = 8538;
     canvas.height = 8538;
     overlayCanvasRef.current = canvas;
@@ -156,17 +157,20 @@ function ShirtModel({
     const ctx = canvas.getContext('2d', { alpha: true })!;
     
     if (anim && anim.progress < 1) {
+      // Limpa o canvas overlay a cada frame
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       anim.progress = Math.min(1, anim.progress + delta / 0.6); // 600ms
       
       const p = anim.progress;
+      // Easing ease-in-out
       const t = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 
+      // Interpolação das coordenadas UV
       const currentX = anim.fromUV.x + (anim.toUV.x - anim.fromUV.x) * t;
       const currentY = anim.fromUV.y + (anim.toUV.y - anim.fromUV.y) * t;
 
-      // Desenha o elemento no overlay usando a posição interpolada
+      // Converte coordenadas UV (0-1) para pixels no canvas overlay (8538x8538)
       const x = currentX * canvas.width;
       const y = currentY * canvas.height;
 
@@ -176,7 +180,7 @@ function ShirtModel({
       const layer = anim.layer;
       if (layer.type === 'text') {
         ctx.fillStyle = layer.color || '#ffffff';
-        // fontSize fixo calculado no início da animação
+        // fontSize fixo calculado no início da animação (zonaNova.height * 0.92)
         const fontSize = anim.targetFontSize;
         ctx.font = `${layer.fontWeight || 900} ${fontSize}px ${layer.fontFamily || 'Impact'}`;
         ctx.textAlign = 'center';
@@ -185,14 +189,18 @@ function ShirtModel({
       }
       ctx.restore();
       
+      // Apenas marca a textura para atualização, sem recriar objetos THREE
       texture.needsUpdate = true;
 
       if (anim.progress >= 1) {
         onAnimationComplete?.();
         // Limpa o overlay após a animação
         setTimeout(() => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          texture.needsUpdate = true;
+          if (overlayCanvasRef.current) {
+            const clearCtx = overlayCanvasRef.current.getContext('2d')!;
+            clearCtx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+            if (overlayTextureRef.current) overlayTextureRef.current.needsUpdate = true;
+          }
         }, 50);
       }
     }
