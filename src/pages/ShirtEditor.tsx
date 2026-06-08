@@ -379,18 +379,34 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
     setElementPositions(prev => {
       let next = { ...prev };
+      const posicoesPeito = ['peito_direito', 'peito_esquerdo'];
+
       if (tipo === 'nome') {
         next.nome = novaPosicao;
         if (novaPosicao && novaPosicao === next.escudo) {
           next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
       } else if (tipo === 'escudo') {
+        const anteriorEscudo = next.escudo;
         next.escudo = novaPosicao;
+        
+        // Regra Nome vs Escudo
         if (novaPosicao && novaPosicao === next.nome) {
           next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
-      } else {
+        
+        // Regra Escudo vs Número (Apenas em peito_direito ou peito_esquerdo)
+        if (novaPosicao && posicoesPeito.includes(novaPosicao) && novaPosicao === next.numero) {
+          next.numero = anteriorEscudo;
+        }
+      } else if (tipo === 'numero') {
+        const anteriorNumero = next.numero;
         next.numero = novaPosicao;
+        
+        // Regra Escudo vs Número (Apenas em peito_direito ou peito_esquerdo)
+        if (novaPosicao && posicoesPeito.includes(novaPosicao) && novaPosicao === next.escudo) {
+          next.escudo = anteriorNumero;
+        }
       }
       return next;
     });
