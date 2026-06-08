@@ -207,7 +207,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       
       return next;
     });
-    setUvTextureVersion(v => v + 1);
   };
 
   const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
@@ -274,7 +273,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const addStamp = (stamp: Stamp) => {
     setAppliedStamp(stamp);
-    setUvTextureVersion(v => v + 1);
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
@@ -558,7 +556,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               )}
 
               <div className="pt-4 lg:pt-6 border-t border-gray-50">
-                <Button variant="ghost" size="sm" onClick={() => { setAppliedStamp(null); setUvLayers([]); setUvTextDrafts({}); setUvTextureVersion(v => v + 1); }} className="w-full text-[8px] lg:text-[9px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest">
+                <Button variant="ghost" size="sm" onClick={() => { setAppliedStamp(null); setUvLayers([]); setUvTextDrafts({}); }} className="w-full text-[8px] lg:text-[9px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest">
                   <RotateCcw className="w-3 lg:w-3.5 h-3 lg:h-3.5 mr-2" /> Resetar Design
                 </Button>
               </div>
