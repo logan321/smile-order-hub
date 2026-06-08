@@ -252,41 +252,64 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
           <DialogTitle>Zonas UV — {code}</DialogTitle>
         </DialogHeader>
         <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-          <div
-            ref={containerRef}
-            className="relative bg-muted/30 rounded-lg overflow-hidden select-none"
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerLeave={endDrag}
-          >
-            <img
-              ref={imgRef}
-              src={imageUrl}
-              alt={code}
-              onLoad={onImgLoad}
-              className="w-full h-auto block"
-              draggable={false}
-            />
-            {Object.entries(zones).map(([key, z]) => {
-              const s = getScale();
-              const isSel = selected === key;
-              return (
-                <div
-                  key={key}
-                  onPointerDown={(e) => startDrag(key, e, 'move')}
-                  className={`absolute border-2 ${isSel ? 'border-amber-500 bg-amber-500/20' : 'border-primary bg-primary/10'} cursor-move`}
-                  style={{ left: z.x * s, top: z.y * s, width: z.width * s, height: z.height * s }}
+          <div className="flex flex-col gap-2">
+            <div
+              ref={containerRef}
+              className="relative bg-muted/30 rounded-lg overflow-hidden select-none cursor-crosshair h-[600px]"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={endDrag}
+              onPointerLeave={endDrag}
+              onWheel={handleWheel}
+            >
+              <div 
+                className="absolute inset-0 transition-transform duration-75 ease-out origin-top-left"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+              >
+                <img
+                  ref={imgRef}
+                  src={imageUrl}
+                  alt={code}
+                  onLoad={onImgLoad}
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
+                {Object.entries(zones).map(([key, z]) => {
+                  const s = getScale() / zoom; // Use scale without zoom since parent div has scale
+                  const isSel = selected === key;
+                  return (
+                    <div
+                      key={key}
+                      onPointerDown={(e) => startDrag(key, e, 'move')}
+                      className={`absolute border-2 ${isSel ? 'border-amber-500 bg-amber-500/20' : 'border-primary bg-primary/10'} cursor-move`}
+                      style={{ left: z.x * s, top: z.y * s, width: z.width * s, height: z.height * s }}
+                    >
+                      <div
+                        onPointerDown={(e) => startDrag(key, e, 'resize')}
+                        className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 cursor-se-resize"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {zoom > 1 && (
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  className="absolute top-2 left-2 h-7 text-[10px] bg-white/80 backdrop-blur-sm"
+                  onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
                 >
-                  <span className="absolute top-0 left-0 -translate-y-full text-xs font-semibold bg-background/90 px-1.5 py-0.5 rounded">
-                    {key}
-                  </span>
-                  <div
-                    onPointerDown={(e) => startDrag(key, e, 'resize')}
-                    className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 cursor-se-resize"
-                  />
-                </div>
-              );
-            })}
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Resetar Zoom
+                </Button>
+              )}
+            </div>
+            
+            <div className="px-2 text-[10px] text-muted-foreground flex justify-between items-center">
+              <span>{selected ? `Zona selecionada: ${selected}` : 'Nenhuma zona selecionada'}</span>
+              <span>Scroll para zoom • Arraste para pan</span>
+            </div>
           </div>
 
           <div className="space-y-3">
