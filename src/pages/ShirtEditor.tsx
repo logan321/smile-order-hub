@@ -114,6 +114,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
+  const [globalTextInput, setGlobalTextInput] = useState('');
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
 
   const uvTextCommitTimerRef = useRef<number | null>(null);
 
