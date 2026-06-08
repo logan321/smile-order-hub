@@ -129,6 +129,23 @@ function ShirtModel({
       (mat as any).envMapIntensity = 0.1;
     });
 
+    prevTextureRef.current = uvTex;
+  }, [scene, uvTex, fabricColor]);
+
+  useFrame((state, delta) => {
+    if (mixFactorRef.current < 1) {
+      mixFactorRef.current = Math.min(1, mixFactorRef.current + delta / 0.3); // 300ms
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!(mesh as any).isMesh) return;
+        const mat = mesh.material as any;
+        if (mat && mat.userData.shader) {
+          mat.userData.shader.uniforms.uMix.value = mixFactorRef.current;
+        }
+      });
+    }
+  });
+
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
     const c = new THREE.Vector3();
