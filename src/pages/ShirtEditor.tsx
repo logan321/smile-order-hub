@@ -114,6 +114,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
+  const [globalTextInput, setGlobalTextInput] = useState('');
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
 
   const uvTextCommitTimerRef = useRef<number | null>(null);
 
@@ -172,8 +174,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         .maybeSingle();
       if (cancelled || !data) return;
       const row = data as any;
-      setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
+      const zones = (row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {};
+      setUvMapZones(zones);
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
+      const firstZone = Object.keys(zones)[0];
+      if (firstZone) setSelectedZone(firstZone);
       setUvLayers([]);
       setUvTextDrafts({});
     })();
@@ -343,25 +348,70 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     <SelectTrigger className="w-full h-10 lg:h-12 rounded-xl bg-gray-50 border-gray-100 shadow-sm font-bold text-[10px] lg:text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
                     <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
                   </Select>
-                  
-                  {Object.keys(uvMapZones).map((zoneKey) => (
-                    <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
-                        <div className="flex gap-1">
-                           <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
-                           <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
-                        </div>
+
+                  {(activeTab === 'text' || activeTab === 'name') && (
+                    <div className="p-3 lg:p-4 bg-white rounded-2xl border border-[#FF5A00]/20 shadow-sm space-y-3 lg:space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="space-y-1">
+                        <label className="text-[8px] lg:text-[9px] font-black text-gray-400 uppercase tracking-widest">Digite aqui</label>
+                        <Input 
+                          value={globalTextInput}
+                          onChange={(e) => setGlobalTextInput(e.target.value)}
+                          placeholder="Texto ou Número..."
+                          className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-xs lg:text-sm focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
+                        />
                       </div>
-                      <Input
-                        value={uvTextDrafts[zoneKey] ?? ''}
-                        onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                        placeholder={`Digite aqui...`}
-                        className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
-                      />
-                      <input id={`uv-file-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
+                      
+                      {Object.keys(uvMapZones).length > 1 && (
+                        <div className="space-y-1">
+                          <label className="text-[8px] lg:text-[9px] font-black text-gray-400 uppercase tracking-widest">Onde aplicar?</label>
+                          <Select value={selectedZone || ''} onValueChange={setSelectedZone}>
+                            <SelectTrigger className="h-10 rounded-xl bg-gray-50 border-none text-[10px] lg:text-xs font-bold">
+                              <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.keys(uvMapZones).map(zk => (
+                                <SelectItem key={zk} value={zk} className="text-[10px] lg:text-xs font-medium">{zk}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <Button 
+                        onClick={() => {
+                          const targetZone = selectedZone || Object.keys(uvMapZones)[0];
+                          if (!targetZone) return toast.error("Nenhuma área disponível!");
+                          setUvLayerText(targetZone, globalTextInput);
+                          toast.success("Texto aplicado com sucesso!");
+                        }}
+                        className="w-full h-10 lg:h-12 bg-[#FF5A00] hover:bg-[#FF5A00]/90 text-white font-black rounded-xl text-[10px] lg:text-xs uppercase tracking-widest shadow-lg shadow-[#FF5A00]/10 transition-all active:scale-95"
+                      >
+                        Aplicar Texto
+                      </Button>
                     </div>
-                  ))}
+                  )}
+                  
+                  <div className="space-y-2 pt-2">
+                    <p className="text-[7px] lg:text-[8px] font-black text-gray-300 uppercase tracking-[0.2em] px-1">Edição por área</p>
+                    {Object.keys(uvMapZones).map((zoneKey) => (
+                      <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
+                          <div className="flex gap-1">
+                             <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                             <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                          </div>
+                        </div>
+                        <Input
+                          value={uvTextDrafts[zoneKey] ?? ''}
+                          onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                          placeholder={`Digite aqui...`}
+                          className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
+                        />
+                        <input id={`uv-file-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
