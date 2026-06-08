@@ -427,18 +427,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             { label: 'Costas T', id: 'costas_topo' },
                             { label: 'Costas F', id: 'costas_fundo' }
                           ].map(pos => (
-                            <Button
+                            <button
                               key={pos.id}
-                              variant={elementPositions.nome === pos.id ? 'default' : 'outline'}
-                              size="sm"
-                              className={cn(
-                                "h-8 text-[8px] font-bold uppercase",
-                                elementPositions.nome === pos.id ? "bg-[#FF5A00] hover:bg-[#FF5A00]/90 border-none" : "bg-white text-gray-400"
-                              )}
+                              type="button"
                               onClick={() => moveElement('nome', pos.id)}
+                              className={cn(
+                                "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
+                                elementPositions.nome === pos.id 
+                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
+                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                              )}
                             >
                               {pos.label}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -458,18 +459,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             { label: 'Peito C', id: 'peito_centro' },
                             { label: 'Costas C', id: 'costas_centro' }
                           ].map(pos => (
-                            <Button
+                            <button
                               key={pos.id}
-                              variant={elementPositions.numero === pos.id ? 'default' : 'outline'}
-                              size="sm"
-                              className={cn(
-                                "h-8 text-[8px] font-bold uppercase",
-                                elementPositions.numero === pos.id ? "bg-[#FF5A00] hover:bg-[#FF5A00]/90 border-none" : "bg-white text-gray-400"
-                              )}
+                              type="button"
                               onClick={() => moveElement('numero', pos.id)}
+                              className={cn(
+                                "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
+                                elementPositions.numero === pos.id 
+                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
+                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                              )}
                             >
                               {pos.label}
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -484,18 +486,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           { label: 'Peito Direito', id: 'peito_direito' },
                           { label: 'Peito Esquerdo', id: 'peito_esquerdo' }
                         ].map(pos => (
-                          <Button
+                          <button
                             key={pos.id}
-                            variant={elementPositions.escudo === pos.id ? 'default' : 'outline'}
-                            size="sm"
-                            className={cn(
-                              "h-10 text-[8px] font-bold uppercase",
-                              elementPositions.escudo === pos.id ? "bg-[#FF5A00] hover:bg-[#FF5A00]/90 border-none" : "bg-white text-gray-400"
-                            )}
+                            type="button"
                             onClick={() => moveElement('escudo', pos.id)}
+                            className={cn(
+                              "h-10 text-[8px] font-bold uppercase rounded-lg border transition-all",
+                              elementPositions.escudo === pos.id 
+                                ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
+                                : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                            )}
                           >
                             {pos.label}
-                          </Button>
+                          </button>
                         ))}
                       </div>
                     </div>
