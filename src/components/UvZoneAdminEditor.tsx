@@ -368,12 +368,7 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
                     size="sm" 
                     className="h-8 px-3 bg-[#FF5A00] hover:bg-[#FF5A00]/90"
                     onClick={() => {
-                      if (selected && newKey.trim() && !zones[newKey.trim()]) {
-                        renameZone(selected, newKey.trim());
-                        setNewKey('');
-                      } else {
-                        addZone(newKey.trim());
-                      }
+                      addZone(newKey.trim());
                     }}
                   >
                     <Plus className="h-4 w-4" />
