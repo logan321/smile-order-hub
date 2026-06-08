@@ -306,6 +306,7 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
             </div>
 
             <div className="space-y-1 max-h-[40vh] overflow-y-auto">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Zonas Criadas</div>
               {Object.entries(zones).map(([key, z]) => (
                 <div
                   key={key}
