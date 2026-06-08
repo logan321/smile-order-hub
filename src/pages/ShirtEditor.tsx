@@ -118,7 +118,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
 
   const uvTextCommitTimerRef = useRef<number | null>(null);
