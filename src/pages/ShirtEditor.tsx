@@ -1119,52 +1119,52 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                               </div>
                             </div>
 
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tamanho</label>
-                                  <span className="text-[10px] font-bold text-gray-700">{Math.round(escudoScale * 100)}%</span>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tamanho</label>
+                                    <span className="text-[10px] font-bold text-gray-700">{Math.round(escudoScale * 100)}%</span>
+                                  </div>
+                                  <Slider 
+                                    value={[escudoScale * 100]} 
+                                    min={50} 
+                                    max={300} 
+                                    step={1} 
+                                    onValueChange={([v]) => setEscudoScale(v / 100)}
+                                    className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                  />
                                 </div>
-                                <Slider 
-                                  value={[escudoScale * 100]} 
-                                  min={50} 
-                                  max={150} 
-                                  step={1} 
-                                  onValueChange={([v]) => setEscudoScale(v / 100)}
-                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
-                                />
-                              </div>
 
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Vertical</label>
-                                  <span className="text-[10px] font-bold text-gray-700">{escudoOffsetY}</span>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Vertical</label>
+                                    <span className="text-[10px] font-bold text-gray-700">{escudoOffsetY}</span>
+                                  </div>
+                                  <Slider 
+                                    value={[escudoOffsetY]} 
+                                    min={-300} 
+                                    max={300} 
+                                    step={1} 
+                                    onValueChange={([v]) => setEscudoOffsetY(v)}
+                                    className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                  />
                                 </div>
-                                <Slider 
-                                  value={[escudoOffsetY]} 
-                                  min={-50} 
-                                  max={50} 
-                                  step={1} 
-                                  onValueChange={([v]) => setEscudoOffsetY(v)}
-                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
-                                />
-                              </div>
 
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Horizontal</label>
-                                  <span className="text-[10px] font-bold text-gray-700">{escudoOffsetX}</span>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Horizontal</label>
+                                    <span className="text-[10px] font-bold text-gray-700">{escudoOffsetX}</span>
+                                  </div>
+                                  <Slider 
+                                    value={[escudoOffsetX]} 
+                                    min={-300} 
+                                    max={300} 
+                                    step={1} 
+                                    onValueChange={([v]) => setEscudoOffsetX(v)}
+                                    className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                  />
                                 </div>
-                                <Slider 
-                                  value={[escudoOffsetX]} 
-                                  min={-50} 
-                                  max={50} 
-                                  step={1} 
-                                  onValueChange={([v]) => setEscudoOffsetX(v)}
-                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
-                                />
                               </div>
-                            </div>
                           </div>
                         )}
                       </div>
