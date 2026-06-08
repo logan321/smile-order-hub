@@ -200,6 +200,12 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
       return;
     }
 
+    // MELHORIA 1: If something is selected, rename it instead of adding new
+    if (selected) {
+      renameZone(selected, key);
+      return;
+    }
+
     const w = dims.w || 1000;
     const h = dims.h || 1000;
     const size = Math.min(w, h) * 0.15;
