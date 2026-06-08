@@ -108,7 +108,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
 
   const [textColor, setTextColor] = useState('#000000');
-  const [fontSize, setFontSize] = useState(24);
+  const [fontSize, setFontSize] = useState(70);
   const [fontFamily, setFontFamily] = useState('Arial');
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
