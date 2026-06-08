@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas, useLoader, useFrame } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -74,8 +74,77 @@ function ShirtModel({
   });
 
   const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
-
+  const prevTextureRef = useRef<THREE.Texture | null>(null);
+  const mixFactorRef = useRef(1);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
+
+  useEffect(() => {
+    const color = new THREE.Color(fabricColor);
+    const oldTex = prevTextureRef.current;
+    
+    // Se temos uma nova textura e já tínhamos uma anterior, iniciamos o crossfade
+    if (uvTex && oldTex && oldTex !== uvTex) {
+      mixFactorRef.current = 0;
+    } else {
+      mixFactorRef.current = 1;
+    }
+
+    scene.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!(mesh as any).isMesh) return;
+      
+      const mat = new THREE.MeshStandardMaterial({
+        color: uvTex ? new THREE.Color('#ffffff') : color,
+        map: uvTex ?? null,
+        roughness: 0.88,
+        metalness: 0.02,
+        side: THREE.DoubleSide,
+      });
+
+      // Injeta lógica de crossfade no shader
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.tPrev = { value: oldTex || uvTex };
+        shader.uniforms.uMix = { value: mixFactorRef.current };
+        shader.fragmentShader = `
+          uniform sampler2D tPrev;
+          uniform float uMix;
+          ${shader.fragmentShader.replace(
+            '#include <map_fragment>',
+            `
+            #ifdef USE_MAP
+              vec4 texelColor = texture2D( map, vMapUv );
+              vec4 prevColor = texture2D( tPrev, vMapUv );
+              texelColor = mix(prevColor, texelColor, uMix);
+              diffuseColor *= texelColor;
+            #endif
+            `
+          )}
+        `;
+        mat.userData.shader = shader;
+      };
+
+      mesh.material = mat;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      (mat as any).envMapIntensity = 0.1;
+    });
+
+    prevTextureRef.current = uvTex;
+  }, [scene, uvTex, fabricColor]);
+
+  useFrame((state, delta) => {
+    if (mixFactorRef.current < 1) {
+      mixFactorRef.current = Math.min(1, mixFactorRef.current + delta / 0.3); // 300ms
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!(mesh as any).isMesh) return;
+        const mat = mesh.material as any;
+        if (mat && mat.userData.shader) {
+          mat.userData.shader.uniforms.uMix.value = mixFactorRef.current;
+        }
+      });
+    }
+  });
 
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -85,25 +154,6 @@ function ShirtModel({
     box.getSize(s);
     return { center: c, size: s };
   }, [scene]);
-
-  useEffect(() => {
-    const color = new THREE.Color(fabricColor);
-    scene.traverse((obj) => {
-      const mesh = obj as THREE.Mesh;
-      if (!(mesh as any).isMesh) return;
-      const mat = new THREE.MeshStandardMaterial({
-        color: uvTex ? new THREE.Color('#ffffff') : color,
-        map: uvTex ?? null,
-        roughness: 0.88,
-        metalness: 0.02,
-        side: THREE.DoubleSide,
-      });
-      mesh.material = mat;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      (mat as any).envMapIntensity = 0.1;
-    });
-  }, [scene, uvTex, fabricColor]);
 
   const fitScale = 2.4 / Math.max(size.y, 0.0001);
 

@@ -118,7 +118,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
 
   const uvTextCommitTimerRef = useRef<number | null>(null);
@@ -184,32 +184,28 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }, [selectedTemplate?.uvMapId]);
 
   const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setElementPositions(prev => {
-        let next = { ...prev };
-        
-        if (tipo === 'nome') {
-          next.nome = novaPosicao;
-          if (novaPosicao === next.escudo) {
-            next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
-          }
-        } else if (tipo === 'escudo') {
-          next.escudo = novaPosicao;
-          if (novaPosicao === next.nome) {
-            if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
-              next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
-            }
-          }
-        } else {
-          next.numero = novaPosicao;
+    setElementPositions(prev => {
+      let next = { ...prev };
+      
+      if (tipo === 'nome') {
+        next.nome = novaPosicao;
+        if (novaPosicao === next.escudo) {
+          next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
-        
-        return next;
-      });
-      setUvTextureVersion(v => v + 1);
-      setTimeout(() => setIsTransitioning(false), 50);
-    }, 400);
+      } else if (tipo === 'escudo') {
+        next.escudo = novaPosicao;
+        if (novaPosicao === next.nome) {
+          if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
+            next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+          }
+        }
+      } else {
+        next.numero = novaPosicao;
+      }
+      
+      return next;
+    });
+    setUvTextureVersion(v => v + 1);
   }, []);
 
   useEffect(() => {
@@ -568,7 +564,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               uvVersion={uvTextureVersion}
               cameraPosition={cameraPosition}
               autoRotate={false}
-              className={cn("transition-opacity duration-400", isTransitioning ? "opacity-0" : "opacity-100")}
+              className={cn("transition-opacity duration-300")}
             />
             
             {/* Overlay Actions */}
