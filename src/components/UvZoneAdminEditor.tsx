@@ -25,52 +25,17 @@ type Drag =
 
 const ZONE_GROUPS = [
   {
-    title: "Nome",
-    prefix: "nome_",
-    options: [
-      { label: "Peito Direito", id: "peito_direito" },
-      { label: "Peito Esquerdo", id: "peito_esquerdo" },
-      { label: "Costas Cima", id: "costas_cima" },
-      { label: "Costas Baixo", id: "costas_baixo" },
-    ]
-  },
-  {
-    title: "Número",
-    prefix: "numero_",
+    title: "Posições",
+    prefix: "",
     options: [
       { label: "Peito Direito", id: "peito_direito" },
       { label: "Peito Esquerdo", id: "peito_esquerdo" },
       { label: "Peito Centro", id: "peito_centro" },
+      { label: "Costas Topo", id: "costas_topo" },
       { label: "Costas Centro", id: "costas_centro" },
-    ]
-  },
-  {
-    title: "Escudo / Logo",
-    prefix: "escudo_",
-    options: [
-      { label: "Peito Direito", id: "peito_direito" },
-      { label: "Peito Esquerdo", id: "peito_esquerdo" },
-      { label: "Ombro Esquerdo", id: "ombro_esquerdo" },
-      { label: "Centro", id: "centro" },
-    ]
-  },
-  {
-    title: "Patrocínio",
-    prefix: "patrocinio_",
-    options: [
-      { label: "Peito Direito", id: "peito_direito" },
-      { label: "Peito Esquerdo", id: "peito_esquerdo" },
+      { label: "Costas Fundo", id: "costas_fundo" },
       { label: "Manga Esquerda", id: "manga_esquerda" },
       { label: "Manga Direita", id: "manga_direita" },
-    ]
-  },
-  {
-    title: "Texto Livre",
-    prefix: "texto_",
-    options: [
-      { label: "Peito", id: "peito" },
-      { label: "Costas", id: "costas" },
-      { label: "Manga", id: "manga" },
     ]
   }
 ];
