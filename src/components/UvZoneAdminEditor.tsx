@@ -107,13 +107,48 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
 
   const getScale = () => {
     if (!imgRef.current) return 1;
-    return imgRef.current.clientWidth / (dims.w || imgRef.current.naturalWidth || 1);
+    const baseScale = imgRef.current.clientWidth / (dims.w || imgRef.current.naturalWidth || 1);
+    return baseScale * zoom;
   };
 
   const screenToUv = (clientX: number, clientY: number) => {
     const rect = imgRef.current!.getBoundingClientRect();
     const s = getScale();
-    return { x: (clientX - rect.left) / s, y: (clientY - rect.top) / s };
+    // Adjust for pan and zoom
+    return { 
+      x: (clientX - rect.left - pan.x) / s, 
+      y: (clientY - rect.top - pan.y) / s 
+    };
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const rect = containerRef.current!.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const zoomSpeed = 0.001;
+    const delta = -e.deltaY;
+    const newZoom = Math.max(1, Math.min(5, zoom + delta * zoomSpeed));
+    
+    if (newZoom !== zoom) {
+      // Calculate pan to keep mouse position fixed
+      const scaleChange = newZoom / zoom;
+      const newPanX = mouseX - (mouseX - pan.x) * scaleChange;
+      const newPanY = mouseY - (mouseY - pan.y) * scaleChange;
+      
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
+    }
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    // If clicking empty space (not a zone), start panning
+    if (e.target === imgRef.current || e.target === containerRef.current) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      setSelected(null);
+    }
   };
 
   const startDrag = (key: string, e: React.PointerEvent, kind: 'move' | 'resize') => {
