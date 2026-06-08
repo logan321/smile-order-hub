@@ -23,7 +23,57 @@ type Drag =
   | { kind: 'resize'; key: string; startX: number; startY: number; orig: UvZone }
   | null;
 
-const DEFAULT_KEYS = ['name_back', 'number_back', 'chest_right', 'chest_left', 'sleeve_left', 'sleeve_right'];
+const ZONE_GROUPS = [
+  {
+    title: "Nome",
+    prefix: "nome_",
+    options: [
+      { label: "Peito Direito", id: "peito_direito" },
+      { label: "Peito Esquerdo", id: "peito_esquerdo" },
+      { label: "Costas Cima", id: "costas_cima" },
+      { label: "Costas Baixo", id: "costas_baixo" },
+    ]
+  },
+  {
+    title: "Número",
+    prefix: "numero_",
+    options: [
+      { label: "Peito Direito", id: "peito_direito" },
+      { label: "Peito Esquerdo", id: "peito_esquerdo" },
+      { label: "Peito Centro", id: "peito_centro" },
+      { label: "Costas Centro", id: "costas_centro" },
+    ]
+  },
+  {
+    title: "Escudo / Logo",
+    prefix: "escudo_",
+    options: [
+      { label: "Peito Direito", id: "peito_direito" },
+      { label: "Peito Esquerdo", id: "peito_esquerdo" },
+      { label: "Ombro Esquerdo", id: "ombro_esquerdo" },
+      { label: "Centro", id: "centro" },
+    ]
+  },
+  {
+    title: "Patrocínio",
+    prefix: "patrocinio_",
+    options: [
+      { label: "Peito Direito", id: "peito_direito" },
+      { label: "Peito Esquerdo", id: "peito_esquerdo" },
+      { label: "Manga Esquerda", id: "manga_esquerda" },
+      { label: "Manga Direita", id: "manga_direita" },
+    ]
+  },
+  {
+    title: "Texto Livre",
+    prefix: "texto_",
+    options: [
+      { label: "Peito", id: "peito" },
+      { label: "Costas", id: "costas" },
+      { label: "Manga", id: "manga" },
+    ]
+  }
+];
 
 export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, initialZones, initialWidth, initialHeight, onSave }: Props) {
   const [zones, setZones] = useState<Record<string, UvZone>>(initialZones);
@@ -91,13 +141,34 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
 
   const addZone = (key: string) => {
     if (!key.trim()) { toast.error('Nome da zona obrigatório'); return; }
-    if (zones[key]) { toast.error('Já existe zona com esse nome'); return; }
+    
+    // If a zone with this key already exists, just select it
+    if (zones[key]) {
+      setSelected(key);
+      return;
+    }
+
     const w = dims.w || 1000;
     const h = dims.h || 1000;
     const size = Math.min(w, h) * 0.15;
     setZones(prev => ({ ...prev, [key]: { x: w / 2 - size / 2, y: h / 2 - size / 2, width: size, height: size * 0.5 } }));
     setSelected(key);
     setNewKey('');
+  };
+
+  const renameZone = (oldKey: string, newKey: string) => {
+    if (!newKey.trim() || oldKey === newKey) return;
+    if (zones[newKey]) {
+      toast.error('Já existe uma zona com esse nome');
+      return;
+    }
+    setZones(prev => {
+      const n = { ...prev };
+      n[newKey] = n[oldKey];
+      delete n[oldKey];
+      return n;
+    });
+    setSelected(newKey);
   };
 
   const removeZone = (key: string) => {
@@ -171,18 +242,66 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
               UV: {dims.w} × {dims.h} px
             </div>
 
-            <div className="space-y-2">
-              <Label>Adicionar zona</Label>
-              <div className="flex gap-1 flex-wrap">
-                {DEFAULT_KEYS.filter(k => !zones[k]).map(k => (
-                  <Button key={k} size="sm" variant="outline" className="h-7 text-xs" onClick={() => addZone(k)}>
-                    + {k}
+            <div className="space-y-4 py-2 border-t border-b border-border/50">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Definir tipo da zona</div>
+              
+              {ZONE_GROUPS.map((group) => (
+                <div key={group.title} className="space-y-1.5">
+                  <div className="text-[9px] font-bold text-gray-400 uppercase">{group.title}</div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {group.options.map(opt => {
+                      const fullId = group.prefix + opt.id;
+                      const isActive = selected === fullId;
+                      return (
+                        <Button 
+                          key={fullId} 
+                          size="sm" 
+                          variant={isActive ? "default" : "secondary"}
+                          className={`h-7 text-[10px] px-2.5 rounded-md transition-all ${
+                            isActive 
+                              ? 'bg-[#FF5A00] hover:bg-[#FF5A00]/90 text-white shadow-sm' 
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                          }`}
+                          onClick={() => {
+                            if (selected && !zones[fullId]) {
+                              renameZone(selected, fullId);
+                            } else {
+                              addZone(fullId);
+                            }
+                          }}
+                        >
+                          {opt.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              <div className="space-y-1.5 pt-1">
+                <div className="text-[9px] font-bold text-gray-400 uppercase">Personalizado</div>
+                <div className="flex gap-1.5">
+                  <Input 
+                    value={newKey} 
+                    onChange={e => setNewKey(e.target.value)} 
+                    placeholder="ID da zona" 
+                    className="h-8 text-xs bg-gray-50 border-gray-200" 
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-8 px-3 bg-[#FF5A00] hover:bg-[#FF5A00]/90"
+                    onClick={() => {
+                      if (selected && newKey.trim() && !zones[newKey.trim()]) {
+                        renameZone(selected, newKey.trim());
+                        setNewKey('');
+                      } else {
+                        addZone(newKey.trim());
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
                   </Button>
-                ))}
-              </div>
-              <div className="flex gap-1">
-                <Input value={newKey} onChange={e => setNewKey(e.target.value)} placeholder="custom_name" className="h-8" />
-                <Button size="sm" onClick={() => addZone(newKey.trim())}><Plus className="h-4 w-4" /></Button>
+                </div>
               </div>
             </div>
 
