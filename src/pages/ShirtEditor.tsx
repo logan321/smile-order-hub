@@ -283,12 +283,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }, [selectedTemplate?.uvMapId]);
 
   const moveElementRef = useRef<any>(null);
-  moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+  moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
     const zonaAntigaKey = elementPositions[tipo];
+    
+    // Se a nova posição for nula, apenas removemos o elemento das posições
+    if (!novaPosicao) {
+      setElementPositions(prev => ({ ...prev, [tipo]: null }));
+      return;
+    }
+
     const layerId = tipo === 'nome' ? 'layer_nome' : tipo === 'numero' ? 'layer_numero' : 'layer_escudo';
     const layer = uvLayers.find(l => l.id === layerId);
 
-    if (layer && typeof document !== 'undefined') {
+    if (layer && typeof document !== 'undefined' && zonaAntigaKey) {
       const fromBtn = document.querySelector(`[data-pos-id="${zonaAntigaKey}"][data-tipo="${tipo}"]`);
       const toBtn = document.querySelector(`[data-pos-id="${novaPosicao}"][data-tipo="${tipo}"]`);
 
@@ -310,12 +317,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       let next = { ...prev };
       if (tipo === 'nome') {
         next.nome = novaPosicao;
-        if (novaPosicao === next.escudo) {
+        if (novaPosicao && novaPosicao === next.escudo) {
           next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
       } else if (tipo === 'escudo') {
         next.escudo = novaPosicao;
-        if (novaPosicao === next.nome) {
+        if (novaPosicao && novaPosicao === next.nome) {
           next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
       } else {
@@ -325,9 +332,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   };
 
-  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
     moveElementRef.current?.(tipo, novaPosicao);
   }, []);
+
+  const handleLayoutSelect = (comb: typeof COMBINACOES_ESPORTE[0]) => {
+    setSelectedLayoutId(comb.id);
+    moveElement('nome', comb.nome);
+    moveElement('numero', comb.numero);
+    moveElement('escudo', comb.escudo);
+  };
 
   useEffect(() => {
     setUvLayers(prev => {
