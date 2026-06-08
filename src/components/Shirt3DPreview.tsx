@@ -79,51 +79,16 @@ function ShirtModel({
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   useEffect(() => {
-    if (uvTex) {
-      // Quando uma nova textura chega, iniciamos o crossfade
-      if (prevTextureRef.current !== uvTex) {
-        mixFactorRef.current = 0;
-        
-        scene.traverse((obj) => {
-          const mesh = obj as THREE.Mesh;
-          if (!(mesh as any).isMesh) return;
-          const mat = mesh.material as any;
-          if (mat && mat.userData.shader) {
-            mat.userData.shader.uniforms.tPrev.value = prevTextureRef.current || uvTex;
-            mat.userData.shader.uniforms.uMix.value = 0;
-          }
-        });
-        
-        prevTextureRef.current = uvTex;
-      }
-    }
-  }, [uvTex, scene]);
-
-  useFrame((state, delta) => {
-    if (mixFactorRef.current < 1) {
-      mixFactorRef.current = Math.min(1, mixFactorRef.current + delta / 0.3); // 300ms
-      scene.traverse((obj) => {
-        const mesh = obj as THREE.Mesh;
-        if (!(mesh as any).isMesh) return;
-        const mat = mesh.material as any;
-        if (mat && mat.userData.shader) {
-          mat.userData.shader.uniforms.uMix.value = mixFactorRef.current;
-        }
-      });
-    }
-  });
-
-  const { center, size } = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(scene);
-    const c = new THREE.Vector3();
-    const s = new THREE.Vector3();
-    box.getCenter(c);
-    box.getSize(s);
-    return { center: c, size: s };
-  }, [scene]);
-
-  useEffect(() => {
     const color = new THREE.Color(fabricColor);
+    const oldTex = prevTextureRef.current;
+    
+    // Se temos uma nova textura e já tínhamos uma anterior, iniciamos o crossfade
+    if (uvTex && oldTex && oldTex !== uvTex) {
+      mixFactorRef.current = 0;
+    } else {
+      mixFactorRef.current = 1;
+    }
+
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!(mesh as any).isMesh) return;
@@ -138,7 +103,7 @@ function ShirtModel({
 
       // Injeta lógica de crossfade no shader
       mat.onBeforeCompile = (shader) => {
-        shader.uniforms.tPrev = { value: prevTextureRef.current || uvTex };
+        shader.uniforms.tPrev = { value: oldTex || uvTex };
         shader.uniforms.uMix = { value: mixFactorRef.current };
         shader.fragmentShader = `
           uniform sampler2D tPrev;
@@ -163,6 +128,8 @@ function ShirtModel({
       mesh.receiveShadow = true;
       (mat as any).envMapIntensity = 0.1;
     });
+
+    prevTextureRef.current = uvTex;
   }, [scene, uvTex, fabricColor]);
 
   const fitScale = 2.4 / Math.max(size.y, 0.0001);
