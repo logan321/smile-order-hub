@@ -163,7 +163,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   useEffect(() => {
     let cancelled = false;
     const uvMapId = selectedTemplate?.uvMapId;
-    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
+    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); return; }
     (async () => {
       const { data } = await supabase
         .from('uv_maps' as any)
@@ -174,8 +174,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
-      setUvLayers([]);
-      setUvTextDrafts({});
+      // Mantemos as camadas ao trocar de modelo para não perder o que já foi digitado
     })();
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
