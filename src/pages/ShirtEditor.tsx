@@ -184,31 +184,32 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }, [selectedTemplate?.uvMapId]);
 
   const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
-    setElementPositions(prev => {
-      let next = { ...prev };
-      
-      if (tipo === 'nome') {
-        next.nome = novaPosicao;
-        if (novaPosicao === next.escudo) {
-          next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
-        }
-      } else if (tipo === 'escudo') {
-        next.escudo = novaPosicao;
-        if (novaPosicao === next.nome) {
-          if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
-            next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
-          }
-        }
-      } else {
-        next.numero = novaPosicao;
-      }
-      
-      return next;
-    });
-
     setIsTransitioning(true);
-    setTimeout(() => setIsTransitioning(false), 400);
-    setUvTextureVersion(v => v + 1);
+    setTimeout(() => {
+      setElementPositions(prev => {
+        let next = { ...prev };
+        
+        if (tipo === 'nome') {
+          next.nome = novaPosicao;
+          if (novaPosicao === next.escudo) {
+            next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+          }
+        } else if (tipo === 'escudo') {
+          next.escudo = novaPosicao;
+          if (novaPosicao === next.nome) {
+            if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
+              next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+            }
+          }
+        } else {
+          next.numero = novaPosicao;
+        }
+        
+        return next;
+      });
+      setUvTextureVersion(v => v + 1);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 400);
   }, []);
 
   useEffect(() => {
