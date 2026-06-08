@@ -665,7 +665,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       {showNome && (
                         <div className="space-y-4">
                           <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Nome</h3>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="flex flex-wrap gap-2">
                             {[
                               { id: 'costas_topo', label: 'Topo' },
                               { id: 'costas_fundo', label: 'Fundo' }
@@ -673,17 +673,36 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                               <button
                                 key={pos.id}
                                 onClick={() => moveElement('nome', pos.id)}
+                                style={{ 
+                                  '--shirt-color': elementPositions.nome === pos.id ? "#FF5A00" : "#d1d5db"
+                                } as React.CSSProperties}
                                 className={cn(
-                                  "relative p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
-                                  elementPositions.nome === pos.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100 bg-white"
+                                  "relative min-w-[85px] p-2 rounded-[12px] border-2 transition-all flex flex-col items-center gap-2 cursor-pointer",
+                                  elementPositions.nome === pos.id 
+                                    ? "border-[#FF5A00] bg-[rgba(255,90,0,0.08)]" 
+                                    : "border-gray-100 bg-white"
                                 )}
                               >
-                                <svg viewBox="0 0 71.6 58.5" className="w-full h-auto">
-                                  <path d="M15 5 L5 15 L8 25 L8 55 L63 55 L63 25 L66 15 L56 5 L45 8 L25 8 Z" fill="none" stroke={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" />
-                                  <text x="35" y={pos.id === 'costas_topo' ? '18' : '45'} fill={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} fontSize="6" fontWeight="900" textAnchor="middle">NOME</text>
-                                  <text x="35" y="32" fill={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} fontSize="10" fontWeight="900" textAnchor="middle">10</text>
+                                <svg viewBox="0 0 71.6 58.5" width="80" height="70" style={{ shapeRendering: 'geometricprecision' }}>
+                                  <path fill="var(--shirt-color)" d="M55.4,58.5H16.2V23.7l-7.1,4L0,13.1L14.9,3l13-3L28,0c2.6,0.7,5.3,1,7.9,1c2.6,0,5.2-0.3,7.7-1l0.2,0l13,3l14.9,10.2l-9.1,14.5l-7.1-4V58.5z M17.6,57H54V21.2l8.1,4.5l7.6-12.2L56.1,4.3L43.8,1.5c-2.6,0.6-5.2,1-7.9,1c-2.7,0-5.4-0.3-8.1-1L15.5,4.3L1.9,13.5l7.6,12.2l8.1-4.5V57z"/>
+                                  {pos.id === 'costas_topo' ? (
+                                    <>
+                                      <text x="35.8" y="18" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">NOME</text>
+                                      <text x="35.8" y="42" textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--shirt-color)">10</text>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <text x="35.8" y="28" textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--shirt-color)">10</text>
+                                      <text x="35.8" y="50" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">NOME</text>
+                                    </>
+                                  )}
                                 </svg>
                                 <span className="text-[9px] font-black uppercase">{pos.label}</span>
+                                {elementPositions.nome === pos.id && (
+                                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#22c55e] rounded-full flex items-center justify-center shadow-sm">
+                                    <Check className="w-3 h-3 text-white stroke-[4]" />
+                                  </div>
+                                )}
                               </button>
                             ))}
                           </div>
@@ -694,7 +713,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       {showNumero && (
                         <div className="space-y-4">
                           <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Número</h3>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {[
                               { id: 'peito_centro', label: 'Centro' },
                               { id: 'peito_direito', label: 'Direito' },
@@ -703,26 +722,35 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                               <button
                                 key={pos.id}
                                 onClick={() => moveElement('numero', pos.id)}
+                                style={{ 
+                                  '--shirt-color': elementPositions.numero === pos.id ? "#FF5A00" : "#d1d5db"
+                                } as React.CSSProperties}
                                 className={cn(
-                                  "relative p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
-                                  elementPositions.numero === pos.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100 bg-white"
+                                  "relative min-w-[85px] p-2 rounded-[12px] border-2 transition-all flex flex-col items-center gap-2 cursor-pointer",
+                                  elementPositions.numero === pos.id 
+                                    ? "border-[#FF5A00] bg-[rgba(255,90,0,0.08)]" 
+                                    : "border-gray-100 bg-white"
                                 )}
                               >
-                                <svg viewBox="0 0 71.6 58.5" className="w-full h-auto">
-                                  <path d="M15 5 L5 15 L8 25 L8 55 L63 55 L63 25 L66 15 L56 5 L45 8 L25 8 Z" fill="none" stroke={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" />
-                                  <circle cx="35" cy="7" r="4" stroke={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" fill="none" />
+                                <svg viewBox="0 0 72.5 59.5" width="80" height="70" style={{ shapeRendering: 'geometricprecision' }}>
+                                  <path fill="var(--shirt-color)" d="M56.1,59.5H16.4V24.2l-7.2,4.1L0,13.4L15.1,3.1L28.5,0l0.3,0.4c1.7,2.6,4.5,4,7.5,4.1h0c2.9,0,5.7-1.5,7.4-4.1L44,0l13.4,3.1l15.1,10.3l-9.2,14.8l-7.2-4.1V59.5z M17.9,58h36.7V21.6l8.2,4.6l7.7-12.4L56.8,4.5L44.6,1.7c-2,2.7-5.1,4.3-8.4,4.3h-0.1c-3.3,0-6.3-1.6-8.4-4.3L15.7,4.5L2,13.9l7.7,12.4l8.2-4.6V58z"/>
                                   <text 
-                                    x={pos.id === 'peito_centro' ? '35' : pos.id === 'peito_direito' ? '25' : '45'} 
-                                    y={pos.id === 'peito_centro' ? '30' : '25'} 
-                                    fill={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} 
-                                    fontSize={pos.id === 'peito_centro' ? '10' : '7'} 
+                                    x={pos.id === 'peito_centro' ? '36.2' : pos.id === 'peito_direito' ? '25' : '48'} 
+                                    y={pos.id === 'peito_centro' ? '38' : '28'} 
+                                    fill="var(--shirt-color)" 
+                                    fontSize={pos.id === 'peito_centro' ? '12' : '9'} 
                                     fontWeight="900" 
                                     textAnchor="middle"
                                   >
                                     10
                                   </text>
                                 </svg>
-                                <span className="text-[8px] font-black uppercase">{pos.label}</span>
+                                <span className="text-[9px] font-black uppercase">{pos.label}</span>
+                                {elementPositions.numero === pos.id && (
+                                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-[#22c55e] rounded-full flex items-center justify-center shadow-sm">
+                                    <Check className="w-3 h-3 text-white stroke-[4]" />
+                                  </div>
+                                )}
                               </button>
                             ))}
                           </div>
