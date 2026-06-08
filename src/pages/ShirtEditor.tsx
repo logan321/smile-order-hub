@@ -113,11 +113,103 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
-  const [elementPositions, setElementPositions] = useState<{ nome: string; escudo: string; numero: string }>({
-    nome: 'peito_direito',
+  const [elementPositions, setElementPositions] = useState<{ nome: string | null; escudo: string | null; numero: string | null }>({
+    nome: 'costas_topo',
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
+  const [selectedLayoutId, setSelectedLayoutId] = useState('c1');
+
+  const COMBINACOES_ESPORTE = [
+    { id: 'c1', nome: 'costas_topo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
+    { id: 'c2', nome: 'costas_fundo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
+    { id: 'c3', nome: 'costas_topo', numero: 'peito_direito', escudo: 'peito_esquerdo' },
+    { id: 'c4', nome: null, numero: 'costas_centro', escudo: 'peito_esquerdo' },
+    { id: 'c5', nome: null, numero: 'peito_centro', escudo: 'peito_esquerdo' },
+    { id: 'c6', nome: null, numero: 'peito_direito', escudo: 'peito_esquerdo' },
+  ];
+
+  const ShirtLayoutOption = ({ 
+    nomePos, 
+    numeroPos, 
+    escudoPos, 
+    selected, 
+    onClick 
+  }: { 
+    nomePos: string | null; 
+    numeroPos: string | null; 
+    escudoPos: string | null; 
+    selected: boolean; 
+    onClick: () => void;
+  }) => {
+    const color = selected ? '#FF5A00' : '#e5e7eb';
+    
+    const getPos = (pos: string | null) => {
+      switch(pos) {
+        case 'peito_direito': return { x: '35%', y: '35%' };
+        case 'peito_esquerdo': return { x: '55%', y: '35%' };
+        case 'peito_centro': return { x: '45%', y: '38%' };
+        case 'costas_topo': return { x: '45%', y: '25%' };
+        case 'costas_centro': return { x: '45%', y: '45%' };
+        case 'costas_fundo': return { x: '45%', y: '60%' };
+        default: return null;
+      }
+    };
+
+    const nomeCoords = getPos(nomePos);
+    const numeroCoords = getPos(numeroPos);
+    const escudoCoords = getPos(escudoPos);
+
+    const isBack = (pos: string | null) => pos?.startsWith('costas');
+
+    return (
+      <button 
+        onClick={onClick}
+        className={cn(
+          "relative group aspect-square rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 p-1 bg-white",
+          selected ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-50 hover:border-gray-200"
+        )}
+      >
+        <div className="flex gap-1 items-center justify-center">
+          <svg width="35" height="40" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Front Mini */}
+            <path d="M20 15 L10 25 L15 40 L15 80 L65 80 L65 40 L70 25 L60 15 L50 20 L30 20 Z" stroke={color} strokeWidth="2" />
+            <circle cx="40" cy="18" r="6" stroke={color} strokeWidth="2" />
+            
+            {!isBack(nomePos) && nomeCoords && (
+              <text x={nomeCoords.x} y={nomeCoords.y} fill={color} fontSize="8" fontWeight="bold" textAnchor="middle">NOME</text>
+            )}
+            {!isBack(numeroPos) && numeroCoords && (
+              <text x={numeroCoords.x} y={numeroCoords.y} fill={color} fontSize="14" fontWeight="bold" textAnchor="middle">10</text>
+            )}
+            {!isBack(escudoPos) && escudoCoords && (
+              <rect x="52%" y="32%" width="8" height="8" fill={color} />
+            )}
+          </svg>
+          
+          <svg width="35" height="40" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Back Mini */}
+            <path d="M20 15 L10 25 L15 40 L15 80 L65 80 L65 40 L70 25 L60 15 L50 20 L30 20 Z" stroke={color} strokeWidth="2" />
+            
+            {isBack(nomePos) && nomeCoords && (
+              <text x={isBack(nomePos) ? nomeCoords.x : '0'} y={isBack(nomePos) ? nomeCoords.y : '0'} fill={color} fontSize="8" fontWeight="bold" textAnchor="middle">NOME</text>
+            )}
+            {isBack(numeroPos) && numeroCoords && (
+              <text x={isBack(numeroPos) ? numeroCoords.x : '0'} y={isBack(numeroPos) ? numeroCoords.y : '0'} fill={color} fontSize="14" fontWeight="bold" textAnchor="middle">10</text>
+            )}
+          </svg>
+        </div>
+        
+        {selected && (
+          <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="w-2.5 h-2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        )}
+      </button>
+    );
+  };
 
   const [flyingElement, setFlyingElement] = useState<{
     content: string;
@@ -191,12 +283,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }, [selectedTemplate?.uvMapId]);
 
   const moveElementRef = useRef<any>(null);
-  moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+  moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
     const zonaAntigaKey = elementPositions[tipo];
+    
+    // Se a nova posição for nula, apenas removemos o elemento das posições
+    if (!novaPosicao) {
+      setElementPositions(prev => ({ ...prev, [tipo]: null }));
+      return;
+    }
+
     const layerId = tipo === 'nome' ? 'layer_nome' : tipo === 'numero' ? 'layer_numero' : 'layer_escudo';
     const layer = uvLayers.find(l => l.id === layerId);
 
-    if (layer && typeof document !== 'undefined') {
+    if (layer && typeof document !== 'undefined' && zonaAntigaKey) {
       const fromBtn = document.querySelector(`[data-pos-id="${zonaAntigaKey}"][data-tipo="${tipo}"]`);
       const toBtn = document.querySelector(`[data-pos-id="${novaPosicao}"][data-tipo="${tipo}"]`);
 
@@ -218,12 +317,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       let next = { ...prev };
       if (tipo === 'nome') {
         next.nome = novaPosicao;
-        if (novaPosicao === next.escudo) {
+        if (novaPosicao && novaPosicao === next.escudo) {
           next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
       } else if (tipo === 'escudo') {
         next.escudo = novaPosicao;
-        if (novaPosicao === next.nome) {
+        if (novaPosicao && novaPosicao === next.nome) {
           next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
       } else {
@@ -233,17 +332,25 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   };
 
-  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
     moveElementRef.current?.(tipo, novaPosicao);
   }, []);
+
+  const handleLayoutSelect = (comb: typeof COMBINACOES_ESPORTE[0]) => {
+    setSelectedLayoutId(comb.id);
+    moveElement('nome', comb.nome);
+    moveElement('numero', comb.numero);
+    moveElement('escudo', comb.escudo);
+  };
 
   useEffect(() => {
     setUvLayers(prev => {
       const newLayers = [];
       const animatingLayerId = animatingElement?.layer?.id;
       
-      const updateOrAddLayer = (id: string, zoneKey: string, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
-        if (id === animatingLayerId) return; // Não adiciona no canvas principal se estiver animando overlay
+      const updateOrAddLayer = (id: string, zoneKey: string | null, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
+        if (!zoneKey) return;
+        if (id === animatingLayerId) return; 
 
         const zone = uvMapZones[zoneKey];
         if (!zone) return;
@@ -266,15 +373,20 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       };
 
       const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
-      updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text');
+      if (elementPositions.nome) {
+        updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text');
+      }
       
       const numeroContent = uvTextDrafts['numero'] || '10';
-      updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
+      if (elementPositions.numero) {
+        updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
+      }
 
       const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
-      updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { url: shieldSvg, scale: 0.8, opacity: 1 } as any);
+      if (elementPositions.escudo) {
+        updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { url: shieldSvg, scale: 0.8, opacity: 1 } as any);
+      }
 
-      // Adiciona outros textos livres
       Object.keys(uvTextDrafts).forEach(k => {
         if (['nome', 'numero'].includes(k)) return;
         const content = uvTextDrafts[k];
@@ -445,6 +557,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   
                   {activeTab === 'name' && (
                     <div className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Nome e Número</h3>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha o layout</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-3">
+                          {COMBINACOES_ESPORTE.map((comb) => (
+                            <ShirtLayoutOption
+                              key={comb.id}
+                              nomePos={comb.nome}
+                              numeroPos={comb.numero}
+                              escudoPos={comb.escudo}
+                              selected={selectedLayoutId === comb.id}
+                              onClick={() => handleLayoutSelect(comb)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
                       <div className="space-y-3">
                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nome do Jogador</label>
                         <Input
@@ -453,30 +585,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           placeholder="SEU NOME"
                           className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { label: 'Peito D', id: 'peito_direito' },
-                            { label: 'Peito E', id: 'peito_esquerdo' },
-                            { label: 'Costas T', id: 'costas_topo' },
-                            { label: 'Costas F', id: 'costas_fundo' }
-                          ].map(pos => (
-                            <button
-                              key={pos.id}
-                              type="button"
-                              data-pos-id={pos.id}
-                              data-tipo="nome"
-                              onClick={() => moveElement('nome', pos.id)}
-                              className={cn(
-                                "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
-                                elementPositions.nome === pos.id 
-                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
-                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-                              )}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                        </div>
                       </div>
 
                       <div className="space-y-3">
@@ -487,37 +595,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           placeholder="10"
                           className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-center text-lg focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { label: 'Peito D', id: 'peito_direito' },
-                            { label: 'Peito E', id: 'peito_esquerdo' },
-                            { label: 'Peito C', id: 'peito_centro' },
-                            { label: 'Costas C', id: 'costas_centro' }
-                          ].map(pos => (
-                            <button
-                              key={pos.id}
-                              type="button"
-                              data-pos-id={pos.id}
-                              data-tipo="numero"
-                              onClick={() => moveElement('numero', pos.id)}
-                              className={cn(
-                                "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
-                                elementPositions.numero === pos.id 
-                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
-                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-                              )}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   )}
 
                   {activeTab === 'emblems' && (
-                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Posição do Escudo</label>
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Escudo</h3>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha a posição</p>
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           { label: 'Peito Direito', id: 'peito_direito' },
