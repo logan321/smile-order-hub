@@ -83,7 +83,7 @@ export async function composeUvTexture(opts: {
       // auto-fit: pick the largest size where text fits zone.width
       const targetW = zone.width * 0.92 * scale;
       const targetH = zone.height * 0.92 * scale;
-      let size = Math.max(8, layer.fontSize ?? targetH);
+      let size = targetH;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (let i = 0; i < 12; i++) {

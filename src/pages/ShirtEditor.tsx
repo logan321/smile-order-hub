@@ -204,12 +204,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       uvTextCommitTimerRef.current = null;
       setUvLayers(prev => {
         const existing = prev.find(l => l.zoneKey === zoneKey && l.type === 'text');
+        const zone = uvMapZones[zoneKey];
+        // Calculate relative font size based on percentage (1-100) and zone height
+        const calculatedFontSize = zone ? (fontSize / 100) * zone.height : undefined;
+        
         if (existing) {
           if (!content) return prev.filter(l => l !== existing);
-          return prev.map(l => l === existing ? { ...l, content, color: textColor, fontFamily, fontSize, fontWeight: 900 } as UvLayer : l);
+          return prev.map(l => l === existing ? { ...l, content, color: textColor, fontFamily, fontSize: calculatedFontSize, fontWeight: 900 } as UvLayer : l);
         }
         if (!content) return prev;
-        return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: textColor, fontFamily, fontSize, fontWeight: 900 }];
+        return [...prev, { id: `${zoneKey}_${Date.now()}`, zoneKey, type: 'text', content, color: textColor, fontFamily, fontSize: calculatedFontSize, fontWeight: 900 }];
       });
     }, 180);
   };
