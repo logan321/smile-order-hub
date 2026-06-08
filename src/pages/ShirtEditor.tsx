@@ -409,7 +409,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     setUvLayers(prev => {
-      const newLayers = [];
+      const newLayers: UvLayer[] = [];
       const animatingLayerId = animatingElement?.layer?.id;
       
       const updateOrAddLayer = (id: string, zoneKey: string | null, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
@@ -419,15 +419,22 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         const zone = uvMapZones[zoneKey];
         if (!zone) return;
         
-        const calculatedFontSize = (fontSize / 100) * zone.height;
+        const baseFontSize = id.includes('nome') ? nomeSize : id.includes('numero') ? numeroSize : fontSize;
+        const calculatedFontSize = (baseFontSize / 100) * zone.height;
+        
+        const layerColor = id.includes('nome') ? nomeColor : 
+                          (id.includes('numero') && zoneKey.startsWith('peito')) ? numeroFrontColor :
+                          (id.includes('numero') && zoneKey.startsWith('costas')) ? numeroBackColor : textColor;
+        
+        const layerFont = id.includes('nome') ? nomeFont : id.includes('numero') ? numeroFont : fontFamily;
         
         const layer: UvLayer = {
           id,
           zoneKey,
           type,
           content,
-          color: textColor,
-          fontFamily,
+          color: layerColor,
+          fontFamily: layerFont,
           fontSize: calculatedFontSize,
           fontWeight: 900,
           ...extra
@@ -436,14 +443,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         newLayers.push(layer);
       };
 
-      const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
-      if (elementPositions.nome) {
+      if (showNome && elementPositions.nome) {
+        const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
         updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text');
       }
       
-      const numeroContent = uvTextDrafts['numero'] || '10';
-      if (elementPositions.numero) {
+      if (showNumero && elementPositions.numero) {
+        const numeroContent = uvTextDrafts['numero'] || '10';
         updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
+        
+        // Se o número estiver em uma posição de peito, também pode precisar estar nas costas se o layout for misto? 
+        // Na Jumptec, se o número é "peito_direito", ele ainda costuma ter um número grande nas costas?
+        // O prompt diz: "Número centro frente", "Número peito direito", "Número peito esquerdo".
+        // Mas o seletor de posição de nome diz "Nome costas TOPO + número no centro das costas".
+        // Então o número centro costas parece ser fixo ou implícito quando showNumero é true.
+        if (!elementPositions.numero.startsWith('costas')) {
+             updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text');
+        }
       }
 
       const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
@@ -459,7 +475,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       return newLayers;
     });
-  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id]);
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont]);
 
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
