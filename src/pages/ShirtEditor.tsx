@@ -57,7 +57,7 @@ interface Stamp {
   nicheId?: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | 'models' | null;
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
@@ -153,9 +153,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
       })) ?? []);
       setLoading(false);
-      if (rawTemplates.length > 0 && !selectedTemplate) {
-        setSelectedTemplate(rawTemplates[0]);
-      }
     };
     fetchData();
   }, [ownerUserId]);
@@ -163,7 +160,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   useEffect(() => {
     let cancelled = false;
     const uvMapId = selectedTemplate?.uvMapId;
-    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); return; }
+    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
     (async () => {
       const { data } = await supabase
         .from('uv_maps' as any)
@@ -174,7 +171,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
-      // Mantemos as camadas ao trocar de modelo para não perder o que já foi digitado
+      setUvLayers([]);
+      setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
@@ -232,12 +230,21 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleWhatsAppQuote = () => toast.info('Redirecionando para WhatsApp...');
   const handleDownload = () => toast.info('Gerando arquivos para download...');
 
-  if (loading || !selectedTemplate) {
+  if (!selectedTemplate) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8 text-center text-gray-800 uppercase tracking-widest">Escolha o seu modelo</h1>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {templates.map(t => (
+              <button key={t.id} onClick={() => setSelectedTemplate(t)} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all">
+                <div className="p-4"><img src={toProxyUrl(t.frontImageUrl)} className="w-full aspect-[3/4] object-contain rounded-xl bg-gray-50" /></div>
+                <div className="p-4 border-t border-gray-50 bg-gray-50/50">
+                  <p className="font-bold text-gray-700 truncate">{t.name}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -247,7 +254,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setActiveTab('models')} className="text-gray-400 hover:text-gray-900"><Box className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
           <img src={logo} alt="Jumptec" className="h-6 w-auto" />
           <div className="h-4 w-px bg-gray-200 mx-2" />
           <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
@@ -257,11 +264,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </header>
 
-      <main className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
+      <main className="flex flex-1 overflow-hidden">
         {/* Coluna 1: Sidebar de Navegação */}
-        <nav id="left-sidebar" className="w-14 lg:w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-6 lg:space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
+        <nav id="left-sidebar" className="w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-8 z-30">
           {[
-            { id: 'models', label: 'Modelo', icon: Box },
             { id: 'stamps', label: 'Estampa', icon: Shirt },
             { id: 'text', label: 'Texto', icon: Type },
             { id: 'name', label: 'Nome/Nº', icon: Hand },
@@ -272,64 +278,45 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             <button
               key={id}
               onClick={() => setActiveTab(id as ToolbarTab)}
-              className={`flex flex-col items-center gap-1 w-full py-2 transition-all relative ${activeTab === id ? 'text-[#FF5A00]' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex flex-col items-center gap-1.5 w-full py-2 transition-all relative ${activeTab === id ? 'text-[#FF5A00]' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {activeTab === id && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#FF5A00] rounded-l-full" />}
-              <Icon className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
-              <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-tighter text-center px-1">{label}</span>
+              <Icon className={cn("w-6 h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
+              <span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
             </button>
           ))}
         </nav>
 
         {/* Coluna 2: Painel Dinâmico */}
-        <div id="dynamicSidebar" className="w-48 md:w-64 lg:w-80 bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]">
-          <div className="p-4 lg:p-6">
-            <h2 className="text-[10px] lg:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 lg:mb-6">
-              Configurações de {activeTab === 'models' ? 'Modelo' : activeTab === 'stamps' ? 'Estampa' : activeTab === 'text' ? 'Texto' : activeTab === 'name' ? 'Nome/Número' : activeTab === 'patches' ? 'Acabamento' : activeTab === 'emblems' ? 'Escudo' : 'Upload'}
+        <div id="dynamicSidebar" className="w-80 bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]">
+          <div className="p-6">
+            <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6">
+              Configurações de {activeTab === 'stamps' ? 'Estampa' : activeTab === 'text' ? 'Texto' : activeTab === 'name' ? 'Nome/Número' : activeTab === 'patches' ? 'Acabamento' : activeTab === 'emblems' ? 'Escudo' : 'Upload'}
             </h2>
             
-            <div className="space-y-4 lg:space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
                 <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
-                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-5 lg:h-6 w-full rounded cursor-pointer border-none" />
+                  <label className="text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
+                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-6 w-full rounded cursor-pointer border-none" />
                 </div>
                 <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Tamanho</label>
-                  <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-5 lg:h-6 border-none bg-transparent font-bold text-[10px] lg:text-xs p-0 focus-visible:ring-0" />
+                  <label className="text-[8px] font-black text-gray-400 uppercase">Tamanho</label>
+                  <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-6 border-none bg-transparent font-bold text-xs p-0 focus-visible:ring-0" />
                 </div>
               </div>
 
-              {activeTab === 'models' && (
-                <div className="grid grid-cols-2 gap-3">
-                  {templates.map(t => (
-                    <button
-                      key={t.id}
-                      onClick={() => setSelectedTemplate(t)}
-                      className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-[3/4] relative ${selectedTemplate.id === t.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
-                    >
-                      <div className="p-2">
-                        <img src={toProxyUrl(t.frontImageUrl)} className="w-full h-full object-contain" />
-                      </div>
-                      <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
-                        <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{t.name}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {activeTab === 'stamps' && (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {stamps.map(s => (
                     <button
                       key={s.id}
                       onClick={() => addStamp(s)}
-                      className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
+                      className={`group rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
                     >
                       <StampThumb stampUrl={s.imageUrl} name={s.name} />
                       <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
-                        <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
+                        <p className="text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
                       </div>
                     </button>
                   ))}
@@ -337,26 +324,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               )}
 
               {(activeTab === 'text' || activeTab === 'name' || activeTab === 'logo') && (
-                <div className="space-y-3 lg:space-y-4">
+                <div className="space-y-4">
                   <Select value={fontFamily} onValueChange={setFontFamily}>
-                    <SelectTrigger className="w-full h-10 lg:h-12 rounded-xl bg-gray-50 border-gray-100 shadow-sm font-bold text-[10px] lg:text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
+                    <SelectTrigger className="w-full h-12 rounded-xl bg-gray-50 border-gray-100 shadow-sm font-bold text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
                     <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
                   </Select>
                   
                   {Object.keys(uvMapZones).map((zoneKey) => (
-                    <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
+                    <div key={zoneKey} className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
+                        <span className="text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
                         <div className="flex gap-1">
-                           <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
-                           <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                           <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3.5 h-3.5" /></button>
+                           <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
                       <Input
                         value={uvTextDrafts[zoneKey] ?? ''}
                         onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
                         placeholder={`Digite aqui...`}
-                        className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
+                        className="h-10 bg-gray-50 border-none rounded-xl font-medium text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
                       />
                       <input id={`uv-file-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
                     </div>
@@ -364,9 +351,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                 </div>
               )}
 
-              <div className="pt-4 lg:pt-6 border-t border-gray-50">
-                <Button variant="ghost" size="sm" onClick={() => { setAppliedStamp(null); setUvLayers([]); setUvTextDrafts({}); setUvTextureVersion(v => v + 1); }} className="w-full text-[8px] lg:text-[9px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest">
-                  <RotateCcw className="w-3 lg:w-3.5 h-3 lg:h-3.5 mr-2" /> Resetar Design
+              <div className="pt-6 border-t border-gray-50">
+                <Button variant="ghost" size="sm" onClick={() => { setAppliedStamp(null); setUvLayers([]); setUvTextDrafts({}); setUvTextureVersion(v => v + 1); }} className="w-full text-[9px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest">
+                  <RotateCcw className="w-3.5 h-3.5 mr-2" /> Resetar Design
                 </Button>
               </div>
             </div>
@@ -374,7 +361,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
 
         {/* Coluna 3: Canvas 3D */}
-        <div className="flex-1 relative bg-[#F8F9FA] flex flex-col overflow-hidden">
+        <div className="flex-1 relative bg-[#F8F9FA] flex flex-col">
           <div className="flex-1 relative">
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
@@ -386,32 +373,32 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             />
             
             {/* Overlay Actions */}
-            <div className="absolute top-4 lg:top-6 right-4 lg:right-6 flex gap-2 lg:gap-3 z-30">
-              <Button onClick={handleWhatsAppQuote} className="h-10 lg:h-12 px-4 lg:px-8 bg-[#FF5A00] hover:bg-[#FF5A00]/90 text-white font-black rounded-xl lg:rounded-2xl shadow-[0_10px_20px_-5px_rgba(255,90,0,0.3)] text-[10px] lg:text-xs uppercase tracking-widest gap-2 animate-in slide-in-from-top duration-500">
-                 Orçamento <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
+            <div className="absolute top-6 right-6 flex gap-3 z-30">
+              <Button onClick={handleWhatsAppQuote} className="h-12 px-8 bg-[#FF5A00] hover:bg-[#FF5A00]/90 text-white font-black rounded-2xl shadow-[0_15px_30px_-5px_rgba(255,90,0,0.3)] text-xs uppercase tracking-widest gap-2 animate-in slide-in-from-top duration-500">
+                 Orçamento <ChevronLeft className="w-4 h-4 rotate-180" />
               </Button>
-              <Button onClick={handleDownload} variant="outline" className="h-10 lg:h-12 px-3 lg:px-6 bg-white border-none shadow-xl text-gray-700 font-bold rounded-xl lg:rounded-2xl hover:bg-gray-50 text-[10px] lg:text-xs uppercase tracking-wider">
-                 <Download className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              <Button onClick={handleDownload} variant="outline" className="h-12 px-6 bg-white border-none shadow-xl text-gray-700 font-bold rounded-2xl hover:bg-gray-50 text-xs uppercase tracking-wider">
+                 <Download className="w-4 h-4" />
               </Button>
             </div>
 
             <button 
-              className="absolute top-4 lg:top-6 left-4 lg:left-6 p-3 lg:p-4 bg-white hover:bg-gray-50 rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 transition-all active:scale-95 group z-30" 
+              className="absolute top-6 left-6 p-4 bg-white hover:bg-gray-50 rounded-2xl shadow-xl border border-gray-100 transition-all active:scale-95 group z-30" 
               onClick={() => setCameraPosition([0, 0.1, 5.2])}
             >
-              <RotateCcw className="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 group-hover:text-[#FF5A00] transition-colors" />
+              <RotateCcw className="w-5 h-5 text-gray-400 group-hover:text-[#FF5A00] transition-colors" />
             </button>
 
             {/* Visual View Selectors */}
-            <div className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 lg:gap-4 z-30">
-               <button onClick={() => setCameraPosition([0, 0.1, 5.2])} className={cn("w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", cameraPosition[2] > 0 ? "border-[#FF5A00]/50" : "border-gray-100")}><Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", cameraPosition[2] > 0 ? "text-[#FF5A00]" : "text-gray-300")} /></button>
-               <button onClick={() => setCameraPosition([0, 0.1, -5.2])} className={cn("w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", cameraPosition[2] < 0 ? "border-[#FF5A00]/50" : "border-gray-100")}><Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7 rotate-180", cameraPosition[2] < 0 ? "text-[#FF5A00]" : "text-gray-300")} /></button>
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30">
+               <button onClick={() => setCameraPosition([0, 0.1, 5.2])} className={cn("w-14 h-14 bg-white rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", cameraPosition[2] > 0 ? "border-[#FF5A00]/50" : "border-gray-100")}><Shirt className={cn("w-7 h-7", cameraPosition[2] > 0 ? "text-[#FF5A00]" : "text-gray-300")} /></button>
+               <button onClick={() => setCameraPosition([0, 0.1, -5.2])} className={cn("w-14 h-14 bg-white rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", cameraPosition[2] < 0 ? "border-[#FF5A00]/50" : "border-gray-100")}><Shirt className={cn("w-7 h-7 rotate-180", cameraPosition[2] < 0 ? "text-[#FF5A00]" : "text-gray-300")} /></button>
             </div>
           </div>
           
-          <div className="h-10 lg:h-12 bg-white/50 backdrop-blur-sm border-t border-gray-100 flex items-center justify-center gap-4 lg:gap-8 px-4 lg:px-6 shrink-0">
-             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">3D Ativo</span></div>
-             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-[#FF5A00]" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">Sincronização Realtime</span></div>
+          <div className="h-12 bg-white/50 backdrop-blur-sm border-t border-gray-100 flex items-center justify-center gap-8 px-6">
+             <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Motor de Renderização 3D Ativo</span></div>
+             <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#FF5A00]" /><span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sincronização UV em Tempo Real</span></div>
           </div>
         </div>
       </main>
