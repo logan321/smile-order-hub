@@ -166,43 +166,44 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <button 
         onClick={onClick}
         className={cn(
-          "relative group aspect-square rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 p-1 bg-white",
-          selected ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-50 hover:border-gray-200"
+          "relative group rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 p-2 bg-white min-w-[110px] min-h-[120px]",
+          selected ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100 hover:border-gray-200"
         )}
+        style={{ borderWidth: selected ? '3px' : '2px' }}
       >
-        <div className="flex gap-1 items-center justify-center">
-          <svg width="35" height="40" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div className="flex gap-2 items-center justify-center">
+          <svg width="45" height="55" viewBox="0 0 120 130" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Front Mini */}
-            <path d="M20 15 L10 25 L15 40 L15 80 L65 80 L65 40 L70 25 L60 15 L50 20 L30 20 Z" stroke={color} strokeWidth="2" />
-            <circle cx="40" cy="18" r="6" stroke={color} strokeWidth="2" />
+            <path d="M30 20 L15 35 L20 55 L20 110 L100 110 L100 55 L105 35 L90 20 L75 25 L45 25 Z" stroke={color} strokeWidth="3" />
+            <circle cx="60" cy="22" r="8" stroke={color} strokeWidth="3" />
             
             {!isBack(nomePos) && nomeCoords && (
-              <text x={nomeCoords.x} y={nomeCoords.y} fill={color} fontSize="8" fontWeight="bold" textAnchor="middle">NOME</text>
+              <text x={nomeCoords.x} y={nomeCoords.y} fill={color} fontSize="10" fontWeight="900" textAnchor="middle">NOME</text>
             )}
             {!isBack(numeroPos) && numeroCoords && (
-              <text x={numeroCoords.x} y={numeroCoords.y} fill={color} fontSize="14" fontWeight="bold" textAnchor="middle">10</text>
+              <text x={numeroCoords.x} y={numeroCoords.y} fill={color} fontSize="18" fontWeight="900" textAnchor="middle">10</text>
             )}
             {!isBack(escudoPos) && escudoCoords && (
-              <rect x="52%" y="32%" width="8" height="8" fill={color} />
+              <rect x="52%" y="32%" width="12" height="12" fill={color} />
             )}
           </svg>
           
-          <svg width="35" height="40" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="45" height="55" viewBox="0 0 120 130" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Back Mini */}
-            <path d="M20 15 L10 25 L15 40 L15 80 L65 80 L65 40 L70 25 L60 15 L50 20 L30 20 Z" stroke={color} strokeWidth="2" />
+            <path d="M30 20 L15 35 L20 55 L20 110 L100 110 L100 55 L105 35 L90 20 L75 25 L45 25 Z" stroke={color} strokeWidth="3" />
             
             {isBack(nomePos) && nomeCoords && (
-              <text x={isBack(nomePos) ? nomeCoords.x : '0'} y={isBack(nomePos) ? nomeCoords.y : '0'} fill={color} fontSize="8" fontWeight="bold" textAnchor="middle">NOME</text>
+              <text x={nomeCoords.x} y={nomeCoords.y} fill={color} fontSize="10" fontWeight="900" textAnchor="middle">NOME</text>
             )}
             {isBack(numeroPos) && numeroCoords && (
-              <text x={isBack(numeroPos) ? numeroCoords.x : '0'} y={isBack(numeroPos) ? numeroCoords.y : '0'} fill={color} fontSize="14" fontWeight="bold" textAnchor="middle">10</text>
+              <text x={numeroCoords.x} y={numeroCoords.y} fill={color} fontSize="18" fontWeight="900" textAnchor="middle">10</text>
             )}
           </svg>
         </div>
         
         {selected && (
-          <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="w-2.5 h-2.5">
+          <div className="absolute top-1 right-1 w-5 h-5 bg-[#FF5A00] rounded-full flex items-center justify-center shadow-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="w-3 h-3">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
@@ -560,10 +561,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       <div className="space-y-4">
                         <div className="flex flex-col gap-1">
                           <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Nome e Número</h3>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha o layout</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Personalize o layout</p>
                         </div>
                         
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                           {COMBINACOES_ESPORTE.map((comb) => (
                             <ShirtLayoutOption
                               key={comb.id}
