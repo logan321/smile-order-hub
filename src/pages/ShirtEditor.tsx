@@ -187,6 +187,20 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [escudoOffsetX, setEscudoOffsetX] = useState(0);
   const [escudoOffsetY, setEscudoOffsetY] = useState(0);
 
+  const [debouncedEscudoScale, setDebouncedEscudoScale] = useState(1);
+  const [debouncedEscudoOffsetX, setDebouncedEscudoOffsetX] = useState(0);
+  const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEscudoScale(escudoScale);
+      setDebouncedEscudoOffsetX(escudoOffsetX);
+      setDebouncedEscudoOffsetY(escudoOffsetY);
+      setUvTextureVersion(v => v + 1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [escudoScale, escudoOffsetX, escudoOffsetY]);
+
   const COMBINACOES_ESPORTE = [
     { id: 'c1', nome: 'costas_topo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
     { id: 'c2', nome: 'costas_fundo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
