@@ -94,6 +94,8 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
       setZones(initialZones || {});
       setDims({ w: initialWidth ?? 0, h: initialHeight ?? 0 });
       setSelected(null);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
     }
   }, [open, initialZones, initialWidth, initialHeight]);
 
