@@ -185,6 +185,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+    console.log('moveElement chamado:', tipo, novaPosicao, 'posição atual:', elementPositions);
     setElementPositions(prev => {
       let next = { ...prev };
       
@@ -435,7 +436,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             <button
                               key={pos.id}
                               type="button"
-                              onClick={() => moveElement('nome', pos.id)}
+                              onClick={() => {
+                                console.log('onClick disparado', pos.id);
+                                moveElement('nome', pos.id);
+                              }}
                               className={cn(
                                 "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
                                 elementPositions.nome === pos.id 
