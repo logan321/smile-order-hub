@@ -526,6 +526,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           <button
                             key={pos.id}
                             type="button"
+                            data-pos-id={pos.id}
+                            data-tipo="escudo"
                             onClick={() => moveElement('escudo', pos.id)}
                             className={cn(
                               "h-10 text-[8px] font-bold uppercase rounded-lg border transition-all",
