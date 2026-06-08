@@ -129,8 +129,14 @@ function ShirtModel({
       (mat as any).envMapIntensity = 0.1;
     });
 
-    prevTextureRef.current = uvTex;
-  }, [scene, uvTex, fabricColor]);
+  const { center, size } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const c = new THREE.Vector3();
+    const s = new THREE.Vector3();
+    box.getCenter(c);
+    box.getSize(s);
+    return { center: c, size: s };
+  }, [scene]);
 
   const fitScale = 2.4 / Math.max(size.y, 0.0001);
 
