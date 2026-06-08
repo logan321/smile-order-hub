@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas, useLoader, useFrame } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -74,8 +74,44 @@ function ShirtModel({
   });
 
   const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
-
+  const prevTextureRef = useRef<THREE.Texture | null>(null);
+  const mixFactorRef = useRef(1);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
+
+  useEffect(() => {
+    if (uvTex) {
+      // Quando uma nova textura chega, iniciamos o crossfade
+      if (prevTextureRef.current !== uvTex) {
+        mixFactorRef.current = 0;
+        
+        scene.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (!(mesh as any).isMesh) return;
+          const mat = mesh.material as any;
+          if (mat && mat.userData.shader) {
+            mat.userData.shader.uniforms.tPrev.value = prevTextureRef.current || uvTex;
+            mat.userData.shader.uniforms.uMix.value = 0;
+          }
+        });
+        
+        prevTextureRef.current = uvTex;
+      }
+    }
+  }, [uvTex, scene]);
+
+  useFrame((state, delta) => {
+    if (mixFactorRef.current < 1) {
+      mixFactorRef.current = Math.min(1, mixFactorRef.current + delta / 0.3); // 300ms
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!(mesh as any).isMesh) return;
+        const mat = mesh.material as any;
+        if (mat && mat.userData.shader) {
+          mat.userData.shader.uniforms.uMix.value = mixFactorRef.current;
+        }
+      });
+    }
+  });
 
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -91,6 +127,7 @@ function ShirtModel({
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!(mesh as any).isMesh) return;
+      
       const mat = new THREE.MeshStandardMaterial({
         color: uvTex ? new THREE.Color('#ffffff') : color,
         map: uvTex ?? null,
@@ -98,6 +135,29 @@ function ShirtModel({
         metalness: 0.02,
         side: THREE.DoubleSide,
       });
+
+      // Injeta lógica de crossfade no shader
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.tPrev = { value: prevTextureRef.current || uvTex };
+        shader.uniforms.uMix = { value: mixFactorRef.current };
+        shader.fragmentShader = `
+          uniform sampler2D tPrev;
+          uniform float uMix;
+          ${shader.fragmentShader.replace(
+            '#include <map_fragment>',
+            `
+            #ifdef USE_MAP
+              vec4 texelColor = texture2D( map, vMapUv );
+              vec4 prevColor = texture2D( tPrev, vMapUv );
+              texelColor = mix(prevColor, texelColor, uMix);
+              diffuseColor *= texelColor;
+            #endif
+            `
+          )}
+        `;
+        mat.userData.shader = shader;
+      };
+
       mesh.material = mat;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
