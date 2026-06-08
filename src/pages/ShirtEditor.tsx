@@ -1039,32 +1039,134 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   )}
 
                   {activeTab === 'emblems' && (
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Escudo</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha a posição</p>
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Escudo</h3>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha a posição</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { label: 'Peito Direito', id: 'peito_direito' },
+                            { label: 'Peito Esquerdo', id: 'peito_esquerdo' }
+                          ].map(pos => (
+                            <button
+                              key={pos.id}
+                              type="button"
+                              data-pos-id={pos.id}
+                              data-tipo="escudo"
+                              onClick={() => moveElement('escudo', pos.id)}
+                              className={cn(
+                                "h-10 text-[8px] font-bold uppercase rounded-lg border transition-all",
+                                elementPositions.escudo === pos.id 
+                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
+                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                              )}
+                            >
+                              {pos.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { label: 'Peito Direito', id: 'peito_direito' },
-                          { label: 'Peito Esquerdo', id: 'peito_esquerdo' }
-                        ].map(pos => (
-                          <button
-                            key={pos.id}
-                            type="button"
-                            data-pos-id={pos.id}
-                            data-tipo="escudo"
-                            onClick={() => moveElement('escudo', pos.id)}
-                            className={cn(
-                              "h-10 text-[8px] font-bold uppercase rounded-lg border transition-all",
-                              elementPositions.escudo === pos.id 
-                                ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
-                                : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-                            )}
+
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Logo Personalizado</p>
+                        </div>
+
+                        {!escudoImageUrl ? (
+                          <div 
+                            onClick={() => document.getElementById('escudo-upload')?.click()}
+                            className="border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#FF5A00]/50 hover:bg-[#FF5A00]/5 transition-all group"
                           >
-                            {pos.label}
-                          </button>
-                        ))}
+                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-[#FF5A00]/10 transition-colors">
+                              <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#FF5A00]" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[11px] font-bold text-gray-700">Clique para enviar seu escudo</p>
+                              <p className="text-[9px] text-gray-400 font-medium">JPG, PNG, SVG ou PDF • Máx 10MB</p>
+                            </div>
+                            <input 
+                              id="escudo-upload"
+                              type="file"
+                              className="hidden"
+                              accept="image/jpeg,image/png,image/svg+xml,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleEscudoUpload(file);
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                              <div className="w-16 h-16 bg-white rounded-lg border border-gray-100 p-1 flex items-center justify-center overflow-hidden">
+                                <img src={escudoImageUrl} alt="Preview" className="w-full h-full object-contain" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-[10px] font-black text-gray-800 uppercase">Escudo Carregado</p>
+                                <button 
+                                  onClick={() => {
+                                    setEscudoImageUrl(null);
+                                    setEscudoScale(1);
+                                    setEscudoOffsetX(0);
+                                    setEscudoOffsetY(0);
+                                  }}
+                                  className="text-[9px] font-bold text-red-500 hover:text-red-600 flex items-center gap-1 mt-1 uppercase"
+                                >
+                                  <X className="w-3 h-3" /> Remover
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tamanho</label>
+                                  <span className="text-[10px] font-bold text-gray-700">{Math.round(escudoScale * 100)}%</span>
+                                </div>
+                                <Slider 
+                                  value={[escudoScale * 100]} 
+                                  min={50} 
+                                  max={150} 
+                                  step={1} 
+                                  onValueChange={([v]) => setEscudoScale(v / 100)}
+                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Vertical</label>
+                                  <span className="text-[10px] font-bold text-gray-700">{escudoOffsetY}</span>
+                                </div>
+                                <Slider 
+                                  value={[escudoOffsetY]} 
+                                  min={-50} 
+                                  max={50} 
+                                  step={1} 
+                                  onValueChange={([v]) => setEscudoOffsetY(v)}
+                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Horizontal</label>
+                                  <span className="text-[10px] font-bold text-gray-700">{escudoOffsetX}</span>
+                                </div>
+                                <Slider 
+                                  value={[escudoOffsetX]} 
+                                  min={-50} 
+                                  max={50} 
+                                  step={1} 
+                                  onValueChange={([v]) => setEscudoOffsetX(v)}
+                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
