@@ -182,6 +182,24 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [nomeFont, setNomeFont] = useState('Impact');
   const [numeroFont, setNumeroFont] = useState('Impact');
   const [selectedLayoutId, setSelectedLayoutId] = useState('c1');
+  const [escudoImageUrl, setEscudoImageUrl] = useState<string | null>(null);
+  const [escudoScale, setEscudoScale] = useState(1);
+  const [escudoOffsetX, setEscudoOffsetX] = useState(0);
+  const [escudoOffsetY, setEscudoOffsetY] = useState(0);
+
+  const [debouncedEscudoScale, setDebouncedEscudoScale] = useState(1);
+  const [debouncedEscudoOffsetX, setDebouncedEscudoOffsetX] = useState(0);
+  const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEscudoScale(escudoScale);
+      setDebouncedEscudoOffsetX(escudoOffsetX);
+      setDebouncedEscudoOffsetY(escudoOffsetY);
+      setUvTextureVersion(v => v + 1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [escudoScale, escudoOffsetX, escudoOffsetY]);
 
   const COMBINACOES_ESPORTE = [
     { id: 'c1', nome: 'costas_topo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
@@ -191,6 +209,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     { id: 'c5', nome: null, numero: 'peito_centro', escudo: 'peito_esquerdo' },
     { id: 'c6', nome: null, numero: 'peito_direito', escudo: 'peito_esquerdo' },
   ];
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const aplicarEscudo = useCallback((imageUrl: string | null) => {
+    setEscudoImageUrl(imageUrl);
+    setUvTextureVersion(v => v + 1);
+  }, []);
+
+  const handleEscudoUpload = async (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 10MB");
+      return;
+    }
+
+    if (file.type === 'application/pdf') {
+      try {
+        // @ts-ignore
+        const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+        if (!pdfjsLib) {
+          toast.error("Carregando processador de PDF, tente novamente em instantes.");
+          return;
+        }
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context, viewport }).promise;
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            aplicarEscudo(url);
+          }
+        }, 'image/png');
+      } catch (error) {
+        console.error("Erro ao processar PDF:", error);
+        toast.error("Erro ao processar o arquivo PDF");
+      }
+    } else {
+      const url = URL.createObjectURL(file);
+      aplicarEscudo(url);
+    }
+  };
 
   const ShirtLayoutOption = ({ 
     nomePos, 
@@ -478,9 +553,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         }
       }
 
-      const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
+      const defaultShieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
       if (elementPositions.escudo) {
-        updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { url: shieldSvg, scale: 0.8, opacity: 1 } as any);
+        updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { 
+          url: escudoImageUrl || defaultShieldSvg, 
+          scale: 0.8 * debouncedEscudoScale, 
+          offsetX: debouncedEscudoOffsetX,
+          offsetY: debouncedEscudoOffsetY,
+          opacity: 1 
+        } as any);
       }
 
       Object.keys(uvTextDrafts).forEach(k => {
@@ -491,7 +572,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       return newLayers;
     });
-  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont]);
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
@@ -958,32 +1039,134 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   )}
 
                   {activeTab === 'emblems' && (
-                    <div className="space-y-4">
-                      <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Escudo</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha a posição</p>
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Escudo</h3>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha a posição</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { label: 'Peito Direito', id: 'peito_direito' },
+                            { label: 'Peito Esquerdo', id: 'peito_esquerdo' }
+                          ].map(pos => (
+                            <button
+                              key={pos.id}
+                              type="button"
+                              data-pos-id={pos.id}
+                              data-tipo="escudo"
+                              onClick={() => moveElement('escudo', pos.id)}
+                              className={cn(
+                                "h-10 text-[8px] font-bold uppercase rounded-lg border transition-all",
+                                elementPositions.escudo === pos.id 
+                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
+                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                              )}
+                            >
+                              {pos.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { label: 'Peito Direito', id: 'peito_direito' },
-                          { label: 'Peito Esquerdo', id: 'peito_esquerdo' }
-                        ].map(pos => (
-                          <button
-                            key={pos.id}
-                            type="button"
-                            data-pos-id={pos.id}
-                            data-tipo="escudo"
-                            onClick={() => moveElement('escudo', pos.id)}
-                            className={cn(
-                              "h-10 text-[8px] font-bold uppercase rounded-lg border transition-all",
-                              elementPositions.escudo === pos.id 
-                                ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
-                                : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-                            )}
+
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Logo Personalizado</p>
+                        </div>
+
+                        {!escudoImageUrl ? (
+                          <div 
+                            onClick={() => document.getElementById('escudo-upload')?.click()}
+                            className="border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#FF5A00]/50 hover:bg-[#FF5A00]/5 transition-all group"
                           >
-                            {pos.label}
-                          </button>
-                        ))}
+                            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-[#FF5A00]/10 transition-colors">
+                              <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#FF5A00]" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[11px] font-bold text-gray-700">Clique para enviar seu escudo</p>
+                              <p className="text-[9px] text-gray-400 font-medium">JPG, PNG, SVG ou PDF • Máx 10MB</p>
+                            </div>
+                            <input 
+                              id="escudo-upload"
+                              type="file"
+                              className="hidden"
+                              accept="image/jpeg,image/png,image/svg+xml,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleEscudoUpload(file);
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                              <div className="w-16 h-16 bg-white rounded-lg border border-gray-100 p-1 flex items-center justify-center overflow-hidden">
+                                <img src={escudoImageUrl} alt="Preview" className="w-full h-full object-contain" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-[10px] font-black text-gray-800 uppercase">Escudo Carregado</p>
+                                <button 
+                                  onClick={() => {
+                                    setEscudoImageUrl(null);
+                                    setEscudoScale(1);
+                                    setEscudoOffsetX(0);
+                                    setEscudoOffsetY(0);
+                                  }}
+                                  className="text-[9px] font-bold text-red-500 hover:text-red-600 flex items-center gap-1 mt-1 uppercase"
+                                >
+                                  <X className="w-3 h-3" /> Remover
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tamanho</label>
+                                  <span className="text-[10px] font-bold text-gray-700">{Math.round(escudoScale * 100)}%</span>
+                                </div>
+                                <Slider 
+                                  value={[escudoScale * 100]} 
+                                  min={50} 
+                                  max={150} 
+                                  step={1} 
+                                  onValueChange={([v]) => setEscudoScale(v / 100)}
+                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Vertical</label>
+                                  <span className="text-[10px] font-bold text-gray-700">{escudoOffsetY}</span>
+                                </div>
+                                <Slider 
+                                  value={[escudoOffsetY]} 
+                                  min={-50} 
+                                  max={50} 
+                                  step={1} 
+                                  onValueChange={([v]) => setEscudoOffsetY(v)}
+                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ajuste Horizontal</label>
+                                  <span className="text-[10px] font-bold text-gray-700">{escudoOffsetX}</span>
+                                </div>
+                                <Slider 
+                                  value={[escudoOffsetX]} 
+                                  min={-50} 
+                                  max={50} 
+                                  step={1} 
+                                  onValueChange={([v]) => setEscudoOffsetX(v)}
+                                  className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#FF5A00] [&_[role=slider]]:bg-white"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
