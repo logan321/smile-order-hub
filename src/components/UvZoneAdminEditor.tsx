@@ -81,6 +81,10 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
   const [newKey, setNewKey] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<Drag>(null);
