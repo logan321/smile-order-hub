@@ -109,7 +109,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const [textColor, setTextColor] = useState('#000000');
   const [fontSize, setFontSize] = useState(70);
-  const [fontFamily, setFontFamily] = useState('Arial');
+  const [fontFamily, setFontFamily] = useState('Impact');
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
