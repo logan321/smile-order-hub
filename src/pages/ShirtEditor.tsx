@@ -196,6 +196,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     { id: 'c6', nome: null, numero: 'peito_direito', escudo: 'peito_esquerdo' },
   ];
 
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const aplicarEscudo = useCallback((imageUrl: string | null) => {
+    setEscudoImageUrl(imageUrl);
+    setUvTextureVersion(v => v + 1);
+  }, []);
+
+  const handleEscudoUpload = async (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 10MB");
+      return;
+    }
+
+    if (file.type === 'application/pdf') {
+      try {
+        // @ts-ignore
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        if (!pdfjsLib) {
+          toast.error("Carregando processador de PDF, tente novamente em instantes.");
+          return;
+        }
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        await page.render({ canvasContext: context, viewport }).promise;
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            aplicarEscudo(url);
+          }
+        }, 'image/png');
+      } catch (error) {
+        console.error("Erro ao processar PDF:", error);
+        toast.error("Erro ao processar o arquivo PDF");
+      }
+    } else {
+      const url = URL.createObjectURL(file);
+      aplicarEscudo(url);
+    }
+  };
+
   const ShirtLayoutOption = ({ 
     nomePos, 
     numeroPos, 
