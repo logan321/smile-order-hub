@@ -80,34 +80,10 @@ function ShirtModel({
   });
 
   const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
-  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const overlayTextureRef = useRef<THREE.CanvasTexture | null>(null);
-  const materialsRef = useRef<THREE.MeshStandardMaterial[]>([]);
-  const animatingStateRef = useRef<any>(null);
-
-  // Inicializa o canvas overlay e a textura uma única vez
-  if (!overlayCanvasRef.current && typeof document !== 'undefined') {
-    const canvas = document.createElement('canvas');
-    // Dimensões exatas do UV original para evitar distorção e garantir consistência do fontSize
-    canvas.width = 8538;
-    canvas.height = 8538;
-    overlayCanvasRef.current = canvas;
-    
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.flipY = false;
-    texture.colorSpace = THREE.SRGBColorSpace;
-    overlayTextureRef.current = texture;
-  }
-
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   useEffect(() => {
-    animatingStateRef.current = animatingElement;
-  }, [animatingElement]);
-
-  useEffect(() => {
     const color = new THREE.Color(fabricColor);
-    materialsRef.current = [];
     
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
@@ -121,90 +97,12 @@ function ShirtModel({
         side: THREE.DoubleSide,
       });
 
-      mat.onBeforeCompile = (shader) => {
-        shader.uniforms.tOverlay = { value: overlayTextureRef.current };
-        shader.fragmentShader = `
-          uniform sampler2D tOverlay;
-          ${shader.fragmentShader.replace(
-            '#include <map_fragment>',
-            `
-            #ifdef USE_MAP
-              vec4 texelColor = texture2D( map, vMapUv );
-              vec4 overlayColor = texture2D( tOverlay, vMapUv );
-              texelColor = mix(texelColor, overlayColor, overlayColor.a);
-              diffuseColor *= texelColor;
-            #endif
-            `
-          )}
-        `;
-        mat.userData.shader = shader;
-      };
-
       mesh.material = mat;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       (mat as any).envMapIntensity = 0.1;
-      materialsRef.current.push(mat);
     });
   }, [scene, uvTex, fabricColor]);
-
-  useFrame((state, delta) => {
-    const anim = animatingStateRef.current;
-    const canvas = overlayCanvasRef.current;
-    const texture = overlayTextureRef.current;
-    if (!canvas || !texture) return;
-
-    const ctx = canvas.getContext('2d', { alpha: true })!;
-    
-    if (anim && anim.progress < 1) {
-      // Limpa o canvas overlay a cada frame
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      anim.progress = Math.min(1, anim.progress + delta / 0.6); // 600ms
-      
-      const p = anim.progress;
-      // Easing ease-in-out
-      const t = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-
-      // Interpolação das coordenadas UV
-      const currentX = anim.fromUV.x + (anim.toUV.x - anim.fromUV.x) * t;
-      const currentY = anim.fromUV.y + (anim.toUV.y - anim.fromUV.y) * t;
-
-      // Converte coordenadas UV (0-1) para pixels no canvas overlay (8538x8538)
-      const x = currentX * canvas.width;
-      const y = currentY * canvas.height;
-
-      ctx.save();
-      ctx.translate(x, y);
-      
-      const layer = anim.layer;
-      if (layer.type === 'text') {
-        ctx.fillStyle = layer.color || '#ffffff';
-        // fontSize fixo calculado no início da animação (zonaNova.height * 0.92)
-        const fontSize = anim.targetFontSize;
-        ctx.font = `${layer.fontWeight || 900} ${fontSize}px ${layer.fontFamily || 'Impact'}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(layer.content, 0, 0);
-      }
-      ctx.restore();
-      
-      // Apenas marca a textura para atualização, sem recriar objetos THREE
-      texture.needsUpdate = true;
-
-      if (anim.progress >= 1) {
-        onAnimationComplete?.();
-        // Limpa o overlay após a animação
-        setTimeout(() => {
-          if (overlayCanvasRef.current) {
-            const clearCtx = overlayCanvasRef.current.getContext('2d')!;
-            clearCtx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
-            if (overlayTextureRef.current) overlayTextureRef.current.needsUpdate = true;
-          }
-        }, 50);
-      }
-    }
-  });
 
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
