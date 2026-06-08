@@ -539,9 +539,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         }
       }
 
-      const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
+      const defaultShieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
       if (elementPositions.escudo) {
-        updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { url: shieldSvg, scale: 0.8, opacity: 1 } as any);
+        updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { 
+          url: escudoImageUrl || defaultShieldSvg, 
+          scale: 0.8 * escudoScale, 
+          offsetX: escudoOffsetX,
+          offsetY: escudoOffsetY,
+          opacity: 1 
+        } as any);
       }
 
       Object.keys(uvTextDrafts).forEach(k => {
