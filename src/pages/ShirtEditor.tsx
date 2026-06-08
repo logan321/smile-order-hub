@@ -182,6 +182,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [nomeFont, setNomeFont] = useState('Impact');
   const [numeroFont, setNumeroFont] = useState('Impact');
   const [selectedLayoutId, setSelectedLayoutId] = useState('c1');
+  const [escudoImageUrl, setEscudoImageUrl] = useState<string | null>(null);
+  const [escudoScale, setEscudoScale] = useState(1);
+  const [escudoOffsetX, setEscudoOffsetX] = useState(0);
+  const [escudoOffsetY, setEscudoOffsetY] = useState(0);
 
   const COMBINACOES_ESPORTE = [
     { id: 'c1', nome: 'costas_topo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
