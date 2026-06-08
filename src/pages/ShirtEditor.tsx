@@ -197,7 +197,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     const layer = uvLayers.find(l => l.id === layerId);
 
     if (layer && typeof document !== 'undefined') {
-      // 1. Tentar capturar os botões para animação CSS
       const fromBtn = document.querySelector(`[data-pos-id="${zonaAntigaKey}"][data-tipo="${tipo}"]`);
       const toBtn = document.querySelector(`[data-pos-id="${novaPosicao}"][data-tipo="${tipo}"]`);
 
@@ -211,7 +210,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           to: { x: toRect.left + toRect.width / 2, y: toRect.top + toRect.height / 2 }
         });
 
-        // Limpar após a animação
         setTimeout(() => setFlyingElement(null), 650);
       }
     }
@@ -231,27 +229,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       } else {
         next.numero = novaPosicao;
       }
-      return next;
-    });
-  };
-      let next = { ...prev };
-      
-      if (tipo === 'nome') {
-        next.nome = novaPosicao;
-        if (novaPosicao === next.escudo) {
-          next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
-        }
-      } else if (tipo === 'escudo') {
-        next.escudo = novaPosicao;
-        if (novaPosicao === next.nome) {
-          if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
-            next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
-          }
-        }
-      } else {
-        next.numero = novaPosicao;
-      }
-      
       return next;
     });
   };
