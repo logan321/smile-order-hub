@@ -20,6 +20,7 @@ interface Shirt3DPreviewProps {
   fabricColor?: string;
   autoRotate?: boolean;
   cameraPosition?: [number, number, number];
+  className?: string;
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
