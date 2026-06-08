@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Trash2, Plus, Save } from 'lucide-react';
+import { Trash2, Plus, Save, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import type { UvZone } from '@/hooks/useUvLibrary';
 
