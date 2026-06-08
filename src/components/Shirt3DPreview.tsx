@@ -143,7 +143,7 @@ export default function Shirt3DPreview({
   console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
 
   return (
-    <div className="w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner">
+    <div className={cn("w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}>
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
