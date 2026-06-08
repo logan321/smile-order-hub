@@ -113,6 +113,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
+  const [elementPositions, setElementPositions] = useState<{ nome: string; escudo: string; numero: string }>({
+    nome: 'peito_direito',
+    escudo: 'peito_esquerdo',
+    numero: 'costas_centro'
+  });
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
 
   const uvTextCommitTimerRef = useRef<number | null>(null);
