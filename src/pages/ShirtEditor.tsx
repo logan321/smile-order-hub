@@ -216,6 +216,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           fromUV,
           toUV,
           progress: 0,
+          targetFontSize: zonaNova.height * 0.92,
           layer: { ...layer }
         });
       }
