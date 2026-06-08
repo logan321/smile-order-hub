@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
