@@ -82,14 +82,20 @@ function ShirtModel({
   const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayTextureRef = useRef<THREE.CanvasTexture | null>(null);
+  const materialsRef = useRef<THREE.MeshStandardMaterial[]>([]);
   const animatingStateRef = useRef<any>(null);
 
+  // Inicializa o canvas overlay e a textura uma única vez
   if (!overlayCanvasRef.current && typeof document !== 'undefined') {
-    overlayCanvasRef.current = document.createElement('canvas');
-    overlayCanvasRef.current.width = 1024;
-    overlayCanvasRef.current.height = 1024;
-    overlayTextureRef.current = new THREE.CanvasTexture(overlayCanvasRef.current);
-    overlayTextureRef.current.flipY = false;
+    const canvas = document.createElement('canvas');
+    canvas.width = 8538;
+    canvas.height = 8538;
+    overlayCanvasRef.current = canvas;
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.flipY = false;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    overlayTextureRef.current = texture;
   }
 
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
@@ -100,6 +106,7 @@ function ShirtModel({
 
   useEffect(() => {
     const color = new THREE.Color(fabricColor);
+    materialsRef.current = [];
     
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
@@ -136,6 +143,7 @@ function ShirtModel({
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       (mat as any).envMapIntensity = 0.1;
+      materialsRef.current.push(mat);
     });
   }, [scene, uvTex, fabricColor]);
 
@@ -145,10 +153,11 @@ function ShirtModel({
     const texture = overlayTextureRef.current;
     if (!canvas || !texture) return;
 
-    const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    const ctx = canvas.getContext('2d', { alpha: true })!;
+    
     if (anim && anim.progress < 1) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
       anim.progress = Math.min(1, anim.progress + delta / 0.6); // 600ms
       
       const p = anim.progress;
@@ -156,14 +165,10 @@ function ShirtModel({
 
       const currentX = anim.fromUV.x + (anim.toUV.x - anim.fromUV.x) * t;
       const currentY = anim.fromUV.y + (anim.toUV.y - anim.fromUV.y) * t;
-      const currentW = anim.fromUV.w + (anim.toUV.w - anim.fromUV.w) * t;
-      const currentH = anim.fromUV.h + (anim.toUV.h - anim.fromUV.h) * t;
 
-      // Desenha o elemento no overlay
+      // Desenha o elemento no overlay usando a posição interpolada
       const x = currentX * canvas.width;
       const y = currentY * canvas.height;
-      const w = currentW * canvas.width;
-      const h = currentH * canvas.height;
 
       ctx.save();
       ctx.translate(x, y);
@@ -171,14 +176,12 @@ function ShirtModel({
       const layer = anim.layer;
       if (layer.type === 'text') {
         ctx.fillStyle = layer.color || '#ffffff';
-        const fontSize = (layer.fontSize || 50) * (canvas.width / 1024); // Ajuste proporcional ao canvas
+        // fontSize fixo calculado no início da animação
+        const fontSize = anim.targetFontSize;
         ctx.font = `${layer.fontWeight || 900} ${fontSize}px ${layer.fontFamily || 'Impact'}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(layer.content, 0, 0);
-      } else if (layer.type === 'image') {
-        // Para simplificar no overlay, vamos carregar a imagem se possível ou pular
-        // Idealmente usaríamos uma cache, mas para o efeito de "texto deslizando" o foco é o texto
       }
       ctx.restore();
       
@@ -186,9 +189,12 @@ function ShirtModel({
 
       if (anim.progress >= 1) {
         onAnimationComplete?.();
+        // Limpa o overlay após a animação
+        setTimeout(() => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          texture.needsUpdate = true;
+        }, 50);
       }
-    } else {
-      texture.needsUpdate = true;
     }
   });
 
