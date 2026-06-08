@@ -118,6 +118,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
+
+  const [flyingElement, setFlyingElement] = useState<{
+    content: string;
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+  } | null>(null);
   const [animatingElement, setAnimatingElement] = useState<any>(null);
   
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
@@ -187,44 +193,29 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
     const zonaAntigaKey = elementPositions[tipo];
-    const zonaAntiga = uvMapZones[zonaAntigaKey];
-    const zonaNova = uvMapZones[novaPosicao];
-    const uvWidth = uvMapDims.w;
-    const uvHeight = uvMapDims.h;
+    const layerId = tipo === 'nome' ? 'layer_nome' : tipo === 'numero' ? 'layer_numero' : 'layer_escudo';
+    const layer = uvLayers.find(l => l.id === layerId);
 
-    if (zonaAntiga && zonaNova && uvWidth && uvHeight) {
-      // Coordenadas UV do centro das zonas
-      const fromUV = {
-        x: (zonaAntiga.x + zonaAntiga.width / 2) / uvWidth,
-        y: (zonaAntiga.y + zonaAntiga.height / 2) / uvHeight,
-        w: zonaAntiga.width / uvWidth,
-        h: zonaAntiga.height / uvHeight
-      };
-      const toUV = {
-        x: (zonaNova.x + zonaNova.width / 2) / uvWidth,
-        y: (zonaNova.y + zonaNova.height / 2) / uvHeight,
-        w: zonaNova.width / uvWidth,
-        h: zonaNova.height / uvHeight
-      };
+    if (layer && typeof document !== 'undefined') {
+      const fromBtn = document.querySelector(`[data-pos-id="${zonaAntigaKey}"][data-tipo="${tipo}"]`);
+      const toBtn = document.querySelector(`[data-pos-id="${novaPosicao}"][data-tipo="${tipo}"]`);
 
-      const layerId = tipo === 'nome' ? 'layer_nome' : tipo === 'numero' ? 'layer_numero' : 'layer_escudo';
-      const layer = uvLayers.find(l => l.id === layerId);
+      if (fromBtn && toBtn) {
+        const fromRect = fromBtn.getBoundingClientRect();
+        const toRect = toBtn.getBoundingClientRect();
 
-      if (layer) {
-        setAnimatingElement({
-          tipo,
-          fromUV,
-          toUV,
-          progress: 0,
-          targetFontSize: zonaNova.height * 0.92,
-          layer: { ...layer }
+        setFlyingElement({
+          content: layer.type === 'text' ? layer.content : 'Logo',
+          from: { x: fromRect.left + fromRect.width / 2, y: fromRect.top + fromRect.height / 2 },
+          to: { x: toRect.left + toRect.width / 2, y: toRect.top + toRect.height / 2 }
         });
+
+        setTimeout(() => setFlyingElement(null), 650);
       }
     }
 
     setElementPositions(prev => {
       let next = { ...prev };
-      
       if (tipo === 'nome') {
         next.nome = novaPosicao;
         if (novaPosicao === next.escudo) {
@@ -233,14 +224,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       } else if (tipo === 'escudo') {
         next.escudo = novaPosicao;
         if (novaPosicao === next.nome) {
-          if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
-            next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
-          }
+          next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
         }
       } else {
         next.numero = novaPosicao;
       }
-      
       return next;
     });
   };
@@ -475,10 +463,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             <button
                               key={pos.id}
                               type="button"
-                              onClick={() => {
-                                console.log('onClick disparado', pos.id);
-                                moveElement('nome', pos.id);
-                              }}
+                              data-pos-id={pos.id}
+                              data-tipo="nome"
+                              onClick={() => moveElement('nome', pos.id)}
                               className={cn(
                                 "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
                                 elementPositions.nome === pos.id 
@@ -510,6 +497,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             <button
                               key={pos.id}
                               type="button"
+                              data-pos-id={pos.id}
+                              data-tipo="numero"
                               onClick={() => moveElement('numero', pos.id)}
                               className={cn(
                                 "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
@@ -537,6 +526,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           <button
                             key={pos.id}
                             type="button"
+                            data-pos-id={pos.id}
+                            data-tipo="escudo"
                             onClick={() => moveElement('escudo', pos.id)}
                             className={cn(
                               "h-10 text-[8px] font-bold uppercase rounded-lg border transition-all",
@@ -650,6 +641,30 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </div>
         </div>
       </main>
+
+      {flyingElement && (
+        <div
+          style={{
+            position: 'fixed',
+            left: flyingElement.from.x,
+            top: flyingElement.from.y,
+            transform: `translate(${flyingElement.to.x - flyingElement.from.x}px, ${flyingElement.to.y - flyingElement.from.y}px)`,
+            transition: 'transform 600ms ease-in-out',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: 'white',
+            backgroundColor: '#FF5A00',
+            padding: '4px 12px',
+            borderRadius: '8px',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          }}
+        >
+          {flyingElement.content}
+        </div>
+      )}
     </div>
   );
 };
