@@ -107,12 +107,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
 
-  const [textColor, setTextColor] = useState('#000000');
-  const [fontSize, setFontSize] = useState(24);
-  const [fontFamily, setFontFamily] = useState('Arial');
+  const [textColor, setTextColor] = useState('#ffffff');
+  const [fontSize, setFontSize] = useState(70);
+  const [fontFamily, setFontFamily] = useState('Impact');
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
+  const [elementPositions, setElementPositions] = useState<{ nome: string; escudo: string; numero: string }>({
+    nome: 'peito_direito',
+    escudo: 'peito_esquerdo',
+    numero: 'costas_centro'
+  });
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
 
   const uvTextCommitTimerRef = useRef<number | null>(null);
@@ -176,6 +182,78 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     })();
     return () => { cancelled = true; };
   }, [selectedTemplate?.uvMapId]);
+
+  const moveElement = useCallback((tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setElementPositions(prev => {
+        let next = { ...prev };
+        
+        if (tipo === 'nome') {
+          next.nome = novaPosicao;
+          if (novaPosicao === next.escudo) {
+            next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+          }
+        } else if (tipo === 'escudo') {
+          next.escudo = novaPosicao;
+          if (novaPosicao === next.nome) {
+            if (next.nome === 'peito_direito' || next.nome === 'peito_esquerdo') {
+              next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+            }
+          }
+        } else {
+          next.numero = novaPosicao;
+        }
+        
+        return next;
+      });
+      setUvTextureVersion(v => v + 1);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 400);
+  }, []);
+
+  useEffect(() => {
+    setUvLayers(prev => {
+      const newLayers = [...prev];
+      
+      const updateOrAddLayer = (id: string, zoneKey: string, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
+        const zone = uvMapZones[zoneKey];
+        if (!zone) return;
+        
+        const existingIdx = newLayers.findIndex(l => l.id === id);
+        const calculatedFontSize = (fontSize / 100) * zone.height;
+        
+        const layer: UvLayer = {
+          id,
+          zoneKey,
+          type,
+          content,
+          color: textColor,
+          fontFamily,
+          fontSize: calculatedFontSize,
+          fontWeight: 900,
+          ...extra
+        } as UvLayer;
+
+        if (existingIdx >= 0) {
+          newLayers[existingIdx] = layer;
+        } else if (content || (type === 'image' && (extra as any).url)) {
+          newLayers.push(layer);
+        }
+      };
+
+      const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
+      updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text');
+      
+      const numeroContent = uvTextDrafts['numero'] || '10';
+      updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
+
+      const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
+      updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { url: shieldSvg, scale: 0.8, opacity: 1 } as any);
+
+      return newLayers;
+    });
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts]);
 
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
@@ -327,31 +405,147 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                 </div>
               )}
 
-              {(activeTab === 'text' || activeTab === 'name' || activeTab === 'logo') && (
-                <div className="space-y-3 lg:space-y-4">
-                  <Select value={fontFamily} onValueChange={setFontFamily}>
-                    <SelectTrigger className="w-full h-10 lg:h-12 rounded-xl bg-gray-50 border-gray-100 shadow-sm font-bold text-[10px] lg:text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
-                    <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
-                  </Select>
+              {(activeTab === 'text' || activeTab === 'name' || activeTab === 'emblems' || activeTab === 'logo') && (
+                <div className="space-y-4 lg:space-y-6">
+                  {activeTab !== 'emblems' && (
+                    <Select value={fontFamily} onValueChange={setFontFamily}>
+                      <SelectTrigger className="w-full h-10 lg:h-12 rounded-xl bg-gray-50 border-gray-100 shadow-sm font-bold text-[10px] lg:text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
+                      <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
+                    </Select>
+                  )}
                   
-                  {Object.keys(uvMapZones).map((zoneKey) => (
-                    <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
-                        <div className="flex gap-1">
-                           <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
-                           <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                  {activeTab === 'name' && (
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nome do Jogador</label>
+                        <Input
+                          value={uvTextDrafts['nome'] ?? ''}
+                          onChange={(e) => setUvLayerText('nome', e.target.value)}
+                          placeholder="SEU NOME"
+                          className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { label: 'Peito D', id: 'peito_direito' },
+                            { label: 'Peito E', id: 'peito_esquerdo' },
+                            { label: 'Costas T', id: 'costas_topo' },
+                            { label: 'Costas F', id: 'costas_fundo' }
+                          ].map(pos => (
+                            <Button
+                              key={pos.id}
+                              variant={elementPositions.nome === pos.id ? 'default' : 'outline'}
+                              size="sm"
+                              className={cn(
+                                "h-8 text-[8px] font-bold uppercase",
+                                elementPositions.nome === pos.id ? "bg-[#FF5A00] hover:bg-[#FF5A00]/90 border-none" : "bg-white text-gray-400"
+                              )}
+                              onClick={() => moveElement('nome', pos.id)}
+                            >
+                              {pos.label}
+                            </Button>
+                          ))}
                         </div>
                       </div>
-                      <Input
-                        value={uvTextDrafts[zoneKey] ?? ''}
-                        onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                        placeholder={`Digite aqui...`}
-                        className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
-                      />
-                      <input id={`uv-file-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
+
+                      <div className="space-y-3">
+                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Número</label>
+                        <Input
+                          value={uvTextDrafts['numero'] ?? ''}
+                          onChange={(e) => setUvLayerText('numero', e.target.value)}
+                          placeholder="10"
+                          className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-center text-lg focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { label: 'Peito D', id: 'peito_direito' },
+                            { label: 'Peito E', id: 'peito_esquerdo' },
+                            { label: 'Peito C', id: 'peito_centro' },
+                            { label: 'Costas C', id: 'costas_centro' }
+                          ].map(pos => (
+                            <Button
+                              key={pos.id}
+                              variant={elementPositions.numero === pos.id ? 'default' : 'outline'}
+                              size="sm"
+                              className={cn(
+                                "h-8 text-[8px] font-bold uppercase",
+                                elementPositions.numero === pos.id ? "bg-[#FF5A00] hover:bg-[#FF5A00]/90 border-none" : "bg-white text-gray-400"
+                              )}
+                              onClick={() => moveElement('numero', pos.id)}
+                            >
+                              {pos.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                  )}
+
+                  {activeTab === 'emblems' && (
+                    <div className="space-y-3">
+                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Posição do Escudo</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { label: 'Peito Direito', id: 'peito_direito' },
+                          { label: 'Peito Esquerdo', id: 'peito_esquerdo' }
+                        ].map(pos => (
+                          <Button
+                            key={pos.id}
+                            variant={elementPositions.escudo === pos.id ? 'default' : 'outline'}
+                            size="sm"
+                            className={cn(
+                              "h-10 text-[8px] font-bold uppercase",
+                              elementPositions.escudo === pos.id ? "bg-[#FF5A00] hover:bg-[#FF5A00]/90 border-none" : "bg-white text-gray-400"
+                            )}
+                            onClick={() => moveElement('escudo', pos.id)}
+                          >
+                            {pos.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'text' && (
+                    <div className="space-y-4">
+                      {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo', 'manga_esquerda', 'manga_direita'].includes(k)).map((zoneKey) => (
+                        <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
+                            <div className="flex gap-1">
+                               <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                               <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                            </div>
+                          </div>
+                          <Input
+                            value={uvTextDrafts[zoneKey] ?? ''}
+                            onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                            placeholder={`Digite aqui...`}
+                            className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === 'logo' && (
+                    <div className="grid grid-cols-2 gap-2">
+                       {['peito_centro', 'manga_esquerda', 'manga_direita'].map(zoneKey => (
+                         <div key={zoneKey} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                           <span className="text-[8px] font-black text-gray-400 uppercase text-center">{zoneKey.replace('_', ' ')}</span>
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="h-12 bg-white border-none shadow-sm hover:bg-gray-100 flex flex-col gap-1"
+                             onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()}
+                           >
+                             <Upload className="w-3 h-3" />
+                             <span className="text-[7px]">UPLOAD</span>
+                           </Button>
+                           <input id={`uv-file-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
+                         </div>
+                       ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -374,6 +568,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               uvVersion={uvTextureVersion}
               cameraPosition={cameraPosition}
               autoRotate={false}
+              className={cn("transition-opacity duration-400", isTransitioning ? "opacity-0" : "opacity-100")}
             />
             
             {/* Overlay Actions */}

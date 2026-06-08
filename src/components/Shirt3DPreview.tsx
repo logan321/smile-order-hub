@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -20,6 +21,7 @@ interface Shirt3DPreviewProps {
   fabricColor?: string;
   autoRotate?: boolean;
   cameraPosition?: [number, number, number];
+  className?: string;
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
@@ -124,6 +126,7 @@ export default function Shirt3DPreview({
   fabricColor = '#ffffff',
   autoRotate = true,
   cameraPosition = [0, 0.1, 5.2],
+  className,
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
@@ -141,7 +144,7 @@ export default function Shirt3DPreview({
   console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
 
   return (
-    <div className="w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner">
+    <div className={cn("w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}>
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
