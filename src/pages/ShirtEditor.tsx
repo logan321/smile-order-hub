@@ -193,42 +193,47 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string) => {
     const zonaAntigaKey = elementPositions[tipo];
-    const zonaAntiga = uvMapZones[zonaAntigaKey];
-    const zonaNova = uvMapZones[novaPosicao];
-    const uvWidth = uvMapDims.w;
-    const uvHeight = uvMapDims.h;
+    const layerId = tipo === 'nome' ? 'layer_nome' : tipo === 'numero' ? 'layer_numero' : 'layer_escudo';
+    const layer = uvLayers.find(l => l.id === layerId);
 
-    if (zonaAntiga && zonaNova && uvWidth && uvHeight) {
-      // Coordenadas UV do centro das zonas
-      const fromUV = {
-        x: (zonaAntiga.x + zonaAntiga.width / 2) / uvWidth,
-        y: (zonaAntiga.y + zonaAntiga.height / 2) / uvHeight,
-        w: zonaAntiga.width / uvWidth,
-        h: zonaAntiga.height / uvHeight
-      };
-      const toUV = {
-        x: (zonaNova.x + zonaNova.width / 2) / uvWidth,
-        y: (zonaNova.y + zonaNova.height / 2) / uvHeight,
-        w: zonaNova.width / uvWidth,
-        h: zonaNova.height / uvHeight
-      };
+    if (layer && typeof document !== 'undefined') {
+      // 1. Tentar capturar os botões para animação CSS
+      const fromBtn = document.querySelector(`[data-pos-id="${zonaAntigaKey}"][data-tipo="${tipo}"]`);
+      const toBtn = document.querySelector(`[data-pos-id="${novaPosicao}"][data-tipo="${tipo}"]`);
 
-      const layerId = tipo === 'nome' ? 'layer_nome' : tipo === 'numero' ? 'layer_numero' : 'layer_escudo';
-      const layer = uvLayers.find(l => l.id === layerId);
+      if (fromBtn && toBtn) {
+        const fromRect = fromBtn.getBoundingClientRect();
+        const toRect = toBtn.getBoundingClientRect();
 
-      if (layer) {
-        setAnimatingElement({
-          tipo,
-          fromUV,
-          toUV,
-          progress: 0,
-          targetFontSize: zonaNova.height * 0.92,
-          layer: { ...layer }
+        setFlyingElement({
+          content: layer.type === 'text' ? layer.content : 'Logo',
+          from: { x: fromRect.left + fromRect.width / 2, y: fromRect.top + fromRect.height / 2 },
+          to: { x: toRect.left + toRect.width / 2, y: toRect.top + toRect.height / 2 }
         });
+
+        // Limpar após a animação
+        setTimeout(() => setFlyingElement(null), 650);
       }
     }
 
     setElementPositions(prev => {
+      let next = { ...prev };
+      if (tipo === 'nome') {
+        next.nome = novaPosicao;
+        if (novaPosicao === next.escudo) {
+          next.escudo = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+        }
+      } else if (tipo === 'escudo') {
+        next.escudo = novaPosicao;
+        if (novaPosicao === next.nome) {
+          next.nome = novaPosicao === 'peito_direito' ? 'peito_esquerdo' : 'peito_direito';
+        }
+      } else {
+        next.numero = novaPosicao;
+      }
+      return next;
+    });
+  };
       let next = { ...prev };
       
       if (tipo === 'nome') {
