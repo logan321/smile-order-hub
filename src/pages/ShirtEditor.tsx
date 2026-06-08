@@ -113,11 +113,103 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
-  const [elementPositions, setElementPositions] = useState<{ nome: string; escudo: string; numero: string }>({
-    nome: 'peito_direito',
+  const [elementPositions, setElementPositions] = useState<{ nome: string | null; escudo: string | null; numero: string | null }>({
+    nome: 'costas_topo',
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
+  const [selectedLayoutId, setSelectedLayoutId] = useState('c1');
+
+  const COMBINACOES_ESPORTE = [
+    { id: 'c1', nome: 'costas_topo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
+    { id: 'c2', nome: 'costas_fundo', numero: 'costas_centro', escudo: 'peito_esquerdo' },
+    { id: 'c3', nome: 'costas_topo', numero: 'peito_direito', escudo: 'peito_esquerdo' },
+    { id: 'c4', nome: null, numero: 'costas_centro', escudo: 'peito_esquerdo' },
+    { id: 'c5', nome: null, numero: 'peito_centro', escudo: 'peito_esquerdo' },
+    { id: 'c6', nome: null, numero: 'peito_direito', escudo: 'peito_esquerdo' },
+  ];
+
+  const ShirtLayoutOption = ({ 
+    nomePos, 
+    numeroPos, 
+    escudoPos, 
+    selected, 
+    onClick 
+  }: { 
+    nomePos: string | null; 
+    numeroPos: string | null; 
+    escudoPos: string | null; 
+    selected: boolean; 
+    onClick: () => void;
+  }) => {
+    const color = selected ? '#FF5A00' : '#e5e7eb';
+    
+    const getPos = (pos: string | null) => {
+      switch(pos) {
+        case 'peito_direito': return { x: '35%', y: '35%' };
+        case 'peito_esquerdo': return { x: '55%', y: '35%' };
+        case 'peito_centro': return { x: '45%', y: '38%' };
+        case 'costas_topo': return { x: '45%', y: '25%' };
+        case 'costas_centro': return { x: '45%', y: '45%' };
+        case 'costas_fundo': return { x: '45%', y: '60%' };
+        default: return null;
+      }
+    };
+
+    const nomeCoords = getPos(nomePos);
+    const numeroCoords = getPos(numeroPos);
+    const escudoCoords = getPos(escudoPos);
+
+    const isBack = (pos: string | null) => pos?.startsWith('costas');
+
+    return (
+      <button 
+        onClick={onClick}
+        className={cn(
+          "relative group aspect-square rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 p-1 bg-white",
+          selected ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-50 hover:border-gray-200"
+        )}
+      >
+        <div className="flex gap-1 items-center justify-center">
+          <svg width="35" height="40" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Front Mini */}
+            <path d="M20 15 L10 25 L15 40 L15 80 L65 80 L65 40 L70 25 L60 15 L50 20 L30 20 Z" stroke={color} strokeWidth="2" />
+            <circle cx="40" cy="18" r="6" stroke={color} strokeWidth="2" />
+            
+            {!isBack(nomePos) && nomeCoords && (
+              <text x={nomeCoords.x} y={nomeCoords.y} fill={color} fontSize="8" fontWeight="bold" textAnchor="middle">NOME</text>
+            )}
+            {!isBack(numeroPos) && numeroCoords && (
+              <text x={numeroCoords.x} y={numeroCoords.y} fill={color} fontSize="14" fontWeight="bold" textAnchor="middle">10</text>
+            )}
+            {!isBack(escudoPos) && escudoCoords && (
+              <rect x="52%" y="32%" width="8" height="8" fill={color} />
+            )}
+          </svg>
+          
+          <svg width="35" height="40" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Back Mini */}
+            <path d="M20 15 L10 25 L15 40 L15 80 L65 80 L65 40 L70 25 L60 15 L50 20 L30 20 Z" stroke={color} strokeWidth="2" />
+            
+            {isBack(nomePos) && nomeCoords && (
+              <text x={isBack(nomePos) ? nomeCoords.x : '0'} y={isBack(nomePos) ? nomeCoords.y : '0'} fill={color} fontSize="8" fontWeight="bold" textAnchor="middle">NOME</text>
+            )}
+            {isBack(numeroPos) && numeroCoords && (
+              <text x={isBack(numeroPos) ? numeroCoords.x : '0'} y={isBack(numeroPos) ? numeroCoords.y : '0'} fill={color} fontSize="14" fontWeight="bold" textAnchor="middle">10</text>
+            )}
+          </svg>
+        </div>
+        
+        {selected && (
+          <div className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="w-2.5 h-2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        )}
+      </button>
+    );
+  };
 
   const [flyingElement, setFlyingElement] = useState<{
     content: string;
