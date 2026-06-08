@@ -174,8 +174,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         .maybeSingle();
       if (cancelled || !data) return;
       const row = data as any;
-      setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
+      const zones = (row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {};
+      setUvMapZones(zones);
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
+      const firstZone = Object.keys(zones)[0];
+      if (firstZone) setSelectedZone(firstZone);
       setUvLayers([]);
       setUvTextDrafts({});
     })();
