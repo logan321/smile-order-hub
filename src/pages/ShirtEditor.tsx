@@ -641,6 +641,30 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </div>
         </div>
       </main>
+
+      {flyingElement && (
+        <div
+          style={{
+            position: 'fixed',
+            left: flyingElement.from.x,
+            top: flyingElement.from.y,
+            transform: `translate(${flyingElement.to.x - flyingElement.from.x}px, ${flyingElement.to.y - flyingElement.from.y}px)`,
+            transition: 'transform 600ms ease-in-out',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: 'white',
+            backgroundColor: '#FF5A00',
+            padding: '4px 12px',
+            borderRadius: '8px',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          }}
+        >
+          {flyingElement.content}
+        </div>
+      )}
     </div>
   );
 };
