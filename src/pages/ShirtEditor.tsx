@@ -193,6 +193,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     const uvHeight = uvMapDims.h;
 
     if (zonaAntiga && zonaNova && uvWidth && uvHeight) {
+      // Coordenadas UV do centro das zonas
       const fromUV = {
         x: (zonaAntiga.x + zonaAntiga.width / 2) / uvWidth,
         y: (zonaAntiga.y + zonaAntiga.height / 2) / uvHeight,
