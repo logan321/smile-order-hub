@@ -57,7 +57,7 @@ interface Stamp {
   nicheId?: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | 'models' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
@@ -153,6 +153,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
       })) ?? []);
       setLoading(false);
+      if (rawTemplates.length > 0 && !selectedTemplate) {
+        setSelectedTemplate(rawTemplates[0]);
+      }
     };
     fetchData();
   }, [ownerUserId]);
@@ -230,21 +233,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleWhatsAppQuote = () => toast.info('Redirecionando para WhatsApp...');
   const handleDownload = () => toast.info('Gerando arquivos para download...');
 
-  if (!selectedTemplate) {
+  if (loading || !selectedTemplate) {
     return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-center text-gray-800 uppercase tracking-widest">Escolha o seu modelo</h1>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {templates.map(t => (
-              <button key={t.id} onClick={() => setSelectedTemplate(t)} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all">
-                <div className="p-4"><img src={toProxyUrl(t.frontImageUrl)} className="w-full aspect-[3/4] object-contain rounded-xl bg-gray-50" /></div>
-                <div className="p-4 border-t border-gray-50 bg-gray-50/50">
-                  <p className="font-bold text-gray-700 truncate">{t.name}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+      <div className="h-screen w-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
         </div>
       </div>
     );
@@ -254,7 +248,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="sm" onClick={() => setActiveTab('models')} className="text-gray-400 hover:text-gray-900"><Box className="w-5 h-5" /></Button>
           <img src={logo} alt="Jumptec" className="h-6 w-auto" />
           <div className="h-4 w-px bg-gray-200 mx-2" />
           <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
@@ -268,6 +262,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         {/* Coluna 1: Sidebar de Navegação */}
         <nav id="left-sidebar" className="w-14 lg:w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-6 lg:space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
+            { id: 'models', label: 'Modelo', icon: Box },
             { id: 'stamps', label: 'Estampa', icon: Shirt },
             { id: 'text', label: 'Texto', icon: Type },
             { id: 'name', label: 'Nome/Nº', icon: Hand },
@@ -291,7 +286,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         <div id="dynamicSidebar" className="w-48 md:w-64 lg:w-80 bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]">
           <div className="p-4 lg:p-6">
             <h2 className="text-[10px] lg:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 lg:mb-6">
-              Configurações de {activeTab === 'stamps' ? 'Estampa' : activeTab === 'text' ? 'Texto' : activeTab === 'name' ? 'Nome/Número' : activeTab === 'patches' ? 'Acabamento' : activeTab === 'emblems' ? 'Escudo' : 'Upload'}
+              Configurações de {activeTab === 'models' ? 'Modelo' : activeTab === 'stamps' ? 'Estampa' : activeTab === 'text' ? 'Texto' : activeTab === 'name' ? 'Nome/Número' : activeTab === 'patches' ? 'Acabamento' : activeTab === 'emblems' ? 'Escudo' : 'Upload'}
             </h2>
             
             <div className="space-y-4 lg:space-y-6">
@@ -305,6 +300,25 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-5 lg:h-6 border-none bg-transparent font-bold text-[10px] lg:text-xs p-0 focus-visible:ring-0" />
                 </div>
               </div>
+
+              {activeTab === 'models' && (
+                <div className="grid grid-cols-2 gap-3">
+                  {templates.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTemplate(t)}
+                      className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-[3/4] relative ${selectedTemplate.id === t.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
+                    >
+                      <div className="p-2">
+                        <img src={toProxyUrl(t.frontImageUrl)} className="w-full h-full object-contain" />
+                      </div>
+                      <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
+                        <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{t.name}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {activeTab === 'stamps' && (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
