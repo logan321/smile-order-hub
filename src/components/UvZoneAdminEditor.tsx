@@ -160,6 +160,14 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
+      return;
+    }
+
     const d = dragRef.current;
     if (!d) return;
     const pt = screenToUv(e.clientX, e.clientY);
@@ -178,7 +186,10 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
     });
   };
 
-  const endDrag = () => { dragRef.current = null; };
+  const endDrag = () => { 
+    dragRef.current = null; 
+    setIsPanning(false);
+  };
 
   const addZone = (key: string) => {
     if (!key.trim()) { toast.error('Nome da zona obrigatório'); return; }
