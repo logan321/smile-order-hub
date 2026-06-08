@@ -70,6 +70,57 @@ const FONT_OPTIONS = [
   { label: 'Bebas Neue', value: 'Bebas Neue', google: true },
 ];
 
+const COLORS = [
+  { name: 'Branco', hex: '#FFFFFF' },
+  { name: 'Cinza Claro', hex: '#CACCCB' },
+  { name: 'Cinza Médio', hex: '#98999A' },
+  { name: 'Cinza Escuro', hex: '#63666A' },
+  { name: 'Grafite', hex: '#333F48' },
+  { name: 'Chumbo', hex: '#2D2926' },
+  { name: 'Preto', hex: '#000000' },
+  { name: 'Amarelo Claro', hex: '#F6EB61' },
+  { name: 'Amarelo Canário', hex: '#FFD700' },
+  { name: 'Amarelo Mostarda', hex: '#EAAA00' },
+  { name: 'Ocre', hex: '#C3922E' },
+  { name: 'Dourado', hex: '#84754E' },
+  { name: 'Laranja Claro', hex: '#FFB549' },
+  { name: 'Laranja', hex: '#FF8200' },
+  { name: 'Terracota', hex: '#CB6015' },
+  { name: 'Coral', hex: '#FF7378' },
+  { name: 'Vermelho Vivo', hex: '#EF3340' },
+  { name: 'Vermelho', hex: '#D50032' },
+  { name: 'Vermelho Médio', hex: '#BD162C' },
+  { name: 'Vinho', hex: '#782327' },
+  { name: 'Bordô', hex: '#441E1E' },
+  { name: 'Rosa Claro', hex: '#F8A7B8' },
+  { name: 'Rosa', hex: '#F04E98' },
+  { name: 'Pink', hex: '#DA1884' },
+  { name: 'Magenta', hex: '#E10098' },
+  { name: 'Magenta Escuro', hex: '#8B004B' },
+  { name: 'Lavanda', hex: '#D7C6E6' },
+  { name: 'Lilás', hex: '#864BAE' },
+  { name: 'Violeta', hex: '#440099' },
+  { name: 'Roxo', hex: '#2E1A47' },
+  { name: 'Azul Claro', hex: '#B9D9EB' },
+  { name: 'Turquesa', hex: '#53B0AE' },
+  { name: 'Ciano', hex: '#15A3C7' },
+  { name: 'Celeste', hex: '#00A3E0' },
+  { name: 'Royal', hex: '#003DA5' },
+  { name: 'Azul Escuro', hex: '#001E60' },
+  { name: 'Marinho', hex: '#002147' },
+  { name: 'Verde Limão', hex: '#97D700' },
+  { name: 'Verde Claro', hex: '#6CC24A' },
+  { name: 'Esmeralda', hex: '#009A44' },
+  { name: 'Verde Bandeira', hex: '#007A33' },
+  { name: 'Musgo', hex: '#4A7729' },
+  { name: 'Verde Escuro', hex: '#215732' },
+  { name: 'Areia', hex: '#E0C6A3' },
+  { name: 'Bege', hex: '#C6AA76' },
+  { name: 'Marrom Claro', hex: '#B58150' },
+  { name: 'Marrom Escuro', hex: '#3E2B2E' },
+  { name: 'Chocolate', hex: '#472311' }
+];
+
 function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
   return (
     <img
@@ -118,6 +169,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
+  const [showNome, setShowNome] = useState(true);
+  const [showNumero, setShowNumero] = useState(true);
+  const [nomeColor, setNomeColor] = useState('#FFFFFF');
+  const [nomeBorderColor, setNomeBorderColor] = useState('transparent');
+  const [numeroFrontColor, setNumeroFrontColor] = useState('#FFFFFF');
+  const [numeroFrontBorderColor, setNumeroFrontBorderColor] = useState('transparent');
+  const [numeroBackColor, setNumeroBackColor] = useState('#FFFFFF');
+  const [numeroBackBorderColor, setNumeroBackBorderColor] = useState('transparent');
+  const [nomeSize, setNomeSize] = useState(70);
+  const [numeroSize, setNumeroSize] = useState(70);
+  const [nomeFont, setNomeFont] = useState('Impact');
+  const [numeroFont, setNumeroFont] = useState('Impact');
   const [selectedLayoutId, setSelectedLayoutId] = useState('c1');
 
   const COMBINACOES_ESPORTE = [
@@ -346,7 +409,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     setUvLayers(prev => {
-      const newLayers = [];
+      const newLayers: UvLayer[] = [];
       const animatingLayerId = animatingElement?.layer?.id;
       
       const updateOrAddLayer = (id: string, zoneKey: string | null, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
@@ -356,15 +419,22 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         const zone = uvMapZones[zoneKey];
         if (!zone) return;
         
-        const calculatedFontSize = (fontSize / 100) * zone.height;
+        const baseFontSize = id.includes('nome') ? nomeSize : id.includes('numero') ? numeroSize : fontSize;
+        const calculatedFontSize = (baseFontSize / 100) * zone.height;
+        
+        const layerColor = id.includes('nome') ? nomeColor : 
+                          (id.includes('numero') && zoneKey.startsWith('peito')) ? numeroFrontColor :
+                          (id.includes('numero') && zoneKey.startsWith('costas')) ? numeroBackColor : textColor;
+        
+        const layerFont = id.includes('nome') ? nomeFont : id.includes('numero') ? numeroFont : fontFamily;
         
         const layer: UvLayer = {
           id,
           zoneKey,
           type,
           content,
-          color: textColor,
-          fontFamily,
+          color: layerColor,
+          fontFamily: layerFont,
           fontSize: calculatedFontSize,
           fontWeight: 900,
           ...extra
@@ -373,14 +443,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         newLayers.push(layer);
       };
 
-      const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
-      if (elementPositions.nome) {
+      if (showNome && elementPositions.nome) {
+        const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
         updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text');
       }
       
-      const numeroContent = uvTextDrafts['numero'] || '10';
-      if (elementPositions.numero) {
+      if (showNumero && elementPositions.numero) {
+        const numeroContent = uvTextDrafts['numero'] || '10';
         updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
+        
+        // Se o número estiver em uma posição de peito, também pode precisar estar nas costas se o layout for misto? 
+        // Na Jumptec, se o número é "peito_direito", ele ainda costuma ter um número grande nas costas?
+        // O prompt diz: "Número centro frente", "Número peito direito", "Número peito esquerdo".
+        // Mas o seletor de posição de nome diz "Nome costas TOPO + número no centro das costas".
+        // Então o número centro costas parece ser fixo ou implícito quando showNumero é true.
+        if (!elementPositions.numero.startsWith('costas')) {
+             updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text');
+        }
       }
 
       const shieldSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>')}`;
@@ -396,7 +475,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       return newLayers;
     });
-  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id]);
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont]);
 
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
@@ -557,46 +636,280 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   )}
                   
                   {activeTab === 'name' && (
-                    <div className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="flex flex-col gap-1">
-                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Nome e Número</h3>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">Personalize o layout</p>
+                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
+                      {/* 1. TOGGLES NO TOPO */}
+                      <div className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <div className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                            showNome ? "bg-[#FF5A00] border-[#FF5A00]" : "border-gray-300 group-hover:border-gray-400"
+                          )}>
+                            <input type="checkbox" className="hidden" checked={showNome} onChange={e => setShowNome(e.target.checked)} />
+                            {showNome && <X className="w-3.5 h-3.5 text-white rotate-45" />}
+                          </div>
+                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNome ? "text-gray-900" : "text-gray-400")}>Nome</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <div className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                            showNumero ? "bg-[#FF5A00] border-[#FF5A00]" : "border-gray-300 group-hover:border-gray-400"
+                          )}>
+                            <input type="checkbox" className="hidden" checked={showNumero} onChange={e => setShowNumero(e.target.checked)} />
+                            {showNumero && <X className="w-3.5 h-3.5 text-white rotate-45" />}
+                          </div>
+                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNumero ? "text-gray-900" : "text-gray-400")}>Número</span>
+                        </label>
+                      </div>
+
+                      {/* 2. SELETOR DE POSIÇÃO DO NOME */}
+                      {showNome && (
+                        <div className="space-y-4">
+                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Nome</h3>
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              { id: 'costas_topo', label: 'Topo' },
+                              { id: 'costas_fundo', label: 'Fundo' }
+                            ].map(pos => (
+                              <button
+                                key={pos.id}
+                                onClick={() => moveElement('nome', pos.id)}
+                                className={cn(
+                                  "relative p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
+                                  elementPositions.nome === pos.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100 bg-white"
+                                )}
+                              >
+                                <svg viewBox="0 0 71.6 58.5" className="w-full h-auto">
+                                  <path d="M15 5 L5 15 L8 25 L8 55 L63 55 L63 25 L66 15 L56 5 L45 8 L25 8 Z" fill="none" stroke={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" />
+                                  <text x="35" y={pos.id === 'costas_topo' ? '18' : '45'} fill={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} fontSize="6" fontWeight="900" textAnchor="middle">NOME</text>
+                                  <text x="35" y="32" fill={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} fontSize="10" fontWeight="900" textAnchor="middle">10</text>
+                                </svg>
+                                <span className="text-[9px] font-black uppercase">{pos.label}</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          {COMBINACOES_ESPORTE.map((comb) => (
-                            <ShirtLayoutOption
-                              key={comb.id}
-                              nomePos={comb.nome}
-                              numeroPos={comb.numero}
-                              escudoPos={comb.escudo}
-                              selected={selectedLayoutId === comb.id}
-                              onClick={() => handleLayoutSelect(comb)}
+                      )}
+
+                      {/* 3. SELETOR DE POSIÇÃO DO NÚMERO */}
+                      {showNumero && (
+                        <div className="space-y-4">
+                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Número</h3>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'peito_centro', label: 'Centro' },
+                              { id: 'peito_direito', label: 'Direito' },
+                              { id: 'peito_esquerdo', label: 'Esquerdo' }
+                            ].map(pos => (
+                              <button
+                                key={pos.id}
+                                onClick={() => moveElement('numero', pos.id)}
+                                className={cn(
+                                  "relative p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
+                                  elementPositions.numero === pos.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100 bg-white"
+                                )}
+                              >
+                                <svg viewBox="0 0 71.6 58.5" className="w-full h-auto">
+                                  <path d="M15 5 L5 15 L8 25 L8 55 L63 55 L63 25 L66 15 L56 5 L45 8 L25 8 Z" fill="none" stroke={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" />
+                                  <circle cx="35" cy="7" r="4" stroke={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" fill="none" />
+                                  <text 
+                                    x={pos.id === 'peito_centro' ? '35' : pos.id === 'peito_direito' ? '25' : '45'} 
+                                    y={pos.id === 'peito_centro' ? '30' : '25'} 
+                                    fill={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} 
+                                    fontSize={pos.id === 'peito_centro' ? '10' : '7'} 
+                                    fontWeight="900" 
+                                    textAnchor="middle"
+                                  >
+                                    10
+                                  </text>
+                                </svg>
+                                <span className="text-[8px] font-black uppercase">{pos.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. SEÇÃO PERSONALIZAR NOME */}
+                      {showNome && (
+                        <div className="space-y-6 pt-6 border-t border-gray-100">
+                          <div className="flex flex-col gap-1">
+                            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Personalizar nome</h3>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <Input
+                              value={uvTextDrafts['nome'] ?? ''}
+                              onChange={(e) => setUvLayerText('nome', e.target.value)}
+                              placeholder="Digite seu nome aqui"
+                              maxLength={16}
+                              className="h-12 bg-gray-50 border-none rounded-xl font-bold text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
                             />
-                          ))}
+
+                            <Select value={nomeFont} onValueChange={setNomeFont}>
+                              <SelectTrigger className="h-12 bg-gray-50 border-none rounded-xl font-bold text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
+                            </Select>
+
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                               <span className="text-[10px] font-black uppercase text-gray-400">Tamanho</span>
+                               <div className="flex items-center gap-3">
+                                 <button onClick={() => setNomeSize(s => Math.max(10, s - 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                 <span className="text-xs font-black w-6 text-center">{nomeSize}</span>
+                                 <button onClick={() => setNomeSize(s => Math.min(200, s + 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                               </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-black uppercase text-gray-400">Cor do nome</span>
+                              <div className="grid grid-cols-8 gap-2">
+                                {COLORS.map(c => (
+                                  <button
+                                    key={c.hex}
+                                    title={c.name}
+                                    onClick={() => setNomeColor(c.hex)}
+                                    className={cn(
+                                      "w-6 h-6 rounded-full border transition-all",
+                                      nomeColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200"
+                                    )}
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-black uppercase text-gray-400">Cor da borda</span>
+                              <div className="grid grid-cols-8 gap-2">
+                                <button
+                                  onClick={() => setNomeBorderColor('transparent')}
+                                  className={cn(
+                                    "w-6 h-6 rounded-full border flex items-center justify-center bg-white transition-all",
+                                    nomeBorderColor === 'transparent' ? "ring-2 ring-gray-800 border-white" : "border-gray-200"
+                                  )}
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
+                                {COLORS.map(c => (
+                                  <button
+                                    key={c.hex}
+                                    title={c.name}
+                                    onClick={() => setNomeBorderColor(c.hex)}
+                                    className={cn(
+                                      "w-6 h-6 rounded-full border transition-all",
+                                      nomeBorderColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200"
+                                    )}
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="space-y-3">
-                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nome do Jogador</label>
-                        <Input
-                          value={uvTextDrafts['nome'] ?? ''}
-                          onChange={(e) => setUvLayerText('nome', e.target.value)}
-                          placeholder="SEU NOME"
-                          className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
-                        />
-                      </div>
+                      {/* 5. SEÇÃO PERSONALIZAR NÚMERO */}
+                      {showNumero && (
+                        <div className="space-y-6 pt-6 border-t border-gray-100">
+                          <div className="flex flex-col gap-1">
+                            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Personalizar número</h3>
+                          </div>
 
-                      <div className="space-y-3">
-                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Número</label>
-                        <Input
-                          value={uvTextDrafts['numero'] ?? ''}
-                          onChange={(e) => setUvLayerText('numero', e.target.value)}
-                          placeholder="10"
-                          className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-center text-lg focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
-                        />
-                      </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1 p-3 bg-gray-50 rounded-xl flex items-center justify-between">
+                                <button onClick={() => {
+                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  setUvLayerText('numero', Math.max(0, cur - 1).toString());
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                <Input
+                                  value={uvTextDrafts['numero'] ?? '10'}
+                                  onChange={(e) => setUvLayerText('numero', e.target.value)}
+                                  className="w-12 h-8 bg-transparent border-none text-center font-black p-0 focus-visible:ring-0"
+                                />
+                                <button onClick={() => {
+                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  setUvLayerText('numero', (cur + 1).toString());
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                              </div>
+                              <Select value={numeroFont} onValueChange={setNumeroFont}>
+                                <SelectTrigger className="flex-1 h-12 bg-gray-50 border-none rounded-xl font-bold text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                               <span className="text-[10px] font-black uppercase text-gray-400">Tamanho</span>
+                               <div className="flex items-center gap-3">
+                                 <button onClick={() => setNumeroSize(s => Math.max(10, s - 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                 <span className="text-xs font-black w-6 text-center">{numeroSize}</span>
+                                 <button onClick={() => setNumeroSize(s => Math.min(200, s + 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                               </div>
+                            </div>
+
+                            {/* Cores Número Frente */}
+                            <div className="space-y-4 pt-2">
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Número Frente</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroFrontColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroFrontColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Borda Frente</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  <button onClick={() => setNumeroFrontBorderColor('transparent')}
+                                    className={cn("w-6 h-6 rounded-full border flex items-center justify-center bg-white transition-all", numeroFrontBorderColor === 'transparent' ? "ring-2 ring-gray-800 border-white" : "border-gray-200")}
+                                  >
+                                    <X className="w-3 h-3 text-red-500" />
+                                  </button>
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroFrontBorderColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroFrontBorderColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Cores Número Verso */}
+                            <div className="space-y-4 pt-4 border-t border-gray-50">
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Número Verso</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroBackColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroBackColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Borda Verso</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  <button onClick={() => setNumeroBackBorderColor('transparent')}
+                                    className={cn("w-6 h-6 rounded-full border flex items-center justify-center bg-white transition-all", numeroBackBorderColor === 'transparent' ? "ring-2 ring-gray-800 border-white" : "border-gray-200")}
+                                  >
+                                    <X className="w-3 h-3 text-red-500" />
+                                  </button>
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroBackBorderColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroBackBorderColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
