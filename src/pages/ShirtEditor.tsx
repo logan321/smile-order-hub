@@ -557,6 +557,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   
                   {activeTab === 'name' && (
                     <div className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Nome e Número</h3>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha o layout</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-3">
+                          {COMBINACOES_ESPORTE.map((comb) => (
+                            <ShirtLayoutOption
+                              key={comb.id}
+                              nomePos={comb.nome}
+                              numeroPos={comb.numero}
+                              escudoPos={comb.escudo}
+                              selected={selectedLayoutId === comb.id}
+                              onClick={() => handleLayoutSelect(comb)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
                       <div className="space-y-3">
                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nome do Jogador</label>
                         <Input
@@ -565,30 +585,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           placeholder="SEU NOME"
                           className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { label: 'Peito D', id: 'peito_direito' },
-                            { label: 'Peito E', id: 'peito_esquerdo' },
-                            { label: 'Costas T', id: 'costas_topo' },
-                            { label: 'Costas F', id: 'costas_fundo' }
-                          ].map(pos => (
-                            <button
-                              key={pos.id}
-                              type="button"
-                              data-pos-id={pos.id}
-                              data-tipo="nome"
-                              onClick={() => moveElement('nome', pos.id)}
-                              className={cn(
-                                "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
-                                elementPositions.nome === pos.id 
-                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
-                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-                              )}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                        </div>
                       </div>
 
                       <div className="space-y-3">
@@ -599,30 +595,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           placeholder="10"
                           className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-center text-lg focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { label: 'Peito D', id: 'peito_direito' },
-                            { label: 'Peito E', id: 'peito_esquerdo' },
-                            { label: 'Peito C', id: 'peito_centro' },
-                            { label: 'Costas C', id: 'costas_centro' }
-                          ].map(pos => (
-                            <button
-                              key={pos.id}
-                              type="button"
-                              data-pos-id={pos.id}
-                              data-tipo="numero"
-                              onClick={() => moveElement('numero', pos.id)}
-                              className={cn(
-                                "h-8 text-[8px] font-bold uppercase rounded-lg border transition-all",
-                                elementPositions.numero === pos.id 
-                                  ? "bg-[#FF5A00] text-white border-[#FF5A00] shadow-sm" 
-                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-                              )}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   )}
