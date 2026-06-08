@@ -67,10 +67,17 @@ export async function composeUvTexture(opts: {
     const zone = opts.zones[layer.zoneKey];
     if (!zone) continue;
     ctx.save();
-    // Clip to zone
-    ctx.beginPath();
-    ctx.rect(zone.x, zone.y, zone.width, zone.height);
-    ctx.clip();
+    
+    // Check if it's the escudo layer to decide whether to clip
+    const isEscudo = layer.id === 'layer_escudo';
+    
+    if (!isEscudo) {
+      // Clip to zone for other layers
+      ctx.beginPath();
+      ctx.rect(zone.x, zone.y, zone.width, zone.height);
+      ctx.clip();
+    }
+    
     const cx = zone.x + zone.width / 2 + (layer.offsetX ?? 0);
     const cy = zone.y + zone.height / 2 + (layer.offsetY ?? 0);
     ctx.translate(cx, cy);
@@ -131,8 +138,20 @@ export async function composeUvTexture(opts: {
         const img = await loadImage(layer.url);
         ctx.globalAlpha = layer.opacity ?? 1;
         // contain
-        const zw = zone.width * scale;
-        const zh = zone.height * scale;
+        let zw = zone.width * scale;
+        let zh = zone.height * scale;
+        
+        // Specialized logic for escudo
+        if (isEscudo) {
+          // opts.uvWidth should be available
+          const uvWidth = opts.uvWidth || base.naturalWidth;
+          // scale is the escudoSize value (50-300) / 100
+          // sizePx = (escudoSize / 100) * uvWidth * 0.12
+          const sizePx = scale * uvWidth * 0.12;
+          zw = sizePx;
+          zh = sizePx;
+        }
+        
         const ratio = Math.min(zw / img.naturalWidth, zh / img.naturalHeight);
         const dw = img.naturalWidth * ratio;
         const dh = img.naturalHeight * ratio;
