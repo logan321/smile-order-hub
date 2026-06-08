@@ -344,11 +344,7 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                           }`}
                           onClick={() => {
-                            if (selected && !zones[fullId]) {
-                              renameZone(selected, fullId);
-                            } else {
-                              addZone(fullId);
-                            }
+                            addZone(fullId);
                           }}
                         >
                           {opt.label}
