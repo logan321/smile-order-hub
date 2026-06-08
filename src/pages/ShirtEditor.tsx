@@ -169,6 +169,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
+  const [showNome, setShowNome] = useState(true);
+  const [showNumero, setShowNumero] = useState(true);
+  const [nomeColor, setNomeColor] = useState('#FFFFFF');
+  const [nomeBorderColor, setNomeBorderColor] = useState('transparent');
+  const [numeroFrontColor, setNumeroFrontColor] = useState('#FFFFFF');
+  const [numeroFrontBorderColor, setNumeroFrontBorderColor] = useState('transparent');
+  const [numeroBackColor, setNumeroBackColor] = useState('#FFFFFF');
+  const [numeroBackBorderColor, setNumeroBackBorderColor] = useState('transparent');
+  const [nomeSize, setNomeSize] = useState(70);
+  const [numeroSize, setNumeroSize] = useState(70);
+  const [nomeFont, setNomeFont] = useState('Impact');
+  const [numeroFont, setNumeroFont] = useState('Impact');
   const [selectedLayoutId, setSelectedLayoutId] = useState('c1');
 
   const COMBINACOES_ESPORTE = [
