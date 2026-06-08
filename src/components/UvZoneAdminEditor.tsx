@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Trash2, Plus, Save } from 'lucide-react';
+import { Trash2, Plus, Save, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import type { UvZone } from '@/hooks/useUvLibrary';
 
@@ -81,6 +81,10 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
   const [newKey, setNewKey] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<Drag>(null);
@@ -90,6 +94,8 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
       setZones(initialZones || {});
       setDims({ w: initialWidth ?? 0, h: initialHeight ?? 0 });
       setSelected(null);
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
     }
   }, [open, initialZones, initialWidth, initialHeight]);
 
@@ -101,13 +107,48 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
 
   const getScale = () => {
     if (!imgRef.current) return 1;
-    return imgRef.current.clientWidth / (dims.w || imgRef.current.naturalWidth || 1);
+    const baseScale = imgRef.current.clientWidth / (dims.w || imgRef.current.naturalWidth || 1);
+    return baseScale * zoom;
   };
 
   const screenToUv = (clientX: number, clientY: number) => {
     const rect = imgRef.current!.getBoundingClientRect();
     const s = getScale();
-    return { x: (clientX - rect.left) / s, y: (clientY - rect.top) / s };
+    // Adjust for pan and zoom
+    return { 
+      x: (clientX - rect.left - pan.x) / s, 
+      y: (clientY - rect.top - pan.y) / s 
+    };
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const rect = containerRef.current!.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const zoomSpeed = 0.001;
+    const delta = -e.deltaY;
+    const newZoom = Math.max(1, Math.min(5, zoom + delta * zoomSpeed));
+    
+    if (newZoom !== zoom) {
+      // Calculate pan to keep mouse position fixed
+      const scaleChange = newZoom / zoom;
+      const newPanX = mouseX - (mouseX - pan.x) * scaleChange;
+      const newPanY = mouseY - (mouseY - pan.y) * scaleChange;
+      
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
+    }
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    // If clicking empty space (not a zone), start panning
+    if (e.target === imgRef.current || e.target === containerRef.current) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      setSelected(null);
+    }
   };
 
   const startDrag = (key: string, e: React.PointerEvent, kind: 'move' | 'resize') => {
@@ -119,6 +160,14 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
+      return;
+    }
+
     const d = dragRef.current;
     if (!d) return;
     const pt = screenToUv(e.clientX, e.clientY);
@@ -137,7 +186,10 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
     });
   };
 
-  const endDrag = () => { dragRef.current = null; };
+  const endDrag = () => { 
+    dragRef.current = null; 
+    setIsPanning(false);
+  };
 
   const addZone = (key: string) => {
     if (!key.trim()) { toast.error('Nome da zona obrigatório'); return; }
@@ -145,6 +197,12 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
     // If a zone with this key already exists, just select it
     if (zones[key]) {
       setSelected(key);
+      return;
+    }
+
+    // MELHORIA 1: If something is selected, rename it instead of adding new
+    if (selected) {
+      renameZone(selected, key);
       return;
     }
 
@@ -200,41 +258,64 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
           <DialogTitle>Zonas UV — {code}</DialogTitle>
         </DialogHeader>
         <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-          <div
-            ref={containerRef}
-            className="relative bg-muted/30 rounded-lg overflow-hidden select-none"
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerLeave={endDrag}
-          >
-            <img
-              ref={imgRef}
-              src={imageUrl}
-              alt={code}
-              onLoad={onImgLoad}
-              className="w-full h-auto block"
-              draggable={false}
-            />
-            {Object.entries(zones).map(([key, z]) => {
-              const s = getScale();
-              const isSel = selected === key;
-              return (
-                <div
-                  key={key}
-                  onPointerDown={(e) => startDrag(key, e, 'move')}
-                  className={`absolute border-2 ${isSel ? 'border-amber-500 bg-amber-500/20' : 'border-primary bg-primary/10'} cursor-move`}
-                  style={{ left: z.x * s, top: z.y * s, width: z.width * s, height: z.height * s }}
+          <div className="flex flex-col gap-2">
+            <div
+              ref={containerRef}
+              className="relative bg-muted/30 rounded-lg overflow-hidden select-none cursor-crosshair h-[600px]"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={endDrag}
+              onPointerLeave={endDrag}
+              onWheel={handleWheel}
+            >
+              <div 
+                className="absolute inset-0 transition-transform duration-75 ease-out origin-top-left"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+              >
+                <img
+                  ref={imgRef}
+                  src={imageUrl}
+                  alt={code}
+                  onLoad={onImgLoad}
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
+                {Object.entries(zones).map(([key, z]) => {
+                  const s = getScale() / zoom; // Use scale without zoom since parent div has scale
+                  const isSel = selected === key;
+                  return (
+                    <div
+                      key={key}
+                      onPointerDown={(e) => startDrag(key, e, 'move')}
+                      className={`absolute border-2 ${isSel ? 'border-amber-500 bg-amber-500/20' : 'border-primary bg-primary/10'} cursor-move`}
+                      style={{ left: z.x * s, top: z.y * s, width: z.width * s, height: z.height * s }}
+                    >
+                      <div
+                        onPointerDown={(e) => startDrag(key, e, 'resize')}
+                        className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 cursor-se-resize"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {zoom > 1 && (
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  className="absolute top-2 left-2 h-7 text-[10px] bg-white/80 backdrop-blur-sm"
+                  onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
                 >
-                  <span className="absolute top-0 left-0 -translate-y-full text-xs font-semibold bg-background/90 px-1.5 py-0.5 rounded">
-                    {key}
-                  </span>
-                  <div
-                    onPointerDown={(e) => startDrag(key, e, 'resize')}
-                    className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 cursor-se-resize"
-                  />
-                </div>
-              );
-            })}
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Resetar Zoom
+                </Button>
+              )}
+            </div>
+            
+            <div className="px-2 text-[10px] text-muted-foreground flex justify-between items-center">
+              <span>{selected ? `Zona selecionada: ${selected}` : 'Nenhuma zona selecionada'}</span>
+              <span>Scroll para zoom • Arraste para pan</span>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -263,11 +344,7 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                           }`}
                           onClick={() => {
-                            if (selected && !zones[fullId]) {
-                              renameZone(selected, fullId);
-                            } else {
-                              addZone(fullId);
-                            }
+                            addZone(fullId);
                           }}
                         >
                           {opt.label}
@@ -291,12 +368,7 @@ export default function UvZoneAdminEditor({ open, onOpenChange, imageUrl, code, 
                     size="sm" 
                     className="h-8 px-3 bg-[#FF5A00] hover:bg-[#FF5A00]/90"
                     onClick={() => {
-                      if (selected && newKey.trim() && !zones[newKey.trim()]) {
-                        renameZone(selected, newKey.trim());
-                        setNewKey('');
-                      } else {
-                        addZone(newKey.trim());
-                      }
+                      addZone(newKey.trim());
                     }}
                   >
                     <Plus className="h-4 w-4" />
