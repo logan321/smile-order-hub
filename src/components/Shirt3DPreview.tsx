@@ -223,6 +223,8 @@ export default function Shirt3DPreview({
   autoRotate = true,
   cameraPosition = [0, 0.1, 5.2],
   className,
+  animatingElement,
+  onAnimationComplete,
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
