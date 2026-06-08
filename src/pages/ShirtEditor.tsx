@@ -118,6 +118,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
   });
+
+  const [flyingElement, setFlyingElement] = useState<{
+    content: string;
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+  } | null>(null);
   const [animatingElement, setAnimatingElement] = useState<any>(null);
   
   const [uvMapDims, setUvMapDims] = useState<{ w: number | null; h: number | null }>({ w: null, h: null });
