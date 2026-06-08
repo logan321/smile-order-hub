@@ -636,46 +636,280 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   )}
                   
                   {activeTab === 'name' && (
-                    <div className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="flex flex-col gap-1">
-                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Nome e Número</h3>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">Personalize o layout</p>
+                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
+                      {/* 1. TOGGLES NO TOPO */}
+                      <div className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <div className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                            showNome ? "bg-[#FF5A00] border-[#FF5A00]" : "border-gray-300 group-hover:border-gray-400"
+                          )}>
+                            <input type="checkbox" className="hidden" checked={showNome} onChange={e => setShowNome(e.target.checked)} />
+                            {showNome && <X className="w-3.5 h-3.5 text-white rotate-45" />}
+                          </div>
+                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNome ? "text-gray-900" : "text-gray-400")}>Nome</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <div className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                            showNumero ? "bg-[#FF5A00] border-[#FF5A00]" : "border-gray-300 group-hover:border-gray-400"
+                          )}>
+                            <input type="checkbox" className="hidden" checked={showNumero} onChange={e => setShowNumero(e.target.checked)} />
+                            {showNumero && <X className="w-3.5 h-3.5 text-white rotate-45" />}
+                          </div>
+                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNumero ? "text-gray-900" : "text-gray-400")}>Número</span>
+                        </label>
+                      </div>
+
+                      {/* 2. SELETOR DE POSIÇÃO DO NOME */}
+                      {showNome && (
+                        <div className="space-y-4">
+                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Nome</h3>
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              { id: 'costas_topo', label: 'Topo' },
+                              { id: 'costas_fundo', label: 'Fundo' }
+                            ].map(pos => (
+                              <button
+                                key={pos.id}
+                                onClick={() => moveElement('nome', pos.id)}
+                                className={cn(
+                                  "relative p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
+                                  elementPositions.nome === pos.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100 bg-white"
+                                )}
+                              >
+                                <svg viewBox="0 0 71.6 58.5" className="w-full h-auto">
+                                  <path d="M15 5 L5 15 L8 25 L8 55 L63 55 L63 25 L66 15 L56 5 L45 8 L25 8 Z" fill="none" stroke={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" />
+                                  <text x="35" y={pos.id === 'costas_topo' ? '18' : '45'} fill={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} fontSize="6" fontWeight="900" textAnchor="middle">NOME</text>
+                                  <text x="35" y="32" fill={elementPositions.nome === pos.id ? "#FF5A00" : "#CACCCB"} fontSize="10" fontWeight="900" textAnchor="middle">10</text>
+                                </svg>
+                                <span className="text-[9px] font-black uppercase">{pos.label}</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          {COMBINACOES_ESPORTE.map((comb) => (
-                            <ShirtLayoutOption
-                              key={comb.id}
-                              nomePos={comb.nome}
-                              numeroPos={comb.numero}
-                              escudoPos={comb.escudo}
-                              selected={selectedLayoutId === comb.id}
-                              onClick={() => handleLayoutSelect(comb)}
+                      )}
+
+                      {/* 3. SELETOR DE POSIÇÃO DO NÚMERO */}
+                      {showNumero && (
+                        <div className="space-y-4">
+                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Número</h3>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'peito_centro', label: 'Centro' },
+                              { id: 'peito_direito', label: 'Direito' },
+                              { id: 'peito_esquerdo', label: 'Esquerdo' }
+                            ].map(pos => (
+                              <button
+                                key={pos.id}
+                                onClick={() => moveElement('numero', pos.id)}
+                                className={cn(
+                                  "relative p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
+                                  elementPositions.numero === pos.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100 bg-white"
+                                )}
+                              >
+                                <svg viewBox="0 0 71.6 58.5" className="w-full h-auto">
+                                  <path d="M15 5 L5 15 L8 25 L8 55 L63 55 L63 25 L66 15 L56 5 L45 8 L25 8 Z" fill="none" stroke={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" />
+                                  <circle cx="35" cy="7" r="4" stroke={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} strokeWidth="1.5" fill="none" />
+                                  <text 
+                                    x={pos.id === 'peito_centro' ? '35' : pos.id === 'peito_direito' ? '25' : '45'} 
+                                    y={pos.id === 'peito_centro' ? '30' : '25'} 
+                                    fill={elementPositions.numero === pos.id ? "#FF5A00" : "#CACCCB"} 
+                                    fontSize={pos.id === 'peito_centro' ? '10' : '7'} 
+                                    fontWeight="900" 
+                                    textAnchor="middle"
+                                  >
+                                    10
+                                  </text>
+                                </svg>
+                                <span className="text-[8px] font-black uppercase">{pos.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. SEÇÃO PERSONALIZAR NOME */}
+                      {showNome && (
+                        <div className="space-y-6 pt-6 border-t border-gray-100">
+                          <div className="flex flex-col gap-1">
+                            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Personalizar nome</h3>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <Input
+                              value={uvTextDrafts['nome'] ?? ''}
+                              onChange={(e) => setUvLayerText('nome', e.target.value)}
+                              placeholder="Digite seu nome aqui"
+                              maxLength={16}
+                              className="h-12 bg-gray-50 border-none rounded-xl font-bold text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
                             />
-                          ))}
+
+                            <Select value={nomeFont} onValueChange={setNomeFont}>
+                              <SelectTrigger className="h-12 bg-gray-50 border-none rounded-xl font-bold text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
+                            </Select>
+
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                               <span className="text-[10px] font-black uppercase text-gray-400">Tamanho</span>
+                               <div className="flex items-center gap-3">
+                                 <button onClick={() => setNomeSize(s => Math.max(10, s - 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                 <span className="text-xs font-black w-6 text-center">{nomeSize}</span>
+                                 <button onClick={() => setNomeSize(s => Math.min(200, s + 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                               </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-black uppercase text-gray-400">Cor do nome</span>
+                              <div className="grid grid-cols-8 gap-2">
+                                {COLORS.map(c => (
+                                  <button
+                                    key={c.hex}
+                                    title={c.name}
+                                    onClick={() => setNomeColor(c.hex)}
+                                    className={cn(
+                                      "w-6 h-6 rounded-full border transition-all",
+                                      nomeColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200"
+                                    )}
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-black uppercase text-gray-400">Cor da borda</span>
+                              <div className="grid grid-cols-8 gap-2">
+                                <button
+                                  onClick={() => setNomeBorderColor('transparent')}
+                                  className={cn(
+                                    "w-6 h-6 rounded-full border flex items-center justify-center bg-white transition-all",
+                                    nomeBorderColor === 'transparent' ? "ring-2 ring-gray-800 border-white" : "border-gray-200"
+                                  )}
+                                >
+                                  <X className="w-3 h-3 text-red-500" />
+                                </button>
+                                {COLORS.map(c => (
+                                  <button
+                                    key={c.hex}
+                                    title={c.name}
+                                    onClick={() => setNomeBorderColor(c.hex)}
+                                    className={cn(
+                                      "w-6 h-6 rounded-full border transition-all",
+                                      nomeBorderColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200"
+                                    )}
+                                    style={{ backgroundColor: c.hex }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <div className="space-y-3">
-                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nome do Jogador</label>
-                        <Input
-                          value={uvTextDrafts['nome'] ?? ''}
-                          onChange={(e) => setUvLayerText('nome', e.target.value)}
-                          placeholder="SEU NOME"
-                          className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
-                        />
-                      </div>
+                      {/* 5. SEÇÃO PERSONALIZAR NÚMERO */}
+                      {showNumero && (
+                        <div className="space-y-6 pt-6 border-t border-gray-100">
+                          <div className="flex flex-col gap-1">
+                            <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Personalizar número</h3>
+                          </div>
 
-                      <div className="space-y-3">
-                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Número</label>
-                        <Input
-                          value={uvTextDrafts['numero'] ?? ''}
-                          onChange={(e) => setUvLayerText('numero', e.target.value)}
-                          placeholder="10"
-                          className="h-10 lg:h-12 bg-gray-50 border-none rounded-xl font-bold text-center text-lg focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
-                        />
-                      </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1 p-3 bg-gray-50 rounded-xl flex items-center justify-between">
+                                <button onClick={() => {
+                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  setUvLayerText('numero', Math.max(0, cur - 1).toString());
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                <Input
+                                  value={uvTextDrafts['numero'] ?? '10'}
+                                  onChange={(e) => setUvLayerText('numero', e.target.value)}
+                                  className="w-12 h-8 bg-transparent border-none text-center font-black p-0 focus-visible:ring-0"
+                                />
+                                <button onClick={() => {
+                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  setUvLayerText('numero', (cur + 1).toString());
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                              </div>
+                              <Select value={numeroFont} onValueChange={setNumeroFont}>
+                                <SelectTrigger className="flex-1 h-12 bg-gray-50 border-none rounded-xl font-bold text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                               <span className="text-[10px] font-black uppercase text-gray-400">Tamanho</span>
+                               <div className="flex items-center gap-3">
+                                 <button onClick={() => setNumeroSize(s => Math.max(10, s - 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                 <span className="text-xs font-black w-6 text-center">{numeroSize}</span>
+                                 <button onClick={() => setNumeroSize(s => Math.min(200, s + 5))} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                               </div>
+                            </div>
+
+                            {/* Cores Número Frente */}
+                            <div className="space-y-4 pt-2">
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Número Frente</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroFrontColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroFrontColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Borda Frente</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  <button onClick={() => setNumeroFrontBorderColor('transparent')}
+                                    className={cn("w-6 h-6 rounded-full border flex items-center justify-center bg-white transition-all", numeroFrontBorderColor === 'transparent' ? "ring-2 ring-gray-800 border-white" : "border-gray-200")}
+                                  >
+                                    <X className="w-3 h-3 text-red-500" />
+                                  </button>
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroFrontBorderColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroFrontBorderColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Cores Número Verso */}
+                            <div className="space-y-4 pt-4 border-t border-gray-50">
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Número Verso</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroBackColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroBackColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <span className="text-[10px] font-black uppercase text-gray-400">Cor Borda Verso</span>
+                                <div className="grid grid-cols-8 gap-2">
+                                  <button onClick={() => setNumeroBackBorderColor('transparent')}
+                                    className={cn("w-6 h-6 rounded-full border flex items-center justify-center bg-white transition-all", numeroBackBorderColor === 'transparent' ? "ring-2 ring-gray-800 border-white" : "border-gray-200")}
+                                  >
+                                    <X className="w-3 h-3 text-red-500" />
+                                  </button>
+                                  {COLORS.map(c => (
+                                    <button key={c.hex} title={c.name} onClick={() => setNumeroBackBorderColor(c.hex)}
+                                      className={cn("w-6 h-6 rounded-full border transition-all", numeroBackBorderColor === c.hex ? "ring-2 ring-gray-800 border-white scale-110" : "border-gray-200")}
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
