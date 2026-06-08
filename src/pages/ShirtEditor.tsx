@@ -567,6 +567,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               uvVersion={uvTextureVersion}
               cameraPosition={cameraPosition}
               autoRotate={false}
+              className={cn("transition-opacity duration-400", isTransitioning ? "opacity-0" : "opacity-100")}
             />
             
             {/* Overlay Actions */}
