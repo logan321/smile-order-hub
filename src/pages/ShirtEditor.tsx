@@ -234,7 +234,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     if (file.type === 'application/pdf') {
       try {
         // @ts-ignore
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
         if (!pdfjsLib) {
           toast.error("Carregando processador de PDF, tente novamente em instantes.");
           return;
