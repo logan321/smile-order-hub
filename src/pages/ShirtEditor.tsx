@@ -13,7 +13,7 @@ import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import logo from '@/assets/logo.png';
+import logoOriginal from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
@@ -204,7 +204,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
   const { configs } = useSiteConfigContext();
 
-  const getConfig = (key: string, fallback: string = '') => configs[key] || fallback;
+  const getConfig = (key: string, fallback: string = '') => {
+    const value = configs[key]?.trim();
+    if (value) return value;
+    if (key === 'logo_url') return logoOriginal;
+    return fallback;
+  };
 
   // Sync UV map from hook to appliedStamp for useUvCompositor
   useEffect(() => {
@@ -803,7 +808,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
-          <img src={configs['logo_url'] || logo} alt="Logo" className="h-6 w-auto object-contain" />
+          <img src={configs['logo_url']?.trim() || logoOriginal} alt="Logo" className="h-6 w-auto object-contain" />
           <div className="h-4 w-px bg-gray-200 mx-2" />
           <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
         </div>

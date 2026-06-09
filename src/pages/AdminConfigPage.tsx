@@ -60,14 +60,39 @@ const AdminConfigPage = () => {
   };
 
   const handleResetDefaults = async () => {
-    if (!confirm('Deseja realmente restaurar todos os padrões? Isso sobrescreverá suas alterações atuais.')) return;
+    if (!confirm('Deseja realmente restaurar todos os padrões? Isso removerá todas as suas personalizações do banco de dados.')) return;
     
-    // In a real app, we'd have a defaults table or a hardcoded list to restore from.
-    // For now, let's just show a message or logic if needed.
-    toast({
-      title: 'Restaurar Padrões',
-      description: 'Funcionalidade em desenvolvimento. Por favor, ajuste manualmente.',
-    });
+    setSaving('reset-all');
+    try {
+      // Clear all values in the database (or we could delete the rows)
+      // Setting value to empty string will trigger the fallback to DEFAULT_CONFIGS
+      const { error } = await supabase
+        .from('site_config')
+        .update({ value: '' });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Padrões restaurados',
+        description: 'O site voltou à aparência original.',
+      });
+      refresh();
+      
+      // Update local state to show the empty values (which will reflect defaults in UI)
+      const resetValues: Record<string, string> = {};
+      allConfigs.forEach(c => {
+        resetValues[c.key] = '';
+      });
+      setLocalValues(resetValues);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao restaurar',
+        description: error.message,
+      });
+    } finally {
+      setSaving(null);
+    }
   };
 
   const categories = ['cores', 'textos', 'ícones', 'layout'];

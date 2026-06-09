@@ -8,7 +8,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
 import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
 import { getColor } from '@/lib/siteConfigUtils';
-import logoPlaceholder from '@/assets/logo.png';
+import logoOriginal from '@/assets/logo.png';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
@@ -27,7 +27,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { theme, toggle: toggleTheme } = useTheme();
   const { configs } = useSiteConfigContext();
 
-  const logo = configs['logo_url'] || logoPlaceholder;
+  const logo = configs['logo_url']?.trim() || logoOriginal;
   const sidebarBg = getColor(configs, 'sidebar_bg_color', 'var(--sidebar-background)');
   const sidebarText = getColor(configs, 'sidebar_text_color', 'var(--sidebar-foreground)');
   const headerBg = getColor(configs, 'header_bg_color', 'var(--background)');
