@@ -652,6 +652,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         } as any);
       }
 
+      if (appliedStamp?.imageUrl) {
+        updateOrAddLayer('applied_stamp_main', 'peito_centro', '', 'image', {
+          url: appliedStamp.imageUrl,
+          scale: 1,
+          offsetX: 0,
+          offsetY: 0,
+          opacity: 1
+        } as any);
+      }
+
       Object.keys(uvTextDrafts).forEach(k => {
         if (['nome', 'numero'].includes(k)) return;
         const content = uvTextDrafts[k];
