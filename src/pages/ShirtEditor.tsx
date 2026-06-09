@@ -201,12 +201,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
 
+  // Sync UV map from hook to appliedStamp for useUvCompositor
   useEffect(() => {
     if (uvMapData?.uv_frente_url) {
-      setAppliedStamp(prev => prev ? ({
-        ...prev,
-        uvMapUrl: uvMapData.uv_frente_url
-      }) : null);
+      setAppliedStamp(prev => {
+        if (!prev) return null;
+        // Se já tiver o mesmo UV, não atualiza para evitar loops
+        if (prev.uvMapUrl === uvMapData.uv_frente_url) return prev;
+        return {
+          ...prev,
+          uvMapUrl: uvMapData.uv_frente_url
+        };
+      });
     }
   }, [uvMapData]);
 
