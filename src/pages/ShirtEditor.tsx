@@ -484,7 +484,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     let cancelled = false;
-    const uvMapId = appliedStamp?.uvMapId || selectedTemplate?.uvMapId;
+    const uvMapId = effectiveUvMapId;
     if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
     (async () => {
       const { data } = await supabase
@@ -500,7 +500,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
-  }, [selectedTemplate?.uvMapId]);
+  }, [effectiveUvMapId]);
 
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
