@@ -1567,7 +1567,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                        )}
                        style={activeView === 'esquerda' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
                       >
-                       <img src={getConfig('icon_lateral_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7 scale-x-[-1]", activeView === 'esquerda' ? "" : "opacity-30")} alt="Esquerda" />
+                       <ConfigIcon icon={getConfig('icon_lateral_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7 scale-x-[-1]", activeView === 'esquerda' ? "" : "opacity-30")} />
                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'esquerda' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_esquerda')}</span>
                       </button>
 
