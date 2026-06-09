@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check, ArrowLeft, ArrowRight, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Drawer, DrawerContent, DrawerTrigger, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -830,7 +831,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </header>
 
       {/* PARTE 1 — Barra de nichos no topo */}
-      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
         <button className="absolute left-1 lg:left-2 z-10 p-1 lg:p-2 text-white/50 hover:text-white transition-colors hidden lg:block">
           <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
@@ -839,9 +840,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           {niches.map(nicho => (
             <li key={nicho.id} className="flex-shrink-0">
               <button
-                onClick={() => handleNichoChange(nicho.id)}
+                onPointerDown={() => handleNichoChange(nicho.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 lg:gap-1 w-12 h-12 lg:w-[70px] lg:h-[70px] rounded-full transition-all border-2",
+                  "flex flex-col items-center justify-center gap-0.5 lg:gap-1 w-12 h-12 lg:w-[70px] lg:h-[70px] rounded-full transition-all border-2 active:scale-95",
                   nichoAtivo === nicho.id 
                     ? "bg-white scale-105 lg:scale-110 shadow-lg" 
                     : "bg-transparent text-white border-transparent hover:border-white/30"
@@ -864,18 +865,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </div>
 
       {/* PARTE 4 — Miniaturas de estampas no topo */}
-      <div id="faixa-estampas" className="h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
+      <div id="faixa-estampas" className="h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40 touch-pan-x">
         <div className="flex gap-2 lg:gap-3 px-1 lg:px-2">
           {stampsFiltrados.map(s => (
             <button
               key={s.id}
-              onClick={() => addStamp(s)}
+              onPointerDown={() => addStamp(s)}
               className={cn(
-                "w-10 h-10 lg:w-14 lg:h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0",
+                "w-10 h-10 lg:w-14 lg:h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0 active:scale-95",
                 appliedStamp?.id === s.id ? "border-[#FF5A00] scale-105 shadow-md" : "border-gray-100 hover:border-gray-200"
               )}
             >
-              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-0.5 lg:p-1" />
+              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-0.5 lg:p-1 pointer-events-none" />
             </button>
           ))}
         </div>
@@ -1617,24 +1618,28 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
             {/* Floating Menu Button (Mobile) */}
             <div className="lg:hidden absolute bottom-4 right-4 z-40">
-              <Sheet>
-                <SheetTrigger asChild>
+              <Drawer shouldScaleBackground={false}>
+                <DrawerTrigger asChild>
                   <Button 
                     className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90"
                     style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                   >
                     <Menu className="w-6 h-6 text-white" />
                   </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden">
+                </DrawerTrigger>
+                <DrawerContent 
+                  className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                  onPointerDownOutside={(e) => e.preventDefault()}
+                  onInteractOutside={(e) => e.preventDefault()}
+                >
                   <div className="flex flex-col h-full bg-white">
-                    <div className="px-6 py-4 border-b border-gray-100">
+                    <DrawerHeader className="px-6 py-4 border-b border-gray-100">
                       <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                      <h2 className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</h2>
-                    </div>
+                      <DrawerTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</DrawerTitle>
+                    </DrawerHeader>
                     
                     {/* Tabs Horizontal Scroll */}
-                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0">
+                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x">
                       {[
                         { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
                         { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
@@ -1646,9 +1651,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
                         <button
                           key={id}
-                          onClick={() => setActiveTab(id as ToolbarTab)}
+                          onPointerDown={() => setActiveTab(id as ToolbarTab)}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px]",
+                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px] active:scale-95",
                             activeTab === id ? "bg-gray-50 shadow-sm" : "text-gray-400"
                           )}
                         >
@@ -1666,28 +1671,53 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     </div>
 
                     {/* Content Vertical Scroll */}
-                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20">
+                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20 touch-pan-y">
                       <div id="mobile-sidebar-content">
-                        {/* 
-                            Aqui idealmente deveríamos ter o conteúdo de dynamicSidebar. 
-                            Como o ShirtEditor é um componente gigante e não está modularizado,
-                            vou precisar de uma estratégia para reutilizar o JSX do dynamicSidebar.
-                            Mas para este passo, vou fechar o sheet e o usuário pode continuar a edição.
-                        */}
-                        <div className="text-center space-y-4 py-8">
-                           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
-                              <Sparkles className="w-8 h-8 text-[#FF5A00]" />
-                           </div>
-                           <div>
-                             <p className="font-bold text-gray-800">Use os menus acima</p>
-                             <p className="text-xs text-gray-400">Configure sua camisa navegando pelas abas.</p>
-                           </div>
+                        <div className="space-y-4">
+                          {activeTab === 'stamps' && (
+                            <div className="grid grid-cols-2 gap-2">
+                              {stampsFiltrados.map(s => (
+                                <button
+                                  key={s.id}
+                                  onPointerDown={() => addStamp(s)}
+                                  className={cn(
+                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95",
+                                    appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
+                                  )}
+                                >
+                                  <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain pointer-events-none" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {(activeTab as string) === 'text' && (
+                            <div className="space-y-4">
+                              {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo'].includes(k)).map((zoneKey) => (
+                                <div key={zoneKey} className="space-y-2">
+                                  <label className="text-[10px] font-black uppercase text-gray-400">{zoneKey}</label>
+                                  <Input
+                                    value={uvTextDrafts[zoneKey] ?? ''}
+                                    onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                                    placeholder="Digite aqui..."
+                                    className="h-12 bg-gray-50 border-none rounded-xl font-bold"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Fallback para outras abas que usam a mesma lógica da sidebar desktop */}
+                          {!['stamps', 'text'].includes(activeTab as string) && (
+                            <div className="text-center py-8">
+                               <p className="font-bold text-gray-800">Aba em desenvolvimento</p>
+                               <p className="text-xs text-gray-400">Esta seção será carregada em breve.</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                </SheetContent>
-              </Sheet>
+                </DrawerContent>
+              </Drawer>
             </div>
           </div>
           
