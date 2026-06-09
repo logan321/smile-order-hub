@@ -193,7 +193,7 @@ export default function Shirt3DPreview({
             onAnimationComplete={onAnimationComplete}
           />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
-          <Environment preset="city" intensity={0.7} />
+          <Environment preset="city" />
         </Suspense>
 
         <OrbitControls
