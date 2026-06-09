@@ -836,13 +836,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
         
-        <ul className="flex-1 flex items-center justify-start gap-3 lg:gap-6 px-4 lg:px-10 overflow-x-auto no-scrollbar scroll-smooth h-full">
+        <ul className="flex-1 flex items-center justify-start gap-3 lg:gap-6 px-4 lg:px-10 overflow-x-auto no-scrollbar scroll-smooth h-full touch-pan-x">
           {niches.map(nicho => (
             <li key={nicho.id} className="flex-shrink-0">
               <button
-                onClick={() => handleNichoChange(nicho.id)}
+                onPointerDown={() => handleNichoChange(nicho.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 lg:gap-1 w-12 h-12 lg:w-[70px] lg:h-[70px] rounded-full transition-all border-2",
+                  "flex flex-col items-center justify-center gap-0.5 lg:gap-1 w-12 h-12 lg:w-[70px] lg:h-[70px] rounded-full transition-all border-2 active:scale-95",
                   nichoAtivo === nicho.id 
                     ? "bg-white scale-105 lg:scale-110 shadow-lg" 
                     : "bg-transparent text-white border-transparent hover:border-white/30"
