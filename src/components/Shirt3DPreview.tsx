@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Canvas, useLoader, useFrame } from '@react-three/fiber';
+import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -123,22 +123,6 @@ function ShirtModel({
   );
 }
 
-function CameraController({ cameraPosition }: { cameraPosition: [number, number, number] }) {
-  const currentPos = useRef(new THREE.Vector3(...cameraPosition));
-  const targetPos = useRef(new THREE.Vector3(...cameraPosition));
-
-  useEffect(() => {
-    targetPos.current.set(...cameraPosition);
-  }, [cameraPosition]);
-
-  useFrame((state) => {
-    currentPos.current.lerp(targetPos.current, 0.05);
-    state.camera.position.copy(currentPos.current);
-    state.camera.lookAt(0, 0, 0);
-  });
-
-  return null;
-}
 
 export default function Shirt3DPreview({
   frontImage,
@@ -156,6 +140,29 @@ export default function Shirt3DPreview({
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!orbitRef.current) return;
+    
+    const [x, y, z] = cameraPosition;
+    
+    // Desliga autoRotate durante transição
+    orbitRef.current.autoRotate = false;
+    
+    // Seta posição e target (o damping do OrbitControls fará a transição suave)
+    orbitRef.current.object.position.set(x, y, z);
+    orbitRef.current.target.set(0, 0, 0);
+    
+    // Religa autoRotate após transição completa
+    const timer = setTimeout(() => {
+      if (orbitRef.current && rotating) {
+        orbitRef.current.autoRotate = true;
+      }
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, [cameraPosition, rotating]);
+
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
@@ -175,7 +182,7 @@ export default function Shirt3DPreview({
         onError={(err) => console.error('R3F Canvas Error:', err)}
         style={{ background: '#f1f3f6' }}
       >
-        <CameraController cameraPosition={cameraPosition} />
+        
         <color attach="background" args={['#f1f3f6']} />
         <ambientLight intensity={0.85} />
         <directionalLight position={[3, 4, 2]} intensity={1.3} castShadow={false} />
@@ -211,7 +218,7 @@ export default function Shirt3DPreview({
           minPolarAngle={Math.PI / 6}
           maxPolarAngle={Math.PI / 1.5}
           enableDamping={true}
-          dampingFactor={0.08}
+          dampingFactor={0.15}
           makeDefault
         />
       </Canvas>
