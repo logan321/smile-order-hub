@@ -17,6 +17,7 @@ interface Shirt3DPreviewProps {
   backImage: string;
   uvMapUrl?: string | null;
   uvCanvas?: HTMLCanvasElement | null;
+  uvDataUrl?: string | null;
   uvVersion?: number;
   fabricColor?: string;
   autoRotate?: boolean;
@@ -28,10 +29,26 @@ interface Shirt3DPreviewProps {
   canvasBg?: string;
 }
 
-function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
+function useUvTexture(
+  url: string | null,
+  canvas: HTMLCanvasElement | null | undefined,
+  dataUrl: string | null | undefined,
+  version = 0
+) {
   return useMemo(() => {
+    // Mobile: usa dataUrl exportado do canvas
+    if (dataUrl) {
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      const t = loader.load(dataUrl);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 4;
+      t.flipY = false;
+      t.needsUpdate = true;
+      return t;
+    }
+    // Desktop: usa CanvasTexture direto
     if (canvas) {
-      console.log('3D Preview: Using canvas texture');
       const t = new THREE.CanvasTexture(canvas);
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 16;
@@ -39,19 +56,10 @@ function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | und
       t.needsUpdate = true;
       return t;
     }
-    if (!url) {
-      console.log('3D Preview: No URL provided for texture');
-      return null;
-    }
-    console.log('3D Preview: Loading texture from URL:', url);
+    if (!url) return null;
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
-    const t = loader.load(
-      url,
-      () => console.log('3D Preview: Texture loaded successfully'),
-      undefined,
-      (err) => console.error('3D Preview: Error loading texture:', err)
-    );
+    const t = loader.load(url);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 16;
     t.flipY = false;
@@ -59,12 +67,13 @@ function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | und
     t.wrapT = THREE.RepeatWrapping;
     t.needsUpdate = true;
     return t;
-  }, [url, canvas, version]);
+  }, [url, canvas, dataUrl, version]);
 }
 
 function ShirtModel({
   uvImage,
   uvCanvas,
+  uvDataUrl,
   uvVersion,
   fabricColor,
   animatingElement,
@@ -72,6 +81,7 @@ function ShirtModel({
 }: {
   uvImage: string | null;
   uvCanvas: HTMLCanvasElement | null | undefined;
+  uvDataUrl?: string | null;
   uvVersion?: number;
   fabricColor: string;
   animatingElement?: any;
@@ -81,7 +91,7 @@ function ShirtModel({
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 
-  const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
+  const uvTex = useUvTexture(uvImage, uvCanvas, uvDataUrl, uvVersion);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   useEffect(() => {
@@ -133,6 +143,7 @@ export default function Shirt3DPreview({
   backImage,
   uvMapUrl,
   uvCanvas,
+  uvDataUrl,
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
@@ -210,6 +221,7 @@ export default function Shirt3DPreview({
           <ShirtModel 
             uvImage={uvImage} 
             uvCanvas={uvCanvas} 
+            uvDataUrl={uvDataUrl}
             uvVersion={uvVersion} 
             fabricColor={fabricColor} 
             animatingElement={animatingElement}
