@@ -204,7 +204,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
   const { configs } = useSiteConfigContext();
 
-  const getConfigValue = (key: string, fallback: string = '') => {
+  const getConfig = (key: string, fallback: string = '') => {
     const value = configs[key]?.trim();
     if (value) return value;
     if (key === 'logo_url') return logoOriginal;
