@@ -9,6 +9,9 @@ import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
+import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
+import { getColor } from '@/lib/siteConfigUtils';
+
 interface Shirt3DPreviewProps {
   frontImage: string;
   backImage: string;
