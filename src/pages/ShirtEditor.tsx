@@ -958,7 +958,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       <button
                         key={s.id}
                         onClick={() => addStamp(s)}
-                        className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
+                        className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'bg-transparent' : 'border-gray-50 hover:border-gray-200'}`}
+                        style={{ 
+                          borderColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') : undefined,
+                          backgroundColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') + '08' : undefined
+                        }}
                       >
                         <StampThumb stampUrl={s.imageUrl} name={s.name} />
                         <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
