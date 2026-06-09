@@ -1636,7 +1636,40 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       <DrawerTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</DrawerTitle>
                     </DrawerHeader>
                     
+                    {/* Tabs Horizontal Scroll */}
+                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x">
+                      {[
+                        { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
+                        { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
+                        { id: 'name', label: getConfig('nome_tab_label', regrasAtuais.labelNome), icon: Hand, show: regrasAtuais.temNome },
+                        { id: 'patches', label: getConfig('acabamento_tab_label', 'Acabamento'), icon: Sparkles, show: true },
+                        { id: 'emblems', label: getConfig('escudo_tab_label', regrasAtuais.labelEscudo), icon: ImageIcon, show: regrasAtuais.temEscudo },
+                        { id: 'logo', label: getConfig('numero_tab_label', 'Número'), icon: Box, show: regrasAtuais.temNumero },
+                        { id: 'upload_generic', label: getConfig('upload_tab_label', 'Upload'), icon: Upload, show: true },
+                      ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
+                        <button
+                          key={id}
+                          onClick={() => setActiveTab(id as ToolbarTab)}
+                          className={cn(
+                            "flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl transition-all min-w-[90px] min-h-[44px] active:scale-95",
+                            activeTab === id ? "bg-gray-50 shadow-sm" : "text-gray-400"
+                          )}
+                        >
+                          <ConfigIcon 
+                            icon={getIcon(configs, `icon_${id}`, Icon)} 
+                            className="w-6 h-6 pointer-events-none" 
+                            style={{ color: activeTab === id ? getColor(configs, 'primary_color', '#FF5A00') : undefined }}
+                          />
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-tighter pointer-events-none",
+                            activeTab === id ? "text-gray-900" : "text-gray-400"
+                          )}>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 touch-pan-y">
+
                       <div id="mobile-sidebar-content">
                         <div className="space-y-6">
                           {activeTab === 'stamps' && (
