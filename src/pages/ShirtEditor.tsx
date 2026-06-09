@@ -228,6 +228,34 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
 
+  const effectiveUvUrl = useMemo(() => {
+    if (appliedStamp?.uvMapUrl) return appliedStamp.uvMapUrl;
+    
+    // Busca por ID vinculado na estampa
+    if (appliedStamp?.uvMapId) {
+      const uv = uvMaps.find(u => u.id === appliedStamp.uvMapId);
+      if (uv?.image_url) return uv.image_url;
+    }
+
+    // Busca por código (nome da estampa == código do UV)
+    if (appliedStamp && uvMaps.length > 0) {
+      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
+      if (matchingUv?.image_url) return matchingUv.image_url;
+    }
+    
+    return selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+  }, [appliedStamp, uvMaps, selectedTemplate, fallbackUvUrl]);
+
+  const effectiveUvMapId = useMemo(() => {
+    if (appliedStamp?.uvMapId) return appliedStamp.uvMapId;
+    if (appliedStamp && uvMaps.length > 0) {
+      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
+      if (matchingUv) return matchingUv.id;
+    }
+    return selectedTemplate?.uvMapId;
+  }, [appliedStamp, uvMaps, selectedTemplate]);
+
+
   const stampsFiltrados = useMemo(() => {
     if (!nichoAtivo) return stamps;
     return stamps.filter(s => s.nicheId === nichoAtivo); 
