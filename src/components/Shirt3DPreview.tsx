@@ -138,6 +138,7 @@ export default function Shirt3DPreview({
   className,
   animatingElement,
   onAnimationComplete,
+  isUvReady = true,
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
