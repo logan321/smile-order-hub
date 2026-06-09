@@ -103,12 +103,15 @@ const AdminConfigPage = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validation
-    if (file.size > 2 * 1024 * 1024) {
+    // Validation: Increase limit to 5MB for SVGs
+    const isSvg = file.type === 'image/svg+xml' || file.name.endsWith('.svg');
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    if (file.size > maxSize) {
       toast({
         variant: 'destructive',
         title: 'Arquivo muito grande',
-        description: 'O tamanho máximo permitido é 2MB.',
+        description: 'O tamanho máximo permitido é 5MB.',
       });
       return;
     }
@@ -131,7 +134,10 @@ const AdminConfigPage = () => {
 
       const { data, error: uploadError } = await supabase.storage
         .from('site-assets')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { 
+          upsert: true,
+          contentType: isSvg ? 'image/svg+xml' : file.type
+        });
 
       if (uploadError) throw uploadError;
 
@@ -360,7 +366,7 @@ const AdminConfigPage = () => {
                                           />
                                         </div>
                                       </div>
-                                      <p className="text-[10px] text-slate-400">Recomendado: SVG para ícones e PNG transparente para logo. Máx 2MB.</p>
+                                      <p className="text-[10px] text-slate-400">Recomendado: SVG para ícones e PNG transparente para logo. Máx 5MB.</p>
                                     </div>
                                   ) : (
                                     <Input
@@ -420,9 +426,8 @@ const AdminConfigPage = () => {
                       }}
                     >
                       <div className="flex items-center gap-2">
-                        <img 
-                          src={localValues['logo_url'] ?? currentConfigs['logo_url']} 
-                          alt="Logo" 
+                        <ConfigIcon 
+                          icon={localValues['logo_url'] ?? currentConfigs['logo_url']} 
                           className="h-5 w-auto"
                         />
                         <span className="font-bold text-sm">
