@@ -700,11 +700,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   // Limpa canvas quando estampa muda para evitar mostrar textura antiga
   useEffect(() => {
-    // Resetar o canvas apenas se mudarmos de template (o molde UV muda)
-    // ou se removermos a estampa completamente.
-    // Não resetamos se apenas mudarmos de estampa mas o molde UV for o mesmo.
     setUv3DCanvas(null);
-  }, [selectedTemplate?.id]);
+    setUvTextureVersion(v => v + 1);
+  }, [appliedStamp?.id, selectedTemplate?.id]);
 
   const addStamp = (stamp: Stamp) => {
     setAppliedStamp(stamp);
