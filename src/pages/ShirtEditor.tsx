@@ -828,9 +828,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 w-[70px] h-[70px] rounded-full transition-all border-2",
                   nichoAtivo === nicho.id 
-                    ? "bg-white text-[#FF5A00] border-[#FF5A00] scale-110 shadow-lg" 
+                    ? "bg-white scale-110 shadow-lg" 
                     : "bg-transparent text-white border-transparent hover:border-white/30"
                 )}
+                style={{ 
+                  color: nichoAtivo === nicho.id ? getColor(configs, 'primary_color', '#FF5A00') : 'white',
+                  borderColor: nichoAtivo === nicho.id ? getColor(configs, 'primary_color', '#FF5A00') : 'transparent'
+                }}
               >
                 <span className="text-2xl leading-none">{nicho.icon}</span>
                 <span className="text-[9px] font-black uppercase tracking-tighter">{nicho.name}</span>
