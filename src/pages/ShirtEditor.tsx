@@ -1697,7 +1697,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       ))}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 touch-pan-y">
+                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-safe touch-pan-y overscroll-contain"
+                      style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'max(6rem, env(safe-area-inset-bottom))' }}>
 
                       <div id="mobile-sidebar-content">
                         <div className="space-y-6">
