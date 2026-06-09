@@ -1736,6 +1736,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                     onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
                                     placeholder={`Digite aqui...`}
                                     className="h-12 bg-white border-none rounded-xl font-bold shadow-sm"
+                                    inputMode="text"
+                                    enterKeyHint="done"
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
                                   />
                                 </div>
                               ))}
