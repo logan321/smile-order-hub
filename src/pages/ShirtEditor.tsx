@@ -25,7 +25,8 @@ import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 import { cn } from '@/lib/utils';
 import { useUVMap } from '@/hooks/useUVMap';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
+import { getColor, getIcon } from '@/lib/siteConfigUtils';
 
 interface Niche {
   id: string;
