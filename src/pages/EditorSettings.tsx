@@ -272,6 +272,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
   // Stamps
   const [newStampName, setNewStampName] = useState('');
+  const [newStampCodigo, setNewStampCodigo] = useState('');
   const [newStampNicheId, setNewStampNicheId] = useState<string>('');
   const [stampFrontFile, setStampFrontFile] = useState<File | null>(null);
   const [stampBackFile, setStampBackFile] = useState<File | null>(null);
@@ -282,8 +283,8 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
   const [uploadingStamp, setUploadingStamp] = useState(false);
 
   const handleAddStamp = async () => {
-    if (!newStampName.trim() || !stampFrontFile || !stampBackFile) {
-      toast.error('Preencha o nome e envie as imagens de frente e costas da estampa');
+    if (!newStampName.trim() || !stampFrontFile || !newStampCodigo.trim()) {
+      toast.error('Preencha o nome, código e envie a miniatura da estampa');
       return;
     }
     setUploadingStamp(true);
@@ -292,8 +293,19 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       const stampNicheId = newStampNicheId && newStampNicheId !== 'none' && newStampNicheId !== 'all' ? newStampNicheId : null;
       const uvMapId = newStampUvMapId && newStampUvMapId !== 'none' ? newStampUvMapId : null;
       const templateId = newStampTemplateId && newStampTemplateId !== 'none' ? newStampTemplateId : null;
-      await addStamp(newStampName.trim(), nicheObj?.name || 'Geral', stampFrontFile, stampBackFile, null, stampNicheId, uvMapId, templateId);
+      await addStamp(
+        newStampName.trim(), 
+        nicheObj?.name || 'Geral', 
+        stampFrontFile, 
+        stampBackFile, 
+        null, 
+        stampNicheId, 
+        uvMapId, 
+        templateId, 
+        newStampCodigo.trim()
+      );
       setNewStampName('');
+      setNewStampCodigo('');
       setNewStampNicheId('');
       setStampFrontFile(null);
       setStampBackFile(null);
@@ -302,7 +314,9 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
       if (stampFrontRef.current) stampFrontRef.current.value = '';
       if (stampBackRef.current) stampBackRef.current.value = '';
       toast.success('Estampa adicionada!');
-    } catch { toast.error('Erro ao adicionar estampa'); }
+    } catch (e: any) { 
+      toast.error(e?.message || 'Erro ao adicionar estampa'); 
+    }
     setUploadingStamp(false);
   };
 
