@@ -634,6 +634,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       if (elementPositions.escudo) {
         updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { 
           url: escudoImageUrl || defaultShieldSvg, 
+
           scale: debouncedEscudoScale, 
           offsetX: debouncedEscudoOffsetX,
           offsetY: debouncedEscudoOffsetY,
