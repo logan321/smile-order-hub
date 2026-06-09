@@ -1234,7 +1234,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                 <img src={escudoImageUrl} alt="Preview" className="w-full h-full object-contain" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-[10px] font-black text-gray-800 uppercase">Escudo Carregado</p>
+                                <p className="text-[10px] font-black text-gray-800 uppercase">{regrasAtuais.labelEscudo} Carregado</p>
                                 <button 
                                   onClick={() => {
                                     setEscudoImageUrl(null);
