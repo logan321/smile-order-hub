@@ -870,13 +870,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         {/* Coluna 1: Sidebar de Navegação */}
         <nav id="left-sidebar" className="w-14 lg:w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-6 lg:space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
-            { id: 'stamps', label: 'Estampa', icon: Shirt, show: true },
-            { id: 'text', label: 'Texto', icon: Type, show: true },
-            { id: 'name', label: regrasAtuais.labelNome, icon: Hand, show: regrasAtuais.temNome },
-            { id: 'patches', label: 'Acabamento', icon: Sparkles, show: true },
-            { id: 'emblems', label: regrasAtuais.labelEscudo, icon: ImageIcon, show: regrasAtuais.temEscudo },
-            { id: 'logo', label: 'Número', icon: Box, show: regrasAtuais.temNumero },
-            { id: 'upload_generic', label: 'Upload', icon: Upload, show: true },
+            { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
+            { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
+            { id: 'name', label: getConfig('nome_tab_label', regrasAtuais.labelNome), icon: Hand, show: regrasAtuais.temNome },
+            { id: 'patches', label: getConfig('acabamento_tab_label', 'Acabamento'), icon: Sparkles, show: true },
+            { id: 'emblems', label: getConfig('escudo_tab_label', regrasAtuais.labelEscudo), icon: ImageIcon, show: regrasAtuais.temEscudo },
+            { id: 'logo', label: getConfig('numero_tab_label', 'Número'), icon: Box, show: regrasAtuais.temNumero },
+            { id: 'upload_generic', label: getConfig('upload_tab_label', 'Upload'), icon: Upload, show: true },
           ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
