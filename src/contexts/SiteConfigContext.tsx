@@ -1,14 +1,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
-export type SiteConfig = {
-  key: string;
-  value: string;
-  type: string;
-  label: string;
-  category: string;
-};
+import { SiteConfig } from '@/types/siteConfig';
 
 interface SiteConfigContextType {
   configs: Record<string, string>;
