@@ -831,7 +831,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </header>
 
       {/* PARTE 1 — Barra de nichos no topo */}
-      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
         <button className="absolute left-1 lg:left-2 z-10 p-1 lg:p-2 text-white/50 hover:text-white transition-colors hidden lg:block">
           <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
@@ -840,9 +840,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           {niches.map(nicho => (
             <li key={nicho.id} className="flex-shrink-0">
               <button
-                onClick={() => handleNichoChange(nicho.id)}
+                onPointerDown={() => handleNichoChange(nicho.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 lg:gap-1 w-12 h-12 lg:w-[70px] lg:h-[70px] rounded-full transition-all border-2",
+                  "flex flex-col items-center justify-center gap-0.5 lg:gap-1 w-12 h-12 lg:w-[70px] lg:h-[70px] rounded-full transition-all border-2 active:scale-95",
                   nichoAtivo === nicho.id 
                     ? "bg-white scale-105 lg:scale-110 shadow-lg" 
                     : "bg-transparent text-white border-transparent hover:border-white/30"
@@ -865,18 +865,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </div>
 
       {/* PARTE 4 — Miniaturas de estampas no topo */}
-      <div id="faixa-estampas" className="h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
+      <div id="faixa-estampas" className="h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40 touch-pan-x">
         <div className="flex gap-2 lg:gap-3 px-1 lg:px-2">
           {stampsFiltrados.map(s => (
             <button
               key={s.id}
-              onClick={() => addStamp(s)}
+              onPointerDown={() => addStamp(s)}
               className={cn(
-                "w-10 h-10 lg:w-14 lg:h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0",
+                "w-10 h-10 lg:w-14 lg:h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0 active:scale-95",
                 appliedStamp?.id === s.id ? "border-[#FF5A00] scale-105 shadow-md" : "border-gray-100 hover:border-gray-200"
               )}
             >
-              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-0.5 lg:p-1" />
+              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-0.5 lg:p-1 pointer-events-none" />
             </button>
           ))}
         </div>
