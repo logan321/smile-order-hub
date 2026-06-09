@@ -1639,24 +1639,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             </div>
 
             {/* Floating Menu Button (Mobile) */}
-            <div className="lg:hidden absolute bottom-4 right-4 z-40">
-              <Drawer shouldScaleBackground={false}>
-                <DrawerTrigger asChild>
+            <div className="lg:hidden absolute bottom-6 right-6 z-40">
+              <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
+                <SheetTrigger asChild>
                   <Button 
-                    className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90"
+                    className="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90 border-4 border-white/50"
                     style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                   >
-                    <Menu className="w-6 h-6 text-white" />
+                    <Menu className="w-8 h-8 text-white" />
                   </Button>
-                </DrawerTrigger>
-                <DrawerContent 
-                  className="h-[85vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                </SheetTrigger>
+                <SheetContent 
+                  side="bottom"
+                  className="h-[60vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
                 >
                   <div className="flex flex-col h-full bg-white">
-                    <DrawerHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
+                    <SheetHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
                       <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                      <DrawerTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</DrawerTitle>
-                    </DrawerHeader>
+                      <SheetTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</SheetTitle>
+                    </SheetHeader>
+
                     
                     {/* Tabs Horizontal Scroll */}
                     <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x">
