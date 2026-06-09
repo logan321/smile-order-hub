@@ -470,6 +470,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         backgroundImageUrl: n.background_image_url || ''
       })) ?? [];
       setNiches(loadedNiches);
+      setUvMaps(uvMapsRes.data || []);
       
       if (loadedNiches.length > 0 && !nichoAtivo) {
         setNichoAtivo(loadedNiches[0].id);
