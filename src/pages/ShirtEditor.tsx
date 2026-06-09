@@ -1555,7 +1555,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           fallback={<Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'frente' ? "" : "opacity-30")} />}
                           className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'frente' ? "" : "opacity-30")} 
                         />
-                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'frente' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_frente')}</span>
+                        <span className="hidden lg:block text-[8px] font-bold mt-1" style={{ color: activeView === 'frente' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_frente')}</span>
                        </button>
                       
                        {/* Vista Lateral Direita */}
@@ -1572,7 +1572,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           fallback={<Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'direita' ? "" : "opacity-30")} />}
                           className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'direita' ? "" : "opacity-30")} 
                         />
-                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'direita' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_direita')}</span>
+                        <span className="hidden lg:block text-[8px] font-bold mt-1" style={{ color: activeView === 'direita' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_direita')}</span>
                        </button>
 
                        {/* Vista Lateral Esquerda */}
@@ -1589,7 +1589,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           fallback={<Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7 scale-x-[-1]", activeView === 'esquerda' ? "" : "opacity-30")} />}
                           className={cn("w-5 h-5 lg:w-7 lg:h-7 scale-x-[-1]", activeView === 'esquerda' ? "" : "opacity-30")} 
                         />
-                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'esquerda' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_esquerda')}</span>
+                        <span className="hidden lg:block text-[8px] font-bold mt-1" style={{ color: activeView === 'esquerda' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_esquerda')}</span>
                        </button>
 
                        {/* Vista Costas */}
@@ -1608,11 +1608,86 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             className={cn("w-full h-full", activeView === 'costas' ? "" : "opacity-30")} 
                           />
                         </div>
-                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'costas' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_costas')}</span>
+                        <span className="hidden lg:block text-[8px] font-bold mt-1" style={{ color: activeView === 'costas' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_costas')}</span>
                        </button>
                     </>
                   );
                })()}
+            </div>
+
+            {/* Floating Menu Button (Mobile) */}
+            <div className="lg:hidden absolute bottom-4 right-4 z-40">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90"
+                    style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
+                  >
+                    <Menu className="w-6 h-6 text-white" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden">
+                  <div className="flex flex-col h-full bg-white">
+                    <div className="px-6 py-4 border-b border-gray-100">
+                      <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
+                      <h2 className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</h2>
+                    </div>
+                    
+                    {/* Tabs Horizontal Scroll */}
+                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0">
+                      {[
+                        { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
+                        { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
+                        { id: 'name', label: getConfig('nome_tab_label', regrasAtuais.labelNome), icon: Hand, show: regrasAtuais.temNome },
+                        { id: 'patches', label: getConfig('acabamento_tab_label', 'Acabamento'), icon: Sparkles, show: true },
+                        { id: 'emblems', label: getConfig('escudo_tab_label', regrasAtuais.labelEscudo), icon: ImageIcon, show: regrasAtuais.temEscudo },
+                        { id: 'logo', label: getConfig('numero_tab_label', 'Número'), icon: Box, show: regrasAtuais.temNumero },
+                        { id: 'upload_generic', label: getConfig('upload_tab_label', 'Upload'), icon: Upload, show: true },
+                      ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
+                        <button
+                          key={id}
+                          onClick={() => setActiveTab(id as ToolbarTab)}
+                          className={cn(
+                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px]",
+                            activeTab === id ? "bg-gray-50 shadow-sm" : "text-gray-400"
+                          )}
+                        >
+                          <ConfigIcon 
+                            icon={getIcon(configs, `icon_${id}`, Icon)} 
+                            className="w-6 h-6" 
+                            style={{ color: activeTab === id ? getColor(configs, 'primary_color', '#FF5A00') : undefined }}
+                          />
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-tighter",
+                            activeTab === id ? "text-gray-900" : "text-gray-400"
+                          )}>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Content Vertical Scroll */}
+                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20">
+                      <div id="mobile-sidebar-content">
+                        {/* 
+                            Aqui idealmente deveríamos ter o conteúdo de dynamicSidebar. 
+                            Como o ShirtEditor é um componente gigante e não está modularizado,
+                            vou precisar de uma estratégia para reutilizar o JSX do dynamicSidebar.
+                            Mas para este passo, vou fechar o sheet e o usuário pode continuar a edição.
+                        */}
+                        <div className="text-center space-y-4 py-8">
+                           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                              <Sparkles className="w-8 h-8 text-[#FF5A00]" />
+                           </div>
+                           <div>
+                             <p className="font-bold text-gray-800">Use os menus acima</p>
+                             <p className="text-xs text-gray-400">Configure sua camisa navegando pelas abas.</p>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
           
