@@ -816,14 +816,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <header className="h-12 lg:h-14 border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-2 lg:gap-4">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900 p-1 lg:p-2"><ChevronLeft className="w-4 h-4 lg:w-5 lg:h-5" /></Button>
-          <ConfigIcon icon={configs['logo_url']?.trim() || logoOriginal} className="h-5 lg:h-6 w-auto" style={{ objectFit: 'contain' }} />
+          <div className="flex items-center gap-2 lg:gap-3 group cursor-pointer" onClick={() => window.location.href = '/'}>
+            <div className="w-7 h-7 lg:w-9 lg:h-9 bg-gray-50 rounded-lg lg:rounded-xl flex items-center justify-center group-hover:bg-[#FF5A00]/5 transition-colors overflow-hidden">
+               <img src={getConfig('logo_url')} alt="Logo" className="w-full h-full object-contain p-1 lg:p-1.5" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-[9px] lg:text-[11px] font-black tracking-[0.1em] text-gray-900 uppercase leading-none">{getConfig('site_name', 'SIMULATOR')}</h1>
+              <p className="text-[6px] lg:text-[8px] font-bold text-gray-400 mt-0.5 tracking-widest uppercase hidden md:block">MODO: 3D SIMULATOR V2</p>
+            </div>
+          </div>
           <div className="h-4 w-px bg-gray-200 mx-1 lg:mx-2" />
-          <span className="font-bold text-gray-800 text-[10px] lg:text-sm uppercase tracking-wide truncate max-w-[120px] lg:max-w-none">{selectedTemplate.name}</span>
+          <span className="font-bold text-gray-800 text-[10px] lg:text-sm uppercase tracking-wide truncate max-w-[80px] lg:max-w-none">{selectedTemplate.name}</span>
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
-          <span className="text-[8px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-tighter hidden md:block">
-            {getConfig('modo_simulador_label', 'Modo: 3D Simulator v2')}
-          </span>
           <Button 
             onClick={handleWhatsAppQuote} 
             size="sm"
@@ -834,6 +839,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </Button>
         </div>
       </header>
+
 
       {/* PARTE 1 — Barra de nichos no topo */}
       <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
