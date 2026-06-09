@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { useUVMap } from '@/hooks/useUVMap';
 import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
 import { getColor, getIcon } from '@/lib/siteConfigUtils';
+import { useIsMobile } from '@/hooks/useIsMobile';
+
 
 interface Niche {
   id: string;
