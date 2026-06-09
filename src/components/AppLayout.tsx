@@ -55,9 +55,13 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-sidebar border-r border-sidebar-border shrink-0">
+      <aside 
+        className="hidden md:flex flex-col w-60 border-r border-sidebar-border shrink-0 transition-colors"
+        style={{ backgroundColor: sidebarBg, color: sidebarText }}
+      >
         <div className="p-5 flex items-center gap-2">
-          <img src={logo} alt="Macro Master" className="h-8 w-auto" />
+          <img src={logo} alt={appTitle} className="h-8 w-auto object-contain" />
+          <span className="font-bold text-sm hidden lg:block uppercase tracking-tight">{appTitle}</span>
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {allNavItems.map(item => (
