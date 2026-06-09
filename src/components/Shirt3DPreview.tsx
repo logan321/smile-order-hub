@@ -9,9 +9,6 @@ import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
-
-
-
 interface Shirt3DPreviewProps {
   frontImage: string;
   backImage: string;
@@ -128,13 +125,19 @@ function ShirtModel({
 
 function CameraRig({ targetPosition, orbitRef }: { targetPosition: [number, number, number]; orbitRef: React.MutableRefObject<any> }) {
   const targetPos = useMemo(() => new THREE.Vector3(...targetPosition), [targetPosition]);
+  
   useFrame((state) => {
     state.camera.position.lerp(targetPos, 0.05);
     if (state.camera.position.distanceTo(targetPos) < 0.01) {
       state.camera.position.copy(targetPos);
     }
-    if (orbitRef.current) orbitRef.current.update();
+    if (orbitRef.current) {
+      orbitRef.current.target.set(0, 0, 0);
+      orbitRef.current.update();
+    }
+    state.camera.lookAt(0, 0, 0);
   });
+  
   return null;
 }
 
@@ -146,7 +149,7 @@ export default function Shirt3DPreview({
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
-  cameraPosition = [0, 0.1, 5.2],
+  cameraPosition = [0, 0.5, 5.2],
   className,
   animatingElement,
   onAnimationComplete,
@@ -157,7 +160,16 @@ export default function Shirt3DPreview({
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
-  console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
+  // Handle auto-rotate pause on camera position change
+  useEffect(() => {
+    if (autoRotate) {
+      setRotating(false);
+      const timer = setTimeout(() => {
+        setRotating(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [cameraPosition, autoRotate]);
 
   return (
     <div className={cn("w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}>
@@ -206,14 +218,14 @@ export default function Shirt3DPreview({
           enablePan={false}
           autoRotate={rotating}
           autoRotateSpeed={1.2}
-          minDistance={3}
-          maxDistance={8}
+          minDistance={2.5}
+          maxDistance={7}
           minPolarAngle={Math.PI / 4}
           maxPolarAngle={Math.PI / 1.8}
           minAzimuthAngle={-Math.PI / 4}
           maxAzimuthAngle={Math.PI / 4}
           enableDamping
-          dampingFactor={0.08}
+          dampingFactor={0.12}
           makeDefault
         />
       </Canvas>
