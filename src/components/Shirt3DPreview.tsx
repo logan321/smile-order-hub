@@ -143,6 +143,12 @@ export default function Shirt3DPreview({
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
+  const { configs } = useSiteConfigContext();
+
+  // For suavização (lerp) we could use useFrame, but as per previous bug fix, 
+  // we are letting OrbitControls handle damping.
+  
+  const canvasBg = getColor(configs, 'canvas_bg_color', '#f8f9fa');
 
   useEffect(() => {
     if (!orbitRef.current) return;
