@@ -881,9 +881,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             <button
               key={id}
               onClick={() => setActiveTab(id as ToolbarTab)}
-              className={`flex flex-col items-center gap-1 w-full py-2 transition-all relative ${activeTab === id ? 'text-[#FF5A00]' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex flex-col items-center gap-1 w-full py-2 transition-all relative ${activeTab === id ? '' : 'text-gray-400 hover:text-gray-600'}`}
+              style={{ color: activeTab === id ? getColor(configs, 'primary_color', '#FF5A00') : undefined }}
             >
-              {activeTab === id && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#FF5A00] rounded-l-full" />}
+              {activeTab === id && (
+                <div 
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-l-full" 
+                  style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
+                />
+              )}
               <Icon className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
               <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-tighter text-center px-1">{label}</span>
             </button>
