@@ -1510,24 +1510,24 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             />
             
             {/* Overlay Actions */}
-            <div className="absolute top-4 lg:top-6 right-4 lg:right-6 flex gap-2 lg:gap-3 z-30">
-              <Button onClick={handleWhatsAppQuote} className="h-10 lg:h-12 px-4 lg:px-8 text-white font-black rounded-xl lg:rounded-2xl shadow-lg text-[10px] lg:text-xs uppercase tracking-widest gap-2 animate-in slide-in-from-top duration-500" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+            <div className="absolute top-2 lg:top-6 right-2 lg:right-6 flex gap-1.5 lg:gap-3 z-30">
+              <Button onClick={handleWhatsAppQuote} className="h-9 lg:h-12 px-3 lg:px-8 text-white font-black rounded-lg lg:rounded-2xl shadow-lg text-[9px] lg:text-xs uppercase tracking-widest gap-1.5 lg:gap-2 animate-in slide-in-from-top duration-500" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
                  {getConfig('orcamento_button_text', 'ORÇAMENTO')} <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
               </Button>
-              <Button onClick={handleDownload} variant="outline" className="h-10 lg:h-12 px-3 lg:px-6 bg-white border-none shadow-xl text-gray-700 font-bold rounded-xl lg:rounded-2xl hover:bg-gray-50 text-[10px] lg:text-xs uppercase tracking-wider">
+              <Button onClick={handleDownload} variant="outline" className="h-9 lg:h-12 px-2.5 lg:px-6 bg-white border-none shadow-xl text-gray-700 font-bold rounded-lg lg:rounded-2xl hover:bg-gray-50 text-[9px] lg:text-xs uppercase tracking-wider">
                  <Download className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
               </Button>
             </div>
 
             <button 
-              className="absolute top-4 lg:top-6 left-4 lg:left-6 p-3 lg:p-4 bg-white hover:bg-gray-50 rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 transition-all active:scale-95 group z-30" 
+              className="absolute top-2 lg:top-6 left-2 lg:left-6 p-2 lg:p-4 bg-white hover:bg-gray-50 rounded-lg lg:rounded-2xl shadow-xl border border-gray-100 transition-all active:scale-95 group z-30" 
               onClick={() => setCameraPosition([0, 0.3, 5.2])}
             >
-              <RotateCcw className="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 group-hover:text-[#FF5A00] transition-colors" />
+              <RotateCcw className="w-3.5 h-3.5 lg:w-5 lg:h-5 text-gray-400 group-hover:text-[#FF5A00] transition-colors" />
             </button>
 
             {/* Visual View Selectors */}
-            <div className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 lg:gap-4 z-30">
+            <div className="absolute left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 bottom-16 lg:bottom-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 flex flex-row lg:flex-col gap-2 lg:gap-4 z-30 bg-white/20 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-1.5 lg:p-0 rounded-2xl border border-white/30 lg:border-none">
                {/* Helper para identificar a visão ativa */}
                {(() => {
                  const getActiveView = () => {
