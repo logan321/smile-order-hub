@@ -24,6 +24,7 @@ import { useUvCompositor } from '@/hooks/useUvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 import { cn } from '@/lib/utils';
+import { useUVMap } from '@/hooks/useUVMap';
 
 interface Niche {
   id: string;
