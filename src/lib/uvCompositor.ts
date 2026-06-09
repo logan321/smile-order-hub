@@ -36,9 +36,13 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   if (!imgCache.has(url)) {
     imgCache.set(url, new Promise((resolve, reject) => {
       const img = new Image();
+      // Ensure crossOrigin is set before src for CORS compliance
       img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
-      img.onerror = reject;
+      img.onerror = (err) => {
+        console.warn(`UV Compositor: Failed to load image from ${url}`, err);
+        reject(err);
+      };
       img.src = url;
     }));
   }
