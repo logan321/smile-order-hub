@@ -1826,7 +1826,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
              <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }} /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">{getConfig('sincronizacao_label', 'Sincronização Realtime')}</span></div>
           </div>
         </div>
-      </main>
+      </div>
+    </main>
+
 
       {flyingElement && (
         <div
