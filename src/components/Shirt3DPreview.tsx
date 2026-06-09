@@ -123,24 +123,6 @@ function ShirtModel({
   );
 }
 
-function CameraRig({ targetPosition, orbitRef }: { targetPosition: [number, number, number]; orbitRef: React.MutableRefObject<any> }) {
-  const targetPos = useMemo(() => new THREE.Vector3(...targetPosition), [targetPosition]);
-  
-  useFrame((state) => {
-    state.camera.position.lerp(targetPos, 0.05);
-    if (state.camera.position.distanceTo(targetPos) < 0.01) {
-      state.camera.position.copy(targetPos);
-    }
-    if (orbitRef.current) {
-      orbitRef.current.target.set(0, 0, 0);
-      orbitRef.current.update();
-    }
-    state.camera.lookAt(0, 0, 0);
-  });
-  
-  return null;
-}
-
 export default function Shirt3DPreview({
   frontImage,
   backImage,
@@ -160,16 +142,26 @@ export default function Shirt3DPreview({
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
-  // Handle auto-rotate pause on camera position change
   useEffect(() => {
-    if (autoRotate) {
-      setRotating(false);
-      const timer = setTimeout(() => {
-        setRotating(true);
-      }, 2000);
-      return () => clearTimeout(timer);
+    if (orbitRef.current) {
+      const [x, y, z] = cameraPosition;
+      
+      // Pausa autoRotate durante transição para não conflitar
+      orbitRef.current.autoRotate = false;
+      
+      // Seta posição e força olhar para o centro do modelo
+      orbitRef.current.object.position.set(x, y, z);
+      orbitRef.current.target.set(0, 0, 0);
+      orbitRef.current.update();
+      
+      // Religa autoRotate após 1.5 segundos
+      setTimeout(() => {
+        if (orbitRef.current) {
+          orbitRef.current.autoRotate = true;
+        }
+      }, 1500);
     }
-  }, [cameraPosition, autoRotate]);
+  }, [cameraPosition]);
 
   return (
     <div className={cn("w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}>
@@ -191,7 +183,6 @@ export default function Shirt3DPreview({
         <ambientLight intensity={0.85} />
         <directionalLight position={[3, 4, 2]} intensity={1.3} castShadow={false} />
         <directionalLight position={[-2, 1, -2]} intensity={0.4} />
-        <CameraRig targetPosition={cameraPosition} orbitRef={orbitRef} />
         
         <Suspense fallback={
           <Html center>
@@ -220,8 +211,8 @@ export default function Shirt3DPreview({
           autoRotateSpeed={1.2}
           minDistance={2.5}
           maxDistance={7}
-          minPolarAngle={Math.PI / 4}
-          maxPolarAngle={Math.PI / 1.8}
+          minPolarAngle={Math.PI / 6}
+          maxPolarAngle={Math.PI / 1.5}
           minAzimuthAngle={-Math.PI / 4}
           maxAzimuthAngle={Math.PI / 4}
           enableDamping
