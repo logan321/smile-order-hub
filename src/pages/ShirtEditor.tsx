@@ -809,7 +809,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const renderTabContent = () => {
     return (
       <div className="space-y-4 lg:space-y-6">
-        {activeTab !== 'stamps' && activeTab !== 'upload_generic' && (
+        {(activeTab as string) !== 'stamps' && (activeTab as string) !== 'upload_generic' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
             <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
               <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
