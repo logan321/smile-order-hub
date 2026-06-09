@@ -91,7 +91,7 @@ function ShirtModel({
       if (!(mesh as any).isMesh) return;
       
       const mat = new THREE.MeshStandardMaterial({
-        color: uvTex ? new THREE.Color('#ffffff') : color,
+        color: (uvTex && uvCanvas) ? new THREE.Color('#ffffff') : color,
         map: uvTex ?? null,
         roughness: 0.88,
         metalness: 0.02,
