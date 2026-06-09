@@ -655,7 +655,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       }
       
       if (showNumero && elementPositions.numero) {
-        const numeroContent = uvTextDrafts['numero'] || '10';
+        const numeroContent = uvTextDrafts['numero'] || getConfig('placeholder_numero', '10');
         updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text', {
           strokeColor: numeroFrontBorderColor !== 'transparent' ? numeroFrontBorderColor : undefined,
           strokeWidth: numeroFrontBorderColor !== 'transparent' ? 2 : 0
