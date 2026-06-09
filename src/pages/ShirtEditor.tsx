@@ -1655,7 +1655,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                 </SheetTrigger>
                 <SheetContent 
                   side="bottom"
-                  className="h-[60vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                  className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                  style={{ maxHeight: '80dvh' }}
                 >
                   <div className="flex flex-col h-full bg-white">
                     <SheetHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
@@ -1696,7 +1697,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       ))}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 touch-pan-y">
+                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-safe touch-pan-y overscroll-contain"
+                      style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'max(6rem, env(safe-area-inset-bottom))' }}>
 
                       <div id="mobile-sidebar-content">
                         <div className="space-y-6">
