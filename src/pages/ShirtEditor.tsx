@@ -65,7 +65,7 @@ interface Stamp {
   nicheId?: string | null;
 }
 
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
+type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | 'upload_generic' | null;
 
 const CANVAS_WIDTH = 500;
 const CANVAS_HEIGHT = 625;
