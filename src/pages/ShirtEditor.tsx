@@ -1811,9 +1811,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       </div>
                     </div>
                   </div>
-                </DrawerContent>
-              </Drawer>
+                </SheetContent>
+              </Sheet>
             </div>
+
           </div>
           
           <div className="h-10 lg:h-12 bg-white/50 backdrop-blur-sm border-t border-gray-100 flex items-center justify-center gap-4 lg:gap-8 px-4 lg:px-6 shrink-0">
