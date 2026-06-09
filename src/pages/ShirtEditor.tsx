@@ -121,15 +121,7 @@ const COLORS = [
   { name: 'Chocolate', hex: '#472311' }
 ];
 
-const NICHOS_ESTATICOS = [
-  { id: 'futebol', label: 'Futebol', icon: '⚽' },
-  { id: 'futsal', label: 'Futsal', icon: '🥅' },
-  { id: 'volei', label: 'Vôlei', icon: '🏐' },
-  { id: 'basquete', label: 'Basquete', icon: '🏀' },
-  { id: 'pesca', label: 'Pesca', icon: '🎣' },
-  { id: 'ciclismo', label: 'Ciclismo', icon: '🚴' },
-  { id: 'corrida', label: 'Corrida', icon: '🏃' },
-];
+// NICHOS_ESTATICOS removido para usar os nichos vindo do banco (setNiches)
 
 const REGRAS_NICHO = {
   futebol: {
@@ -186,7 +178,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [allStamps, setAllStamps] = useState<Stamp[]>([]);
   const [niches, setNiches] = useState<Niche[]>([]);
-  const [nichoAtivo, setNichoAtivo] = useState('futebol');
+  const [nichoAtivo, setNichoAtivo] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -236,7 +228,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
 
   const stampsFiltrados = useMemo(() => {
-    return stamps; 
+    if (!nichoAtivo) return stamps;
+    return stamps.filter(s => s.nicheId === nichoAtivo); 
   }, [stamps, nichoAtivo]);
 
   const handleNichoChange = (newNichoId: string) => {
@@ -452,9 +445,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapUrl: s.uv_map_url,
       })) ?? []);
-      setNiches((nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
-      })) ?? []);
+      const loadedNiches = (nichesRes.data as any[])?.map(n => ({
+        id: n.id,
+        name: n.name,
+        icon: n.icon || '🏷️',
+        patchLabel: n.patch_label,
+        coverImageUrl: n.cover_image_url || '',
+        backgroundImageUrl: n.background_image_url || ''
+      })) ?? [];
+      setNiches(loadedNiches);
+      
+      if (loadedNiches.length > 0 && !nichoAtivo) {
+        setNichoAtivo(loadedNiches[0].id);
+      }
       setLoading(false);
     };
     fetchData();
@@ -741,7 +744,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </button>
         
         <ul className="flex-1 flex items-center justify-start gap-6 px-10 overflow-x-auto no-scrollbar scroll-smooth h-full">
-          {NICHOS_ESTATICOS.map(nicho => (
+          {niches.map(nicho => (
             <li key={nicho.id} className="flex-shrink-0">
               <button
                 onClick={() => handleNichoChange(nicho.id)}
@@ -753,7 +756,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                 )}
               >
                 <span className="text-2xl leading-none">{nicho.icon}</span>
-                <span className="text-[9px] font-black uppercase tracking-tighter">{nicho.label}</span>
+                <span className="text-[9px] font-black uppercase tracking-tighter">{nicho.name}</span>
               </button>
             </li>
           ))}
