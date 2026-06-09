@@ -201,12 +201,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
 
+  // Sync UV map from hook to appliedStamp for useUvCompositor
   useEffect(() => {
     if (uvMapData?.uv_frente_url) {
-      setAppliedStamp(prev => prev ? ({
-        ...prev,
-        uvMapUrl: uvMapData.uv_frente_url
-      }) : null);
+      setAppliedStamp(prev => {
+        if (!prev) return null;
+        // Se já tiver o mesmo UV, não atualiza para evitar loops
+        if (prev.uvMapUrl === uvMapData.uv_frente_url) return prev;
+        return {
+          ...prev,
+          uvMapUrl: uvMapData.uv_frente_url
+        };
+      });
     }
   }, [uvMapData]);
 
@@ -436,9 +442,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     const fetchData = async () => {
       const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-        supabase.from('stamp_catalog').select('*').eq('active', true).eq('user_id', ownerUserId),
+        supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
-        supabase.from('uv_maps' as any).select('id, image_url, code, name').eq('user_id', ownerUserId),
+        supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
       ]);
 
       const rawTemplates = (templatesRes.data as any[])?.map(t => ({
@@ -1444,7 +1450,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
               backImage={selectedTemplate?.backImageUrl || ''} 
-              uvMapUrl={appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null}
+              uvMapUrl={uvMapData?.uv_frente_url || selectedTemplate?.uvMapUrl || null}
               uvCanvas={uv3DCanvas}
               uvVersion={uvTextureVersion}
               animatingElement={animatingElement}
