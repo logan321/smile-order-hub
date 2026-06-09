@@ -16,17 +16,21 @@ export const ConfigIcon: React.FC<ConfigIconProps> = ({ icon, className, style, 
     const checkIcon = async () => {
       if (typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('/storage/v1/object/public/'))) {
         setIsUrl(true);
-        if (icon.toLowerCase().endsWith('.svg') || icon.includes('image/svg+xml')) {
+        // Tentar fetch se for SVG ou se não tiver extensão (pode ser um objeto do storage sem extensão no nome)
+        const lowerIcon = icon.toLowerCase();
+        if (lowerIcon.endsWith('.svg') || lowerIcon.includes('image/svg+xml') || !lowerIcon.includes('.')) {
           try {
             const response = await fetch(icon);
+            const contentType = response.headers.get('content-type');
             const text = await response.text();
-            if (text.includes('<svg')) {
+            
+            if (text.includes('<svg') || (contentType && contentType.includes('svg'))) {
               setSvgContent(text);
             } else {
               setSvgContent(null);
             }
           } catch (error) {
-            console.error('Error fetching SVG:', error);
+            console.error('Error fetching SVG icon:', error);
             setSvgContent(null);
           }
         } else {
