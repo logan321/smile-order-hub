@@ -132,20 +132,21 @@ const REGRAS_NICHO = {
     labelNome: 'Nome',
   },
   pesca: {
-    temNumero: false,
+    temNumero: true,
     temNome: true,
     temEscudo: true,
     labelEscudo: 'Logo',
     labelNome: 'Nome',
   },
   ciclismo: {
-    temNumero: false,
+    temNumero: true,
     temNome: true,
     temEscudo: true,
     labelEscudo: 'Logo',
     labelNome: 'Nome',
   },
 };
+
 
 const getRegraNicho = (nichoId: string) => {
   return REGRAS_NICHO[nichoId as keyof typeof REGRAS_NICHO] || REGRAS_NICHO.futebol;
