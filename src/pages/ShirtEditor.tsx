@@ -529,7 +529,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
-      setUvLayers([]);
+      // setUvLayers([]); // Removido para evitar que as camadas sumam ao trocar de estampa
+
 
     })();
     return () => { cancelled = true; };
