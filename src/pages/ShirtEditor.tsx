@@ -1583,8 +1583,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </div>
           
           <div className="h-10 lg:h-12 bg-white/50 backdrop-blur-sm border-t border-gray-100 flex items-center justify-center gap-4 lg:gap-8 px-4 lg:px-6 shrink-0">
-             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">3D Ativo</span></div>
-             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-[#FF5A00]" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">Sincronização Realtime</span></div>
+             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">{getConfig('modo_simulador_label', '3D Ativo')}</span></div>
+             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }} /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">{getConfig('sincronizacao_label', 'Sincronização Realtime')}</span></div>
           </div>
         </div>
       </main>
