@@ -914,13 +914,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                   <path fill="var(--shirt-color)" d="M55.4,58.5H16.2V23.7l-7.1,4L0,13.1L14.9,3l13-3L28,0c2.6,0.7,5.3,1,7.9,1c2.6,0,5.2-0.3,7.7-1l0.2,0l13,3l14.9,10.2l-9.1,14.5l-7.1-4V58.5z M17.6,57H54V21.2l8.1,4.5l7.6-12.2L56.1,4.3L43.8,1.5c-2.6,0.6-5.2,1-7.9,1c-2.7,0-5.4-0.3-8.1-1L15.5,4.3L1.9,13.5l7.6,12.2l8.1-4.5V57z"/>
                                   {pos.id === 'costas_topo' ? (
                                     <>
-                                      <text x="35.8" y="18" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">NOME</text>
+                                      <text x="35.8" y="18" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">{regrasAtuais.labelNome.toUpperCase()}</text>
                                       <text x="35.8" y="42" textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--shirt-color)">10</text>
                                     </>
                                   ) : (
                                     <>
                                       <text x="35.8" y="28" textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--shirt-color)">10</text>
-                                      <text x="35.8" y="50" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">NOME</text>
+                                      <text x="35.8" y="50" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">{regrasAtuais.labelNome.toUpperCase()}</text>
                                     </>
                                   )}
                                 </svg>
