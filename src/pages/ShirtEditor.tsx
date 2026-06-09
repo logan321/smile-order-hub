@@ -13,7 +13,7 @@ import { applyArcToText } from '@/lib/fabricArcText';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import logo from '@/assets/logo.png';
+import logoOriginal from '@/assets/logo.png';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
@@ -204,7 +204,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
   const { configs } = useSiteConfigContext();
 
-  const getConfig = (key: string, fallback: string = '') => configs[key] || fallback;
+  const getConfigValue = (key: string, fallback: string = '') => {
+    const value = configs[key]?.trim();
+    if (value) return value;
+    if (key === 'logo_url') return logoOriginal;
+    return fallback;
+  };
 
   // Sync UV map from hook to appliedStamp for useUvCompositor
   useEffect(() => {

@@ -1,12 +1,16 @@
 import { SiteConfig } from '@/types/siteConfig';
+import { DEFAULT_CONFIGS } from '@/contexts/SiteConfigContext';
 
 export const getConfig = (configs: Record<string, string> | undefined, key: string, fallback: string = ''): string => {
-  return configs?.[key] ?? fallback;
+  const value = configs?.[key]?.trim();
+  if (value) return value;
+  return DEFAULT_CONFIGS[key] || fallback;
 };
 
 export const getColor = (configs: Record<string, string> | undefined, key: string, fallback: string = '#000000'): string => {
-  const value = configs?.[key];
-  if (!value) return fallback;
+  const value = configs?.[key]?.trim();
+  if (!value) return DEFAULT_CONFIGS[key] || fallback;
+  
   // Basic hex validation
   if (value.startsWith('#')) return value;
   if (value.startsWith('rgba') || value.startsWith('rgb')) return value;
@@ -14,7 +18,8 @@ export const getColor = (configs: Record<string, string> | undefined, key: strin
 };
 
 export const getIcon = (configs: Record<string, string> | undefined, key: string, fallbackIcon: any): any => {
-  const url = configs?.[key];
-  if (url && url.trim() !== '') return url;
+  const value = configs?.[key]?.trim();
+  if (value) return value;
   return fallbackIcon;
 };
+
