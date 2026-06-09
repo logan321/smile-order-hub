@@ -1491,7 +1491,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
 
         {/* Coluna 3: Canvas 3D */}
-        <div className="flex-1 relative bg-[#F8F9FA] flex flex-col overflow-hidden">
+        <div className="flex-1 relative bg-[#F8F9FA] flex flex-col overflow-hidden w-full lg:w-auto h-[60vh] lg:h-full">
           <div className="flex-1 relative">
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
