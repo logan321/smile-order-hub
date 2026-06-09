@@ -444,6 +444,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setStamps((stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapUrl: s.uv_map_url,
+        nicheId: s.niche_id ?? null,
       })) ?? []);
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
         id: n.id,
