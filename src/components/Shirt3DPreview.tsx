@@ -123,6 +123,23 @@ function ShirtModel({
   );
 }
 
+function CameraController({ cameraPosition }: { cameraPosition: [number, number, number] }) {
+  const currentPos = useRef(new THREE.Vector3(...cameraPosition));
+  const targetPos = useRef(new THREE.Vector3(...cameraPosition));
+
+  useEffect(() => {
+    targetPos.current.set(...cameraPosition);
+  }, [cameraPosition]);
+
+  useFrame((state) => {
+    currentPos.current.lerp(targetPos.current, 0.05);
+    state.camera.position.copy(currentPos.current);
+    state.camera.lookAt(0, 0, 0);
+  });
+
+  return null;
+}
+
 export default function Shirt3DPreview({
   frontImage,
   backImage,
@@ -142,34 +159,6 @@ export default function Shirt3DPreview({
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
-  useEffect(() => {
-    if (!orbitRef.current) return;
-    
-    const [x, y, z] = cameraPosition;
-    
-    // Desliga autoRotate durante transição para evitar conflito
-    if (orbitRef.current) {
-      orbitRef.current.autoRotate = false;
-    }
-    
-    // Força reset dos controles antes de setar nova posição
-    orbitRef.current.reset();
-    
-    // Seta posição e target
-    orbitRef.current.object.position.set(x, y, z);
-    orbitRef.current.target.set(0, 0, 0);
-    orbitRef.current.update();
-    
-    // Religa autoRotate após transição (1.5s) se o estado rotating for true
-    const timer = setTimeout(() => {
-      if (orbitRef.current && rotating) {
-        orbitRef.current.autoRotate = true;
-      }
-    }, 1500);
-    
-    return () => clearTimeout(timer);
-  }, [cameraPosition, rotating]);
-
   return (
     <div className={cn("w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}>
       <Canvas
@@ -186,6 +175,7 @@ export default function Shirt3DPreview({
         onError={(err) => console.error('R3F Canvas Error:', err)}
         style={{ background: '#f1f3f6' }}
       >
+        <CameraController cameraPosition={cameraPosition} />
         <color attach="background" args={['#f1f3f6']} />
         <ambientLight intensity={0.85} />
         <directionalLight position={[3, 4, 2]} intensity={1.3} castShadow={false} />
@@ -214,6 +204,7 @@ export default function Shirt3DPreview({
         <OrbitControls
           ref={orbitRef}
           enablePan={false}
+          autoRotate={rotating}
           autoRotateSpeed={1.2}
           minDistance={2.5}
           maxDistance={7}
