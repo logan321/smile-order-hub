@@ -1,6 +1,6 @@
-import { Suspense, useEffect, useMemo, useState, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas, useLoader, useFrame } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -9,15 +9,11 @@ import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
-import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
-import { getColor } from '@/lib/siteConfigUtils';
-
 interface Shirt3DPreviewProps {
   frontImage: string;
   backImage: string;
   uvMapUrl?: string | null;
   uvCanvas?: HTMLCanvasElement | null;
-  uvDataUrl?: string | null;
   uvVersion?: number;
   fabricColor?: string;
   autoRotate?: boolean;
@@ -29,33 +25,63 @@ interface Shirt3DPreviewProps {
   canvasBg?: string;
 }
 
+// Converte canvas para dataURL — necessário no mobile (Safari/Chrome)
+// para que o Three.js consiga criar a textura corretamente
+function canvasToDataUrl(canvas: HTMLCanvasElement): string {
+  return canvas.toDataURL('image/png');
+}
+
 function useUvTexture(
   url: string | null,
   canvas: HTMLCanvasElement | null | undefined,
   version = 0
 ) {
-  const texRef = useRef<THREE.CanvasTexture | null>(null);
+  const texRef = useRef<THREE.Texture | null>(null);
+  const prevVersion = useRef(-1);
 
   return useMemo(() => {
-    if (canvas) {
-      // Reutiliza a mesma textura e força needsUpdate — funciona desktop e mobile
-      if (!texRef.current) {
-        const t = new THREE.CanvasTexture(canvas);
-        t.colorSpace = THREE.SRGBColorSpace;
-        t.anisotropy = 8;
-        t.flipY = false;
-        texRef.current = t;
+    // Se temos canvas com conteúdo
+    if (canvas && canvas.width > 0 && canvas.height > 0) {
+      // Tenta usar CanvasTexture primeiro (desktop)
+      // Se versão mudou, recria a textura para garantir update no mobile
+      if (prevVersion.current !== version || !texRef.current) {
+        prevVersion.current = version;
+        // Converte para dataURL para compatibilidade mobile
+        try {
+          const dataUrl = canvasToDataUrl(canvas);
+          const loader = new THREE.TextureLoader();
+          const t = loader.load(dataUrl);
+          t.colorSpace = THREE.SRGBColorSpace;
+          t.anisotropy = 4;
+          t.flipY = false;
+          t.needsUpdate = true;
+          texRef.current = t;
+          return t;
+        } catch {
+          // fallback: CanvasTexture
+          const t = new THREE.CanvasTexture(canvas);
+          t.colorSpace = THREE.SRGBColorSpace;
+          t.anisotropy = 4;
+          t.flipY = false;
+          t.needsUpdate = true;
+          texRef.current = t;
+          return t;
+        }
       }
-      texRef.current.needsUpdate = true;
-      return texRef.current;
+      if (texRef.current) {
+        texRef.current.needsUpdate = true;
+        return texRef.current;
+      }
     }
+
     texRef.current = null;
     if (!url) return null;
+
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
     const t = loader.load(url);
     t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 8;
+    t.anisotropy = 4;
     t.flipY = false;
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
@@ -67,19 +93,13 @@ function useUvTexture(
 function ShirtModel({
   uvImage,
   uvCanvas,
-  uvDataUrl,
   uvVersion,
   fabricColor,
-  animatingElement,
-  onAnimationComplete,
 }: {
   uvImage: string | null;
   uvCanvas: HTMLCanvasElement | null | undefined;
-  uvDataUrl?: string | null;
   uvVersion?: number;
   fabricColor: string;
-  animatingElement?: any;
-  onAnimationComplete?: () => void;
 }) {
   const gltf = useLoader(GLTFLoader, shirtModel.url, (loader) => {
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
@@ -90,23 +110,20 @@ function ShirtModel({
 
   useEffect(() => {
     const color = new THREE.Color(fabricColor);
-    
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!(mesh as any).isMesh) return;
-      
       const mat = new THREE.MeshStandardMaterial({
-        color: (uvTex && uvCanvas) ? new THREE.Color('#ffffff') : color,
+        color: uvTex ? new THREE.Color('#ffffff') : color,
         map: uvTex ?? null,
-        roughness: 0.48,
-        metalness: 0.0,
+        roughness: 0.88,
+        metalness: 0.02,
         side: THREE.DoubleSide,
-        envMapIntensity: 0.6,
       });
-
       mesh.material = mat;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      (mat as any).envMapIntensity = 0.1;
     });
   }, [scene, uvTex, fabricColor]);
 
@@ -131,79 +148,52 @@ function ShirtModel({
   );
 }
 
-
 export default function Shirt3DPreview({
   frontImage,
   backImage,
   uvMapUrl,
   uvCanvas,
-  uvDataUrl,
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
-  cameraPosition = [0, 0.5, 5.2],
+  cameraPosition = [0, 0.1, 5.2],
   className,
   animatingElement,
   onAnimationComplete,
-  isUvReady = true,
-  canvasBg: propCanvasBg,
+  isUvReady,
+  canvasBg = '#f1f3f6',
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
-  const { configs } = useSiteConfigContext();
-
-  // For suavização (lerp) we could use useFrame, but as per previous bug fix, 
-  // we are letting OrbitControls handle damping.
-  
-  const canvasBg = propCanvasBg || getColor(configs, 'canvas_bg_color', '#f1f3f6');
 
   useEffect(() => {
-    if (!orbitRef.current) return;
-    
-    const [x, y, z] = cameraPosition;
-    
-    // Desliga autoRotate durante transição
-    orbitRef.current.autoRotate = false;
-    
-    // Seta posição e target (o damping do OrbitControls fará a transição suave)
-    orbitRef.current.object.position.set(x, y, z);
-    orbitRef.current.target.set(0, 0, 0);
-    
-    // Religa autoRotate após transição completa
-    const timer = setTimeout(() => {
-      if (orbitRef.current && rotating) {
-        orbitRef.current.autoRotate = true;
-      }
-    }, 800);
-    
-    return () => clearTimeout(timer);
-  }, [cameraPosition, rotating]);
+    if (orbitRef.current) {
+      const [x, y, z] = cameraPosition;
+      orbitRef.current.object.position.set(x, y, z);
+      orbitRef.current.update();
+    }
+  }, [cameraPosition]);
 
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
   return (
-    <div className={cn("w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)} style={{ backgroundColor: canvasBg }}>
+    <div className={cn("w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}
+      style={{ background: canvasBg }}>
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
-        gl={{ 
-          antialias: true, 
-          preserveDrawingBuffer: true, 
-          alpha: true,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.1
-        }}
-        dpr={[1, 2]}
-        onError={(err) => console.error('R3F Canvas Error:', err)}
+        gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
+        dpr={[1, 1.5]}
         style={{ background: canvasBg }}
       >
-        
         <color attach="background" args={[canvasBg]} />
-        <ambientLight intensity={0.85} />
-        <directionalLight position={[3, 4, 2]} intensity={1.3} castShadow={false} />
-        <directionalLight position={[-2, 1, -2]} intensity={0.4} />
-        
+        <ambientLight intensity={0.8} />
+        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
+        <directionalLight position={[3, 4, 5]} intensity={1.5} castShadow shadow-mapSize={[512, 512]} />
+        <directionalLight position={[-3, 2, -2]} intensity={0.5} />
+        <pointLight position={[0, 5, 0]} intensity={0.5} />
+
         <Suspense fallback={
           <Html center>
             <div className="flex flex-col items-center gap-2">
@@ -212,14 +202,11 @@ export default function Shirt3DPreview({
             </div>
           </Html>
         }>
-          <ShirtModel 
-            uvImage={uvImage} 
-            uvCanvas={uvCanvas} 
-            uvDataUrl={uvDataUrl}
-            uvVersion={uvVersion} 
-            fabricColor={fabricColor} 
-            animatingElement={animatingElement}
-            onAnimationComplete={onAnimationComplete}
+          <ShirtModel
+            uvImage={uvImage}
+            uvCanvas={uvCanvas}
+            uvVersion={uvVersion}
+            fabricColor={fabricColor}
           />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
           <Environment preset="city" />
@@ -230,30 +217,24 @@ export default function Shirt3DPreview({
           enablePan={false}
           autoRotate={rotating}
           autoRotateSpeed={1.2}
-          minDistance={2.5}
-          maxDistance={7}
-          minPolarAngle={Math.PI / 6}
-          maxPolarAngle={Math.PI / 1.5}
-          enableDamping={true}
-          dampingFactor={0.15}
+          minDistance={3}
+          maxDistance={8}
+          enableDamping
+          dampingFactor={0.08}
           makeDefault
         />
       </Canvas>
 
       <div className="absolute top-2 right-2 flex gap-2">
-        <Button
-          size="sm"
-          variant="secondary"
-          className="h-8 px-2 shadow-sm"
-          onClick={() => setRotating((r) => !r)}
-        >
+        <Button size="sm" variant="secondary" className="h-8 px-2 shadow-sm"
+          onClick={() => setRotating((r) => !r)}>
           {rotating ? 'Pausar' : 'Girar'}
         </Button>
       </div>
 
       {!hasUv && (
         <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur border rounded-lg p-3 shadow-lg text-xs text-center text-muted-foreground">
-          Esta camisa ainda não tem um <strong>molde UV</strong> configurado. Peça ao administrador para enviar o molde UV deste template para visualizar a estampa aplicada perfeitamente em 3D.
+          Esta camisa ainda não tem um <strong>molde UV</strong> configurado.
         </div>
       )}
     </div>
