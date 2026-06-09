@@ -234,11 +234,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [debouncedEscudoOffsetX, setDebouncedEscudoOffsetX] = useState(0);
   const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
 
-  const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
+  const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo || 'futebol'), [nichoAtivo]);
+
+  const templatesFiltrados = useMemo(() => {
+    if (!nichoAtivo) return allTemplates;
+    const filtrados = allTemplates.filter(t => t.nicheId === nichoAtivo || t.nicheId === null);
+    return filtrados.length > 0 ? filtrados : allTemplates;
+  }, [allTemplates, nichoAtivo]);
 
   const stampsFiltrados = useMemo(() => {
-    return stamps; 
-  }, [stamps, nichoAtivo]);
+    if (!nichoAtivo) return allStamps;
+    return allStamps.filter(s => s.nicheId === nichoAtivo || s.nicheId === null);
+  }, [allStamps, nichoAtivo]);
 
   const handleNichoChange = (newNichoId: string) => {
     setNichoAtivo(newNichoId);
