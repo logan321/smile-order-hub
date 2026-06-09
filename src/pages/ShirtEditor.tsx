@@ -1550,7 +1550,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             </button>
 
             {/* Visual View Selectors */}
-            <div className="absolute left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 bottom-16 lg:bottom-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 flex flex-row lg:flex-col gap-2 lg:gap-4 z-30 bg-white/20 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-1.5 lg:p-0 rounded-2xl border border-white/30 lg:border-none">
+            <div className={cn(
+              "absolute left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 bottom-24 lg:bottom-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 flex flex-row lg:flex-col gap-2 lg:gap-4 z-30 bg-white/20 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-1.5 lg:p-0 rounded-2xl border border-white/30 lg:border-none",
+              isMobile ? "bottom-32" : ""
+            )}>
+
                {/* Helper para identificar a visão ativa */}
                {(() => {
                  const getActiveView = () => {
