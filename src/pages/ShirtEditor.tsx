@@ -1399,6 +1399,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               cameraPosition={cameraPosition}
               autoRotate={false}
               fabricColor={appliedStamp ? '#ffffff' : '#cccccc'}
+              isUvReady={uvComposite.ready}
               className={cn("transition-opacity duration-300")}
             />
             
