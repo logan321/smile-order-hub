@@ -1671,22 +1671,47 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     </div>
 
                     {/* Content Vertical Scroll */}
-                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20">
+                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20 touch-pan-y">
                       <div id="mobile-sidebar-content">
-                        {/* 
-                            Aqui idealmente deveríamos ter o conteúdo de dynamicSidebar. 
-                            Como o ShirtEditor é um componente gigante e não está modularizado,
-                            vou precisar de uma estratégia para reutilizar o JSX do dynamicSidebar.
-                            Mas para este passo, vou fechar o sheet e o usuário pode continuar a edição.
-                        */}
-                        <div className="text-center space-y-4 py-8">
-                           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
-                              <Sparkles className="w-8 h-8 text-[#FF5A00]" />
-                           </div>
-                           <div>
-                             <p className="font-bold text-gray-800">Use os menus acima</p>
-                             <p className="text-xs text-gray-400">Configure sua camisa navegando pelas abas.</p>
-                           </div>
+                        <div className="space-y-4">
+                          {activeTab === 'stamps' && (
+                            <div className="grid grid-cols-2 gap-2">
+                              {stampsFiltrados.map(s => (
+                                <button
+                                  key={s.id}
+                                  onPointerDown={() => addStamp(s)}
+                                  className={cn(
+                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95",
+                                    appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
+                                  )}
+                                >
+                                  <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain pointer-events-none" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {(activeTab as string) === 'text' && (
+                            <div className="space-y-4">
+                              {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo'].includes(k)).map((zoneKey) => (
+                                <div key={zoneKey} className="space-y-2">
+                                  <label className="text-[10px] font-black uppercase text-gray-400">{zoneKey}</label>
+                                  <Input
+                                    value={uvTextDrafts[zoneKey] ?? ''}
+                                    onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                                    placeholder="Digite aqui..."
+                                    className="h-12 bg-gray-50 border-none rounded-xl font-bold"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Fallback para outras abas que usam a mesma lógica da sidebar desktop */}
+                          {!['stamps', 'text'].includes(activeTab as string) && (
+                            <div className="text-center py-8">
+                               <p className="font-bold text-gray-800">Aba em desenvolvimento</p>
+                               <p className="text-xs text-gray-400">Esta seção será carregada em breve.</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
