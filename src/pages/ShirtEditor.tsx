@@ -188,6 +188,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [uvMaps, setUvMaps] = useState<any[]>([]);
 
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(70);
