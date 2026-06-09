@@ -1618,16 +1618,20 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
             {/* Floating Menu Button (Mobile) */}
             <div className="lg:hidden absolute bottom-4 right-4 z-40">
-              <Sheet>
-                <SheetTrigger asChild>
+              <Drawer shouldScaleBackground={false} snapPoints={[0.3, 0.7, 1]}>
+                <DrawerTrigger asChild>
                   <Button 
                     className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90"
                     style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                   >
                     <Menu className="w-6 h-6 text-white" />
                   </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden">
+                </DrawerTrigger>
+                <DrawerContent 
+                  className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                  onPointerDownOutside={(e) => e.preventDefault()}
+                  onInteractOutside={(e) => e.preventDefault()}
+                >
                   <div className="flex flex-col h-full bg-white">
                     <div className="px-6 py-4 border-b border-gray-100">
                       <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
