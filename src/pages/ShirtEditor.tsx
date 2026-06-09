@@ -445,9 +445,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapUrl: s.uv_map_url,
       })) ?? []);
-      setNiches((nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
-      })) ?? []);
+      const loadedNiches = (nichesRes.data as any[])?.map(n => ({
+        id: n.id,
+        name: n.name,
+        icon: n.icon || '🏷️',
+        patchLabel: n.patch_label,
+        coverImageUrl: n.cover_image_url || '',
+        backgroundImageUrl: n.background_image_url || ''
+      })) ?? [];
+      setNiches(loadedNiches);
+      
+      if (loadedNiches.length > 0 && !nichoAtivo) {
+        setNichoAtivo(loadedNiches[0].id);
+      }
       setLoading(false);
     };
     fetchData();
