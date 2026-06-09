@@ -444,9 +444,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       }
 
       setStamps((stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
-        uvMapUrl: s.uv_map_url,
-        uvMapId: s.uv_map_id,
+        id: s.id, 
+        name: s.name, 
+        category: s.category, 
+        imageUrl: s.miniatura_frente_url || s.image_url, 
+        miniaturaFrenteUrl: s.miniatura_frente_url,
+        codigo: s.codigo,
+        backImageUrl: s.back_image_url ?? null,
         nicheId: s.niche_id ?? null,
       })) ?? []);
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
