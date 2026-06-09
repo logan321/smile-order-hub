@@ -507,6 +507,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     fetchData();
   }, [ownerUserId]);
 
+  useEffect(() => {
+    if (stampsFiltrados.length > 0 && !appliedStamp) {
+      addStamp(stampsFiltrados[0]);
+    }
+  }, [stampsFiltrados]);
+
   const prevUvMapIdRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -735,12 +741,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   // Limpa canvas quando estampa muda para evitar mostrar textura antiga
   useEffect(() => {
-    setUv3DCanvas(null);
     setUvTextureVersion(v => v + 1);
   }, [appliedStamp?.id, selectedTemplate?.id]);
 
   const addStamp = (stamp: Stamp) => {
-    setAppliedStamp(stamp); // nunca desseleciona ao clicar de novo
+    setAppliedStamp(stamp);
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
