@@ -142,14 +142,24 @@ export default function Shirt3DPreview({
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
+  
+  // Custom camera animation logic
+  const targetPos = useMemo(() => new THREE.Vector3(...cameraPosition), [cameraPosition]);
 
-  useEffect(() => {
+  useFrame((state) => {
     if (orbitRef.current) {
-      const [x, y, z] = cameraPosition;
-      orbitRef.current.object.position.set(x, y, z);
+      // Smoothly interpolate the camera position
+      state.camera.position.lerp(targetPos, 0.05);
+      
+      // Check if we are close enough to stop updating orbit controls manually
+      if (state.camera.position.distanceTo(targetPos) < 0.01) {
+        state.camera.position.copy(targetPos);
+      }
+      
       orbitRef.current.update();
     }
-  }, [cameraPosition]);
+  });
+
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
