@@ -20,8 +20,12 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
 
   useEffect(() => {
     let cancelled = false;
-    if (!baseUrl || !canvasRef.current) { setReady(false); return; }
-    const delay = layers.length > 0 ? 220 : 0;
+    if (!baseUrl || !canvasRef.current) { 
+      setReady(false); 
+      return; 
+    }
+    
+    // Pequeno atraso para debouncing de mudanças rápidas e garantir que o navegador processe eventos de UI
     const timer = window.setTimeout(() => {
       composeUvTexture({
         baseUrl, zones, layers, uvWidth, uvHeight,
@@ -33,8 +37,9 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
       }).catch(err => {
         console.warn('UV composite failed', err);
       });
-    }, delay);
+    }, 100);
     return () => { cancelled = true; window.clearTimeout(timer); };
+
   }, [baseUrl, zones, layers, uvWidth, uvHeight]);
 
   return { canvas: canvasRef.current, version, ready };
