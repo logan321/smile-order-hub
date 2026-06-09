@@ -196,7 +196,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const isInitializedRef = useRef(false);
 
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(70);
@@ -441,40 +441,47 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
 
-      setAllTemplates(rawTemplates);
-      setTemplates(rawTemplates);
-      setStamps((stampsRes.data as any[])?.map(s => ({
+      const rawStamps = (stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapUrl: s.uv_map_url,
-      })) ?? []);
-      setNiches((nichesRes.data as any[])?.map(n => ({
+        templateId: s.template_id,
+        nicheId: s.niche_id
+      })) ?? [];
+
+      const rawNiches = (nichesRes.data as any[])?.map(n => ({
         id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
-      })) ?? []);
+      })) ?? [];
+
+      setAllTemplates(rawTemplates);
+      setTemplates(rawTemplates);
+      setStamps(rawStamps);
+      setNiches(rawNiches);
+
+      // INICIALIZAÇÃO AUTOMÁTICA
+      if (rawTemplates.length > 0 && !isInitializedRef.current) {
+        isInitializedRef.current = true;
+        const futebolNiche = rawNiches.find(n => n.id === 'futebol') || rawNiches[0];
+        const initialNicheId = futebolNiche?.id || 'futebol';
+        
+        const nicheTemplates = rawTemplates.filter(t => t.nicheId === initialNicheId);
+        const initialTemplate = nicheTemplates[0] || rawTemplates[0];
+        
+        if (initialTemplate) {
+          setSelectedTemplate(initialTemplate);
+          setNichoAtivo(initialNicheId);
+          
+          const nicheStamps = rawStamps.filter(s => s.templateId === initialTemplate.id || s.nicheId === initialNicheId);
+          if (nicheStamps.length > 0) {
+            setAppliedStamp(nicheStamps[0]);
+          }
+        }
+      }
+
       setLoading(false);
     };
     fetchData();
   }, [ownerUserId]);
 
-  useEffect(() => {
-    if (!loading && templates.length > 0 && isInitializing) {
-      const futebolNiche = niches.find(n => n.id === 'futebol') || niches[0];
-      const initialNicheId = futebolNiche?.id || 'futebol';
-      
-      const nicheTemplates = templates.filter(t => t.nicheId === initialNicheId);
-      const initialTemplate = nicheTemplates[0] || templates[0];
-      
-      if (initialTemplate) {
-        setSelectedTemplate(initialTemplate);
-        setNichoAtivo(initialNicheId);
-        
-        const nicheStamps = stamps.filter(s => s.templateId === initialTemplate.id || s.nicheId === initialNicheId);
-        if (nicheStamps.length > 0) {
-          setAppliedStamp(nicheStamps[0]);
-        }
-      }
-      setIsInitializing(false);
-    }
-  }, [loading, templates, niches, stamps, isInitializing]);
 
   useEffect(() => {
     let cancelled = false;
@@ -707,7 +714,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleWhatsAppQuote = () => toast.info('Redirecionando para WhatsApp...');
   const handleDownload = () => toast.info('Gerando arquivos para download...');
 
-  if (loading || isInitializing) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-[#FF5A00] font-black animate-pulse uppercase tracking-widest">Carregando Simulador...</div>
