@@ -820,7 +820,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       {/* PARTE 4 — Miniaturas de estampas no topo */}
       <div id="faixa-estampas" className="h-20 bg-gray-50 border-b border-gray-100 flex items-center px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
         <div className="flex gap-3 px-2">
-          {stampsFiltrados.map(s => (
+          {stamps.map(s => (
             <button
               key={s.id}
               onClick={() => addStamp(s)}
