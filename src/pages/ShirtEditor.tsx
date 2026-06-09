@@ -874,7 +874,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             <input type="checkbox" className="hidden" checked={showNome} onChange={e => setShowNome(e.target.checked)} />
                             {showNome && <X className="w-3.5 h-3.5 text-white rotate-45" />}
                           </div>
-                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNome ? "text-gray-900" : "text-gray-400")}>Nome</span>
+                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNome ? "text-gray-900" : "text-gray-400")}>{regrasAtuais.labelNome}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer group">
                           <div className={cn(
@@ -891,7 +891,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       {/* 2. SELETOR DE POSIÇÃO DO NOME */}
                       {showNome && (
                         <div className="space-y-4">
-                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Nome</h3>
+                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do {regrasAtuais.labelNome}</h3>
                           <div className="flex flex-wrap gap-2">
                             {[
                               { id: 'costas_topo', label: 'Topo' },
