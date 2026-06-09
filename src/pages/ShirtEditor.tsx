@@ -740,7 +740,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }, [appliedStamp?.id, selectedTemplate?.id]);
 
   const addStamp = (stamp: Stamp) => {
-    setAppliedStamp(stamp);
+    setAppliedStamp(stamp); // nunca desseleciona ao clicar de novo
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
