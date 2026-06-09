@@ -66,7 +66,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         style={{ backgroundColor: sidebarBg, color: sidebarText }}
       >
         <div className="p-5 flex items-center gap-2">
-          <img src={logo} alt={appTitle} className="h-8 w-auto object-contain" />
+          <ConfigIcon icon={logo} className="h-8 w-auto" style={{ objectFit: 'contain' }} />
           <span className="font-bold text-sm hidden lg:block uppercase tracking-tight">{appTitle}</span>
         </div>
         <nav className="flex-1 px-3 space-y-1">
@@ -114,7 +114,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border transition-colors"
           style={{ backgroundColor: headerBg, color: headerText }}
         >
-          <img src={logo} alt={appTitle} className="h-7 w-auto object-contain" />
+          <ConfigIcon icon={logo} className="h-7 w-auto" style={{ objectFit: 'contain' }} />
           <div className="flex items-center gap-1">
             <button onClick={toggleTheme} className="p-2" aria-label="Alternar tema">
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
