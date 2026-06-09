@@ -1668,8 +1668,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       ))}
                     </div>
 
-                    {/* Content Vertical Scroll */}
                     <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 touch-pan-y">
+
                       <div id="mobile-sidebar-content">
                         <div className="space-y-6">
                           {activeTab === 'stamps' && (
@@ -1688,16 +1688,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                               ))}
                             </div>
                           )}
-                          
-                          {(activeTab as string) === 'text' && (
+
+                          {activeTab === 'text' && (
                             <div className="space-y-4">
-                              {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo'].includes(k)).map((zoneKey) => (
-                                <div key={zoneKey} className="space-y-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                  <label className="text-[10px] font-black uppercase text-gray-400 block">{zoneKey}</label>
+                              {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo', 'manga_esquerda', 'manga_direita'].includes(k)).map((zoneKey) => (
+                                <div key={zoneKey} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
+                                    <div className="flex gap-2">
+                                       <button onClick={() => document.getElementById(`uv-file-mobile-${zoneKey}`)?.click()} className="p-2 bg-white rounded-lg shadow-sm"><Upload className="w-4 h-4 text-gray-400" /></button>
+                                       <button onClick={() => setUvLayerText(zoneKey, '')} className="p-2 bg-white rounded-lg shadow-sm"><Trash2 className="w-4 h-4 text-gray-400" /></button>
+                                    </div>
+                                    <input id={`uv-file-mobile-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
+                                  </div>
                                   <Input
                                     value={uvTextDrafts[zoneKey] ?? ''}
                                     onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                                    placeholder="Digite aqui..."
+                                    placeholder={`Digite aqui...`}
                                     className="h-12 bg-white border-none rounded-xl font-bold shadow-sm"
                                   />
                                 </div>
@@ -1706,26 +1713,22 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           )}
 
                           {activeTab === 'name' && (
-                            <div className="space-y-4">
-                              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
+                            <div className="space-y-6">
+                              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">{regrasAtuais.labelNome}</label>
                                 <Input 
-                                  value={uvTextDrafts['costas_topo'] ?? ''}
-                                  onChange={(e) => setUvLayerText('costas_topo', e.target.value)}
+                                  value={uvTextDrafts['nome'] ?? ''}
+                                  onChange={(e) => setUvLayerText('nome', e.target.value)}
                                   placeholder="Digite o nome..."
                                   className="h-12 bg-white border-none rounded-xl font-bold shadow-sm"
                                 />
-                                <div className="flex justify-between items-center pt-2">
-                                  <span className="text-[10px] font-bold text-gray-500 uppercase">Tamanho</span>
-                                  <span className="text-[10px] font-black text-[#FF5A00]">{nomeSize}</span>
+                                <div className="space-y-3">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Tamanho</span>
+                                    <span className="text-[10px] font-black text-[#FF5A00]">{nomeSize}</span>
+                                  </div>
+                                  <Slider value={[nomeSize]} min={10} max={200} step={1} onValueChange={([v]) => setNomeSize(v)} />
                                 </div>
-                                <Slider 
-                                  value={[nomeSize]} 
-                                  min={30} 
-                                  max={120} 
-                                  step={1} 
-                                  onValueChange={([v]) => setNomeSize(v)}
-                                />
                               </div>
                             </div>
                           )}
@@ -1756,26 +1759,28 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           )}
 
                           {activeTab === 'logo' && (
-                             <div className="grid grid-cols-2 gap-4">
-                               {['peito_centro', 'costas_centro'].map(zoneKey => (
-                                 <div key={zoneKey} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col gap-3">
-                                   <label className="text-[10px] font-black text-gray-400 uppercase text-center block">{zoneKey.replace('_', ' ')}</label>
-                                   <Input 
-                                      value={uvTextDrafts[zoneKey] ?? ''}
-                                      onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                                      placeholder="00"
-                                      className="h-12 bg-white border-none rounded-xl font-bold text-center text-xl shadow-sm"
-                                   />
+                            <div className="grid grid-cols-2 gap-4">
+                               {['peito_centro', 'manga_esquerda', 'manga_direita'].map(zoneKey => (
+                                 <div key={zoneKey} className="flex flex-col gap-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                   <span className="text-[9px] font-black text-gray-400 uppercase text-center">{zoneKey.replace('_', ' ')}</span>
+                                   <Button 
+                                     variant="outline" 
+                                     className="h-16 bg-white border-none shadow-sm flex flex-col gap-1 rounded-xl"
+                                     onClick={() => document.getElementById(`uv-file-mobile-${zoneKey}`)?.click()}
+                                   >
+                                     <Upload className="w-4 h-4 text-[#FF5A00]" />
+                                     <span className="text-[8px] font-bold">UPLOAD</span>
+                                   </Button>
+                                   <input id={`uv-file-mobile-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
                                  </div>
                                ))}
-                             </div>
+                            </div>
                           )}
 
-                          {/* Fallback para abas não customizadas mobile */}
                           {!['stamps', 'text', 'name', 'emblems', 'logo'].includes(activeTab as string) && (
                             <div className="text-center py-12">
                                <p className="font-black text-gray-800 uppercase tracking-widest text-sm">Seção {activeTab}</p>
-                               <p className="text-xs text-gray-400 mt-2 font-medium">Use as ferramentas na sidebar desktop para configurações avançadas.</p>
+                               <p className="text-xs text-gray-400 mt-2 font-medium">Configurações avançadas disponíveis no desktop.</p>
                             </div>
                           )}
                         </div>
