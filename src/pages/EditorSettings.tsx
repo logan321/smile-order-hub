@@ -25,7 +25,7 @@ interface EditorSettingsProps {
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, fetchTemplates } = useShirtTemplates(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, toggleDefault, fetchTemplates } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, updateStampTemplateId, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
@@ -703,11 +703,20 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                     <Box className="h-3.5 w-3.5 text-amber-600" />
                                   </Button>
                                 </>
-                              );
-                            })()}
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
-                              {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-                            </Button>
+                                );
+                              })()}
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7" 
+                                onClick={() => toggleDefault(t.id, !t.isDefault)} 
+                                title={t.isDefault ? 'Remover como padrão' : 'Definir como padrão (abrirá direto no editor)'}
+                              >
+                                <Check className={cn("h-3.5 w-3.5", t.isDefault ? "text-success" : "text-muted-foreground")} />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
+                                {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                              </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (confirm('Remover template?')) deleteTemplate(t.id); }}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
