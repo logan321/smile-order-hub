@@ -1655,7 +1655,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                 </SheetTrigger>
                 <SheetContent 
                   side="bottom"
-                  className="h-[60vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                  className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                  style={{ maxHeight: '80dvh' }}
                 >
                   <div className="flex flex-col h-full bg-white">
                     <SheetHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
