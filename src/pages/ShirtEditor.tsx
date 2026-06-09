@@ -860,7 +860,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         )}
 
         {(activeTab === 'text' || activeTab === 'name' || activeTab === 'emblems' || activeTab === 'logo') && (
-          <div className="space-y-4 lg:space-y-6">
+            {renderTabContent()}
+            <div className="hidden space-y-4 lg:space-y-6">
             {activeTab !== 'emblems' && (
               <Select value={fontFamily} onValueChange={setFontFamily}>
                 <SelectTrigger className="w-full h-10 lg:h-12 rounded-xl bg-gray-50 border-gray-100 shadow-sm font-bold text-[10px] lg:text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
