@@ -47,7 +47,7 @@ export const ConfigIcon: React.FC<ConfigIconProps> = ({ icon, className, style, 
   if (svgContent) {
     return (
       <div 
-        className={`${className} flex items-center justify-center`} 
+        className={`${className} flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:block`} 
         style={{ 
           ...style, 
           width: style?.width || '100%', 

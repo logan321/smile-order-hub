@@ -1530,61 +1530,79 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                  };
                  const activeView = getActiveView();
 
-                 return (
-                   <>
-                      {/* Vista Frente */}
-                      <button 
-                       onClick={() => setCameraPosition([0, 0.3, 5.2])} 
-                       className={cn(
-                         "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
-                         activeView === 'frente' ? "border-[#FF5A00]/50" : "border-gray-100"
-                       )}
-                       style={activeView === 'frente' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
-                      >
-                       <ConfigIcon icon={getConfig('icon_frente_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'frente' ? "" : "opacity-30")} />
-                       <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'frente' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_frente')}</span>
-                      </button>
-                     
-                      {/* Vista Lateral Direita */}
-                      <button 
-                       onClick={() => setCameraPosition([5.2, 0.3, 0])} 
-                       className={cn(
-                         "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
-                         activeView === 'direita' ? "border-[#FF5A00]/50" : "border-gray-100"
-                       )}
-                       style={activeView === 'direita' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
-                      >
-                       <ConfigIcon icon={getConfig('icon_lateral_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'direita' ? "" : "opacity-30")} />
-                       <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'direita' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_direita')}</span>
-                      </button>
+                  return (
+                    <>
+                       {/* Vista Frente */}
+                       <button 
+                        onClick={() => setCameraPosition([0, 0.3, 5.2])} 
+                        className={cn(
+                          "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                          activeView === 'frente' ? "border-[#FF5A00]/50" : "border-gray-100"
+                        )}
+                        style={activeView === 'frente' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
+                       >
+                        <ConfigIcon 
+                          icon={getConfig('icon_frente_url')} 
+                          fallback={<Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'frente' ? "" : "opacity-30")} />}
+                          className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'frente' ? "" : "opacity-30")} 
+                        />
+                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'frente' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_frente')}</span>
+                       </button>
+                      
+                       {/* Vista Lateral Direita */}
+                       <button 
+                        onClick={() => setCameraPosition([5.2, 0.3, 0])} 
+                        className={cn(
+                          "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                          activeView === 'direita' ? "border-[#FF5A00]/50" : "border-gray-100"
+                        )}
+                        style={activeView === 'direita' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
+                       >
+                        <ConfigIcon 
+                          icon={getConfig('icon_lateral_url')} 
+                          fallback={<Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'direita' ? "" : "opacity-30")} />}
+                          className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'direita' ? "" : "opacity-30")} 
+                        />
+                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'direita' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_direita')}</span>
+                       </button>
 
-                      {/* Vista Lateral Esquerda */}
-                      <button 
-                       onClick={() => setCameraPosition([-5.2, 0.3, 0])} 
-                       className={cn(
-                         "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
-                         activeView === 'esquerda' ? "border-[#FF5A00]/50" : "border-gray-100"
-                       )}
-                       style={activeView === 'esquerda' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
-                      >
-                       <ConfigIcon icon={getConfig('icon_lateral_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7 scale-x-[-1]", activeView === 'esquerda' ? "" : "opacity-30")} />
-                       <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'esquerda' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_esquerda')}</span>
-                      </button>
+                       {/* Vista Lateral Esquerda */}
+                       <button 
+                        onClick={() => setCameraPosition([-5.2, 0.3, 0])} 
+                        className={cn(
+                          "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                          activeView === 'esquerda' ? "border-[#FF5A00]/50" : "border-gray-100"
+                        )}
+                        style={activeView === 'esquerda' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
+                       >
+                        <ConfigIcon 
+                          icon={getConfig('icon_lateral_url')} 
+                          fallback={<Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7 scale-x-[-1]", activeView === 'esquerda' ? "" : "opacity-30")} />}
+                          className={cn("w-5 h-5 lg:w-7 lg:h-7 scale-x-[-1]", activeView === 'esquerda' ? "" : "opacity-30")} 
+                        />
+                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'esquerda' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_esquerda')}</span>
+                       </button>
 
-                      {/* Vista Costas */}
-                      <button 
-                       onClick={() => setCameraPosition([0, 0.3, -5.2])} 
-                       className={cn(
-                         "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
-                         activeView === 'costas' ? "border-[#FF5A00]/50" : "border-gray-100"
-                       )}
-                       style={activeView === 'costas' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
-                      >
-                       <ConfigIcon icon={getConfig('icon_costas_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'costas' ? "" : "opacity-30")} />
-                       <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'costas' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_costas')}</span>
-                      </button>
-                   </>
-                 );
+                       {/* Vista Costas */}
+                       <button 
+                        onClick={() => setCameraPosition([0, 0.3, -5.2])} 
+                        className={cn(
+                          "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex flex-col items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                          activeView === 'costas' ? "border-[#FF5A00]/50" : "border-gray-100"
+                        )}
+                        style={activeView === 'costas' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
+                       >
+                        <div className={cn("w-5 h-5 lg:w-7 lg:h-7 transition-transform", activeView === 'costas' ? "rotate-180" : "")}>
+                          <ConfigIcon 
+                            icon={getConfig('icon_costas_url')} 
+                            fallback={<Shirt className={cn("w-full h-full", activeView === 'costas' ? "" : "opacity-30")} />}
+                            className={cn("w-full h-full", activeView === 'costas' ? "" : "opacity-30")} 
+                          />
+                        </div>
+                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'costas' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_costas')}</span>
+                       </button>
+                    </>
+                  );
                })()}
             </div>
           </div>
