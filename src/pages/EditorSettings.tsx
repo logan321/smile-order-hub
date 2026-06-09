@@ -27,11 +27,6 @@ const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
   const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, fetchTemplates } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, updateStampTemplateId, fetchStamps } = useStampCatalog(targetUserId);
-  const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
-  const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
-  const { uvMaps, loading: uvLoading, addUvMap, updateUvMap: updateUvLib, updateUvZones, deleteUvMap, fetchUvMaps } = useUvLibrary(targetUserId);
-  const { stamps: rawStamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, updateStampTemplateId, fetchStamps } = useStampCatalog(targetUserId);
-  const stamps = useMemo(() => rawStamps, [rawStamps]);
   const [uvZoneEditorTarget, setUvZoneEditorTarget] = useState<string | null>(null);
 
   // UV Library form state
