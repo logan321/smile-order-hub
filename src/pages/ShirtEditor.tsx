@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -1481,8 +1481,55 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
             {/* Visual View Selectors */}
             <div className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 lg:gap-4 z-30">
-               <button onClick={() => setCameraPosition([0, 0.1, 5.2])} className={cn("w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", cameraPosition[2] > 0 ? "border-[#FF5A00]/50" : "border-gray-100")}><Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", cameraPosition[2] > 0 ? "text-[#FF5A00]" : "text-gray-300")} /></button>
-               <button onClick={() => setCameraPosition([0, 0.1, -5.2])} className={cn("w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", cameraPosition[2] < 0 ? "border-[#FF5A00]/50" : "border-gray-100")}><Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7 rotate-180", cameraPosition[2] < 0 ? "text-[#FF5A00]" : "text-gray-300")} /></button>
+               {/* Vista Frente */}
+               <button 
+                onClick={() => setCameraPosition([0, 0.1, 5.2])} 
+                className={cn(
+                  "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                  cameraPosition[2] > 0 ? "border-[#FF5A00]/50" : "border-gray-100"
+                )}
+               >
+                <Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", cameraPosition[2] > 0 ? "text-[#FF5A00]" : "text-gray-300")} />
+               </button>
+               
+               {/* Vista Lateral Direita */}
+               <button 
+                onClick={() => setCameraPosition([5.2, 0.1, 0])} 
+                className={cn(
+                  "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                  (cameraPosition[0] > 0 && Math.abs(cameraPosition[2]) < 0.1) ? "border-[#FF5A00]/50" : "border-gray-100"
+                )}
+               >
+                <div className="relative">
+                  <Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", (cameraPosition[0] > 0 && Math.abs(cameraPosition[2]) < 0.1) ? "text-[#FF5A00]" : "text-gray-300")} />
+                  <ArrowRight className="absolute -bottom-1 -right-1 w-2 h-2 lg:w-3 lg:h-3 text-gray-400" />
+                </div>
+               </button>
+
+               {/* Vista Lateral Esquerda */}
+               <button 
+                onClick={() => setCameraPosition([-5.2, 0.1, 0])} 
+                className={cn(
+                  "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                  (cameraPosition[0] < 0 && Math.abs(cameraPosition[2]) < 0.1) ? "border-[#FF5A00]/50" : "border-gray-100"
+                )}
+               >
+                <div className="relative">
+                  <Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7", (cameraPosition[0] < 0 && Math.abs(cameraPosition[2]) < 0.1) ? "text-[#FF5A00]" : "text-gray-300")} />
+                  <ArrowLeft className="absolute -bottom-1 -left-1 w-2 h-2 lg:w-3 lg:h-3 text-gray-400" />
+                </div>
+               </button>
+
+               {/* Vista Costas */}
+               <button 
+                onClick={() => setCameraPosition([0, 0.1, -5.2])} 
+                className={cn(
+                  "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
+                  cameraPosition[2] < 0 ? "border-[#FF5A00]/50" : "border-gray-100"
+                )}
+               >
+                <Shirt className={cn("w-5 h-5 lg:w-7 lg:h-7 rotate-180", cameraPosition[2] < 0 ? "text-[#FF5A00]" : "text-gray-300")} />
+               </button>
             </div>
           </div>
           
