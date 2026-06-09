@@ -444,6 +444,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setStamps((stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapUrl: s.uv_map_url,
+        uvMapId: s.uv_map_id,
         nicheId: s.niche_id ?? null,
       })) ?? []);
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
@@ -464,25 +465,44 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     fetchData();
   }, [ownerUserId]);
 
+  const prevUvMapIdRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    const uvMapId = selectedTemplate?.uvMapId;
-    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
+    const uvMapId = appliedStamp?.uvMapId || selectedTemplate?.uvMapId || null;
+    
+    if (!uvMapId) { 
+      setUvMapZones({}); 
+      setUvMapDims({ w: null, h: null }); 
+      setUvLayers([]); 
+      setFallbackUvUrl(null);
+      prevUvMapIdRef.current = null;
+      return; 
+    }
+    
+    // Only reset layers and fetch if the UV Map actually changed
+    if (prevUvMapIdRef.current === uvMapId) return;
+    prevUvMapIdRef.current = uvMapId;
+
     (async () => {
       const { data } = await supabase
         .from('uv_maps' as any)
-        .select('uv_zones, uv_width, uv_height')
+        .select('image_url, uv_zones, uv_width, uv_height')
         .eq('id', uvMapId)
         .maybeSingle();
+      
       if (cancelled || !data) return;
+      
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
+      setFallbackUvUrl(row.image_url || null);
+      
+      // Reset layers when the mold changes
       setUvLayers([]);
       setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
-  }, [selectedTemplate?.uvMapId]);
+  }, [appliedStamp?.uvMapId, selectedTemplate?.uvMapId]);
 
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
