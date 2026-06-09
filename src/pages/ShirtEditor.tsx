@@ -657,8 +657,20 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
+  const effectiveUvUrl = useMemo(() => {
+    if (appliedStamp?.uvMapUrl) return appliedStamp.uvMapUrl;
+    
+    // Se a estampa não tem UV direta, tenta buscar na biblioteca UV pelo código (nome da estampa)
+    if (appliedStamp && uvMaps.length > 0) {
+      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
+      if (matchingUv?.image_url) return matchingUv.image_url;
+    }
+    
+    return selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+  }, [appliedStamp, uvMaps, selectedTemplate, fallbackUvUrl]);
+
   const uvComposite = useUvCompositor({
-    baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
+    baseUrl: effectiveUvUrl,
     zones: uvMapZones,
     layers: uvLayers,
     uvWidth: uvMapDims.w,
