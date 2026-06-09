@@ -436,11 +436,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setAllTemplates(rawTemplates);
       setTemplates(rawTemplates);
       
-      // Seleciona automaticamente o primeiro template encontrado ou um template padrão se disponível
+      // Prioriza o template definido como padrão pelo admin (is_default)
       if (rawTemplates.length > 0) {
-        // Prioriza templates que tenham UV Map vinculado para evitar tela branca
-        const bestTemplate = rawTemplates.find(t => t.uvMapId || t.uvMapUrl) || rawTemplates[0];
-        setSelectedTemplate(bestTemplate);
+        const defaultTemplate = (templatesRes.data as any[])?.find(t => t.is_default);
+        
+        if (defaultTemplate) {
+          const mappedDefault = rawTemplates.find(t => t.id === defaultTemplate.id);
+          if (mappedDefault) {
+            setSelectedTemplate(mappedDefault);
+          } else {
+            // Fallback para o melhor template se o padrão não for encontrado nas permissões
+            const bestTemplate = rawTemplates.find(t => t.uvMapId || t.uvMapUrl) || rawTemplates[0];
+            setSelectedTemplate(bestTemplate);
+          }
+        } else {
+          // Se não houver padrão definido, não seleciona nada automaticamente (mostra tela de aguardando)
+          setSelectedTemplate(null);
+        }
       }
 
       setStamps((stampsRes.data as any[])?.map(s => ({
