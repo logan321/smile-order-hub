@@ -104,8 +104,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Mobile Header */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border bg-card">
-          <img src={logo} alt="Macro Master" className="h-7 w-auto" />
+        <header 
+          className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border transition-colors"
+          style={{ backgroundColor: headerBg, color: headerText }}
+        >
+          <img src={logo} alt={appTitle} className="h-7 w-auto object-contain" />
           <div className="flex items-center gap-1">
             <button onClick={toggleTheme} className="p-2" aria-label="Alternar tema">
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
