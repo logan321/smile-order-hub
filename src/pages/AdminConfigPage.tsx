@@ -129,14 +129,15 @@ const AdminConfigPage = () => {
     setUploading(configKey);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${configKey}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${configKey}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       const { data, error: uploadError } = await supabase.storage
         .from('site-assets')
         .upload(filePath, file, { 
           upsert: true,
-          contentType: isSvg ? 'image/svg+xml' : file.type
+          contentType: isSvg ? 'image/svg+xml' : file.type,
+          cacheControl: '0'
         });
 
       if (uploadError) throw uploadError;
