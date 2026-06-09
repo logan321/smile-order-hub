@@ -647,7 +647,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       };
 
       if (showNome && elementPositions.nome) {
-        const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
+        const nomeContent = uvTextDrafts['nome'] || getConfig('placeholder_nome', 'SEU NOME');
         updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text', {
           strokeColor: nomeBorderColor !== 'transparent' ? nomeBorderColor : undefined,
           strokeWidth: nomeBorderColor !== 'transparent' ? 2 : 0
