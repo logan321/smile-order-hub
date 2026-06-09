@@ -896,7 +896,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                 />
               )}
-              <Icon className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
+              <ConfigIcon icon={getIcon(configs, `icon_${id}`, Icon)} className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
               <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-tighter text-center px-1">{label}</span>
             </button>
           ))}
