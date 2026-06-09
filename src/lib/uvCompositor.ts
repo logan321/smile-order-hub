@@ -33,16 +33,23 @@ export type UvLayer =
 
 const imgCache = new Map<string, Promise<HTMLImageElement>>();
 function loadImage(url: string): Promise<HTMLImageElement> {
-  if (!imgCache.has(url)) {
-    imgCache.set(url, new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    }));
-  }
-  return imgCache.get(url)!;
+  if (imgCache.has(url)) return imgCache.get(url)!;
+  const p = new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    // Seta crossOrigin ANTES do src — obrigatório para CORS funcionar no mobile
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      // Fallback sem crossOrigin (para imagens sem CORS header)
+      const img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = reject;
+      img2.src = url;
+    };
+    img.src = url;
+  });
+  imgCache.set(url, p);
+  return p;
 }
 
 export async function composeUvTexture(opts: {

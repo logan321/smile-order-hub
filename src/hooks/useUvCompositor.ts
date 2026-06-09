@@ -10,6 +10,15 @@ interface Options {
   uvHeight?: number | null;
 }
 
+// Força CORS adicionando cache-bust só na primeira vez por URL
+const corsUrlCache = new Set<string>();
+function toCorsUrl(url: string): string {
+  if (corsUrlCache.has(url)) return url;
+  corsUrlCache.add(url);
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}_cb=${Date.now()}`;
+}
+
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   if (!canvasRef.current && typeof document !== 'undefined') {
@@ -26,8 +35,14 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
     }
     const delay = layers.length > 0 ? 220 : 0;
     const timer = window.setTimeout(() => {
+      // Usa URL com cache-bust para evitar canvas tainted no mobile
+      const safeUrl = toCorsUrl(baseUrl);
       composeUvTexture({
-        baseUrl, zones, layers, uvWidth, uvHeight,
+        baseUrl: safeUrl,
+        zones,
+        layers,
+        uvWidth,
+        uvHeight,
         canvas: canvasRef.current!,
       }).then(() => {
         if (cancelled) return;
@@ -35,6 +50,19 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
         setVersion(v => v + 1);
       }).catch(err => {
         console.warn('UV composite failed', err);
+        // Tenta sem cache-bust como fallback
+        composeUvTexture({
+          baseUrl,
+          zones,
+          layers,
+          uvWidth,
+          uvHeight,
+          canvas: canvasRef.current!,
+        }).then(() => {
+          if (cancelled) return;
+          setReady(true);
+          setVersion(v => v + 1);
+        }).catch(() => {});
       });
     }, delay);
     return () => { cancelled = true; window.clearTimeout(timer); };
