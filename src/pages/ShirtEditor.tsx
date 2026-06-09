@@ -225,7 +225,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [numeroFont, setNumeroFont] = useState('Impact');
   const [selectedLayoutId, setSelectedLayoutId] = useState('c1');
   const [escudoImageUrl, setEscudoImageUrl] = useState<string | null>(null);
-  const [escudoScale, setEscudoScale] = useState(1);
+  const [escudoScale, setEscudoScale] = useState(1); // 1 = 100% = 6% do UV width
   const [escudoOffsetX, setEscudoOffsetX] = useState(0);
   const [escudoOffsetY, setEscudoOffsetY] = useState(0);
 
