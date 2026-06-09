@@ -202,7 +202,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
 
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
-  const { getConfig } = useSiteConfig();
+  const { configs } = useSiteConfigContext();
+
+  const getConfig = (key: string, fallback: string = '') => configs[key] || fallback;
 
   // Sync UV map from hook to appliedStamp for useUvCompositor
   useEffect(() => {
