@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSiteConfigContext, SiteConfig } from '@/contexts/SiteConfigContext';
+import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
+import { SiteConfig } from '@/types/siteConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
