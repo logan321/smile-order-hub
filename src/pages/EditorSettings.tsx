@@ -608,6 +608,23 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
         {/* Templates */}
         <TabsContent value="templates">
           <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
+              <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Como funciona a projeção 3D?
+              </h3>
+              <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                <p>
+                  Para que as estampas apareçam no simulador 3D, cada <strong>Template</strong> precisa de uma <strong>Matriz UV</strong> vinculada.
+                </p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Envie a imagem da <strong>Matriz UV</strong> (o molde planificado da camisa) no campo abaixo ao criar o template.</li>
+                  <li>Após criar, use o botão de <strong>Engrenagem</strong> <Pencil className="h-3 w-3 inline" /> ou <strong>Mapear Zonas</strong> <MapPin className="h-3 w-3 inline" /> para definir onde cada parte (frente, costas, mangas) está localizada na matriz.</li>
+                  <li>Templates marcados com <Box className="h-3 w-3 inline text-primary" /> já possuem UV e mostrarão o 3D.</li>
+                </ol>
+              </div>
+            </div>
+
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Shirt className="h-5 w-5 text-primary" />
