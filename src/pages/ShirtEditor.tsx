@@ -1541,7 +1541,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                        )}
                        style={activeView === 'frente' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
                       >
-                       <img src={getConfig('icon_frente_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'frente' ? "" : "opacity-30")} alt="Frente" />
+                       <ConfigIcon icon={getConfig('icon_frente_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'frente' ? "" : "opacity-30")} />
                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'frente' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_frente')}</span>
                       </button>
                      
@@ -1554,7 +1554,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                        )}
                        style={activeView === 'direita' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
                       >
-                       <img src={getConfig('icon_lateral_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'direita' ? "" : "opacity-30")} alt="Direita" />
+                       <ConfigIcon icon={getConfig('icon_lateral_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'direita' ? "" : "opacity-30")} />
                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'direita' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_lateral_direita')}</span>
                       </button>
 
@@ -1580,7 +1580,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                        )}
                        style={activeView === 'costas' ? { borderColor: `${getConfig('primary_color')}80` } : {}}
                       >
-                       <img src={getConfig('icon_costas_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'costas' ? "" : "opacity-30")} alt="Costas" />
+                       <ConfigIcon icon={getConfig('icon_costas_url')} className={cn("w-5 h-5 lg:w-7 lg:h-7", activeView === 'costas' ? "" : "opacity-30")} />
                        <span className="text-[8px] font-bold mt-1" style={{ color: activeView === 'costas' ? getConfig('primary_color') : '#ccc' }}>{getConfig('view_button_text_costas')}</span>
                       </button>
                    </>
