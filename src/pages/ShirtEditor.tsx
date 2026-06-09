@@ -620,13 +620,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         const numeroContent = uvTextDrafts['numero'] || '10';
         updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
         
-        // Se o número estiver em uma posição de peito, também pode precisar estar nas costas se o layout for misto? 
-        // Na Jumptec, se o número é "peito_direito", ele ainda costuma ter um número grande nas costas?
-        // O prompt diz: "Número centro frente", "Número peito direito", "Número peito esquerdo".
-        // Mas o seletor de posição de nome diz "Nome costas TOPO + número no centro das costas".
-        // Então o número centro costas parece ser fixo ou implícito quando showNumero é true.
-        if (!elementPositions.numero.startsWith('costas')) {
-             updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text');
+        // O número sempre aparece nas costas, e opcionalmente no peito se a posição for de peito
+        const showBackNumber = true; // Por padrão, sempre mostra nas costas
+        if (showBackNumber) {
+          updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text', {
+            color: numeroBackColor,
+            fontSize: (numeroSize / 100) * (uvMapZones['costas_centro']?.height || 100),
+            fontFamily: numeroFont
+          });
         }
       }
 
@@ -645,7 +646,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       Object.keys(uvTextDrafts).forEach(k => {
         if (['nome', 'numero'].includes(k)) return;
         const content = uvTextDrafts[k];
-        if (content) updateOrAddLayer(`free_${k}`, k, content, 'text');
+        if (content) {
+          updateOrAddLayer(`free_${k}`, k, content, 'text');
+        }
       });
 
       return newLayers;
