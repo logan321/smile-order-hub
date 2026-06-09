@@ -1213,7 +1213,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                               <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#FF5A00]" />
                             </div>
                             <div className="text-center">
-                              <p className="text-[11px] font-bold text-gray-700">Clique para enviar seu escudo</p>
+                              <p className="text-[11px] font-bold text-gray-700">Clique para enviar seu {regrasAtuais.labelEscudo.toLowerCase()}</p>
                               <p className="text-[9px] text-gray-400 font-medium">JPG, PNG, SVG ou PDF • Máx 10MB</p>
                             </div>
                             <input 
