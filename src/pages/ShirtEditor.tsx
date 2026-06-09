@@ -186,6 +186,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [allStamps, setAllStamps] = useState<Stamp[]>([]);
   const [niches, setNiches] = useState<Niche[]>([]);
+  const [nichoAtivo, setNichoAtivo] = useState('futebol');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -202,11 +203,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
-  const [elementPositions, setElementPositions] = useState<{ nome: string | null; escudo: string | null; numero: string | null }>({
+
+  const DEFAULT_ELEMENT_POSITIONS = {
     nome: 'costas_topo',
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
-  });
+  };
+
+  const [elementPositions, setElementPositions] = useState<{ nome: string | null; escudo: string | null; numero: string | null }>(DEFAULT_ELEMENT_POSITIONS);
   const [showNome, setShowNome] = useState(true);
   const [showNumero, setShowNumero] = useState(true);
   const [nomeColor, setNomeColor] = useState('#FFFFFF');
@@ -228,6 +232,17 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [debouncedEscudoScale, setDebouncedEscudoScale] = useState(1);
   const [debouncedEscudoOffsetX, setDebouncedEscudoOffsetX] = useState(0);
   const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
+
+  const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
+
+  const stampsFiltrados = useMemo(() => {
+    return stamps; 
+  }, [stamps, nichoAtivo]);
+
+  const handleNichoChange = (newNichoId: string) => {
+    setNichoAtivo(newNichoId);
+    setElementPositions(DEFAULT_ELEMENT_POSITIONS);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
