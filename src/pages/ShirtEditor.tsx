@@ -646,11 +646,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   });
 
   useEffect(() => {
-    if (uvComposite.ready) {
+    if (uvComposite.canvas) {
       setUv3DCanvas(uvComposite.canvas);
-      setUvTextureVersion(uvComposite.version);
+      setUvTextureVersion(v => v + 1);
     }
-  }, [uvComposite.version, uvComposite.ready, uvComposite.canvas]);
+  }, [uvComposite.version]);
 
   const addStamp = (stamp: Stamp) => {
     setAppliedStamp(stamp);
@@ -1381,6 +1381,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
               backImage={selectedTemplate?.backImageUrl || ''} 
+              uvMapUrl={appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null}
               uvCanvas={uv3DCanvas}
               uvVersion={uvTextureVersion}
               animatingElement={animatingElement}
