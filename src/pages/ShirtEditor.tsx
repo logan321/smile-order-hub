@@ -627,15 +627,17 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       
       if (showNumero && elementPositions.numero) {
         const numeroContent = uvTextDrafts['numero'] || '10';
-        updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
+        updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text', {
+          strokeColor: numeroFrontBorderColor !== 'transparent' ? numeroFrontBorderColor : undefined,
+          strokeWidth: numeroFrontBorderColor !== 'transparent' ? 2 : 0
+        });
         
         // Se o número estiver em uma posição de peito, também pode precisar estar nas costas se o layout for misto? 
-        // Na Jumptec, se o número é "peito_direito", ele ainda costuma ter um número grande nas costas?
-        // O prompt diz: "Número centro frente", "Número peito direito", "Número peito esquerdo".
-        // Mas o seletor de posição de nome diz "Nome costas TOPO + número no centro das costas".
-        // Então o número centro costas parece ser fixo ou implícito quando showNumero é true.
         if (!elementPositions.numero.startsWith('costas')) {
-             updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text');
+             updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text', {
+               strokeColor: numeroBackBorderColor !== 'transparent' ? numeroBackBorderColor : undefined,
+               strokeWidth: numeroBackBorderColor !== 'transparent' ? 2 : 0
+             });
         }
       }
 
