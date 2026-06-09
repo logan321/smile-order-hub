@@ -143,25 +143,32 @@ export default function Shirt3DPreview({
   const hasUv = !!uvImage || !!uvCanvas;
 
   useEffect(() => {
+    if (!orbitRef.current) return;
+    
+    const [x, y, z] = cameraPosition;
+    
+    // Desliga autoRotate durante transição para evitar conflito
     if (orbitRef.current) {
-      const [x, y, z] = cameraPosition;
-      
-      // Pausa autoRotate durante transição para não conflitar
       orbitRef.current.autoRotate = false;
-      
-      // Seta posição e força olhar para o centro do modelo
-      orbitRef.current.object.position.set(x, y, z);
-      orbitRef.current.target.set(0, 0, 0);
-      orbitRef.current.update();
-      
-      // Religa autoRotate após 1.5 segundos
-      setTimeout(() => {
-        if (orbitRef.current) {
-          orbitRef.current.autoRotate = true;
-        }
-      }, 1500);
     }
-  }, [cameraPosition]);
+    
+    // Força reset dos controles antes de setar nova posição
+    orbitRef.current.reset();
+    
+    // Seta posição e target
+    orbitRef.current.object.position.set(x, y, z);
+    orbitRef.current.target.set(0, 0, 0);
+    orbitRef.current.update();
+    
+    // Religa autoRotate após transição (1.5s) se o estado rotating for true
+    const timer = setTimeout(() => {
+      if (orbitRef.current && rotating) {
+        orbitRef.current.autoRotate = true;
+      }
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [cameraPosition, rotating]);
 
   return (
     <div className={cn("w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}>
@@ -207,16 +214,13 @@ export default function Shirt3DPreview({
         <OrbitControls
           ref={orbitRef}
           enablePan={false}
-          autoRotate={rotating}
           autoRotateSpeed={1.2}
           minDistance={2.5}
           maxDistance={7}
           minPolarAngle={Math.PI / 6}
           maxPolarAngle={Math.PI / 1.5}
-          minAzimuthAngle={-Math.PI / 4}
-          maxAzimuthAngle={Math.PI / 4}
-          enableDamping
-          dampingFactor={0.12}
+          enableDamping={true}
+          dampingFactor={0.08}
           makeDefault
         />
       </Canvas>
