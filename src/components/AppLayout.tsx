@@ -53,7 +53,13 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div 
+      className="min-h-screen flex" 
+      style={{ 
+        fontFamily: configs['font_family'] || 'inherit',
+        fontSize: configs['font_size_base'] || 'inherit'
+      }}
+    >
       {/* Desktop Sidebar */}
       <aside 
         className="hidden md:flex flex-col w-60 border-r border-sidebar-border shrink-0 transition-colors"
