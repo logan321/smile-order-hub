@@ -1639,7 +1639,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     </DrawerHeader>
                     
                     {/* Tabs Horizontal Scroll */}
-                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0">
+                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x">
                       {[
                         { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
                         { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
@@ -1651,9 +1651,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
                         <button
                           key={id}
-                          onClick={() => setActiveTab(id as ToolbarTab)}
+                          onPointerDown={() => setActiveTab(id as ToolbarTab)}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px]",
+                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px] active:scale-95",
                             activeTab === id ? "bg-gray-50 shadow-sm" : "text-gray-400"
                           )}
                         >
