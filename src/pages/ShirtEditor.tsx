@@ -881,9 +881,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </div>
 
-      <main className="flex flex-1 overflow-hidden h-[calc(100vh-17.5rem)]">
-        {/* Coluna 1: Sidebar de Navegação */}
-        <nav id="left-sidebar" className="w-14 lg:w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-6 lg:space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
+      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden lg:h-[calc(100vh-17.5rem)] relative">
+        {/* Coluna 1: Sidebar de Navegação (Desktop) */}
+        <nav id="left-sidebar" className="hidden lg:flex w-20 bg-white border-r border-gray-100 flex-shrink-0 flex-col items-center py-8 space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
             { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
             { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
@@ -905,15 +905,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                 />
               )}
-              <ConfigIcon icon={getIcon(configs, `icon_${id}`, Icon)} className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
-              <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-tighter text-center px-1">{label}</span>
+              <ConfigIcon icon={getIcon(configs, `icon_${id}`, Icon)} className={cn("w-6 h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
+              <span className="text-[9px] font-black uppercase tracking-tighter text-center px-1">{label}</span>
             </button>
           ))}
         </nav>
 
-        {/* Coluna 2: Painel Dinâmico */}
+        {/* Coluna 2: Painel Dinâmico (Desktop) */}
         <div id="dynamicSidebar" 
-          className="bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]"
+          className="hidden lg:block bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]"
           style={{ width: getConfig('sidebar_width', '320px') }}
         >
           <div className="p-4 lg:p-6">
