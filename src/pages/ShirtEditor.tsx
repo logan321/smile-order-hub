@@ -793,35 +793,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         <div id="dynamicSidebar" className="w-48 md:w-64 lg:w-80 bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]">
           <div className="p-4 lg:p-6">
             <h2 className="text-[10px] lg:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 lg:mb-6">
-              Configurações de {activeTab === 'stamps' ? 'Estampa' : activeTab === 'text' ? 'Texto' : activeTab === 'name' ? 'Nome/Número' : activeTab === 'patches' ? 'Acabamento' : activeTab === 'emblems' ? 'Escudo' : 'Upload'}
+              Configurações de {
+                activeTab === 'stamps' ? 'Estampa' : 
+                activeTab === 'text' ? 'Texto' : 
+                activeTab === 'name' ? regrasAtuais.labelNome + '/Número' : 
+                activeTab === 'patches' ? 'Acabamento' : 
+                activeTab === 'emblems' ? regrasAtuais.labelEscudo : 
+                activeTab === 'logo' ? 'Número' : 'Upload'
+              }
             </h2>
             
             <div className="space-y-4 lg:space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
-                <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
-                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-5 lg:h-6 w-full rounded cursor-pointer border-none" />
+              {activeTab !== 'stamps' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
+                    <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-5 lg:h-6 w-full rounded cursor-pointer border-none" />
+                  </div>
+                  <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Tamanho</label>
+                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-5 lg:h-6 border-none bg-transparent font-bold text-[10px] lg:text-xs p-0 focus-visible:ring-0" />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Tamanho</label>
-                  <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-5 lg:h-6 border-none bg-transparent font-bold text-[10px] lg:text-xs p-0 focus-visible:ring-0" />
-                </div>
-              </div>
+              )}
 
               {activeTab === 'stamps' && (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
-                  {stamps.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => addStamp(s)}
-                      className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
-                    >
-                      <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                      <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
-                        <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
+                <div className="space-y-6 animate-in fade-in duration-500">
+                  {appliedStamp && (
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 bg-white rounded-xl border border-gray-100 p-1">
+                          <img src={toProxyUrl(appliedStamp.imageUrl)} className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-black text-gray-800 uppercase leading-tight">{appliedStamp.name}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase mt-1">Estampa Selecionada</p>
+                        </div>
                       </div>
-                    </button>
-                  ))}
+                      <Button variant="outline" className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-2 border-gray-200 hover:border-[#FF5A00] hover:text-[#FF5A00] transition-all">
+                        Ver todas as estampas
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
+                    {stampsFiltrados.slice(0, 6).map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => addStamp(s)}
+                        className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
+                      >
+                        <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                        <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
+                          <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
