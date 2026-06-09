@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
 import { SiteConfig } from '@/types/siteConfig';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Save, RotateCcw, Download, Eye, Palette, FileText, Image as ImageIcon, Layout, ArrowLeft } from 'lucide-react';
+import { Loader2, Save, RotateCcw, Download, Eye, Palette, FileText, Image as ImageIcon, Layout, ArrowLeft, Upload, Trash2, X } from 'lucide-react';
+import { ConfigIcon } from '@/components/ConfigIcon';
 import { useNavigate } from 'react-router-dom';
 
 const AdminConfigPage = () => {
@@ -16,7 +17,10 @@ const AdminConfigPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [saving, setSaving] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeUploadKey, setActiveUploadKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (allConfigs.length > 0) {
@@ -95,6 +99,112 @@ const AdminConfigPage = () => {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, configKey: string) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validation
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'Arquivo muito grande',
+        description: 'O tamanho máximo permitido é 2MB.',
+      });
+      return;
+    }
+
+    const allowedTypes = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Tipo de arquivo inválido',
+        description: 'Apenas SVG, PNG, JPG e WEBP são permitidos.',
+      });
+      return;
+    }
+
+    setUploading(configKey);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${configKey}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(filePath);
+
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('site_config')
+        .upsert({ 
+          key: configKey, 
+          value: publicUrl,
+          type: 'image',
+          label: allConfigs.find((c: any) => c.key === configKey)?.label || configKey,
+          category: 'ícones'
+        } as any, { onConflict: 'key' });
+
+      if (dbError) throw dbError;
+
+      handleUpdateLocal(configKey, publicUrl);
+      
+      toast({
+        title: 'Upload concluído',
+        description: 'A imagem foi enviada e salva com sucesso.',
+      });
+      refresh();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro no upload',
+        description: error.message,
+      });
+    } finally {
+      setUploading(null);
+      setActiveUploadKey(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = async (configKey: string) => {
+    setSaving(configKey);
+    try {
+      // Clear value in database
+      const { error } = await supabase
+        .from('site_config')
+        .update({ value: '' })
+        .eq('key', configKey);
+
+      if (error) throw error;
+
+      handleUpdateLocal(configKey, '');
+      toast({
+        title: 'Arquivo removido',
+        description: 'A configuração voltou ao padrão original.',
+      });
+      refresh();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao remover',
+        description: error.message,
+      });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const triggerUpload = (key: string) => {
+    setActiveUploadKey(key);
+    fileInputRef.current?.click();
+  };
+
   const categories = ['cores', 'textos', 'ícones', 'layout'];
 
   if (isLoading) {
@@ -110,6 +220,13 @@ const AdminConfigPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept=".svg,.png,.jpg,.jpeg,.webp"
+        onChange={(e) => activeUploadKey && handleFileUpload(e, activeUploadKey)}
+      />
       {/* Header Fixo */}
       <div className="sticky top-0 z-30 bg-white border-b shadow-sm mb-8">
         <div className="container mx-auto py-4 px-4 flex items-center justify-between">
@@ -193,14 +310,57 @@ const AdminConfigPage = () => {
                                       />
                                     </div>
                                   ) : config.type === 'image' || config.type === 'icon' ? (
-                                    <div className="space-y-3">
-                                      <Input
-                                        type="text"
-                                        value={localValues[config.key] ?? config.value}
-                                        onChange={(e) => handleUpdateLocal(config.key, e.target.value)}
-                                        placeholder="URL da imagem ou SVG inline"
-                                      />
-                                      <p className="text-[10px] text-slate-400">Recomendado: SVG para ícones e PNG transparente para logo.</p>
+                                    <div className="space-y-4">
+                                      <div className="flex flex-col sm:flex-row gap-4">
+                                        <div className="flex-1 space-y-2">
+                                          <Input
+                                            type="text"
+                                            value={localValues[config.key] ?? config.value}
+                                            onChange={(e) => handleUpdateLocal(config.key, e.target.value)}
+                                            placeholder="URL da imagem ou SVG inline"
+                                          />
+                                          <div className="flex gap-2">
+                                            <Button 
+                                              type="button" 
+                                              variant="outline" 
+                                              size="sm" 
+                                              className="flex-1"
+                                              onClick={() => triggerUpload(config.key)}
+                                              disabled={uploading === config.key}
+                                            >
+                                              {uploading === config.key ? (
+                                                <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                                              ) : (
+                                                <Upload className="w-3 h-3 mr-2" />
+                                              )}
+                                              Importar
+                                            </Button>
+                                            
+                                            {(localValues[config.key] || config.value) && (
+                                              <Button 
+                                                type="button" 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                onClick={() => handleRemoveFile(config.key)}
+                                                disabled={saving === config.key}
+                                              >
+                                                <Trash2 className="w-3 h-3 mr-2" />
+                                                Remover
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center bg-white overflow-hidden shrink-0">
+                                          <ConfigIcon 
+                                            icon={localValues[config.key] || config.value} 
+                                            className="w-12 h-12 text-slate-400"
+                                            fallback={<ImageIcon className="w-8 h-8 text-slate-200" />}
+                                          />
+                                        </div>
+                                      </div>
+                                      <p className="text-[10px] text-slate-400">Recomendado: SVG para ícones e PNG transparente para logo. Máx 2MB.</p>
                                     </div>
                                   ) : (
                                     <Input

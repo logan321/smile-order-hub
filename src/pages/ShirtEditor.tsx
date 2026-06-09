@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import logoOriginal from '@/assets/logo.png';
+import { ConfigIcon } from '@/components/ConfigIcon';
 import { useTemplateZones, TemplateZone } from '@/hooks/useTemplateZones';
 import { toProxyUrl } from '@/lib/imageProxy';
 import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
@@ -895,7 +896,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                 />
               )}
-              <Icon className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
+              <ConfigIcon icon={getIcon(configs, `icon_${id}`, Icon)} className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
               <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-tighter text-center px-1">{label}</span>
             </button>
           ))}
@@ -1496,6 +1497,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               fabricColor={appliedStamp ? '#ffffff' : '#cccccc'}
               isUvReady={uvComposite.ready}
               className={cn("transition-opacity duration-300")}
+              canvasBg={getColor(configs, 'canvas_bg_color', '#f1f3f6')}
             />
             
             {/* Overlay Actions */}
