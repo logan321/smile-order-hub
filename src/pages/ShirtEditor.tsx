@@ -1203,9 +1203,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                   className="w-12 h-8 bg-transparent border-none text-center font-black p-0 focus-visible:ring-0"
                                 />
                                 <button onClick={() => {
-                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  const cur = parseInt(uvTextDrafts['numero'] || getConfig('placeholder_numero', '10'));
                                   setUvLayerText('numero', (cur + 1).toString());
-                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-primary">+</button>
                               </div>
                               <Select value={numeroFont} onValueChange={setNumeroFont}>
                                 <SelectTrigger className="flex-1 h-12 bg-gray-50 border-none rounded-xl font-bold text-xs"><SelectValue /></SelectTrigger>
