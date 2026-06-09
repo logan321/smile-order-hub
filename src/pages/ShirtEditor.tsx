@@ -637,8 +637,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
+  const activeUvBaseUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+
   const uvComposite = useUvCompositor({
-    baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
+    baseUrl: activeUvBaseUrl ? toProxyUrl(activeUvBaseUrl) : null,
     zones: uvMapZones,
     layers: uvLayers,
     uvWidth: uvMapDims.w,
@@ -650,7 +652,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setUv3DCanvas(uvComposite.canvas);
       setUvTextureVersion(v => v + 1);
     }
-  }, [uvComposite.version]);
+  }, [uvComposite.version, uvComposite.ready]);
+
+  // Limpa canvas quando estampa muda para evitar mostrar textura antiga
+  useEffect(() => {
+    setUv3DCanvas(null);
+    setUvTextureVersion(v => v + 1);
+  }, [appliedStamp?.id, selectedTemplate?.id]);
 
   const addStamp = (stamp: Stamp) => {
     setAppliedStamp(stamp);
@@ -1388,6 +1396,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               onAnimationComplete={() => setAnimatingElement(null)}
               cameraPosition={cameraPosition}
               autoRotate={false}
+              fabricColor={appliedStamp ? '#ffffff' : '#cccccc'}
               className={cn("transition-opacity duration-300")}
             />
             
