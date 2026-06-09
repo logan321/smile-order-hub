@@ -803,12 +803,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
-          <img src={logo} alt="Jumptec" className="h-6 w-auto" />
+          <img src={configs['logo_url'] || logo} alt="Logo" className="h-6 w-auto object-contain" />
           <div className="h-4 w-px bg-gray-200 mx-2" />
           <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Modo: 3D Simulator v2</span>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+            {getConfig('modo_simulador_label', 'Modo: 3D Simulator v2')}
+          </span>
         </div>
       </header>
 
