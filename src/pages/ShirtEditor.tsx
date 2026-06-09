@@ -479,7 +479,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   useEffect(() => {
     let cancelled = false;
     const uvMapId = selectedTemplate?.uvMapId;
-    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
+    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); return; }
     (async () => {
       const { data } = await supabase
         .from('uv_maps' as any)
@@ -490,7 +490,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
-      setUvLayers([]);
       setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
@@ -574,6 +573,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   };
 
   useEffect(() => {
+    if (!uvMapZones || Object.keys(uvMapZones).length === 0) return;
+    if (!selectedTemplate) return;
+
     setUvLayers(prev => {
       const newLayers: UvLayer[] = [];
       const animatingLayerId = animatingElement?.layer?.id;
@@ -647,7 +649,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       return newLayers;
     });
-  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
+  }, [selectedTemplate, elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
