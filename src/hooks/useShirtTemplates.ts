@@ -9,6 +9,7 @@ export interface ShirtTemplate {
   uvMapUrl: string | null;
   uvMapId: string | null;
   active: boolean;
+  isDefault?: boolean;
   createdAt: string;
 }
 
@@ -49,6 +50,7 @@ export function useShirtTemplates(targetUserId?: string) {
       uvMapUrl: t.uv_map_url ?? null,
       uvMapId: t.uv_map_id ?? null,
       active: t.active,
+      isDefault: t.is_default,
       createdAt: t.created_at,
     })) ?? []);
     setLoading(false);
@@ -137,5 +139,19 @@ export function useShirtTemplates(targetUserId?: string) {
     await fetchTemplates();
   }, [fetchTemplates]);
 
-  return { templates, loading, addTemplate, deleteTemplate, toggleActive, updateUvMap, updateTemplateUvMapId, fetchTemplates };
+  const toggleDefault = useCallback(async (id: string, isDefault: boolean) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = targetUserId || session.user.id;
+    
+    if (isDefault) {
+      // Desmarca todos os outros templates como padrão para este usuário
+      await supabase.from('shirt_templates').update({ is_default: false } as any).eq('user_id', userId);
+    }
+    
+    await supabase.from('shirt_templates').update({ is_default: isDefault } as any).eq('id', id);
+    await fetchTemplates();
+  }, [fetchTemplates, targetUserId]);
+
+  return { templates, loading, addTemplate, deleteTemplate, toggleActive, updateUvMap, updateTemplateUvMapId, toggleDefault, fetchTemplates };
 }
