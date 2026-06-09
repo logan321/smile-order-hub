@@ -250,6 +250,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleNichoChange = (newNichoId: string) => {
     setNichoAtivo(newNichoId);
     setElementPositions(DEFAULT_ELEMENT_POSITIONS);
+
+    // Encontrar o objeto do nicho para pegar o slug/nome se necessário
+    const selectedNicho = NICHOS_ESTATICOS.find(n => n.id === newNichoId);
+    
+    // Filtrar estampas do nicho escolhido
+    const filtradas = allStamps.filter(s => 
+      !s.nicheId || 
+      s.nicheId === newNichoId ||
+      (selectedNicho && (s as any).niche === selectedNicho.label)
+    );
+    
+    setStamps(filtradas.length > 0 ? filtradas : allStamps);
+    
+    // Aplicar primeira estampa do nicho no 3D
+    if (filtradas.length > 0) {
+      addStamp(filtradas[0]);
+    }
   };
 
   useEffect(() => {
@@ -461,6 +478,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       setAllTemplates(rawTemplates);
       setTemplates(rawTemplates);
+      setAllStamps(rawStamps);
       setStamps(rawStamps);
       setNiches(rawNiches);
 
@@ -482,13 +500,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             }
           }
 
-          // Aplicar primeira estampa compatível
-          const compatibleStamps = rawStamps.filter(s => 
-            s.templateId === initialTemplate.id || 
-            (initialTemplate.nicheId && s.nicheId === initialTemplate.nicheId)
-          );
-          if (compatibleStamps.length > 0) {
-            setAppliedStamp(compatibleStamps[0]);
+          // Aplicar primeira estampa disponível
+          if (rawStamps.length > 0) {
+            addStamp(rawStamps[0]);
           }
         }
       }
