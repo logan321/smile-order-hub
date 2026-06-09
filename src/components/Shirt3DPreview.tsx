@@ -24,6 +24,7 @@ interface Shirt3DPreviewProps {
   className?: string;
   animatingElement?: any;
   onAnimationComplete?: () => void;
+  isUvReady?: boolean;
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
@@ -90,7 +91,7 @@ function ShirtModel({
       if (!(mesh as any).isMesh) return;
       
       const mat = new THREE.MeshStandardMaterial({
-        color: uvTex ? new THREE.Color('#ffffff') : color,
+        color: (uvTex && uvCanvas) ? new THREE.Color('#ffffff') : color,
         map: uvTex ?? null,
         roughness: 0.88,
         metalness: 0.02,
@@ -137,6 +138,7 @@ export default function Shirt3DPreview({
   className,
   animatingElement,
   onAnimationComplete,
+  isUvReady = true,
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
@@ -149,7 +151,7 @@ export default function Shirt3DPreview({
     }
   }, [cameraPosition]);
   const uvImage = uvMapUrl ?? null;
-  const hasUv = !!uvImage || !!uvCanvas;
+  const hasUv = (!!uvImage || !!uvCanvas) && isUvReady;
 
   console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
 
