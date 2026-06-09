@@ -187,7 +187,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [downloading, setDownloading] = useState(false);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
-  const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.1, 5.2]);
+  const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.5, 5.2]);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
@@ -1474,7 +1474,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
             <button 
               className="absolute top-4 lg:top-6 left-4 lg:left-6 p-3 lg:p-4 bg-white hover:bg-gray-50 rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 transition-all active:scale-95 group z-30" 
-              onClick={() => setCameraPosition([0, 0.1, 5.2])}
+              onClick={() => setCameraPosition([0, 0.5, 5.2])}
             >
               <RotateCcw className="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 group-hover:text-[#FF5A00] transition-colors" />
             </button>
@@ -1483,7 +1483,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             <div className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 lg:gap-4 z-30">
                {/* Vista Frente */}
                <button 
-                onClick={() => setCameraPosition([0, 0.1, 5.2])} 
+                onClick={() => setCameraPosition([0, 0.5, 5.2])} 
                 className={cn(
                   "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
                   cameraPosition[2] > 0 ? "border-[#FF5A00]/50" : "border-gray-100"
@@ -1494,7 +1494,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                
                {/* Vista Lateral Direita */}
                <button 
-                onClick={() => setCameraPosition([5.2, 0.1, 0])} 
+                onClick={() => setCameraPosition([5.2, 0.5, 0])} 
                 className={cn(
                   "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
                   (cameraPosition[0] > 0 && Math.abs(cameraPosition[2]) < 0.1) ? "border-[#FF5A00]/50" : "border-gray-100"
@@ -1508,7 +1508,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
                {/* Vista Lateral Esquerda */}
                <button 
-                onClick={() => setCameraPosition([-5.2, 0.1, 0])} 
+                onClick={() => setCameraPosition([-5.2, 0.5, 0])} 
                 className={cn(
                   "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
                   (cameraPosition[0] < 0 && Math.abs(cameraPosition[2]) < 0.1) ? "border-[#FF5A00]/50" : "border-gray-100"
@@ -1522,7 +1522,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
                {/* Vista Costas */}
                <button 
-                onClick={() => setCameraPosition([0, 0.1, -5.2])} 
+                onClick={() => setCameraPosition([0, 0.5, -5.2])} 
                 className={cn(
                   "w-10 h-10 lg:w-14 lg:h-14 bg-white rounded-xl lg:rounded-2xl shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all border-2", 
                   cameraPosition[2] < 0 ? "border-[#FF5A00]/50" : "border-gray-100"
