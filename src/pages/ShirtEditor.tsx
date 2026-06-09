@@ -1,12 +1,12 @@
 const USE_3D_SYSTEM = true;
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject, Control, controlsUtils } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -121,6 +121,44 @@ const COLORS = [
   { name: 'Chocolate', hex: '#472311' }
 ];
 
+const NICHOS_ESTATICOS = [
+  { id: 'futebol', label: 'Futebol', icon: '⚽' },
+  { id: 'futsal', label: 'Futsal', icon: '🥅' },
+  { id: 'volei', label: 'Vôlei', icon: '🏐' },
+  { id: 'basquete', label: 'Basquete', icon: '🏀' },
+  { id: 'pesca', label: 'Pesca', icon: '🎣' },
+  { id: 'ciclismo', label: 'Ciclismo', icon: '🚴' },
+  { id: 'corrida', label: 'Corrida', icon: '🏃' },
+];
+
+const REGRAS_NICHO = {
+  futebol: {
+    temNumero: true,
+    temNome: true,
+    temEscudo: true,
+    labelEscudo: 'Escudo',
+    labelNome: 'Nome',
+  },
+  pesca: {
+    temNumero: false,
+    temNome: true,
+    temEscudo: true,
+    labelEscudo: 'Logo',
+    labelNome: 'Nome',
+  },
+  ciclismo: {
+    temNumero: false,
+    temNome: true,
+    temEscudo: true,
+    labelEscudo: 'Logo',
+    labelNome: 'Nome',
+  },
+};
+
+const getRegraNicho = (nichoId: string) => {
+  return REGRAS_NICHO[nichoId as keyof typeof REGRAS_NICHO] || REGRAS_NICHO.futebol;
+};
+
 function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
   return (
     <img
@@ -148,6 +186,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [allStamps, setAllStamps] = useState<Stamp[]>([]);
   const [niches, setNiches] = useState<Niche[]>([]);
+  const [nichoAtivo, setNichoAtivo] = useState('futebol');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -164,11 +203,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
-  const [elementPositions, setElementPositions] = useState<{ nome: string | null; escudo: string | null; numero: string | null }>({
+
+  const DEFAULT_ELEMENT_POSITIONS = {
     nome: 'costas_topo',
     escudo: 'peito_esquerdo',
     numero: 'costas_centro'
-  });
+  };
+
+  const [elementPositions, setElementPositions] = useState<{ nome: string | null; escudo: string | null; numero: string | null }>(DEFAULT_ELEMENT_POSITIONS);
   const [showNome, setShowNome] = useState(true);
   const [showNumero, setShowNumero] = useState(true);
   const [nomeColor, setNomeColor] = useState('#FFFFFF');
@@ -190,6 +232,17 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [debouncedEscudoScale, setDebouncedEscudoScale] = useState(1);
   const [debouncedEscudoOffsetX, setDebouncedEscudoOffsetX] = useState(0);
   const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
+
+  const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
+
+  const stampsFiltrados = useMemo(() => {
+    return stamps; 
+  }, [stamps, nichoAtivo]);
+
+  const handleNichoChange = (newNichoId: string) => {
+    setNichoAtivo(newNichoId);
+    setElementPositions(DEFAULT_ELEMENT_POSITIONS);
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -664,17 +717,66 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </header>
 
-      <main className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
+      {/* PARTE 1 — Barra de nichos no topo */}
+      <div id="nav-nichos" className="h-[100px] bg-[#FF5A00] flex items-center px-4 relative shrink-0 z-40">
+        <button className="absolute left-2 z-10 p-2 text-white/50 hover:text-white transition-colors">
+          <ChevronLeft className="w-8 h-8" />
+        </button>
+        
+        <ul className="flex-1 flex items-center justify-start gap-6 px-10 overflow-x-auto no-scrollbar scroll-smooth h-full">
+          {NICHOS_ESTATICOS.map(nicho => (
+            <li key={nicho.id} className="flex-shrink-0">
+              <button
+                onClick={() => handleNichoChange(nicho.id)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 w-[70px] h-[70px] rounded-full transition-all border-2",
+                  nichoAtivo === nicho.id 
+                    ? "bg-white text-[#FF5A00] border-[#FF5A00] scale-110 shadow-lg" 
+                    : "bg-transparent text-white border-transparent hover:border-white/30"
+                )}
+              >
+                <span className="text-2xl leading-none">{nicho.icon}</span>
+                <span className="text-[9px] font-black uppercase tracking-tighter">{nicho.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button className="absolute right-2 z-10 p-2 text-white/50 hover:text-white transition-colors">
+          <ChevronRight className="w-8 h-8" />
+        </button>
+      </div>
+
+      {/* PARTE 4 — Miniaturas de estampas no topo */}
+      <div id="faixa-estampas" className="h-20 bg-gray-50 border-b border-gray-100 flex items-center px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
+        <div className="flex gap-3 px-2">
+          {stampsFiltrados.map(s => (
+            <button
+              key={s.id}
+              onClick={() => addStamp(s)}
+              className={cn(
+                "w-14 h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0",
+                appliedStamp?.id === s.id ? "border-[#FF5A00] scale-105 shadow-md" : "border-gray-100 hover:border-gray-200"
+              )}
+            >
+              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-1" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <main className="flex flex-1 overflow-hidden h-[calc(100vh-17.5rem)]">
         {/* Coluna 1: Sidebar de Navegação */}
         <nav id="left-sidebar" className="w-14 lg:w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-6 lg:space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
-            { id: 'stamps', label: 'Estampa', icon: Shirt },
-            { id: 'text', label: 'Texto', icon: Type },
-            { id: 'name', label: 'Nome/Nº', icon: Hand },
-            { id: 'patches', label: 'Acabamento', icon: Sparkles },
-            { id: 'emblems', label: 'Escudo', icon: ImageIcon },
-            { id: 'logo', label: 'Upload', icon: Upload },
-          ].map(({ id, label, icon: Icon }) => (
+            { id: 'stamps', label: 'Estampa', icon: Shirt, show: true },
+            { id: 'text', label: 'Texto', icon: Type, show: true },
+            { id: 'name', label: regrasAtuais.labelNome, icon: Hand, show: regrasAtuais.temNome },
+            { id: 'patches', label: 'Acabamento', icon: Sparkles, show: true },
+            { id: 'emblems', label: regrasAtuais.labelEscudo, icon: ImageIcon, show: regrasAtuais.temEscudo },
+            { id: 'logo', label: 'Número', icon: Box, show: regrasAtuais.temNumero },
+            { id: 'upload_generic', label: 'Upload', icon: Upload, show: true },
+          ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id as ToolbarTab)}
@@ -691,35 +793,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         <div id="dynamicSidebar" className="w-48 md:w-64 lg:w-80 bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]">
           <div className="p-4 lg:p-6">
             <h2 className="text-[10px] lg:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 lg:mb-6">
-              Configurações de {activeTab === 'stamps' ? 'Estampa' : activeTab === 'text' ? 'Texto' : activeTab === 'name' ? 'Nome/Número' : activeTab === 'patches' ? 'Acabamento' : activeTab === 'emblems' ? 'Escudo' : 'Upload'}
+              Configurações de {
+                activeTab === 'stamps' ? 'Estampa' : 
+                activeTab === 'text' ? 'Texto' : 
+                activeTab === 'name' ? regrasAtuais.labelNome + '/Número' : 
+                activeTab === 'patches' ? 'Acabamento' : 
+                activeTab === 'emblems' ? regrasAtuais.labelEscudo : 
+                activeTab === 'logo' ? 'Número' : 'Upload'
+              }
             </h2>
             
             <div className="space-y-4 lg:space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
-                <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
-                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-5 lg:h-6 w-full rounded cursor-pointer border-none" />
+              {activeTab !== 'stamps' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
+                    <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-5 lg:h-6 w-full rounded cursor-pointer border-none" />
+                  </div>
+                  <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+                    <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Tamanho</label>
+                    <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-5 lg:h-6 border-none bg-transparent font-bold text-[10px] lg:text-xs p-0 focus-visible:ring-0" />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-                  <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Tamanho</label>
-                  <Input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-5 lg:h-6 border-none bg-transparent font-bold text-[10px] lg:text-xs p-0 focus-visible:ring-0" />
-                </div>
-              </div>
+              )}
 
               {activeTab === 'stamps' && (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
-                  {stamps.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => addStamp(s)}
-                      className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
-                    >
-                      <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                      <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
-                        <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
+                <div className="space-y-6 animate-in fade-in duration-500">
+                  {appliedStamp && (
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 bg-white rounded-xl border border-gray-100 p-1">
+                          <img src={toProxyUrl(appliedStamp.imageUrl)} className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-black text-gray-800 uppercase leading-tight">{appliedStamp.name}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase mt-1">Estampa Selecionada</p>
+                        </div>
                       </div>
-                    </button>
-                  ))}
+                      <Button variant="outline" className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-2 border-gray-200 hover:border-[#FF5A00] hover:text-[#FF5A00] transition-all">
+                        Ver todas as estampas
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
+                    {stampsFiltrados.slice(0, 6).map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => addStamp(s)}
+                        className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
+                      >
+                        <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                        <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
+                          <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -744,7 +874,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             <input type="checkbox" className="hidden" checked={showNome} onChange={e => setShowNome(e.target.checked)} />
                             {showNome && <X className="w-3.5 h-3.5 text-white rotate-45" />}
                           </div>
-                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNome ? "text-gray-900" : "text-gray-400")}>Nome</span>
+                          <span className={cn("text-[11px] font-black uppercase tracking-wider", showNome ? "text-gray-900" : "text-gray-400")}>{regrasAtuais.labelNome}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer group">
                           <div className={cn(
@@ -761,7 +891,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       {/* 2. SELETOR DE POSIÇÃO DO NOME */}
                       {showNome && (
                         <div className="space-y-4">
-                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do Nome</h3>
+                          <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do {regrasAtuais.labelNome}</h3>
                           <div className="flex flex-wrap gap-2">
                             {[
                               { id: 'costas_topo', label: 'Topo' },
@@ -784,13 +914,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                   <path fill="var(--shirt-color)" d="M55.4,58.5H16.2V23.7l-7.1,4L0,13.1L14.9,3l13-3L28,0c2.6,0.7,5.3,1,7.9,1c2.6,0,5.2-0.3,7.7-1l0.2,0l13,3l14.9,10.2l-9.1,14.5l-7.1-4V58.5z M17.6,57H54V21.2l8.1,4.5l7.6-12.2L56.1,4.3L43.8,1.5c-2.6,0.6-5.2,1-7.9,1c-2.7,0-5.4-0.3-8.1-1L15.5,4.3L1.9,13.5l7.6,12.2l8.1-4.5V57z"/>
                                   {pos.id === 'costas_topo' ? (
                                     <>
-                                      <text x="35.8" y="18" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">NOME</text>
+                                      <text x="35.8" y="18" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">{regrasAtuais.labelNome.toUpperCase()}</text>
                                       <text x="35.8" y="42" textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--shirt-color)">10</text>
                                     </>
                                   ) : (
                                     <>
                                       <text x="35.8" y="28" textAnchor="middle" fontSize="12" fontWeight="900" fill="var(--shirt-color)">10</text>
-                                      <text x="35.8" y="50" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">NOME</text>
+                                      <text x="35.8" y="50" textAnchor="middle" fontSize="7" fontWeight="900" fill="var(--shirt-color)">{regrasAtuais.labelNome.toUpperCase()}</text>
                                     </>
                                   )}
                                 </svg>
@@ -1042,7 +1172,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     <div className="space-y-6">
                       <div className="space-y-4">
                         <div className="flex flex-col gap-1">
-                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Escudo</h3>
+                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">{regrasAtuais.labelEscudo}</h3>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha a posição</p>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -1083,7 +1213,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                               <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#FF5A00]" />
                             </div>
                             <div className="text-center">
-                              <p className="text-[11px] font-bold text-gray-700">Clique para enviar seu escudo</p>
+                              <p className="text-[11px] font-bold text-gray-700">Clique para enviar seu {regrasAtuais.labelEscudo.toLowerCase()}</p>
                               <p className="text-[9px] text-gray-400 font-medium">JPG, PNG, SVG ou PDF • Máx 10MB</p>
                             </div>
                             <input 
@@ -1104,7 +1234,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                 <img src={escudoImageUrl} alt="Preview" className="w-full h-full object-contain" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-[10px] font-black text-gray-800 uppercase">Escudo Carregado</p>
+                                <p className="text-[10px] font-black text-gray-800 uppercase">{regrasAtuais.labelEscudo} Carregado</p>
                                 <button 
                                   onClick={() => {
                                     setEscudoImageUrl(null);
@@ -1293,6 +1423,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           {flyingElement.content}
         </div>
       )}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };
