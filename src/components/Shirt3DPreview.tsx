@@ -25,71 +25,6 @@ interface Shirt3DPreviewProps {
   canvasBg?: string;
 }
 
-// Hook que converte canvas → dataURL de forma segura e assíncrona
-function useCanvasDataUrl(
-  canvas: HTMLCanvasElement | null | undefined,
-  version: number
-) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!canvas || canvas.width === 0 || canvas.height === 0) {
-      setDataUrl(null);
-      return;
-    }
-    // Pequeno delay para garantir que o canvas terminou de renderizar
-    const timer = setTimeout(() => {
-      try {
-        const url = canvas.toDataURL('image/png');
-        // Verifica se não é um canvas em branco/preto
-        if (url && url.length > 100) {
-          setDataUrl(url);
-        }
-      } catch (e) {
-        console.warn('toDataURL failed', e);
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [canvas, version]);
-
-  return dataUrl;
-}
-
-function useUvTexture(
-  url: string | null,
-  dataUrl: string | null,
-  version = 0
-) {
-  const texRef = useRef<THREE.Texture | null>(null);
-  const prevKey = useRef('');
-
-  return useMemo(() => {
-    const key = dataUrl ? `data-${version}` : url ? `url-${url}` : '';
-
-    if (!key) {
-      texRef.current = null;
-      return null;
-    }
-
-    // Só recria se a chave mudou
-    if (prevKey.current === key && texRef.current) {
-      return texRef.current;
-    }
-    prevKey.current = key;
-
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin('anonymous');
-    const src = dataUrl || url!;
-    const t = loader.load(src);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 4;
-    t.flipY = false;
-    t.needsUpdate = true;
-    texRef.current = t;
-    return t;
-  }, [url, dataUrl, version]);
-}
-
 function ShirtModel({
   uvImage,
   uvCanvas,
@@ -105,19 +40,39 @@ function ShirtModel({
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 
-  // Converte canvas para dataURL de forma segura (resolve mobile)
-  const dataUrl = useCanvasDataUrl(uvCanvas, uvVersion ?? 0);
-  const uvTex = useUvTexture(uvImage, dataUrl, uvVersion);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
+  const texRef = useRef<THREE.CanvasTexture | null>(null);
 
   useEffect(() => {
     const color = new THREE.Color(fabricColor);
+
+    let tex: THREE.Texture | null = null;
+
+    if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
+      // Sempre recria CanvasTexture — é o mais compatível mobile/desktop
+      if (texRef.current) texRef.current.dispose();
+      const ct = new THREE.CanvasTexture(uvCanvas);
+      ct.colorSpace = THREE.SRGBColorSpace;
+      ct.flipY = false;
+      ct.anisotropy = 4;
+      ct.needsUpdate = true;
+      texRef.current = ct;
+      tex = ct;
+    } else if (uvImage) {
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      tex = loader.load(uvImage);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.flipY = false;
+      tex.needsUpdate = true;
+    }
+
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!(mesh as any).isMesh) return;
       const mat = new THREE.MeshStandardMaterial({
-        color: uvTex ? new THREE.Color('#ffffff') : color,
-        map: uvTex ?? null,
+        color: tex ? new THREE.Color('#ffffff') : color,
+        map: tex ?? null,
         roughness: 0.88,
         metalness: 0.02,
         side: THREE.DoubleSide,
@@ -125,9 +80,8 @@ function ShirtModel({
       mesh.material = mat;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      (mat as any).envMapIntensity = 0.1;
     });
-  }, [scene, uvTex, fabricColor]);
+  }, [scene, uvCanvas, uvVersion, uvImage, fabricColor]);
 
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
