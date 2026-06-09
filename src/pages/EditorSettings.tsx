@@ -16,6 +16,7 @@ import { useUvLibrary } from '@/hooks/useUvLibrary';
 import UvZoneAdminEditor from '@/components/UvZoneAdminEditor';
 import ZoneEditor from '@/components/ZoneEditor';
 import Zone3DEditor from '@/components/Zone3DEditor';
+import { cn } from '@/lib/utils';
 
 interface EditorSettingsProps {
   targetUserId?: string;
