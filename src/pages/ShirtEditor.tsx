@@ -717,17 +717,66 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </header>
 
-      <main className="flex flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
+      {/* PARTE 1 — Barra de nichos no topo */}
+      <div id="nav-nichos" className="h-[100px] bg-[#FF5A00] flex items-center px-4 relative shrink-0 z-40">
+        <button className="absolute left-2 z-10 p-2 text-white/50 hover:text-white transition-colors">
+          <ChevronLeft className="w-8 h-8" />
+        </button>
+        
+        <ul className="flex-1 flex items-center justify-start gap-6 px-10 overflow-x-auto no-scrollbar scroll-smooth h-full">
+          {NICHOS_ESTATICOS.map(nicho => (
+            <li key={nicho.id} className="flex-shrink-0">
+              <button
+                onClick={() => handleNichoChange(nicho.id)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 w-[70px] h-[70px] rounded-full transition-all border-2",
+                  nichoAtivo === nicho.id 
+                    ? "bg-white text-[#FF5A00] border-[#FF5A00] scale-110 shadow-lg" 
+                    : "bg-transparent text-white border-transparent hover:border-white/30"
+                )}
+              >
+                <span className="text-2xl leading-none">{nicho.icon}</span>
+                <span className="text-[9px] font-black uppercase tracking-tighter">{nicho.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button className="absolute right-2 z-10 p-2 text-white/50 hover:text-white transition-colors">
+          <ChevronRight className="w-8 h-8" />
+        </button>
+      </div>
+
+      {/* PARTE 4 — Miniaturas de estampas no topo */}
+      <div id="faixa-estampas" className="h-20 bg-gray-50 border-b border-gray-100 flex items-center px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
+        <div className="flex gap-3 px-2">
+          {stampsFiltrados.map(s => (
+            <button
+              key={s.id}
+              onClick={() => addStamp(s)}
+              className={cn(
+                "w-14 h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0",
+                appliedStamp?.id === s.id ? "border-[#FF5A00] scale-105 shadow-md" : "border-gray-100 hover:border-gray-200"
+              )}
+            >
+              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-1" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <main className="flex flex-1 overflow-hidden h-[calc(100vh-17.5rem)]">
         {/* Coluna 1: Sidebar de Navegação */}
         <nav id="left-sidebar" className="w-14 lg:w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-6 lg:space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
-            { id: 'stamps', label: 'Estampa', icon: Shirt },
-            { id: 'text', label: 'Texto', icon: Type },
-            { id: 'name', label: 'Nome/Nº', icon: Hand },
-            { id: 'patches', label: 'Acabamento', icon: Sparkles },
-            { id: 'emblems', label: 'Escudo', icon: ImageIcon },
-            { id: 'logo', label: 'Upload', icon: Upload },
-          ].map(({ id, label, icon: Icon }) => (
+            { id: 'stamps', label: 'Estampa', icon: Shirt, show: true },
+            { id: 'text', label: 'Texto', icon: Type, show: true },
+            { id: 'name', label: regrasAtuais.labelNome, icon: Hand, show: regrasAtuais.temNome },
+            { id: 'patches', label: 'Acabamento', icon: Sparkles, show: true },
+            { id: 'emblems', label: regrasAtuais.labelEscudo, icon: ImageIcon, show: regrasAtuais.temEscudo },
+            { id: 'logo', label: 'Número', icon: Box, show: regrasAtuais.temNumero },
+            { id: 'upload_generic', label: 'Upload', icon: Upload, show: true },
+          ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id as ToolbarTab)}
