@@ -126,6 +126,18 @@ function ShirtModel({
   );
 }
 
+function CameraRig({ targetPosition, orbitRef }: { targetPosition: [number, number, number]; orbitRef: React.MutableRefObject<any> }) {
+  const targetPos = useMemo(() => new THREE.Vector3(...targetPosition), [targetPosition]);
+  useFrame((state) => {
+    state.camera.position.lerp(targetPos, 0.05);
+    if (state.camera.position.distanceTo(targetPos) < 0.01) {
+      state.camera.position.copy(targetPos);
+    }
+    if (orbitRef.current) orbitRef.current.update();
+  });
+  return null;
+}
+
 export default function Shirt3DPreview({
   frontImage,
   backImage,
@@ -142,24 +154,6 @@ export default function Shirt3DPreview({
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
-  
-  // Custom camera animation logic
-  const targetPos = useMemo(() => new THREE.Vector3(...cameraPosition), [cameraPosition]);
-
-  useFrame((state) => {
-    if (orbitRef.current) {
-      // Smoothly interpolate the camera position
-      state.camera.position.lerp(targetPos, 0.05);
-      
-      // Check if we are close enough to stop updating orbit controls manually
-      if (state.camera.position.distanceTo(targetPos) < 0.01) {
-        state.camera.position.copy(targetPos);
-      }
-      
-      orbitRef.current.update();
-    }
-  });
-
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
@@ -185,6 +179,7 @@ export default function Shirt3DPreview({
         <ambientLight intensity={0.85} />
         <directionalLight position={[3, 4, 2]} intensity={1.3} castShadow={false} />
         <directionalLight position={[-2, 1, -2]} intensity={0.4} />
+        <CameraRig targetPosition={cameraPosition} orbitRef={orbitRef} />
         
         <Suspense fallback={
           <Html center>
