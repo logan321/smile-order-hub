@@ -1671,23 +1671,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     </div>
 
                     {/* Content Vertical Scroll */}
-                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20">
+                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20 touch-pan-y">
                       <div id="mobile-sidebar-content">
-                        {/* 
-                            Aqui idealmente deveríamos ter o conteúdo de dynamicSidebar. 
-                            Como o ShirtEditor é um componente gigante e não está modularizado,
-                            vou precisar de uma estratégia para reutilizar o JSX do dynamicSidebar.
-                            Mas para este passo, vou fechar o sheet e o usuário pode continuar a edição.
-                        */}
-                        <div className="text-center space-y-4 py-8">
-                           <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
-                              <Sparkles className="w-8 h-8 text-[#FF5A00]" />
-                           </div>
-                           <div>
-                             <p className="font-bold text-gray-800">Use os menus acima</p>
-                             <p className="text-xs text-gray-400">Configure sua camisa navegando pelas abas.</p>
-                           </div>
-                        </div>
+                        {renderTabContent()}
                       </div>
                     </div>
                   </div>
