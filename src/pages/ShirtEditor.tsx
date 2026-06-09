@@ -24,6 +24,7 @@ import { useUvCompositor } from '@/hooks/useUvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 import { cn } from '@/lib/utils';
+import { useUVMap } from '@/hooks/useUVMap';
 
 interface Niche {
   id: string;
@@ -197,6 +198,17 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
+
+  const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
+
+  useEffect(() => {
+    if (uvMapData?.uv_frente_url) {
+      setAppliedStamp(prev => prev ? ({
+        ...prev,
+        uvMapUrl: uvMapData.uv_frente_url
+      }) : null);
+    }
+  }, [uvMapData]);
 
   const DEFAULT_ELEMENT_POSITIONS = {
     nome: 'costas_topo',
@@ -703,24 +715,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     setUvTextureVersion(v => v + 1);
   }, [appliedStamp?.id, selectedTemplate?.id]);
 
-  const addStamp = async (stamp: Stamp) => {
+  const addStamp = (stamp: Stamp) => {
     setAppliedStamp(stamp);
-    
-    // Buscar UV pelo código se a estampa tiver código
-    if (stamp.codigo) {
-      const { data, error } = await supabase
-        .from('uv_data')
-        .select('uv_frente_url, uv_costas_url')
-        .eq('codigo', stamp.codigo)
-        .maybeSingle();
-        
-      if (!error && data) {
-        setAppliedStamp(prev => prev ? ({
-          ...prev,
-          uvMapUrl: data.uv_frente_url
-        }) : null);
-      }
-    }
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
