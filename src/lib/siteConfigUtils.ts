@@ -1,4 +1,4 @@
-import { SiteConfig } from '@/hooks/useSiteConfig';
+import { SiteConfig } from '@/types/siteConfig';
 
 export const getConfig = (configs: Record<string, string> | undefined, key: string, fallback: string = ''): string => {
   return configs?.[key] ?? fallback;
