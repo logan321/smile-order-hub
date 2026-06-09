@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const ALLOWED = ["stamp-catalog", "patch-catalog", "shirt-templates", "text-styles", "shirt-designs"];
+const ALLOWED = ["stamp-catalog", "patch-catalog", "shirt-templates", "text-styles", "shirt-designs", "uv-maps"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
