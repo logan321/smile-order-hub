@@ -900,7 +900,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </div>
 
 
-      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden lg:h-[calc(100vh-17.5rem)] relative">
+      <div className={cn("flex flex-col lg:flex-row flex-1 overflow-hidden relative", isMobile ? "h-full" : "lg:h-[calc(100vh-17.5rem)]")}>
         {/* Coluna 1: Sidebar de Navegação (Desktop) */}
         <nav id="left-sidebar" className="hidden lg:flex w-20 bg-white border-r border-gray-100 flex-shrink-0 flex-col items-center py-8 space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
