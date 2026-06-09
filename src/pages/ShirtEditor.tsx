@@ -1194,9 +1194,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             <div className="flex items-center gap-4">
                               <div className="flex-1 p-3 bg-gray-50 rounded-xl flex items-center justify-between">
                                 <button onClick={() => {
-                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  const cur = parseInt(uvTextDrafts['numero'] || getConfig('placeholder_numero', '10'));
                                   setUvLayerText('numero', Math.max(0, cur - 1).toString());
-                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-primary">-</button>
                                 <Input
                                   value={uvTextDrafts['numero'] ?? '10'}
                                   onChange={(e) => setUvLayerText('numero', e.target.value)}
