@@ -93,15 +93,15 @@ function ShirtModel({
       const mat = new THREE.MeshStandardMaterial({
         color: (uvTex && uvCanvas) ? new THREE.Color('#ffffff') : color,
         map: uvTex ?? null,
-        roughness: 0.88,
-        metalness: 0.02,
+        roughness: 0.48,
+        metalness: 0.0,
         side: THREE.DoubleSide,
+        envMapIntensity: 0.6,
       });
 
       mesh.material = mat;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      (mat as any).envMapIntensity = 0.1;
     });
   }, [scene, uvTex, fabricColor]);
 
@@ -160,17 +160,21 @@ export default function Shirt3DPreview({
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
-        gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
+        gl={{ 
+          antialias: true, 
+          preserveDrawingBuffer: true, 
+          alpha: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.1
+        }}
         dpr={[1, 2]}
         onError={(err) => console.error('R3F Canvas Error:', err)}
         style={{ background: '#f1f3f6' }}
       >
         <color attach="background" args={['#f1f3f6']} />
-        <ambientLight intensity={0.8} />
-        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
-        <directionalLight position={[3, 4, 5]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-3, 2, -2]} intensity={0.5} />
-        <pointLight position={[0, 5, 0]} intensity={0.5} />
+        <ambientLight intensity={0.85} />
+        <directionalLight position={[3, 4, 2]} intensity={1.3} castShadow={false} />
+        <directionalLight position={[-2, 1, -2]} intensity={0.4} />
         
         <Suspense fallback={
           <Html center>
@@ -189,7 +193,7 @@ export default function Shirt3DPreview({
             onAnimationComplete={onAnimationComplete}
           />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
-          <Environment preset="city" />
+          <Environment preset="city" intensity={0.7} />
         </Suspense>
 
         <OrbitControls
