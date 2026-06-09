@@ -6,6 +6,8 @@ export interface StampItem {
   name: string;
   category: string;
   imageUrl: string;
+  miniaturaFrenteUrl: string | null;
+  codigo: string | null;
   backImageUrl: string | null;
   uvMapUrl: string | null;
   uvMapId: string | null;
