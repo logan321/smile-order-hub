@@ -581,6 +581,7 @@ export type Database = {
       }
       site_config: {
         Row: {
+          category: string | null
           id: string
           key: string
           label: string
@@ -589,6 +590,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          category?: string | null
           id?: string
           key: string
           label: string
@@ -597,6 +599,7 @@ export type Database = {
           value: string
         }
         Update: {
+          category?: string | null
           id?: string
           key?: string
           label?: string
