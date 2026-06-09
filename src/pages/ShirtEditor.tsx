@@ -652,7 +652,16 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         } as any);
       }
 
-      if (appliedStamp?.imageUrl) {
+      if (appliedStamp?.uvMapUrl) {
+        updateOrAddLayer('applied_stamp_main', 'full_canvas', '', 'image', {
+          url: appliedStamp.uvMapUrl,
+          scale: 1,
+          offsetX: 0,
+          offsetY: 0,
+          opacity: 1
+        } as any);
+      } else if (appliedStamp?.imageUrl) {
+        // Fallback para a miniatura apenas se não houver UV
         updateOrAddLayer('applied_stamp_main', 'peito_centro', '', 'image', {
           url: appliedStamp.imageUrl,
           scale: 1,
