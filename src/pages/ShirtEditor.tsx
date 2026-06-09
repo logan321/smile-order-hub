@@ -196,6 +196,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(70);
@@ -455,6 +456,27 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }, [ownerUserId]);
 
   useEffect(() => {
+    if (!loading && templates.length > 0 && isInitializing) {
+      const futebolNiche = niches.find(n => n.id === 'futebol') || niches[0];
+      const initialNicheId = futebolNiche?.id || 'futebol';
+      
+      const nicheTemplates = templates.filter(t => t.nicheId === initialNicheId);
+      const initialTemplate = nicheTemplates[0] || templates[0];
+      
+      if (initialTemplate) {
+        setSelectedTemplate(initialTemplate);
+        setNichoAtivo(initialNicheId);
+        
+        const nicheStamps = stamps.filter(s => s.templateId === initialTemplate.id || s.nicheId === initialNicheId);
+        if (nicheStamps.length > 0) {
+          setAppliedStamp(nicheStamps[0]);
+        }
+      }
+      setIsInitializing(false);
+    }
+  }, [loading, templates, niches, stamps, isInitializing]);
+
+  useEffect(() => {
     let cancelled = false;
     const uvMapId = selectedTemplate?.uvMapId;
     if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
@@ -683,22 +705,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleWhatsAppQuote = () => toast.info('Redirecionando para WhatsApp...');
   const handleDownload = () => toast.info('Gerando arquivos para download...');
 
+  if (loading || isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-[#FF5A00] font-black animate-pulse uppercase tracking-widest">Carregando Simulador...</div>
+      </div>
+    );
+  }
+
   if (!selectedTemplate) {
     return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-center text-gray-800 uppercase tracking-widest">Escolha o seu modelo</h1>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {templates.map(t => (
-              <button key={t.id} onClick={() => setSelectedTemplate(t)} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all">
-                <div className="p-4"><img src={toProxyUrl(t.frontImageUrl)} className="w-full aspect-[3/4] object-contain rounded-xl bg-gray-50" /></div>
-                <div className="p-4 border-t border-gray-50 bg-gray-50/50">
-                  <p className="font-bold text-gray-700 truncate">{t.name}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground uppercase font-bold">Nenhum modelo disponível.</div>
       </div>
     );
   }
@@ -707,7 +725,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
+          <div className="w-5 h-5" />
           <img src={logo} alt="Jumptec" className="h-6 w-auto" />
           <div className="h-4 w-px bg-gray-200 mx-2" />
           <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
