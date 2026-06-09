@@ -25,6 +25,7 @@ import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 import { cn } from '@/lib/utils';
 import { useUVMap } from '@/hooks/useUVMap';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
 
 interface Niche {
   id: string;
@@ -200,6 +201,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
 
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
+  const { getConfig } = useSiteConfig();
 
   // Sync UV map from hook to appliedStamp for useUvCompositor
   useEffect(() => {
@@ -346,7 +348,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     selected: boolean; 
     onClick: () => void;
   }) => {
-    const color = selected ? '#FF5A00' : '#e5e7eb';
+    const color = selected ? getConfig('accent_color') : '#e5e7eb';
     
     const getPos = (pos: string | null) => {
       switch(pos) {
@@ -406,7 +408,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
         
         {selected && (
-          <div className="absolute top-1 right-1 w-5 h-5 bg-[#FF5A00] rounded-full flex items-center justify-center shadow-sm">
+          <div className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-sm" style={{ backgroundColor: getConfig('accent_color') }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" className="w-3 h-3">
               <polyline points="20 6 9 17 4 12" />
             </svg>
