@@ -897,10 +897,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </nav>
 
         {/* Coluna 2: Painel Dinâmico */}
-        <div id="dynamicSidebar" className="w-48 md:w-64 lg:w-80 bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]">
+        <div id="dynamicSidebar" 
+          className="bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]"
+          style={{ width: getConfig('sidebar_width', '320px') }}
+        >
           <div className="p-4 lg:p-6">
             <h2 className="text-[10px] lg:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 lg:mb-6">
-              Configurações de {
+              {getConfig('config_estampa_title', 'Configurações de')} {
                 activeTab === 'stamps' ? 'Estampa' : 
                 activeTab === 'text' ? 'Texto' : 
                 activeTab === 'name' ? regrasAtuais.labelNome + '/Número' : 
