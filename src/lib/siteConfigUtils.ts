@@ -19,7 +19,12 @@ export const getColor = (configs: Record<string, string> | undefined, key: strin
 
 export const getIcon = (configs: Record<string, string> | undefined, key: string, fallbackIcon: any): any => {
   const value = configs?.[key]?.trim();
-  if (value) return value;
+  if (value) {
+    // If it's a URL, return it as is (the component will handle rendering an <img>)
+    if (value.startsWith('http')) return value;
+    // Otherwise it's a lucide icon name or SVG
+    return value;
+  }
   return fallbackIcon;
 };
 
