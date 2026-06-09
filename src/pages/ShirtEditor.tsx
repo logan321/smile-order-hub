@@ -740,7 +740,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }, [appliedStamp?.id, selectedTemplate?.id]);
 
   const addStamp = (stamp: Stamp) => {
-    setAppliedStamp(stamp);
+    setAppliedStamp(stamp); // nunca desseleciona ao clicar de novo
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
@@ -939,46 +939,29 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               )}
 
               {activeTab === 'stamps' && (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                  {appliedStamp && (
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-16 h-16 bg-white rounded-xl border border-gray-100 p-1">
-                          <img src={toProxyUrl(appliedStamp.imageUrl)} className="w-full h-full object-contain" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[10px] font-black text-gray-800 uppercase leading-tight">{appliedStamp.name}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase mt-1">Estampa Selecionada</p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-2 border-gray-200 transition-all hover:bg-transparent"
-                        style={{ 
-                          borderRadius: getConfig('border_radius_buttons', '12px'),
-                          borderColor: 'var(--border)',
-                        }}
-                      >
-                        {getConfig('ver_todas_estampas_text', 'Ver todas as estampas')}
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
-                    {stampsFiltrados.slice(0, 6).map(s => (
+                <div className="space-y-4 lg:space-y-6">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Selecione uma estampa
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {stampsFiltrados.map(s => (
                       <button
                         key={s.id}
                         onClick={() => addStamp(s)}
-                        className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'bg-transparent' : 'border-gray-50 hover:border-gray-200'}`}
-                        style={{ 
-                          borderColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') : undefined,
-                          backgroundColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') + '08' : undefined
-                        }}
+                        className={`group rounded-xl border-2 overflow-hidden transition-all aspect-square relative ${
+                          appliedStamp?.id === s.id
+                            ? 'border-[#FF5A00] bg-[#FF5A00]/5'
+                            : 'border-gray-100 hover:border-gray-200'
+                        }`}
                       >
-                        <StampThumb stampUrl={s.imageUrl} name={s.name} />
-                        <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
-                          <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
-                        </div>
+                        <img
+                          src={toProxyUrl(s.imageUrl)}
+                          alt={s.name}
+                          className="w-full h-full object-contain p-2 pointer-events-none"
+                        />
+                        <p className="absolute bottom-0 left-0 right-0 text-[8px] font-black text-center uppercase bg-white/90 py-1 truncate px-1">
+                          {s.name}
+                        </p>
                       </button>
                     ))}
                   </div>
