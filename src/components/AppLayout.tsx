@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
 import { getColor } from '@/lib/siteConfigUtils';
 import logoOriginal from '@/assets/logo.png';
+import { ConfigIcon } from './ConfigIcon';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
