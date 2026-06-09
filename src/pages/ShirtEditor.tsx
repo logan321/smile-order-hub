@@ -484,7 +484,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     let cancelled = false;
-    const uvMapId = selectedTemplate?.uvMapId;
+    const uvMapId = appliedStamp?.uvMapId || selectedTemplate?.uvMapId;
     if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
     (async () => {
       const { data } = await supabase
