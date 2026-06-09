@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { useUVMap } from '@/hooks/useUVMap';
 import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
 import { getColor, getIcon } from '@/lib/siteConfigUtils';
+import { useIsMobile } from '@/hooks/useIsMobile';
+
 
 interface Niche {
   id: string;
@@ -172,6 +174,7 @@ function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
 }
 
 const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
+  const isMobile = useIsMobile();
   const { userId: urlUserId } = useParams<{ userId: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -180,6 +183,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
   const [showUvPanel, setShowUvPanel] = useState(true);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [allTemplates, setAllTemplates] = useState<Template[]>([]);
@@ -811,14 +816,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <header className="h-12 lg:h-14 border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-2 lg:gap-4">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900 p-1 lg:p-2"><ChevronLeft className="w-4 h-4 lg:w-5 lg:h-5" /></Button>
-          <ConfigIcon icon={configs['logo_url']?.trim() || logoOriginal} className="h-5 lg:h-6 w-auto" style={{ objectFit: 'contain' }} />
+          <div className="flex items-center gap-2 lg:gap-3 group cursor-pointer" onClick={() => window.location.href = '/'}>
+            <div className="w-7 h-7 lg:w-9 lg:h-9 bg-gray-50 rounded-lg lg:rounded-xl flex items-center justify-center group-hover:bg-[#FF5A00]/5 transition-colors overflow-hidden">
+               <img src={getConfig('logo_url')} alt="Logo" className="w-full h-full object-contain p-1 lg:p-1.5" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-[9px] lg:text-[11px] font-black tracking-[0.1em] text-gray-900 uppercase leading-none">{getConfig('site_name', 'SIMULATOR')}</h1>
+              <p className="text-[6px] lg:text-[8px] font-bold text-gray-400 mt-0.5 tracking-widest uppercase hidden md:block">MODO: 3D SIMULATOR V2</p>
+            </div>
+          </div>
           <div className="h-4 w-px bg-gray-200 mx-1 lg:mx-2" />
-          <span className="font-bold text-gray-800 text-[10px] lg:text-sm uppercase tracking-wide truncate max-w-[120px] lg:max-w-none">{selectedTemplate.name}</span>
+          <span className="font-bold text-gray-800 text-[10px] lg:text-sm uppercase tracking-wide truncate max-w-[80px] lg:max-w-none">{selectedTemplate.name}</span>
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
-          <span className="text-[8px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-tighter hidden md:block">
-            {getConfig('modo_simulador_label', 'Modo: 3D Simulator v2')}
-          </span>
           <Button 
             onClick={handleWhatsAppQuote} 
             size="sm"
@@ -829,6 +839,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </Button>
         </div>
       </header>
+
 
       {/* PARTE 1 — Barra de nichos no topo */}
       <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
@@ -865,8 +876,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </div>
 
       {/* PARTE 4 — Miniaturas de estampas no topo */}
-      <div id="faixa-estampas" className="h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40 touch-pan-x">
-        <div className="flex gap-2 lg:gap-3 px-1 lg:px-2">
+      <div 
+        id="faixa-estampas" 
+        className={cn(
+          "h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40 touch-pan-x",
+          isMobile ? "absolute top-32 left-0 right-0 h-16 bg-transparent border-none z-30" : ""
+        )}
+      >
+        <div className={cn("flex gap-2 lg:gap-3 px-1 lg:px-2", isMobile ? "bg-white/40 backdrop-blur-md p-2 rounded-2xl border border-white/50" : "")}>
           {stampsFiltrados.map(s => (
             <button
               key={s.id}
@@ -882,7 +899,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </div>
 
-      <main className="flex flex-col lg:flex-row flex-1 overflow-hidden lg:h-[calc(100vh-17.5rem)] relative">
+
+      <div className={cn("flex flex-col lg:flex-row flex-1 overflow-hidden relative", isMobile ? "h-full" : "lg:h-[calc(100vh-17.5rem)]")}>
         {/* Coluna 1: Sidebar de Navegação (Desktop) */}
         <nav id="left-sidebar" className="hidden lg:flex w-20 bg-white border-r border-gray-100 flex-shrink-0 flex-col items-center py-8 space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
@@ -1492,7 +1510,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
 
         {/* Coluna 3: Canvas 3D */}
-        <div className="flex-1 relative bg-[#F8F9FA] flex flex-col overflow-hidden w-full lg:w-auto h-[60vh] lg:h-full">
+        <div className={cn(
+          "flex-1 relative bg-[#F8F9FA] flex flex-col overflow-hidden w-full lg:w-auto",
+          isMobile ? "h-full" : "h-[60vh] lg:h-full"
+        )}>
+
           <div className="flex-1 relative">
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
@@ -1528,7 +1550,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             </button>
 
             {/* Visual View Selectors */}
-            <div className="absolute left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 bottom-16 lg:bottom-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 flex flex-row lg:flex-col gap-2 lg:gap-4 z-30 bg-white/20 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-1.5 lg:p-0 rounded-2xl border border-white/30 lg:border-none">
+            <div className={cn(
+              "absolute left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 bottom-24 lg:bottom-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 flex flex-row lg:flex-col gap-2 lg:gap-4 z-30 bg-white/20 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-1.5 lg:p-0 rounded-2xl border border-white/30 lg:border-none",
+              isMobile ? "bottom-32" : ""
+            )}>
+
                {/* Helper para identificar a visão ativa */}
                {(() => {
                  const getActiveView = () => {
@@ -1617,24 +1643,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             </div>
 
             {/* Floating Menu Button (Mobile) */}
-            <div className="lg:hidden absolute bottom-4 right-4 z-40">
-              <Drawer shouldScaleBackground={false}>
-                <DrawerTrigger asChild>
+            <div className="lg:hidden absolute bottom-6 right-6 z-40">
+              <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
+                <SheetTrigger asChild>
                   <Button 
-                    className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90"
+                    className="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90 border-4 border-white/50"
                     style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                   >
-                    <Menu className="w-6 h-6 text-white" />
+                    <Menu className="w-8 h-8 text-white" />
                   </Button>
-                </DrawerTrigger>
-                <DrawerContent 
-                  className="h-[85vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                </SheetTrigger>
+                <SheetContent 
+                  side="bottom"
+                  className="h-[60vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
                 >
                   <div className="flex flex-col h-full bg-white">
-                    <DrawerHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
+                    <SheetHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
                       <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                      <DrawerTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</DrawerTitle>
-                    </DrawerHeader>
+                      <SheetTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</SheetTitle>
+                    </SheetHeader>
+
                     
                     {/* Tabs Horizontal Scroll */}
                     <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x">
@@ -1787,9 +1815,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       </div>
                     </div>
                   </div>
-                </DrawerContent>
-              </Drawer>
+                </SheetContent>
+              </Sheet>
             </div>
+
           </div>
           
           <div className="h-10 lg:h-12 bg-white/50 backdrop-blur-sm border-t border-gray-100 flex items-center justify-center gap-4 lg:gap-8 px-4 lg:px-6 shrink-0">
@@ -1797,10 +1826,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
              <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }} /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">{getConfig('sincronizacao_label', 'Sincronização Realtime')}</span></div>
           </div>
         </div>
-      </main>
-
+      </div>
       {flyingElement && (
         <div
+
+
           style={{
             position: 'fixed',
             left: flyingElement.from.x,
@@ -1834,5 +1864,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     </div>
   );
 };
+
 
 export default ShirtEditor;
