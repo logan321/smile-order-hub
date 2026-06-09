@@ -465,17 +465,24 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     fetchData();
   }, [ownerUserId]);
 
+  const prevUvMapIdRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    const uvMapId = appliedStamp?.uvMapId || selectedTemplate?.uvMapId;
+    const uvMapId = appliedStamp?.uvMapId || selectedTemplate?.uvMapId || null;
+    
     if (!uvMapId) { 
       setUvMapZones({}); 
       setUvMapDims({ w: null, h: null }); 
       setUvLayers([]); 
       setFallbackUvUrl(null);
+      prevUvMapIdRef.current = null;
       return; 
     }
     
+    // Only reset layers and fetch if the UV Map actually changed
+    if (prevUvMapIdRef.current === uvMapId) return;
+    prevUvMapIdRef.current = uvMapId;
+
     (async () => {
       const { data } = await supabase
         .from('uv_maps' as any)
@@ -490,8 +497,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
       setFallbackUvUrl(row.image_url || null);
       
-      // We don't want to reset layers if the uvMapId is the same
-      // but we should reset if it's a completely different template/mold
+      // Reset layers when the mold changes
+      setUvLayers([]);
+      setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
   }, [appliedStamp?.uvMapId, selectedTemplate?.uvMapId]);
