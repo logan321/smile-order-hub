@@ -806,6 +806,114 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     );
   }
 
+  const renderTabContent = () => {
+    return (
+      <div className="space-y-4 lg:space-y-6">
+        {activeTab !== 'stamps' && activeTab !== 'upload_generic' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-3 p-1.5 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Cor Principal</label>
+              <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-5 lg:h-6 w-full rounded cursor-pointer border-none" />
+            </div>
+            <div className="flex flex-col gap-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm">
+              <label className="text-[7px] lg:text-[8px] font-black text-gray-400 uppercase">Tamanho</label>
+              <Input type="number" inputMode="numeric" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="h-5 lg:h-6 border-none bg-transparent font-bold text-[10px] lg:text-xs p-0 focus-visible:ring-0" />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'stamps' && (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            {appliedStamp && (
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 bg-white rounded-xl border border-gray-100 p-1">
+                    <img src={toProxyUrl(appliedStamp.imageUrl)} className="w-full h-full object-contain" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black text-gray-800 uppercase leading-tight">{appliedStamp.name}</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase mt-1">Estampa Selecionada</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
+              {stampsFiltrados.slice(0, 12).map(s => (
+                <button
+                  key={s.id}
+                  onPointerDown={() => addStamp(s)}
+                  className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative active:scale-95 ${appliedStamp?.id === s.id ? 'bg-transparent' : 'border-gray-50 hover:border-gray-200'}`}
+                  style={{ 
+                    borderColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') : undefined,
+                    backgroundColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') + '08' : undefined
+                  }}
+                >
+                  <StampThumb stampUrl={s.imageUrl} name={s.name} />
+                  <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
+                    <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{s.name}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(activeTab === 'text' || activeTab === 'name' || activeTab === 'emblems' || activeTab === 'logo') && (
+          <div className="space-y-4 lg:space-y-6">
+            {activeTab !== 'emblems' && (
+              <Select value={fontFamily} onValueChange={setFontFamily}>
+                <SelectTrigger className="w-full h-10 lg:h-12 rounded-xl bg-gray-50 border-gray-100 shadow-sm font-bold text-[10px] lg:text-xs"><SelectValue placeholder="Fonte" /></SelectTrigger>
+                <SelectContent>{FONT_OPTIONS.map(f => (<SelectItem key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</SelectItem>))}</SelectContent>
+              </Select>
+            )}
+            
+            {activeTab === 'name' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
+                <div className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className={cn(
+                      "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                      showNome ? "bg-[#FF5A00] border-[#FF5A00]" : "border-gray-300 group-hover:border-gray-400"
+                    )}>
+                      <input type="checkbox" className="hidden" checked={showNome} onChange={e => setShowNome(e.target.checked)} />
+                      {showNome && <X className="w-3.5 h-3.5 text-white rotate-45" />}
+                    </div>
+                    <span className={cn("text-[11px] font-black uppercase tracking-wider", showNome ? "text-gray-900" : "text-gray-400")}>{regrasAtuais.labelNome}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className={cn(
+                      "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                      showNumero ? "bg-[#FF5A00] border-[#FF5A00]" : "border-gray-300 group-hover:border-gray-400"
+                    )}>
+                      <input type="checkbox" className="hidden" checked={showNumero} onChange={e => setShowNumero(e.target.checked)} />
+                      {showNumero && <X className="w-3.5 h-3.5 text-white rotate-45" />}
+                    </div>
+                    <span className={cn("text-[11px] font-black uppercase tracking-wider", showNumero ? "text-gray-900" : "text-gray-400")}>Número</span>
+                  </label>
+                </div>
+
+                {showNome && (
+                  <div className="space-y-4">
+                    <h3 className="text-[11px] font-black text-gray-800 uppercase tracking-[0.2em]">Posição do {regrasAtuais.labelNome}</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {[{ id: 'costas_topo', label: 'Topo' }, { id: 'costas_fundo', label: 'Fundo' }].map(pos => (
+                        <button key={pos.id} onPointerDown={() => moveElement('nome', pos.id)} className={cn("relative min-w-[85px] p-2 rounded-[12px] border-2 transition-all flex flex-col items-center gap-2 cursor-pointer active:scale-95", elementPositions.nome === pos.id ? "border-[#FF5A00] bg-[rgba(255,90,0,0.08)]" : "border-gray-100 bg-white")}>
+                          <span className="text-[9px] font-black uppercase">{pos.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <Input value={uvTextDrafts['nome'] ?? ''} onChange={(e) => setUvLayerText('nome', e.target.value)} placeholder="Digite o nome" enterKeyHint="done" className="h-12 bg-gray-50 border-none rounded-xl font-bold text-xs" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="h-12 lg:h-14 border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-50">
