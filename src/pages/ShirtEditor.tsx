@@ -1521,7 +1521,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               backImage={selectedTemplate?.backImageUrl || ''} 
               uvMapUrl={uvMapData?.uv_frente_url || selectedTemplate?.uvMapUrl || null}
               uvCanvas={uv3DCanvas}
-              uvDataUrl={uvComposite.dataUrl}
               uvVersion={uvTextureVersion}
               animatingElement={animatingElement}
               onAnimationComplete={() => setAnimatingElement(null)}
