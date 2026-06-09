@@ -25,6 +25,14 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const { isAdmin, editorEnabled } = useSubscription();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { configs } = useSiteConfigContext();
+
+  const logo = configs['logo_url'] || logoPlaceholder;
+  const sidebarBg = getColor(configs, 'sidebar_bg_color', 'var(--sidebar-background)');
+  const sidebarText = getColor(configs, 'sidebar_text_color', 'var(--sidebar-foreground)');
+  const headerBg = getColor(configs, 'header_bg_color', 'var(--background)');
+  const headerText = getColor(configs, 'header_text_color', 'var(--foreground)');
+  const appTitle = configs['app_title'] || 'Macro Master';
 
   const allNavItems = [
     ...navItems,
