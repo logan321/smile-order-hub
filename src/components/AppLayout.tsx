@@ -6,7 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
-import logo from '@/assets/logo.png';
+import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
+import { getColor } from '@/lib/siteConfigUtils';
+import logoPlaceholder from '@/assets/logo.png';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
