@@ -186,7 +186,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [allStamps, setAllStamps] = useState<Stamp[]>([]);
   const [niches, setNiches] = useState<Niche[]>([]);
-  const [nichoAtivo, setNichoAtivo] = useState<string | null>(null);
+  const [nichoAtivo, setNichoAtivo] = useState('futebol');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -196,7 +196,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
-  const isInitializedRef = useRef(false);
 
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(70);
@@ -234,39 +233,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [debouncedEscudoOffsetX, setDebouncedEscudoOffsetX] = useState(0);
   const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
 
-  const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo || 'futebol'), [nichoAtivo]);
-
-  const templatesFiltrados = useMemo(() => {
-    if (!nichoAtivo) return allTemplates;
-    const filtrados = allTemplates.filter(t => t.nicheId === nichoAtivo || t.nicheId === null);
-    return filtrados.length > 0 ? filtrados : allTemplates;
-  }, [allTemplates, nichoAtivo]);
+  const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
 
   const stampsFiltrados = useMemo(() => {
-    if (!nichoAtivo) return allStamps;
-    return allStamps.filter(s => s.nicheId === nichoAtivo || s.nicheId === null);
-  }, [allStamps, nichoAtivo]);
+    return stamps; 
+  }, [stamps, nichoAtivo]);
 
   const handleNichoChange = (newNichoId: string) => {
     setNichoAtivo(newNichoId);
     setElementPositions(DEFAULT_ELEMENT_POSITIONS);
-
-    // Encontrar o objeto do nicho para pegar o slug/nome se necessário
-    const selectedNicho = NICHOS_ESTATICOS.find(n => n.id === newNichoId);
-    
-    // Filtrar estampas do nicho escolhido
-    const filtradas = allStamps.filter(s => 
-      !s.nicheId || 
-      s.nicheId === newNichoId ||
-      (selectedNicho && (s as any).niche === selectedNicho.label)
-    );
-    
-    setStamps(filtradas.length > 0 ? filtradas : allStamps);
-    
-    // Aplicar primeira estampa do nicho no 3D
-    if (filtradas.length > 0) {
-      addStamp(filtradas[0]);
-    }
   };
 
   useEffect(() => {
@@ -465,58 +440,24 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         userId: t.user_id, nicheId: t.niche_id ?? null,
       })) ?? [];
 
-      const rawStamps = (stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
-        uvMapUrl: s.uv_map_url,
-        templateId: s.template_id,
-        nicheId: s.niche_id
-      })) ?? [];
-
-      const rawNiches = (nichesRes.data as any[])?.map(n => ({
-        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
-      })) ?? [];
-
       setAllTemplates(rawTemplates);
       setTemplates(rawTemplates);
-      setAllStamps(rawStamps);
-      setStamps(rawStamps);
-      setNiches(rawNiches);
-
-      // INICIALIZAÇÃO AUTOMÁTICA
-      if (rawTemplates.length > 0 && !isInitializedRef.current) {
-        isInitializedRef.current = true;
-        
-        // Pegar primeiro template independente do nicho
-        const initialTemplate = rawTemplates[0];
-        
-        if (initialTemplate) {
-          setSelectedTemplate(initialTemplate);
-          
-          // Tentar encontrar e setar o nichoAtivo baseado no template inicial
-          if (initialTemplate.nicheId) {
-            const nichoEncontrado = rawNiches.find(n => n.id === initialTemplate.nicheId);
-            if (nichoEncontrado) {
-              setNichoAtivo(nichoEncontrado.id);
-            }
-          }
-
-          // Aplicar primeira estampa disponível
-          if (rawStamps.length > 0) {
-            addStamp(rawStamps[0]);
-          }
-        }
-      }
-
+      setStamps((stampsRes.data as any[])?.map(s => ({
+        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
+        uvMapUrl: s.uv_map_url,
+      })) ?? []);
+      setNiches((nichesRes.data as any[])?.map(n => ({
+        id: n.id, name: n.name, icon: n.icon, patchLabel: n.patch_label, coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || '',
+      })) ?? []);
       setLoading(false);
     };
     fetchData();
   }, [ownerUserId]);
 
-
   useEffect(() => {
     let cancelled = false;
     const uvMapId = selectedTemplate?.uvMapId;
-    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); return; }
+    if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
     (async () => {
       const { data } = await supabase
         .from('uv_maps' as any)
@@ -527,6 +468,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
+      setUvLayers([]);
       setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
@@ -610,9 +552,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   };
 
   useEffect(() => {
-    if (!uvMapZones || Object.keys(uvMapZones).length === 0) return;
-    if (!selectedTemplate) return;
-
     setUvLayers(prev => {
       const newLayers: UvLayer[] = [];
       const animatingLayerId = animatingElement?.layer?.id;
@@ -686,7 +625,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       return newLayers;
     });
-  }, [selectedTemplate, elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
   const uvComposite = useUvCompositor({
     baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
@@ -744,18 +683,22 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const handleWhatsAppQuote = () => toast.info('Redirecionando para WhatsApp...');
   const handleDownload = () => toast.info('Gerando arquivos para download...');
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-[#FF5A00] font-black animate-pulse uppercase tracking-widest">Carregando Simulador...</div>
-      </div>
-    );
-  }
-
   if (!selectedTemplate) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground uppercase font-bold">Nenhum modelo disponível.</div>
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8 text-center text-gray-800 uppercase tracking-widest">Escolha o seu modelo</h1>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {templates.map(t => (
+              <button key={t.id} onClick={() => setSelectedTemplate(t)} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all">
+                <div className="p-4"><img src={toProxyUrl(t.frontImageUrl)} className="w-full aspect-[3/4] object-contain rounded-xl bg-gray-50" /></div>
+                <div className="p-4 border-t border-gray-50 bg-gray-50/50">
+                  <p className="font-bold text-gray-700 truncate">{t.name}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -764,7 +707,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-4">
-          <div className="w-5 h-5" />
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
           <img src={logo} alt="Jumptec" className="h-6 w-auto" />
           <div className="h-4 w-px bg-gray-200 mx-2" />
           <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
@@ -1358,7 +1301,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     </div>
                   )}
 
-                   {activeTab === 'text' && (
+                  {activeTab === 'text' && (
                     <div className="space-y-4">
                       {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo', 'manga_esquerda', 'manga_direita'].includes(k)).map((zoneKey) => (
                         <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">

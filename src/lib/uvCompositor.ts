@@ -146,8 +146,8 @@ export async function composeUvTexture(opts: {
           // opts.uvWidth should be available
           const uvWidth = opts.uvWidth || base.naturalWidth;
           // scale is the escudoSize value (50-300) / 100
-          // sizePx = (escudoSize / 100) * uvWidth * 0.06
-          const sizePx = scale * uvWidth * 0.06;
+          // sizePx = (escudoSize / 100) * uvWidth * 0.12
+          const sizePx = scale * uvWidth * 0.12;
           zw = sizePx;
           zh = sizePx;
         }
