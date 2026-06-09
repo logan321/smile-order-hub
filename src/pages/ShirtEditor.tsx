@@ -656,11 +656,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   // Limpa canvas quando estampa muda para evitar mostrar textura antiga
   useEffect(() => {
-    // Apenas resetamos se a estampa realmente mudou (evita flash ao carregar camadas)
-    if (!uvComposite.ready) {
-      setUv3DCanvas(null);
-    }
-  }, [appliedStamp?.id, selectedTemplate?.id, uvComposite.ready]);
+    // Resetar o canvas apenas se mudarmos de template (o molde UV muda)
+    // ou se removermos a estampa completamente.
+    // Não resetamos se apenas mudarmos de estampa mas o molde UV for o mesmo.
+    setUv3DCanvas(null);
+  }, [selectedTemplate?.id]);
 
   const addStamp = (stamp: Stamp) => {
     setAppliedStamp(stamp);

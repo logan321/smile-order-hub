@@ -151,7 +151,7 @@ export default function Shirt3DPreview({
     }
   }, [cameraPosition]);
   const uvImage = uvMapUrl ?? null;
-  const hasUv = (!!uvImage || !!uvCanvas) && isUvReady;
+  const hasUv = !!uvImage || !!uvCanvas;
 
   console.log('Shirt3DPreview rendering, hasUv:', hasUv, 'uvMapUrl:', uvMapUrl);
 
