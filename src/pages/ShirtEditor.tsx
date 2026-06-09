@@ -1346,7 +1346,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
                   {activeTab === 'text' && (
                     <div className="space-y-4">
-                      {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo', 'manga_esquerda', 'manga_direita'].includes(k)).map((zoneKey) => (
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 p-4">
+                      {templatesFiltrados.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => setSelectedTemplate(t)}
+                          className={cn(
+                            "group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative",
+                            selectedTemplate?.id === t.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'
+                          )}
+                        >
+                          <img src={toProxyUrl(t.frontImageUrl)} alt={t.name} className="w-full h-full object-contain p-2" />
+                          <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
+                            <p className="text-[7px] lg:text-[8px] font-black uppercase text-gray-500 truncate px-1">{t.name}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                         <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
