@@ -10,6 +10,7 @@ const BUCKET_NAMES = [
   'shirt-templates',
   'text-styles',
   'shirt-designs',
+  'uv-maps',
 ];
 
 export function toProxyUrl(originalUrl: string): string {
