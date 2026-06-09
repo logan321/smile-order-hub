@@ -706,19 +706,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   if (!selectedTemplate) {
     return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-center text-gray-800 uppercase tracking-widest">Escolha o seu modelo</h1>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {templates.map(t => (
-              <button key={t.id} onClick={() => setSelectedTemplate(t)} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all">
-                <div className="p-4"><img src={toProxyUrl(t.frontImageUrl)} className="w-full aspect-[3/4] object-contain rounded-xl bg-gray-50" /></div>
-                <div className="p-4 border-t border-gray-50 bg-gray-50/50">
-                  <p className="font-bold text-gray-700 truncate">{t.name}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aguardando Template...</p>
         </div>
       </div>
     );
