@@ -126,6 +126,18 @@ function ShirtModel({
   );
 }
 
+function CameraRig({ targetPosition, orbitRef }: { targetPosition: [number, number, number]; orbitRef: React.MutableRefObject<any> }) {
+  const targetPos = useMemo(() => new THREE.Vector3(...targetPosition), [targetPosition]);
+  useFrame((state) => {
+    state.camera.position.lerp(targetPos, 0.05);
+    if (state.camera.position.distanceTo(targetPos) < 0.01) {
+      state.camera.position.copy(targetPos);
+    }
+    if (orbitRef.current) orbitRef.current.update();
+  });
+  return null;
+}
+
 export default function Shirt3DPreview({
   frontImage,
   backImage,
