@@ -876,8 +876,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </div>
 
       {/* PARTE 4 — Miniaturas de estampas no topo */}
-      <div id="faixa-estampas" className="h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40 touch-pan-x">
-        <div className="flex gap-2 lg:gap-3 px-1 lg:px-2">
+      <div 
+        id="faixa-estampas" 
+        className={cn(
+          "h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40 touch-pan-x",
+          isMobile ? "absolute top-32 left-0 right-0 h-16 bg-transparent border-none z-30" : ""
+        )}
+      >
+        <div className={cn("flex gap-2 lg:gap-3 px-1 lg:px-2", isMobile ? "bg-white/40 backdrop-blur-md p-2 rounded-2xl border border-white/50" : "")}>
           {stampsFiltrados.map(s => (
             <button
               key={s.id}
@@ -892,6 +898,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           ))}
         </div>
       </div>
+
 
       <main className="flex flex-col lg:flex-row flex-1 overflow-hidden lg:h-[calc(100vh-17.5rem)] relative">
         {/* Coluna 1: Sidebar de Navegação (Desktop) */}
