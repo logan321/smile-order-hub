@@ -6,7 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
-import logo from '@/assets/logo.png';
+import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
+import { getColor } from '@/lib/siteConfigUtils';
+import logoPlaceholder from '@/assets/logo.png';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
@@ -23,6 +25,14 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const { isAdmin, editorEnabled } = useSubscription();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { configs } = useSiteConfigContext();
+
+  const logo = configs['logo_url'] || logoPlaceholder;
+  const sidebarBg = getColor(configs, 'sidebar_bg_color', 'var(--sidebar-background)');
+  const sidebarText = getColor(configs, 'sidebar_text_color', 'var(--sidebar-foreground)');
+  const headerBg = getColor(configs, 'header_bg_color', 'var(--background)');
+  const headerText = getColor(configs, 'header_text_color', 'var(--foreground)');
+  const appTitle = configs['app_title'] || 'Macro Master';
 
   const allNavItems = [
     ...navItems,
@@ -43,11 +53,21 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div 
+      className="min-h-screen flex" 
+      style={{ 
+        fontFamily: configs['font_family'] || 'inherit',
+        fontSize: configs['font_size_base'] || 'inherit'
+      }}
+    >
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-sidebar border-r border-sidebar-border shrink-0">
+      <aside 
+        className="hidden md:flex flex-col w-60 border-r border-sidebar-border shrink-0 transition-colors"
+        style={{ backgroundColor: sidebarBg, color: sidebarText }}
+      >
         <div className="p-5 flex items-center gap-2">
-          <img src={logo} alt="Macro Master" className="h-8 w-auto" />
+          <img src={logo} alt={appTitle} className="h-8 w-auto object-contain" />
+          <span className="font-bold text-sm hidden lg:block uppercase tracking-tight">{appTitle}</span>
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {allNavItems.map(item => (
@@ -90,8 +110,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Mobile Header */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border bg-card">
-          <img src={logo} alt="Macro Master" className="h-7 w-auto" />
+        <header 
+          className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border transition-colors"
+          style={{ backgroundColor: headerBg, color: headerText }}
+        >
+          <img src={logo} alt={appTitle} className="h-7 w-auto object-contain" />
           <div className="flex items-center gap-1">
             <button onClick={toggleTheme} className="p-2" aria-label="Alternar tema">
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}

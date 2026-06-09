@@ -25,7 +25,8 @@ import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 import { cn } from '@/lib/utils';
 import { useUVMap } from '@/hooks/useUVMap';
-import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
+import { getColor, getIcon } from '@/lib/siteConfigUtils';
 
 interface Niche {
   id: string;
@@ -201,7 +202,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
 
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
-  const { getConfig } = useSiteConfig();
+  const { configs } = useSiteConfigContext();
+
+  const getConfig = (key: string, fallback: string = '') => configs[key] || fallback;
 
   // Sync UV map from hook to appliedStamp for useUvCompositor
   useEffect(() => {
@@ -644,7 +647,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       };
 
       if (showNome && elementPositions.nome) {
-        const nomeContent = uvTextDrafts['nome'] || 'SEU NOME';
+        const nomeContent = uvTextDrafts['nome'] || getConfig('placeholder_nome', 'SEU NOME');
         updateOrAddLayer('layer_nome', elementPositions.nome, nomeContent, 'text', {
           strokeColor: nomeBorderColor !== 'transparent' ? nomeBorderColor : undefined,
           strokeWidth: nomeBorderColor !== 'transparent' ? 2 : 0
@@ -652,7 +655,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       }
       
       if (showNumero && elementPositions.numero) {
-        const numeroContent = uvTextDrafts['numero'] || '10';
+        const numeroContent = uvTextDrafts['numero'] || getConfig('placeholder_numero', '10');
         updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text', {
           strokeColor: numeroFrontBorderColor !== 'transparent' ? numeroFrontBorderColor : undefined,
           strokeWidth: numeroFrontBorderColor !== 'transparent' ? 2 : 0
@@ -800,17 +803,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
-          <img src={logo} alt="Jumptec" className="h-6 w-auto" />
+          <img src={configs['logo_url'] || logo} alt="Logo" className="h-6 w-auto object-contain" />
           <div className="h-4 w-px bg-gray-200 mx-2" />
           <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Modo: 3D Simulator v2</span>
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+            {getConfig('modo_simulador_label', 'Modo: 3D Simulator v2')}
+          </span>
         </div>
       </header>
 
       {/* PARTE 1 — Barra de nichos no topo */}
-      <div id="nav-nichos" className="h-[100px] bg-[#FF5A00] flex items-center px-4 relative shrink-0 z-40">
+      <div id="nav-nichos" className="h-[100px] flex items-center px-4 relative shrink-0 z-40" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
         <button className="absolute left-2 z-10 p-2 text-white/50 hover:text-white transition-colors">
           <ChevronLeft className="w-8 h-8" />
         </button>
@@ -823,9 +828,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 w-[70px] h-[70px] rounded-full transition-all border-2",
                   nichoAtivo === nicho.id 
-                    ? "bg-white text-[#FF5A00] border-[#FF5A00] scale-110 shadow-lg" 
+                    ? "bg-white scale-110 shadow-lg" 
                     : "bg-transparent text-white border-transparent hover:border-white/30"
                 )}
+                style={{ 
+                  color: nichoAtivo === nicho.id ? getColor(configs, 'primary_color', '#FF5A00') : 'white',
+                  borderColor: nichoAtivo === nicho.id ? getColor(configs, 'primary_color', '#FF5A00') : 'transparent'
+                }}
               >
                 <span className="text-2xl leading-none">{nicho.icon}</span>
                 <span className="text-[9px] font-black uppercase tracking-tighter">{nicho.name}</span>
@@ -861,20 +870,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         {/* Coluna 1: Sidebar de Navegação */}
         <nav id="left-sidebar" className="w-14 lg:w-20 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col items-center py-6 space-y-6 lg:space-y-8 z-30 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)]">
           {[
-            { id: 'stamps', label: 'Estampa', icon: Shirt, show: true },
-            { id: 'text', label: 'Texto', icon: Type, show: true },
-            { id: 'name', label: regrasAtuais.labelNome, icon: Hand, show: regrasAtuais.temNome },
-            { id: 'patches', label: 'Acabamento', icon: Sparkles, show: true },
-            { id: 'emblems', label: regrasAtuais.labelEscudo, icon: ImageIcon, show: regrasAtuais.temEscudo },
-            { id: 'logo', label: 'Número', icon: Box, show: regrasAtuais.temNumero },
-            { id: 'upload_generic', label: 'Upload', icon: Upload, show: true },
+            { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
+            { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
+            { id: 'name', label: getConfig('nome_tab_label', regrasAtuais.labelNome), icon: Hand, show: regrasAtuais.temNome },
+            { id: 'patches', label: getConfig('acabamento_tab_label', 'Acabamento'), icon: Sparkles, show: true },
+            { id: 'emblems', label: getConfig('escudo_tab_label', regrasAtuais.labelEscudo), icon: ImageIcon, show: regrasAtuais.temEscudo },
+            { id: 'logo', label: getConfig('numero_tab_label', 'Número'), icon: Box, show: regrasAtuais.temNumero },
+            { id: 'upload_generic', label: getConfig('upload_tab_label', 'Upload'), icon: Upload, show: true },
           ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id as ToolbarTab)}
-              className={`flex flex-col items-center gap-1 w-full py-2 transition-all relative ${activeTab === id ? 'text-[#FF5A00]' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`flex flex-col items-center gap-1 w-full py-2 transition-all relative ${activeTab === id ? '' : 'text-gray-400 hover:text-gray-600'}`}
+              style={{ color: activeTab === id ? getColor(configs, 'primary_color', '#FF5A00') : undefined }}
             >
-              {activeTab === id && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#FF5A00] rounded-l-full" />}
+              {activeTab === id && (
+                <div 
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-l-full" 
+                  style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
+                />
+              )}
               <Icon className={cn("w-5 h-5 lg:w-6 lg:h-6", activeTab === id ? "animate-in zoom-in-50 duration-300" : "")} />
               <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-tighter text-center px-1">{label}</span>
             </button>
@@ -882,10 +897,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </nav>
 
         {/* Coluna 2: Painel Dinâmico */}
-        <div id="dynamicSidebar" className="w-48 md:w-64 lg:w-80 bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]">
+        <div id="dynamicSidebar" 
+          className="bg-white border-r border-gray-100 flex-shrink-0 overflow-y-auto z-20 shadow-[10px_0_30px_-5px_rgba(0,0,0,0.02)]"
+          style={{ width: getConfig('sidebar_width', '320px') }}
+        >
           <div className="p-4 lg:p-6">
             <h2 className="text-[10px] lg:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 lg:mb-6">
-              Configurações de {
+              {getConfig('config_estampa_title', 'Configurações de')} {
                 activeTab === 'stamps' ? 'Estampa' : 
                 activeTab === 'text' ? 'Texto' : 
                 activeTab === 'name' ? regrasAtuais.labelNome + '/Número' : 
@@ -922,8 +940,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           <p className="text-[8px] font-bold text-gray-400 uppercase mt-1">Estampa Selecionada</p>
                         </div>
                       </div>
-                      <Button variant="outline" className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-2 border-gray-200 hover:border-[#FF5A00] hover:text-[#FF5A00] transition-all">
-                        Ver todas as estampas
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-2 border-gray-200 transition-all hover:bg-transparent"
+                        style={{ 
+                          borderRadius: getConfig('border_radius_buttons', '12px'),
+                          borderColor: 'var(--border)',
+                        }}
+                      >
+                        {getConfig('ver_todas_estampas_text', 'Ver todas as estampas')}
                       </Button>
                     </div>
                   )}
@@ -933,7 +958,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       <button
                         key={s.id}
                         onClick={() => addStamp(s)}
-                        className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'border-[#FF5A00] bg-[#FF5A00]/5' : 'border-gray-50 hover:border-gray-200'}`}
+                        className={`group rounded-xl lg:rounded-2xl border-2 overflow-hidden transition-all aspect-square relative ${appliedStamp?.id === s.id ? 'bg-transparent' : 'border-gray-50 hover:border-gray-200'}`}
+                        style={{ 
+                          borderColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') : undefined,
+                          backgroundColor: appliedStamp?.id === s.id ? getColor(configs, 'primary_color', '#FF5A00') + '08' : undefined
+                        }}
                       >
                         <StampThumb stampUrl={s.imageUrl} name={s.name} />
                         <div className="absolute inset-x-0 bottom-0 bg-white/90 backdrop-blur-sm p-1 text-center">
@@ -1165,18 +1194,18 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             <div className="flex items-center gap-4">
                               <div className="flex-1 p-3 bg-gray-50 rounded-xl flex items-center justify-between">
                                 <button onClick={() => {
-                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  const cur = parseInt(uvTextDrafts['numero'] || getConfig('placeholder_numero', '10'));
                                   setUvLayerText('numero', Math.max(0, cur - 1).toString());
-                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">-</button>
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-primary">-</button>
                                 <Input
                                   value={uvTextDrafts['numero'] ?? '10'}
                                   onChange={(e) => setUvLayerText('numero', e.target.value)}
                                   className="w-12 h-8 bg-transparent border-none text-center font-black p-0 focus-visible:ring-0"
                                 />
                                 <button onClick={() => {
-                                  const cur = parseInt(uvTextDrafts['numero'] || '10');
+                                  const cur = parseInt(uvTextDrafts['numero'] || getConfig('placeholder_numero', '10'));
                                   setUvLayerText('numero', (cur + 1).toString());
-                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-[#FF5A00]">+</button>
+                                }} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center font-bold text-gray-400 hover:text-primary">+</button>
                               </div>
                               <Select value={numeroFont} onValueChange={setNumeroFont}>
                                 <SelectTrigger className="flex-1 h-12 bg-gray-50 border-none rounded-xl font-bold text-xs"><SelectValue /></SelectTrigger>
@@ -1439,7 +1468,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
               <div className="pt-4 lg:pt-6 border-t border-gray-50">
                 <Button variant="ghost" size="sm" onClick={() => { setAppliedStamp(null); setUvLayers([]); setUvTextDrafts({}); }} className="w-full text-[8px] lg:text-[9px] font-black text-gray-400 hover:text-red-500 uppercase tracking-widest">
-                  <RotateCcw className="w-3 lg:w-3.5 h-3 lg:h-3.5 mr-2" /> Resetar Design
+                  <RotateCcw className="w-3 lg:w-3.5 h-3 lg:h-3.5 mr-2" /> {getConfig('resetar_design_text', 'Resetar Design')}
                 </Button>
               </div>
             </div>
@@ -1466,8 +1495,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             
             {/* Overlay Actions */}
             <div className="absolute top-4 lg:top-6 right-4 lg:right-6 flex gap-2 lg:gap-3 z-30">
-              <Button onClick={handleWhatsAppQuote} className="h-10 lg:h-12 px-4 lg:px-8 text-white font-black rounded-xl lg:rounded-2xl shadow-[0_10px_20px_-5px_rgba(255,90,0,0.3)] text-[10px] lg:text-xs uppercase tracking-widest gap-2 animate-in slide-in-from-top duration-500" style={{ backgroundColor: getConfig('primary_color') }}>
-                 {getConfig('button_orcamento_text')} <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
+              <Button onClick={handleWhatsAppQuote} className="h-10 lg:h-12 px-4 lg:px-8 text-white font-black rounded-xl lg:rounded-2xl shadow-lg text-[10px] lg:text-xs uppercase tracking-widest gap-2 animate-in slide-in-from-top duration-500" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+                 {getConfig('orcamento_button_text', 'ORÇAMENTO')} <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
               </Button>
               <Button onClick={handleDownload} variant="outline" className="h-10 lg:h-12 px-3 lg:px-6 bg-white border-none shadow-xl text-gray-700 font-bold rounded-xl lg:rounded-2xl hover:bg-gray-50 text-[10px] lg:text-xs uppercase tracking-wider">
                  <Download className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
@@ -1554,8 +1583,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </div>
           
           <div className="h-10 lg:h-12 bg-white/50 backdrop-blur-sm border-t border-gray-100 flex items-center justify-center gap-4 lg:gap-8 px-4 lg:px-6 shrink-0">
-             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">3D Ativo</span></div>
-             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-[#FF5A00]" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">Sincronização Realtime</span></div>
+             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">{getConfig('modo_simulador_label', '3D Ativo')}</span></div>
+             <div className="flex items-center gap-1 lg:gap-2"><div className="w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }} /><span className="text-[8px] lg:text-[10px] font-black text-gray-500 uppercase tracking-widest">{getConfig('sincronizacao_label', 'Sincronização Realtime')}</span></div>
           </div>
         </div>
       </main>

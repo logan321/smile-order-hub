@@ -9,6 +9,9 @@ import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
+import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
+import { getColor } from '@/lib/siteConfigUtils';
+
 interface Shirt3DPreviewProps {
   frontImage: string;
   backImage: string;
@@ -140,6 +143,12 @@ export default function Shirt3DPreview({
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
+  const { configs } = useSiteConfigContext();
+
+  // For suavização (lerp) we could use useFrame, but as per previous bug fix, 
+  // we are letting OrbitControls handle damping.
+  
+  const canvasBg = getColor(configs, 'canvas_bg_color', '#f8f9fa');
 
   useEffect(() => {
     if (!orbitRef.current) return;
@@ -167,7 +176,7 @@ export default function Shirt3DPreview({
   const hasUv = !!uvImage || !!uvCanvas;
 
   return (
-    <div className={cn("w-full h-full bg-[#f1f3f6] rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}>
+    <div className={cn("w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)} style={{ backgroundColor: canvasBg }}>
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
