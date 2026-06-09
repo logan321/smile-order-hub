@@ -50,24 +50,27 @@ export function useStampCatalog(targetUserId?: string) {
 
   useEffect(() => { fetchStamps(); }, [fetchStamps]);
 
-  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile: File, uvFile?: File | null, nicheId?: string | null, uvMapId?: string | null, templateId?: string | null) => {
+  const addStamp = useCallback(async (name: string, category: string, frontFile: File, backFile?: File | null, uvFile?: File | null, nicheId?: string | null, uvMapId?: string | null, templateId?: string | null, codigo?: string | null) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const userId = targetUserId || session.user.id;
     const ts = Date.now();
 
-    // Upload front
+    // Upload front (miniatura)
     const frontPath = `${userId}/${ts}_front_${frontFile.name}`;
     const { error: frontErr } = await supabase.storage.from('stamp-catalog').upload(frontPath, frontFile);
     if (frontErr) throw frontErr;
     const { data: frontUrl } = supabase.storage.from('stamp-catalog').getPublicUrl(frontPath);
 
     // Upload back
-    const backPath = `${userId}/${ts}_back_${backFile.name}`;
-    const { error: backErr } = await supabase.storage.from('stamp-catalog').upload(backPath, backFile);
-    if (backErr) throw backErr;
-    const { data: backUrl } = supabase.storage.from('stamp-catalog').getPublicUrl(backPath);
+    let backUrlStr: string | null = null;
+    if (backFile) {
+      const backPath = `${userId}/${ts}_back_${backFile.name}`;
+      const { error: backErr } = await supabase.storage.from('stamp-catalog').upload(backPath, backFile);
+      if (backErr) throw backErr;
+      backUrlStr = supabase.storage.from('stamp-catalog').getPublicUrl(backPath).data.publicUrl;
+    }
 
     let uvUrl: string | null = null;
     if (uvFile) {
@@ -82,11 +85,13 @@ export function useStampCatalog(targetUserId?: string) {
       name,
       category,
       image_url: frontUrl.publicUrl,
-      back_image_url: backUrl.publicUrl,
+      miniatura_frente_url: frontUrl.publicUrl,
+      back_image_url: backUrlStr,
       uv_map_url: uvUrl,
       uv_map_id: uvMapId ?? null,
       template_id: templateId ?? null,
       niche_id: nicheId || null,
+      codigo: codigo || null,
     } as any);
 
     await fetchStamps();
