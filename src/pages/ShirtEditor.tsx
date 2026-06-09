@@ -1381,6 +1381,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
               backImage={selectedTemplate?.backImageUrl || ''} 
+              uvMapUrl={appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null}
               uvCanvas={uv3DCanvas}
               uvVersion={uvTextureVersion}
               animatingElement={animatingElement}
