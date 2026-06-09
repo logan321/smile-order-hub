@@ -199,6 +199,17 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
   const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
 
+  const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
+
+  useEffect(() => {
+    if (uvMapData?.uv_frente_url) {
+      setAppliedStamp(prev => prev ? ({
+        ...prev,
+        uvMapUrl: uvMapData.uv_frente_url
+      }) : null);
+    }
+  }, [uvMapData]);
+
   const DEFAULT_ELEMENT_POSITIONS = {
     nome: 'costas_topo',
     escudo: 'peito_esquerdo',
