@@ -1172,7 +1172,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     <div className="space-y-6">
                       <div className="space-y-4">
                         <div className="flex flex-col gap-1">
-                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Escudo</h3>
+                          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">{regrasAtuais.labelEscudo}</h3>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">Escolha a posição</p>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
