@@ -186,7 +186,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [allStamps, setAllStamps] = useState<Stamp[]>([]);
   const [niches, setNiches] = useState<Niche[]>([]);
-  const [nichoAtivo, setNichoAtivo] = useState('futebol');
+  const [nichoAtivo, setNichoAtivo] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -460,19 +460,28 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       // INICIALIZAÇÃO AUTOMÁTICA
       if (rawTemplates.length > 0 && !isInitializedRef.current) {
         isInitializedRef.current = true;
-        const futebolNiche = rawNiches.find(n => n.id === 'futebol') || rawNiches[0];
-        const initialNicheId = futebolNiche?.id || 'futebol';
         
-        const nicheTemplates = rawTemplates.filter(t => t.nicheId === initialNicheId);
-        const initialTemplate = nicheTemplates[0] || rawTemplates[0];
+        // Pegar primeiro template independente do nicho
+        const initialTemplate = rawTemplates[0];
         
         if (initialTemplate) {
           setSelectedTemplate(initialTemplate);
-          setNichoAtivo(initialNicheId);
           
-          const nicheStamps = rawStamps.filter(s => s.templateId === initialTemplate.id || s.nicheId === initialNicheId);
-          if (nicheStamps.length > 0) {
-            setAppliedStamp(nicheStamps[0]);
+          // Tentar encontrar e setar o nichoAtivo baseado no template inicial
+          if (initialTemplate.nicheId) {
+            const nichoEncontrado = rawNiches.find(n => n.id === initialTemplate.nicheId);
+            if (nichoEncontrado) {
+              setNichoAtivo(nichoEncontrado.id);
+            }
+          }
+
+          // Aplicar primeira estampa compatível
+          const compatibleStamps = rawStamps.filter(s => 
+            s.templateId === initialTemplate.id || 
+            (initialTemplate.nicheId && s.nicheId === initialTemplate.nicheId)
+          );
+          if (compatibleStamps.length > 0) {
+            setAppliedStamp(compatibleStamps[0]);
           }
         }
       }
