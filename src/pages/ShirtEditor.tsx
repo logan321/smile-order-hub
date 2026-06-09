@@ -1633,10 +1633,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   onInteractOutside={(e) => e.preventDefault()}
                 >
                   <div className="flex flex-col h-full bg-white">
-                    <div className="px-6 py-4 border-b border-gray-100">
+                    <DrawerHeader className="px-6 py-4 border-b border-gray-100">
                       <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                      <h2 className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</h2>
-                    </div>
+                      <DrawerTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</DrawerTitle>
+                    </DrawerHeader>
                     
                     {/* Tabs Horizontal Scroll */}
                     <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0">
