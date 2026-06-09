@@ -577,6 +577,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     if (!selectedTemplate) return;
 
     setUvLayers(prev => {
+      const newLayers: UvLayer[] = [];
       const animatingLayerId = animatingElement?.layer?.id;
       
       const updateOrAddLayer = (id: string, zoneKey: string | null, content: string, type: 'text' | 'image', extra: Partial<UvLayer> = {}) => {
