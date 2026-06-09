@@ -525,7 +525,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
       setUvLayers([]);
-      setUvTextDrafts({});
+
     })();
     return () => { cancelled = true; };
   }, [effectiveUvMapId]);
