@@ -436,9 +436,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setAllTemplates(rawTemplates);
       setTemplates(rawTemplates);
       
-      // Se houver apenas um template, seleciona-o automaticamente
-      if (rawTemplates.length === 1) {
-        setSelectedTemplate(rawTemplates[0]);
+      // Seleciona automaticamente o primeiro template encontrado ou um template padrão se disponível
+      if (rawTemplates.length > 0) {
+        // Prioriza templates que tenham UV Map vinculado para evitar tela branca
+        const bestTemplate = rawTemplates.find(t => t.uvMapId || t.uvMapUrl) || rawTemplates[0];
+        setSelectedTemplate(bestTemplate);
       }
 
       setStamps((stampsRes.data as any[])?.map(s => ({
