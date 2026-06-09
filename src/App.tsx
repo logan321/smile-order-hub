@@ -21,6 +21,7 @@ import SubscriptionPage from "./pages/Subscription";
 import ShirtEditor from "./pages/ShirtEditor";
 import EditorSettings from "./pages/EditorSettings";
 import AdminEditorConfig from "./pages/AdminEditorConfig";
+import AdminConfigPage from "./pages/AdminConfigPage";
 import Budgets from "./pages/Budgets";
 import NotFound from "./pages/NotFound";
 
@@ -111,6 +112,7 @@ const App = () => (
             {/* Admin only */}
             <Route path="/admin" element={<ProtectedRoute><AdminRoute><AppLayout><Admin /></AppLayout></AdminRoute></ProtectedRoute>} />
             <Route path="/admin/editor/:userId" element={<ProtectedRoute><AdminRoute><AppLayout><AdminEditorConfig /></AppLayout></AdminRoute></ProtectedRoute>} />
+            <Route path="/admin/site-config" element={<ProtectedRoute><AdminRoute><AppLayout><AdminConfigPage /></AppLayout></AdminRoute></ProtectedRoute>} />
 
             {/* Subscription page */}
             <Route path="/assinatura" element={<ProtectedRoute><SubscriptionPage status="none" /></ProtectedRoute>} />
