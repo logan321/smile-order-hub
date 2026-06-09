@@ -1,12 +1,12 @@
 const USE_3D_SYSTEM = true;
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Canvas, FabricText, Textbox, FabricImage, Point, Polygon, FabricObject, Control, controlsUtils } from 'fabric';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check } from 'lucide-react';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
 import { applyArcToText } from '@/lib/fabricArcText';
@@ -120,6 +120,44 @@ const COLORS = [
   { name: 'Marrom Escuro', hex: '#3E2B2E' },
   { name: 'Chocolate', hex: '#472311' }
 ];
+
+const NICHOS_ESTATICOS = [
+  { id: 'futebol', label: 'Futebol', icon: '⚽' },
+  { id: 'futsal', label: 'Futsal', icon: '🥅' },
+  { id: 'volei', label: 'Vôlei', icon: '🏐' },
+  { id: 'basquete', label: 'Basquete', icon: '🏀' },
+  { id: 'pesca', label: 'Pesca', icon: '🎣' },
+  { id: 'ciclismo', label: 'Ciclismo', icon: '🚴' },
+  { id: 'corrida', label: 'Corrida', icon: '🏃' },
+];
+
+const REGRAS_NICHO = {
+  futebol: {
+    temNumero: true,
+    temNome: true,
+    temEscudo: true,
+    labelEscudo: 'Escudo',
+    labelNome: 'Nome',
+  },
+  pesca: {
+    temNumero: false,
+    temNome: true,
+    temEscudo: true,
+    labelEscudo: 'Logo',
+    labelNome: 'Nome',
+  },
+  ciclismo: {
+    temNumero: false,
+    temNome: true,
+    temEscudo: true,
+    labelEscudo: 'Logo',
+    labelNome: 'Nome',
+  },
+};
+
+const getRegraNicho = (nichoId: string) => {
+  return REGRAS_NICHO[nichoId as keyof typeof REGRAS_NICHO] || REGRAS_NICHO.futebol;
+};
 
 function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
   return (
