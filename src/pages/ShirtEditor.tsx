@@ -620,13 +620,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         const numeroContent = uvTextDrafts['numero'] || '10';
         updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
         
-        // Se o número estiver em uma posição de peito, também pode precisar estar nas costas se o layout for misto? 
-        // Na Jumptec, se o número é "peito_direito", ele ainda costuma ter um número grande nas costas?
-        // O prompt diz: "Número centro frente", "Número peito direito", "Número peito esquerdo".
-        // Mas o seletor de posição de nome diz "Nome costas TOPO + número no centro das costas".
-        // Então o número centro costas parece ser fixo ou implícito quando showNumero é true.
-        if (!elementPositions.numero.startsWith('costas')) {
-             updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text');
+        // O número sempre aparece nas costas, e opcionalmente no peito se a posição for de peito
+        const showBackNumber = true; // Por padrão, sempre mostra nas costas
+        if (showBackNumber) {
+          updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text', {
+            color: numeroBackColor,
+            fontSize: (numeroSize / 100) * (uvMapZones['costas_centro']?.height || 100),
+            fontFamily: numeroFont
+          });
         }
       }
 
@@ -645,7 +646,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       Object.keys(uvTextDrafts).forEach(k => {
         if (['nome', 'numero'].includes(k)) return;
         const content = uvTextDrafts[k];
-        if (content) updateOrAddLayer(`free_${k}`, k, content, 'text');
+        if (content) {
+          updateOrAddLayer(`free_${k}`, k, content, 'text');
+        }
       });
 
       return newLayers;
@@ -1330,23 +1333,50 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
                   {activeTab === 'text' && (
                     <div className="space-y-4">
-                      {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo', 'manga_esquerda', 'manga_direita'].includes(k)).map((zoneKey) => (
-                        <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
-                            <div className="flex gap-1">
-                               <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
-                               <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                      {Object.keys(uvMapZones).map((zoneKey) => {
+                        // Filtramos apenas zonas que não são as padrão de nome/número/escudo para evitar duplicidade na UI
+                        // mas permitimos que o usuário digite nelas se desejar (opcional)
+                        const isMainZone = ['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo'].includes(zoneKey);
+                        
+                        return (
+                          <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">
+                                {zoneKey.replace('_', ' ')} {isMainZone ? '(Principal)' : ''}
+                              </span>
+                              <div className="flex gap-1">
+                                <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400">
+                                  <Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
+                                </button>
+                                <button onClick={() => {
+                                  setUvLayerText(zoneKey, '');
+                                  setUvLayers(prev => prev.filter(l => l.zoneKey !== zoneKey));
+                                }} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400">
+                                  <Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Input
+                                value={uvTextDrafts[zoneKey] ?? ''}
+                                onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                                placeholder={`Texto em ${zoneKey}...`}
+                                className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20 flex-1"
+                              />
+                              <input 
+                                id={`uv-file-${zoneKey}`} 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={(e) => { 
+                                  const file = e.target.files?.[0]; 
+                                  if (file) setUvLayerImage(zoneKey, file); 
+                                }} 
+                              />
                             </div>
                           </div>
-                          <Input
-                            value={uvTextDrafts[zoneKey] ?? ''}
-                            onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                            placeholder={`Digite aqui...`}
-                            className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
-                          />
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
