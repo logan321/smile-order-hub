@@ -1497,6 +1497,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               fabricColor={appliedStamp ? '#ffffff' : '#cccccc'}
               isUvReady={uvComposite.ready}
               className={cn("transition-opacity duration-300")}
+              canvasBg={getColor(configs, 'canvas_bg_color', '#f1f3f6')}
             />
             
             {/* Overlay Actions */}

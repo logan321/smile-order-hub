@@ -25,6 +25,7 @@ interface Shirt3DPreviewProps {
   animatingElement?: any;
   onAnimationComplete?: () => void;
   isUvReady?: boolean;
+  canvasBg?: string;
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
@@ -140,6 +141,7 @@ export default function Shirt3DPreview({
   animatingElement,
   onAnimationComplete,
   isUvReady = true,
+  canvasBg: propCanvasBg,
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
@@ -148,7 +150,7 @@ export default function Shirt3DPreview({
   // For suavização (lerp) we could use useFrame, but as per previous bug fix, 
   // we are letting OrbitControls handle damping.
   
-  const canvasBg = getColor(configs, 'canvas_bg_color', '#f8f9fa');
+  const canvasBg = propCanvasBg || getColor(configs, 'canvas_bg_color', '#f1f3f6');
 
   useEffect(() => {
     if (!orbitRef.current) return;
@@ -189,10 +191,10 @@ export default function Shirt3DPreview({
         }}
         dpr={[1, 2]}
         onError={(err) => console.error('R3F Canvas Error:', err)}
-        style={{ background: '#f1f3f6' }}
+        style={{ background: canvasBg }}
       >
         
-        <color attach="background" args={['#f1f3f6']} />
+        <color attach="background" args={[canvasBg]} />
         <ambientLight intensity={0.85} />
         <directionalLight position={[3, 4, 2]} intensity={1.3} castShadow={false} />
         <directionalLight position={[-2, 1, -2]} intensity={0.4} />
