@@ -32,42 +32,36 @@ interface Shirt3DPreviewProps {
 function useUvTexture(
   url: string | null,
   canvas: HTMLCanvasElement | null | undefined,
-  dataUrl: string | null | undefined,
   version = 0
 ) {
+  const texRef = useRef<THREE.CanvasTexture | null>(null);
+
   return useMemo(() => {
-    // Mobile: usa dataUrl exportado do canvas
-    if (dataUrl) {
-      const loader = new THREE.TextureLoader();
-      loader.setCrossOrigin('anonymous');
-      const t = loader.load(dataUrl);
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = 4;
-      t.flipY = false;
-      t.needsUpdate = true;
-      return t;
-    }
-    // Desktop: usa CanvasTexture direto
     if (canvas) {
-      const t = new THREE.CanvasTexture(canvas);
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = 16;
-      t.flipY = false;
-      t.needsUpdate = true;
-      return t;
+      // Reutiliza a mesma textura e força needsUpdate — funciona desktop e mobile
+      if (!texRef.current) {
+        const t = new THREE.CanvasTexture(canvas);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 8;
+        t.flipY = false;
+        texRef.current = t;
+      }
+      texRef.current.needsUpdate = true;
+      return texRef.current;
     }
+    texRef.current = null;
     if (!url) return null;
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
     const t = loader.load(url);
     t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 16;
+    t.anisotropy = 8;
     t.flipY = false;
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
     t.needsUpdate = true;
     return t;
-  }, [url, canvas, dataUrl, version]);
+  }, [url, canvas, version]);
 }
 
 function ShirtModel({
@@ -91,7 +85,7 @@ function ShirtModel({
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 
-  const uvTex = useUvTexture(uvImage, uvCanvas, uvDataUrl, uvVersion);
+  const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   useEffect(() => {
