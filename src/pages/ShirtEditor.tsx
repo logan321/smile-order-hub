@@ -188,6 +188,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [uvMaps, setUvMaps] = useState<any[]>([]);
 
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(70);
@@ -226,6 +227,34 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
 
   const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
+
+  const effectiveUvUrl = useMemo(() => {
+    if (appliedStamp?.uvMapUrl) return appliedStamp.uvMapUrl;
+    
+    // Busca por ID vinculado na estampa
+    if (appliedStamp?.uvMapId) {
+      const uv = uvMaps.find(u => u.id === appliedStamp.uvMapId);
+      if (uv?.image_url) return uv.image_url;
+    }
+
+    // Busca por código (nome da estampa == código do UV)
+    if (appliedStamp && uvMaps.length > 0) {
+      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
+      if (matchingUv?.image_url) return matchingUv.image_url;
+    }
+    
+    return selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+  }, [appliedStamp, uvMaps, selectedTemplate, fallbackUvUrl]);
+
+  const effectiveUvMapId = useMemo(() => {
+    if (appliedStamp?.uvMapId) return appliedStamp.uvMapId;
+    if (appliedStamp && uvMaps.length > 0) {
+      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
+      if (matchingUv) return matchingUv.id;
+    }
+    return selectedTemplate?.uvMapId;
+  }, [appliedStamp, uvMaps, selectedTemplate]);
+
 
   const stampsFiltrados = useMemo(() => {
     if (!nichoAtivo) return stamps;
@@ -458,6 +487,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setStamps((stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapUrl: s.uv_map_url,
+        uvMapId: s.uv_map_id,
+        templateId: s.template_id,
         nicheId: s.niche_id ?? null,
       })) ?? []);
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
@@ -469,6 +500,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         backgroundImageUrl: n.background_image_url || ''
       })) ?? [];
       setNiches(loadedNiches);
+      setUvMaps(uvMapsRes.data || []);
       
       if (loadedNiches.length > 0 && !nichoAtivo) {
         setNichoAtivo(loadedNiches[0].id);
@@ -480,7 +512,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     let cancelled = false;
-    const uvMapId = selectedTemplate?.uvMapId;
+    const uvMapId = effectiveUvMapId;
     if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
     (async () => {
       const { data } = await supabase
@@ -496,7 +528,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
-  }, [selectedTemplate?.uvMapId]);
+  }, [effectiveUvMapId]);
 
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
@@ -655,8 +687,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
+
   const uvComposite = useUvCompositor({
-    baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
+    baseUrl: effectiveUvUrl,
     zones: uvMapZones,
     layers: uvLayers,
     uvWidth: uvMapDims.w,

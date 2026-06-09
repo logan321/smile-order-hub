@@ -897,6 +897,31 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 ))}
                               </SelectContent>
                             </Select>
+                            
+                            <Select
+                              value={(s as any).uvMapId || 'none'}
+                              onValueChange={async v => {
+                                try {
+                                  await updateStampUvMapId(s.id, v === 'none' ? null : v);
+                                  toast.success('UV vinculado!');
+                                } catch { toast.error('Erro ao vincular UV'); }
+                              }}
+                            >
+                              <SelectTrigger className="h-7 w-28 text-[10px] flex-shrink-0">
+                                <div className="flex items-center gap-1">
+                                  <Box className={`h-3 w-3 ${(s as any).uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="Matriz UV" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                                {uvMaps.map(u => (
+                                  <SelectItem key={u.id} value={u.id} className="text-xs">
+                                    {u.code || u.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </div>
@@ -955,7 +980,25 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">Ao escolher esta estampa no editor, o 3D usa o UV e as zonas do template vinculado. Cadastre o UV matriz e marque as zonas pelo botão <MapPin className="h-3 w-3 inline" /> em "Camisas em Branco".</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Ao escolher esta estampa no editor, o 3D usa o UV e as zonas do template vinculado.</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                      <Box className="h-3 w-3" /> Matriz UV (opcional se já no template)
+                    </label>
+                    <Select value={newStampUvMapId} onValueChange={setNewStampUvMapId}>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione a matriz UV desta estampa" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" className="text-xs">Sem UV específico</SelectItem>
+                        {uvMaps.map(u => (
+                          <SelectItem key={u.id} value={u.id} className="text-xs">
+                            {u.code || u.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[10px] text-muted-foreground mt-1">Define qual "mapa" de projeção será usado no 3D para esta estampa. Se não selecionado, usará o do template acima.</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
