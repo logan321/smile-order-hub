@@ -1495,8 +1495,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             
             {/* Overlay Actions */}
             <div className="absolute top-4 lg:top-6 right-4 lg:right-6 flex gap-2 lg:gap-3 z-30">
-              <Button onClick={handleWhatsAppQuote} className="h-10 lg:h-12 px-4 lg:px-8 text-white font-black rounded-xl lg:rounded-2xl shadow-[0_10px_20px_-5px_rgba(255,90,0,0.3)] text-[10px] lg:text-xs uppercase tracking-widest gap-2 animate-in slide-in-from-top duration-500" style={{ backgroundColor: getConfig('primary_color') }}>
-                 {getConfig('button_orcamento_text')} <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
+              <Button onClick={handleWhatsAppQuote} className="h-10 lg:h-12 px-4 lg:px-8 text-white font-black rounded-xl lg:rounded-2xl shadow-lg text-[10px] lg:text-xs uppercase tracking-widest gap-2 animate-in slide-in-from-top duration-500" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+                 {getConfig('orcamento_button_text', 'ORÇAMENTO')} <ChevronLeft className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
               </Button>
               <Button onClick={handleDownload} variant="outline" className="h-10 lg:h-12 px-3 lg:px-6 bg-white border-none shadow-xl text-gray-700 font-bold rounded-xl lg:rounded-2xl hover:bg-gray-50 text-[10px] lg:text-xs uppercase tracking-wider">
                  <Download className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
