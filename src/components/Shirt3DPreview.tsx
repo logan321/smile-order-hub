@@ -1,6 +1,6 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Canvas, useLoader, useFrame } from '@react-three/fiber';
+import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -25,69 +25,69 @@ interface Shirt3DPreviewProps {
   canvasBg?: string;
 }
 
-// Converte canvas para dataURL — necessário no mobile (Safari/Chrome)
-// para que o Three.js consiga criar a textura corretamente
-function canvasToDataUrl(canvas: HTMLCanvasElement): string {
-  return canvas.toDataURL('image/png');
+// Hook que converte canvas → dataURL de forma segura e assíncrona
+function useCanvasDataUrl(
+  canvas: HTMLCanvasElement | null | undefined,
+  version: number
+) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+      setDataUrl(null);
+      return;
+    }
+    // Pequeno delay para garantir que o canvas terminou de renderizar
+    const timer = setTimeout(() => {
+      try {
+        const url = canvas.toDataURL('image/png');
+        // Verifica se não é um canvas em branco/preto
+        if (url && url.length > 100) {
+          setDataUrl(url);
+        }
+      } catch (e) {
+        console.warn('toDataURL failed', e);
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [canvas, version]);
+
+  return dataUrl;
 }
 
 function useUvTexture(
   url: string | null,
-  canvas: HTMLCanvasElement | null | undefined,
+  dataUrl: string | null,
   version = 0
 ) {
   const texRef = useRef<THREE.Texture | null>(null);
-  const prevVersion = useRef(-1);
+  const prevKey = useRef('');
 
   return useMemo(() => {
-    // Se temos canvas com conteúdo
-    if (canvas && canvas.width > 0 && canvas.height > 0) {
-      // Tenta usar CanvasTexture primeiro (desktop)
-      // Se versão mudou, recria a textura para garantir update no mobile
-      if (prevVersion.current !== version || !texRef.current) {
-        prevVersion.current = version;
-        // Converte para dataURL para compatibilidade mobile
-        try {
-          const dataUrl = canvasToDataUrl(canvas);
-          const loader = new THREE.TextureLoader();
-          const t = loader.load(dataUrl);
-          t.colorSpace = THREE.SRGBColorSpace;
-          t.anisotropy = 4;
-          t.flipY = false;
-          t.needsUpdate = true;
-          texRef.current = t;
-          return t;
-        } catch {
-          // fallback: CanvasTexture
-          const t = new THREE.CanvasTexture(canvas);
-          t.colorSpace = THREE.SRGBColorSpace;
-          t.anisotropy = 4;
-          t.flipY = false;
-          t.needsUpdate = true;
-          texRef.current = t;
-          return t;
-        }
-      }
-      if (texRef.current) {
-        texRef.current.needsUpdate = true;
-        return texRef.current;
-      }
+    const key = dataUrl ? `data-${version}` : url ? `url-${url}` : '';
+
+    if (!key) {
+      texRef.current = null;
+      return null;
     }
 
-    texRef.current = null;
-    if (!url) return null;
+    // Só recria se a chave mudou
+    if (prevKey.current === key && texRef.current) {
+      return texRef.current;
+    }
+    prevKey.current = key;
 
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
-    const t = loader.load(url);
+    const src = dataUrl || url!;
+    const t = loader.load(src);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 4;
     t.flipY = false;
-    t.wrapS = THREE.RepeatWrapping;
-    t.wrapT = THREE.RepeatWrapping;
     t.needsUpdate = true;
+    texRef.current = t;
     return t;
-  }, [url, canvas, version]);
+  }, [url, dataUrl, version]);
 }
 
 function ShirtModel({
@@ -105,7 +105,9 @@ function ShirtModel({
     (loader as GLTFLoader).setMeshoptDecoder(MeshoptDecoder);
   });
 
-  const uvTex = useUvTexture(uvImage, uvCanvas, uvVersion);
+  // Converte canvas para dataURL de forma segura (resolve mobile)
+  const dataUrl = useCanvasDataUrl(uvCanvas, uvVersion ?? 0);
+  const uvTex = useUvTexture(uvImage, dataUrl, uvVersion);
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   useEffect(() => {
@@ -178,8 +180,10 @@ export default function Shirt3DPreview({
   const hasUv = !!uvImage || !!uvCanvas;
 
   return (
-    <div className={cn("w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner", className)}
-      style={{ background: canvasBg }}>
+    <div
+      className={cn('w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner', className)}
+      style={{ background: canvasBg }}
+    >
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
