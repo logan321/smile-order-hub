@@ -662,7 +662,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const effectiveUvUrl = useMemo(() => {
     if (appliedStamp?.uvMapUrl) return appliedStamp.uvMapUrl;
     
-    // Se a estampa não tem UV direta, tenta buscar na biblioteca UV pelo código (nome da estampa)
+    // Busca por ID vinculado na estampa
+    if (appliedStamp?.uvMapId) {
+      const uv = uvMaps.find(u => u.id === appliedStamp.uvMapId);
+      if (uv?.image_url) return uv.image_url;
+    }
+
+    // Busca por código (nome da estampa == código do UV)
     if (appliedStamp && uvMaps.length > 0) {
       const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
       if (matchingUv?.image_url) return matchingUv.image_url;
@@ -670,6 +676,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     
     return selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
   }, [appliedStamp, uvMaps, selectedTemplate, fallbackUvUrl]);
+
+  const effectiveUvMapId = useMemo(() => {
+    if (appliedStamp?.uvMapId) return appliedStamp.uvMapId;
+    if (appliedStamp && uvMaps.length > 0) {
+      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
+      if (matchingUv) return matchingUv.id;
+    }
+    return selectedTemplate?.uvMapId;
+  }, [appliedStamp, uvMaps, selectedTemplate]);
 
   const uvComposite = useUvCompositor({
     baseUrl: effectiveUvUrl,
