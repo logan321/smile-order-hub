@@ -426,9 +426,8 @@ const AdminConfigPage = () => {
                       }}
                     >
                       <div className="flex items-center gap-2">
-                        <img 
-                          src={localValues['logo_url'] ?? currentConfigs['logo_url']} 
-                          alt="Logo" 
+                        <ConfigIcon 
+                          icon={localValues['logo_url'] ?? currentConfigs['logo_url']} 
                           className="h-5 w-auto"
                         />
                         <span className="font-bold text-sm">
