@@ -18,13 +18,17 @@ export const ConfigIcon: React.FC<ConfigIconProps> = ({ icon, className, style, 
         setIsUrl(true);
         // Tentar fetch se for SVG ou se não tiver extensão (pode ser um objeto do storage sem extensão no nome)
         const lowerIcon = icon.toLowerCase();
-        if (lowerIcon.endsWith('.svg') || lowerIcon.includes('image/svg+xml') || !lowerIcon.includes('.')) {
+        // Remove query parameters for extension check
+        const cleanUrl = lowerIcon.split('?')[0];
+        
+        if (cleanUrl.endsWith('.svg') || lowerIcon.includes('image/svg+xml') || !cleanUrl.includes('.')) {
           try {
-            const response = await fetch(icon);
+            const response = await fetch(icon, { cache: 'no-cache' });
             const contentType = response.headers.get('content-type');
             const text = await response.text();
             
             if (text.includes('<svg') || (contentType && contentType.includes('svg'))) {
+              // Ensure we have some viewBox or dimensions if possible, or just force fill
               setSvgContent(text);
             } else {
               setSvgContent(null);
