@@ -174,6 +174,7 @@ function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
 }
 
 const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
+  const isMobile = useIsMobile();
   const { userId: urlUserId } = useParams<{ userId: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
   const backCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -182,6 +183,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
   const [showUvPanel, setShowUvPanel] = useState(true);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [allTemplates, setAllTemplates] = useState<Template[]>([]);
