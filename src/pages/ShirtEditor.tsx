@@ -807,35 +807,43 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
-      <header className="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white shrink-0 z-50">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900"><ChevronLeft className="w-5 h-5" /></Button>
-          <ConfigIcon icon={configs['logo_url']?.trim() || logoOriginal} className="h-6 w-auto" style={{ objectFit: 'contain' }} />
-          <div className="h-4 w-px bg-gray-200 mx-2" />
-          <span className="font-bold text-gray-800 text-sm uppercase tracking-wide">{selectedTemplate.name}</span>
+      <header className="h-12 lg:h-14 border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-50">
+        <div className="flex items-center gap-2 lg:gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900 p-1 lg:p-2"><ChevronLeft className="w-4 h-4 lg:w-5 lg:h-5" /></Button>
+          <ConfigIcon icon={configs['logo_url']?.trim() || logoOriginal} className="h-5 lg:h-6 w-auto" style={{ objectFit: 'contain' }} />
+          <div className="h-4 w-px bg-gray-200 mx-1 lg:mx-2" />
+          <span className="font-bold text-gray-800 text-[10px] lg:text-sm uppercase tracking-wide truncate max-w-[120px] lg:max-w-none">{selectedTemplate.name}</span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+        <div className="flex items-center gap-2 lg:gap-4">
+          <span className="text-[8px] lg:text-[10px] font-bold text-gray-400 uppercase tracking-tighter hidden md:block">
             {getConfig('modo_simulador_label', 'Modo: 3D Simulator v2')}
           </span>
+          <Button 
+            onClick={handleWhatsAppQuote} 
+            size="sm"
+            className="h-8 lg:h-10 px-3 lg:px-6 text-white font-black rounded-lg lg:rounded-xl shadow-md text-[9px] lg:text-xs uppercase tracking-widest gap-1 lg:gap-2" 
+            style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
+          >
+             {getConfig('orcamento_button_text', 'ORÇAMENTO')} <ChevronLeft className="w-3 h-3 rotate-180" />
+          </Button>
         </div>
       </header>
 
       {/* PARTE 1 — Barra de nichos no topo */}
-      <div id="nav-nichos" className="h-[100px] flex items-center px-4 relative shrink-0 z-40" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
-        <button className="absolute left-2 z-10 p-2 text-white/50 hover:text-white transition-colors">
-          <ChevronLeft className="w-8 h-8" />
+      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+        <button className="absolute left-1 lg:left-2 z-10 p-1 lg:p-2 text-white/50 hover:text-white transition-colors hidden lg:block">
+          <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
         
-        <ul className="flex-1 flex items-center justify-start gap-6 px-10 overflow-x-auto no-scrollbar scroll-smooth h-full">
+        <ul className="flex-1 flex items-center justify-start gap-3 lg:gap-6 px-4 lg:px-10 overflow-x-auto no-scrollbar scroll-smooth h-full">
           {niches.map(nicho => (
             <li key={nicho.id} className="flex-shrink-0">
               <button
                 onClick={() => handleNichoChange(nicho.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 w-[70px] h-[70px] rounded-full transition-all border-2",
+                  "flex flex-col items-center justify-center gap-0.5 lg:gap-1 w-12 h-12 lg:w-[70px] lg:h-[70px] rounded-full transition-all border-2",
                   nichoAtivo === nicho.id 
-                    ? "bg-white scale-110 shadow-lg" 
+                    ? "bg-white scale-105 lg:scale-110 shadow-lg" 
                     : "bg-transparent text-white border-transparent hover:border-white/30"
                 )}
                 style={{ 
@@ -843,31 +851,31 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   borderColor: nichoAtivo === nicho.id ? getColor(configs, 'primary_color', '#FF5A00') : 'transparent'
                 }}
               >
-                <span className="text-2xl leading-none">{nicho.icon}</span>
-                <span className="text-[9px] font-black uppercase tracking-tighter">{nicho.name}</span>
+                <span className="text-lg lg:text-2xl leading-none">{nicho.icon}</span>
+                <span className="text-[7px] lg:text-[9px] font-black uppercase tracking-tighter">{nicho.name}</span>
               </button>
             </li>
           ))}
         </ul>
 
-        <button className="absolute right-2 z-10 p-2 text-white/50 hover:text-white transition-colors">
-          <ChevronRight className="w-8 h-8" />
+        <button className="absolute right-1 lg:right-2 z-10 p-1 lg:p-2 text-white/50 hover:text-white transition-colors hidden lg:block">
+          <ChevronRight className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
       </div>
 
       {/* PARTE 4 — Miniaturas de estampas no topo */}
-      <div id="faixa-estampas" className="h-20 bg-gray-50 border-b border-gray-100 flex items-center px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
-        <div className="flex gap-3 px-2">
+      <div id="faixa-estampas" className="h-14 lg:h-20 bg-gray-50 border-b border-gray-100 flex items-center px-2 lg:px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
+        <div className="flex gap-2 lg:gap-3 px-1 lg:px-2">
           {stampsFiltrados.map(s => (
             <button
               key={s.id}
               onClick={() => addStamp(s)}
               className={cn(
-                "w-14 h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0",
+                "w-10 h-10 lg:w-14 lg:h-14 rounded-lg bg-white border-2 overflow-hidden transition-all flex-shrink-0",
                 appliedStamp?.id === s.id ? "border-[#FF5A00] scale-105 shadow-md" : "border-gray-100 hover:border-gray-200"
               )}
             >
-              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-1" />
+              <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain p-0.5 lg:p-1" />
             </button>
           ))}
         </div>
