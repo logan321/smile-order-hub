@@ -897,6 +897,31 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 ))}
                               </SelectContent>
                             </Select>
+                            
+                            <Select
+                              value={(s as any).uvMapId || 'none'}
+                              onValueChange={async v => {
+                                try {
+                                  await updateStampUvMapId(s.id, v === 'none' ? null : v);
+                                  toast.success('UV vinculado!');
+                                } catch { toast.error('Erro ao vincular UV'); }
+                              }}
+                            >
+                              <SelectTrigger className="h-7 w-28 text-[10px] flex-shrink-0">
+                                <div className="flex items-center gap-1">
+                                  <Box className={`h-3 w-3 ${(s as any).uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
+                                  <SelectValue placeholder="Matriz UV" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
+                                {uvMaps.map(u => (
+                                  <SelectItem key={u.id} value={u.id} className="text-xs">
+                                    {u.code || u.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </div>
