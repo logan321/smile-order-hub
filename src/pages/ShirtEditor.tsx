@@ -1618,24 +1618,28 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
             {/* Floating Menu Button (Mobile) */}
             <div className="lg:hidden absolute bottom-4 right-4 z-40">
-              <Sheet>
-                <SheetTrigger asChild>
+              <Drawer shouldScaleBackground={false}>
+                <DrawerTrigger asChild>
                   <Button 
                     className="w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90"
                     style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
                   >
                     <Menu className="w-6 h-6 text-white" />
                   </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden">
+                </DrawerTrigger>
+                <DrawerContent 
+                  className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
+                  onPointerDownOutside={(e) => e.preventDefault()}
+                  onInteractOutside={(e) => e.preventDefault()}
+                >
                   <div className="flex flex-col h-full bg-white">
-                    <div className="px-6 py-4 border-b border-gray-100">
+                    <DrawerHeader className="px-6 py-4 border-b border-gray-100">
                       <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                      <h2 className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</h2>
-                    </div>
+                      <DrawerTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</DrawerTitle>
+                    </DrawerHeader>
                     
                     {/* Tabs Horizontal Scroll */}
-                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0">
+                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x">
                       {[
                         { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
                         { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
@@ -1647,9 +1651,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
                         <button
                           key={id}
-                          onClick={() => setActiveTab(id as ToolbarTab)}
+                          onPointerDown={() => setActiveTab(id as ToolbarTab)}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px]",
+                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px] active:scale-95",
                             activeTab === id ? "bg-gray-50 shadow-sm" : "text-gray-400"
                           )}
                         >
@@ -1687,8 +1691,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       </div>
                     </div>
                   </div>
-                </SheetContent>
-              </Sheet>
+                </DrawerContent>
+              </Drawer>
             </div>
           </div>
           
