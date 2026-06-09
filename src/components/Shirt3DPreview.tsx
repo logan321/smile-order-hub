@@ -208,6 +208,10 @@ export default function Shirt3DPreview({
           autoRotateSpeed={1.2}
           minDistance={3}
           maxDistance={8}
+          minPolarAngle={Math.PI / 4}
+          maxPolarAngle={Math.PI / 1.8}
+          minAzimuthAngle={-Math.PI / 4}
+          maxAzimuthAngle={Math.PI / 4}
           enableDamping
           dampingFactor={0.08}
           makeDefault
