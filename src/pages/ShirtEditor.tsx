@@ -1827,11 +1827,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
 
-
-
-      {flyingElement && (
         <div
           style={{
             position: 'fixed',
