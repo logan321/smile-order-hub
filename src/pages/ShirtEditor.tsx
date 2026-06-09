@@ -940,8 +940,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                           <p className="text-[8px] font-bold text-gray-400 uppercase mt-1">Estampa Selecionada</p>
                         </div>
                       </div>
-                      <Button variant="outline" className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-2 border-gray-200 hover:border-[#FF5A00] hover:text-[#FF5A00] transition-all">
-                        Ver todas as estampas
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-2 border-gray-200 transition-all hover:bg-transparent"
+                        style={{ 
+                          borderRadius: getConfig('border_radius_buttons', '12px'),
+                          borderColor: 'var(--border)',
+                        }}
+                      >
+                        {getConfig('ver_todas_estampas_text', 'Ver todas as estampas')}
                       </Button>
                     </div>
                   )}
