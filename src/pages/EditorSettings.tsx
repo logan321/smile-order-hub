@@ -898,56 +898,155 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                   </div>
                 )}
 
-                <div className="space-y-3 border-t border-border/50 pt-4">
-                    <p className="text-sm font-medium">Adicionar nova estampa</p>
-                    <p className="text-xs text-muted-foreground">Frente e costas aparecem como miniatura 2D no editor final. O UV fica vinculado a esta estampa e troca o 3D quando o cliente clicar nela.</p>
-                  <div className="flex gap-2">
-                    <Input value={newStampName} onChange={e => setNewStampName(e.target.value)} placeholder="Nome da estampa" className="flex-1" />
-                    <NicheSelector value={newStampNicheId || 'none'} onChange={v => setNewStampNicheId(v === 'none' ? '' : v)} label="Nicho" />
+                <div className="space-y-4 border-t border-border/50 pt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-6 w-6 rounded-full bg-[#FF5A00] flex items-center justify-center text-white text-[10px] font-black">1</div>
+                    <p className="text-sm font-black uppercase tracking-wider text-gray-700">Passo 1: Cadastrar Estampa (Catálogo)</p>
                   </div>
+                  
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">2D Frente / miniatura *</label>
-                      <div className="border border-dashed border-border rounded-lg p-3">
-                        <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
-                          <Upload className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{stampFrontFile ? stampFrontFile.name : 'Selecionar'}</span>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-400">Código Único (Ex: ESTAMP-001) *</label>
+                      <Input value={newStampCodigo} onChange={e => setNewStampCodigo(e.target.value)} placeholder="Ex: ESTAMP-001" className="h-10 bg-gray-50 border-none rounded-xl font-bold" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-400">Nome da Estampa *</label>
+                      <Input value={newStampName} onChange={e => setNewStampName(e.target.value)} placeholder="Nome da estampa" className="h-10 bg-gray-50 border-none rounded-xl font-bold" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-400">Nicho</label>
+                      <NicheSelector value={newStampNicheId || 'none'} onChange={v => setNewStampNicheId(v === 'none' ? '' : v)} label="Selecione o nicho" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-gray-400">Miniatura Frente (PNG/JPG) *</label>
+                      <div className="border-2 border-dashed border-gray-100 rounded-xl p-2 bg-gray-50/50">
+                        <label className="flex flex-col items-center gap-1 cursor-pointer text-center py-1">
+                          <Upload className="h-4 w-4 text-gray-300" />
+                          <span className="text-[9px] font-bold text-gray-400 truncate w-full px-2">
+                            {stampFrontFile ? stampFrontFile.name : 'Clique para enviar'}
+                          </span>
                           <input ref={stampFrontRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampFrontFile(e.target.files?.[0] ?? null)} className="hidden" />
                         </label>
                       </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">2D Costas *</label>
-                      <div className="border border-dashed border-border rounded-lg p-3">
-                        <label className="flex flex-col items-center gap-1 cursor-pointer text-center">
-                          <Upload className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{stampBackFile ? stampBackFile.name : 'Selecionar'}</span>
-                          <input ref={stampBackRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setStampBackFile(e.target.files?.[0] ?? null)} className="hidden" />
-                        </label>
+                  </div>
+
+                  <div className="pt-2">
+                    <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !newStampCodigo.trim()} className="w-full h-11 bg-[#FF5A00] hover:bg-[#FF5A00]/90 text-white font-black rounded-xl uppercase tracking-widest shadow-lg shadow-[#FF5A00]/20">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {uploadingStamp ? 'Enviando...' : 'Finalizar Passo 1: Salvar Estampa'}
+                    </Button>
+                  </div>
+
+                  <div className="mt-8 pt-8 border-t-2 border-dashed border-gray-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="h-6 w-6 rounded-full bg-[#FF5A00] flex items-center justify-center text-white text-[10px] font-black">2</div>
+                      <p className="text-sm font-black uppercase tracking-wider text-gray-700">Passo 2: Vincular Moldes UV ao Código</p>
+                    </div>
+                    <p className="text-[11px] text-gray-400 font-medium mb-6">
+                      Abaixo, selecione uma estampa já cadastrada e envie os moldes de alta resolução exportados do CLO3D.
+                    </p>
+                    
+                    <div className="space-y-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-gray-400">Selecione a Estampa pelo Código *</label>
+                        <Select value={newUvCode} onValueChange={setNewUvCode}>
+                          <SelectTrigger className="h-12 bg-white border-gray-100 rounded-xl font-bold text-xs">
+                            <SelectValue placeholder="Escolha a estampa para vincular o UV" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {stamps.filter(s => s.codigo).map(s => (
+                              <SelectItem key={s.id} value={s.codigo!} className="text-xs font-bold py-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg border border-gray-100 overflow-hidden bg-white shrink-0">
+                                    <img src={s.imageUrl} className="w-full h-full object-contain p-0.5" />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-gray-900 font-black">{s.codigo}</span>
+                                    <span className="text-gray-400 text-[9px] uppercase tracking-tighter">{s.name}</span>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-gray-400">Molde UV Frente (CLO3D) *</label>
+                          <div className="border-2 border-dashed border-gray-100 rounded-xl p-4 bg-white">
+                            <label className="flex flex-col items-center gap-2 cursor-pointer text-center">
+                              <Box className="h-6 w-6 text-gray-300" />
+                              <span className="text-[10px] font-bold text-gray-400">
+                                {newUvFile ? newUvFile.name : 'Selecionar UV Frente'}
+                              </span>
+                              <input ref={newUvFileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setNewUvFile(e.target.files?.[0] ?? null)} className="hidden" />
+                            </label>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase text-gray-400">Molde UV Costas (Opcional)</label>
+                          <div className="border-2 border-dashed border-gray-100 rounded-xl p-4 bg-white opacity-50">
+                            <label className="flex flex-col items-center gap-2 cursor-pointer text-center">
+                              <Box className="h-6 w-6 text-gray-300" />
+                              <span className="text-[10px] font-bold text-gray-400">Em Breve</span>
+                              <input type="file" disabled className="hidden" />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={async () => {
+                          if (!newUvCode) { toast.error('Selecione uma estampa primeiro'); return; }
+                          if (!newUvFile) { toast.error('Envie o arquivo do molde UV'); return; }
+                          
+                          // Validação extra: verificar se o código existe em stamps localmente
+                          const stampExists = stamps.some(s => s.codigo === newUvCode);
+                          if (!stampExists) {
+                            toast.error(`A estampa com código ${newUvCode} não foi encontrada no catálogo. Cadastre-a no Passo 1.`);
+                            return;
+                          }
+
+                          setUploadingUv(true);
+                          try {
+                            // Usar a nova tabela uv_data via hook useUvLibrary atualizado ou chamada direta
+                            const ts = Date.now();
+                            const path = `${effectiveUserId}/uv-data/${ts}_${newUvFile.name}`;
+                            const { error: upErr } = await supabase.storage.from('stamp-catalog').upload(path, newUvFile);
+                            if (upErr) throw upErr;
+                            const imageUrl = supabase.storage.from('stamp-catalog').getPublicUrl(path).data.publicUrl;
+                            
+                            const { error } = await supabase.from('uv_data').upsert({
+                              user_id: effectiveUserId,
+                              codigo: newUvCode,
+                              uv_frente_url: imageUrl,
+                            }, { onConflict: 'codigo' });
+                            
+                            if (error) throw error;
+                            
+                            setNewUvCode('');
+                            setNewUvFile(null);
+                            if (newUvFileRef.current) newUvFileRef.current.value = '';
+                            toast.success('Molde UV vinculado com sucesso!');
+                          } catch (e: any) {
+                            toast.error(e?.message || 'Erro ao salvar UV');
+                          } finally {
+                            setUploadingUv(false);
+                          }
+                        }} 
+                        disabled={uploadingUv || !newUvCode || !newUvFile} 
+                        className="w-full h-11 bg-gray-900 hover:bg-black text-white font-black rounded-xl uppercase tracking-widest"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {uploadingUv ? 'Vinculando...' : 'Finalizar Passo 2: Vincular UV'}
+                      </Button>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Shirt className="h-3 w-3" /> Template (modelagem) vinculado *
-                    </label>
-                    <Select value={newStampTemplateId} onValueChange={setNewStampTemplateId}>
-                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione o template desta estampa" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none" className="text-xs">Sem template</SelectItem>
-                        {templates.map(t => (
-                          <SelectItem key={t.id} value={t.id} className="text-xs">
-                            {t.name}{t.uvMapId ? ' • UV ✓' : ' • sem UV'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">Ao escolher esta estampa no editor, o 3D usa o UV e as zonas do template vinculado. Cadastre o UV matriz e marque as zonas pelo botão <MapPin className="h-3 w-3 inline" /> em "Camisas em Branco".</p>
-                  </div>
-                  <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {uploadingStamp ? 'Enviando...' : 'Adicionar Estampa'}
-                  </Button>
                 </div>
               </>
             )}
