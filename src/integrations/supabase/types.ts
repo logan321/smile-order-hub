@@ -584,10 +584,12 @@ export type Database = {
           active: boolean
           back_image_url: string | null
           category: string
+          codigo: string | null
           created_at: string
           id: string
           image_url: string
           layer_mapping: Json | null
+          miniatura_frente_url: string | null
           name: string
           niche_id: string | null
           template_id: string | null
@@ -599,10 +601,12 @@ export type Database = {
           active?: boolean
           back_image_url?: string | null
           category?: string
+          codigo?: string | null
           created_at?: string
           id?: string
           image_url: string
           layer_mapping?: Json | null
+          miniatura_frente_url?: string | null
           name: string
           niche_id?: string | null
           template_id?: string | null
@@ -614,10 +618,12 @@ export type Database = {
           active?: boolean
           back_image_url?: string | null
           category?: string
+          codigo?: string | null
           created_at?: string
           id?: string
           image_url?: string
           layer_mapping?: Json | null
+          miniatura_frente_url?: string | null
           name?: string
           niche_id?: string | null
           template_id?: string | null
@@ -1071,6 +1077,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      uv_data: {
+        Row: {
+          codigo: string
+          created_at: string
+          id: string
+          user_id: string | null
+          uv_costas_url: string | null
+          uv_frente_url: string | null
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+          uv_costas_url?: string | null
+          uv_frente_url?: string | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+          uv_costas_url?: string | null
+          uv_frente_url?: string | null
+        }
+        Relationships: []
       }
       uv_maps: {
         Row: {

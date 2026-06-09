@@ -50,6 +50,8 @@ interface Stamp {
   name: string;
   category: string;
   imageUrl: string;
+  miniaturaFrenteUrl?: string | null;
+  codigo?: string | null;
   backImageUrl: string | null;
   uvMapUrl?: string | null;
   uvMapId?: string | null;
@@ -442,9 +444,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       }
 
       setStamps((stampsRes.data as any[])?.map(s => ({
-        id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
-        uvMapUrl: s.uv_map_url,
-        uvMapId: s.uv_map_id,
+        id: s.id, 
+        name: s.name, 
+        category: s.category, 
+        imageUrl: s.miniatura_frente_url || s.image_url, 
+        miniaturaFrenteUrl: s.miniatura_frente_url,
+        codigo: s.codigo,
+        backImageUrl: s.back_image_url ?? null,
         nicheId: s.niche_id ?? null,
       })) ?? []);
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
@@ -697,8 +703,24 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     setUvTextureVersion(v => v + 1);
   }, [appliedStamp?.id, selectedTemplate?.id]);
 
-  const addStamp = (stamp: Stamp) => {
+  const addStamp = async (stamp: Stamp) => {
     setAppliedStamp(stamp);
+    
+    // Buscar UV pelo código se a estampa tiver código
+    if (stamp.codigo) {
+      const { data, error } = await supabase
+        .from('uv_data')
+        .select('uv_frente_url, uv_costas_url')
+        .eq('codigo', stamp.codigo)
+        .maybeSingle();
+        
+      if (!error && data) {
+        setAppliedStamp(prev => prev ? ({
+          ...prev,
+          uvMapUrl: data.uv_frente_url
+        }) : null);
+      }
+    }
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
