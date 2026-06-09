@@ -715,24 +715,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     setUvTextureVersion(v => v + 1);
   }, [appliedStamp?.id, selectedTemplate?.id]);
 
-  const addStamp = async (stamp: Stamp) => {
+  const addStamp = (stamp: Stamp) => {
     setAppliedStamp(stamp);
-    
-    // Buscar UV pelo código se a estampa tiver código
-    if (stamp.codigo) {
-      const { data, error } = await supabase
-        .from('uv_data')
-        .select('uv_frente_url, uv_costas_url')
-        .eq('codigo', stamp.codigo)
-        .maybeSingle();
-        
-      if (!error && data) {
-        setAppliedStamp(prev => prev ? ({
-          ...prev,
-          uvMapUrl: data.uv_frente_url
-        }) : null);
-      }
-    }
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
