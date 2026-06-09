@@ -24,6 +24,7 @@ interface Shirt3DPreviewProps {
   className?: string;
   animatingElement?: any;
   onAnimationComplete?: () => void;
+  isUvReady?: boolean;
 }
 
 function useUvTexture(url: string | null, canvas: HTMLCanvasElement | null | undefined, version = 0) {
