@@ -230,24 +230,27 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
 
   const effectiveUvUrl = useMemo(() => {
+    // 1. Preferência absoluta: URL da estampa aplicada (se existir)
     if (appliedStamp?.uvMapUrl) return appliedStamp.uvMapUrl;
     
-    // Busca por ID vinculado na estampa
+    // 2. Busca por ID vinculado na estampa
     if (appliedStamp?.uvMapId) {
       const uv = uvMaps.find(u => u.id === appliedStamp.uvMapId);
       if (uv?.image_url) return uv.image_url;
     }
 
-    // Busca por código (nome da estampa == código do UV)
+    // 3. Busca por código (nome da estampa == código do UV)
     if (appliedStamp && uvMaps.length > 0) {
       const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
       if (matchingUv?.image_url) return matchingUv.image_url;
     }
     
+    // 4. Fallback para o template (ou padrão do sistema)
     return selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
   }, [appliedStamp, uvMaps, selectedTemplate, fallbackUvUrl]);
 
   const effectiveUvMapId = useMemo(() => {
+    // Mesma lógica de prioridade para o ID
     if (appliedStamp?.uvMapId) return appliedStamp.uvMapId;
     if (appliedStamp && uvMaps.length > 0) {
       const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
@@ -255,6 +258,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     }
     return selectedTemplate?.uvMapId;
   }, [appliedStamp, uvMaps, selectedTemplate]);
+
 
 
   const stampsFiltrados = useMemo(() => {
