@@ -1628,12 +1628,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                   </Button>
                 </DrawerTrigger>
                 <DrawerContent 
-                  className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
-                  onPointerDownOutside={(e) => e.preventDefault()}
-                  onInteractOutside={(e) => e.preventDefault()}
+                  className="h-[85vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
                 >
                   <div className="flex flex-col h-full bg-white">
-                    <DrawerHeader className="px-6 py-4 border-b border-gray-100">
+                    <DrawerHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
                       <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
                       <DrawerTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</DrawerTitle>
                     </DrawerHeader>
@@ -1651,19 +1649,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
                         <button
                           key={id}
-                          onPointerDown={() => setActiveTab(id as ToolbarTab)}
+                          onClick={() => setActiveTab(id as ToolbarTab)}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[80px] active:scale-95",
+                            "flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl transition-all min-w-[90px] min-h-[44px] active:scale-95",
                             activeTab === id ? "bg-gray-50 shadow-sm" : "text-gray-400"
                           )}
                         >
                           <ConfigIcon 
                             icon={getIcon(configs, `icon_${id}`, Icon)} 
-                            className="w-6 h-6" 
+                            className="w-6 h-6 pointer-events-none" 
                             style={{ color: activeTab === id ? getColor(configs, 'primary_color', '#FF5A00') : undefined }}
                           />
                           <span className={cn(
-                            "text-[8px] font-black uppercase tracking-tighter",
+                            "text-[8px] font-black uppercase tracking-tighter pointer-events-none",
                             activeTab === id ? "text-gray-900" : "text-gray-400"
                           )}>{label}</span>
                         </button>
@@ -1671,17 +1669,17 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     </div>
 
                     {/* Content Vertical Scroll */}
-                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-20 touch-pan-y">
+                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 touch-pan-y">
                       <div id="mobile-sidebar-content">
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {activeTab === 'stamps' && (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-3">
                               {stampsFiltrados.map(s => (
                                 <button
                                   key={s.id}
-                                  onPointerDown={() => addStamp(s)}
+                                  onClick={() => addStamp(s)}
                                   className={cn(
-                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95",
+                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
                                     appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
                                   )}
                                 >
@@ -1690,26 +1688,94 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                               ))}
                             </div>
                           )}
+                          
                           {(activeTab as string) === 'text' && (
                             <div className="space-y-4">
                               {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo'].includes(k)).map((zoneKey) => (
-                                <div key={zoneKey} className="space-y-2">
-                                  <label className="text-[10px] font-black uppercase text-gray-400">{zoneKey}</label>
+                                <div key={zoneKey} className="space-y-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                  <label className="text-[10px] font-black uppercase text-gray-400 block">{zoneKey}</label>
                                   <Input
                                     value={uvTextDrafts[zoneKey] ?? ''}
                                     onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
                                     placeholder="Digite aqui..."
-                                    className="h-12 bg-gray-50 border-none rounded-xl font-bold"
+                                    className="h-12 bg-white border-none rounded-xl font-bold shadow-sm"
                                   />
                                 </div>
                               ))}
                             </div>
                           )}
-                          {/* Fallback para outras abas que usam a mesma lógica da sidebar desktop */}
-                          {!['stamps', 'text'].includes(activeTab as string) && (
-                            <div className="text-center py-8">
-                               <p className="font-bold text-gray-800">Aba em desenvolvimento</p>
-                               <p className="text-xs text-gray-400">Esta seção será carregada em breve.</p>
+
+                          {activeTab === 'name' && (
+                            <div className="space-y-4">
+                              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">{regrasAtuais.labelNome}</label>
+                                <Input 
+                                  value={uvTextDrafts['costas_topo'] ?? ''}
+                                  onChange={(e) => setUvLayerText('costas_topo', e.target.value)}
+                                  placeholder="Digite o nome..."
+                                  className="h-12 bg-white border-none rounded-xl font-bold shadow-sm"
+                                />
+                                <div className="flex justify-between items-center pt-2">
+                                  <span className="text-[10px] font-bold text-gray-500 uppercase">Tamanho</span>
+                                  <span className="text-[10px] font-black text-[#FF5A00]">{nomeSize}</span>
+                                </div>
+                                <Slider 
+                                  value={[nomeSize]} 
+                                  min={30} 
+                                  max={120} 
+                                  step={1} 
+                                  onValueChange={([v]) => setNomeSize(v)}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {activeTab === 'emblems' && (
+                             <div className="space-y-4">
+                               <div className="p-6 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-4 text-center"
+                                    onClick={() => document.getElementById('escudo-upload-mobile')?.click()}>
+                                 <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                   <Upload className="w-8 h-8 text-[#FF5A00]" />
+                                 </div>
+                                 <div>
+                                   <p className="font-black text-sm text-gray-800 uppercase tracking-widest">Enviar {regrasAtuais.labelEscudo}</p>
+                                   <p className="text-[10px] text-gray-400 font-bold mt-1">PNG, JPG, SVG ou PDF</p>
+                                 </div>
+                                 <input id="escudo-upload-mobile" type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleEscudoUpload(file); }} />
+                               </div>
+                               {escudoImageUrl && (
+                                 <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                                   <img src={escudoImageUrl} className="w-12 h-12 object-contain" />
+                                   <div className="flex-1">
+                                     <p className="text-[10px] font-black uppercase text-gray-800">{regrasAtuais.labelEscudo} ativo</p>
+                                     <button onClick={() => setEscudoImageUrl(null)} className="text-[10px] font-bold text-red-500 uppercase mt-1">Remover</button>
+                                   </div>
+                                 </div>
+                               )}
+                             </div>
+                          )}
+
+                          {activeTab === 'logo' && (
+                             <div className="grid grid-cols-2 gap-4">
+                               {['peito_centro', 'costas_centro'].map(zoneKey => (
+                                 <div key={zoneKey} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col gap-3">
+                                   <label className="text-[10px] font-black text-gray-400 uppercase text-center block">{zoneKey.replace('_', ' ')}</label>
+                                   <Input 
+                                      value={uvTextDrafts[zoneKey] ?? ''}
+                                      onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                                      placeholder="00"
+                                      className="h-12 bg-white border-none rounded-xl font-bold text-center text-xl shadow-sm"
+                                   />
+                                 </div>
+                               ))}
+                             </div>
+                          )}
+
+                          {/* Fallback para abas não customizadas mobile */}
+                          {!['stamps', 'text', 'name', 'emblems', 'logo'].includes(activeTab as string) && (
+                            <div className="text-center py-12">
+                               <p className="font-black text-gray-800 uppercase tracking-widest text-sm">Seção {activeTab}</p>
+                               <p className="text-xs text-gray-400 mt-2 font-medium">Use as ferramentas na sidebar desktop para configurações avançadas.</p>
                             </div>
                           )}
                         </div>
