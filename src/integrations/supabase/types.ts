@@ -529,7 +529,6 @@ export type Database = {
           created_at: string
           front_image_url: string
           id: string
-          is_default: boolean | null
           name: string
           niche_id: string | null
           user_id: string
@@ -542,7 +541,6 @@ export type Database = {
           created_at?: string
           front_image_url: string
           id?: string
-          is_default?: boolean | null
           name: string
           niche_id?: string | null
           user_id: string
@@ -555,7 +553,6 @@ export type Database = {
           created_at?: string
           front_image_url?: string
           id?: string
-          is_default?: boolean | null
           name?: string
           niche_id?: string | null
           user_id?: string

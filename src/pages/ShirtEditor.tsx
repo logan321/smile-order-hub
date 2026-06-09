@@ -132,21 +132,20 @@ const REGRAS_NICHO = {
     labelNome: 'Nome',
   },
   pesca: {
-    temNumero: true,
+    temNumero: false,
     temNome: true,
     temEscudo: true,
     labelEscudo: 'Logo',
     labelNome: 'Nome',
   },
   ciclismo: {
-    temNumero: true,
+    temNumero: false,
     temNome: true,
     temEscudo: true,
     labelEscudo: 'Logo',
     labelNome: 'Nome',
   },
 };
-
 
 const getRegraNicho = (nichoId: string) => {
   return REGRAS_NICHO[nichoId as keyof typeof REGRAS_NICHO] || REGRAS_NICHO.futebol;
@@ -189,7 +188,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
-  const [uvMaps, setUvMaps] = useState<any[]>([]);
 
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(70);
@@ -228,38 +226,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [debouncedEscudoOffsetY, setDebouncedEscudoOffsetY] = useState(0);
 
   const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo), [nichoAtivo]);
-
-  const effectiveUvUrl = useMemo(() => {
-    // 1. Preferência absoluta: URL da estampa aplicada (se existir)
-    if (appliedStamp?.uvMapUrl) return appliedStamp.uvMapUrl;
-    
-    // 2. Busca por ID vinculado na estampa
-    if (appliedStamp?.uvMapId) {
-      const uv = uvMaps.find(u => u.id === appliedStamp.uvMapId);
-      if (uv?.image_url) return uv.image_url;
-    }
-
-    // 3. Busca por código (nome da estampa == código do UV)
-    if (appliedStamp && uvMaps.length > 0) {
-      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
-      if (matchingUv?.image_url) return matchingUv.image_url;
-    }
-    
-    // 4. Fallback para o template (ou padrão do sistema)
-    return selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
-  }, [appliedStamp, uvMaps, selectedTemplate, fallbackUvUrl]);
-
-  const effectiveUvMapId = useMemo(() => {
-    // Mesma lógica de prioridade para o ID
-    if (appliedStamp?.uvMapId) return appliedStamp.uvMapId;
-    if (appliedStamp && uvMaps.length > 0) {
-      const matchingUv = uvMaps.find(m => m.code === appliedStamp.name);
-      if (matchingUv) return matchingUv.id;
-    }
-    return selectedTemplate?.uvMapId;
-  }, [appliedStamp, uvMaps, selectedTemplate]);
-
-
 
   const stampsFiltrados = useMemo(() => {
     if (!nichoAtivo) return stamps;
@@ -470,30 +436,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setAllTemplates(rawTemplates);
       setTemplates(rawTemplates);
       
-      // Prioriza o template definido como padrão pelo admin (is_default)
-      if (rawTemplates.length > 0) {
-        const defaultTemplate = (templatesRes.data as any[])?.find(t => t.is_default);
-        
-        if (defaultTemplate) {
-          const mappedDefault = rawTemplates.find(t => t.id === defaultTemplate.id);
-          if (mappedDefault) {
-            setSelectedTemplate(mappedDefault);
-          } else {
-            // Fallback para o melhor template se o padrão não for encontrado nas permissões
-            const bestTemplate = rawTemplates.find(t => t.uvMapId || t.uvMapUrl) || rawTemplates[0];
-            setSelectedTemplate(bestTemplate);
-          }
-        } else {
-          // Se não houver padrão definido, não seleciona nada automaticamente (mostra tela de aguardando)
-          setSelectedTemplate(null);
-        }
+      // Se houver apenas um template, seleciona-o automaticamente
+      if (rawTemplates.length === 1) {
+        setSelectedTemplate(rawTemplates[0]);
       }
 
       setStamps((stampsRes.data as any[])?.map(s => ({
         id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, backImageUrl: s.back_image_url ?? null,
         uvMapUrl: s.uv_map_url,
-        uvMapId: s.uv_map_id,
-        templateId: s.template_id,
         nicheId: s.niche_id ?? null,
       })) ?? []);
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
@@ -505,7 +455,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         backgroundImageUrl: n.background_image_url || ''
       })) ?? [];
       setNiches(loadedNiches);
-      setUvMaps(uvMapsRes.data || []);
       
       if (loadedNiches.length > 0 && !nichoAtivo) {
         setNichoAtivo(loadedNiches[0].id);
@@ -517,7 +466,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     let cancelled = false;
-    const uvMapId = effectiveUvMapId;
+    const uvMapId = selectedTemplate?.uvMapId;
     if (!uvMapId) { setUvMapZones({}); setUvMapDims({ w: null, h: null }); setUvLayers([]); return; }
     (async () => {
       const { data } = await supabase
@@ -529,12 +478,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
-      // setUvLayers([]); // Removido para evitar que as camadas sumam ao trocar de estampa
-
-
+      setUvLayers([]);
+      setUvTextDrafts({});
     })();
     return () => { cancelled = true; };
-  }, [effectiveUvMapId]);
+  }, [selectedTemplate?.uvMapId]);
 
   const moveElementRef = useRef<any>(null);
   moveElementRef.current = (tipo: 'nome' | 'escudo' | 'numero', novaPosicao: string | null) => {
@@ -634,10 +582,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         
         const layerFont = id.includes('nome') ? nomeFont : id.includes('numero') ? numeroFont : fontFamily;
         
-        const layerBorderColor = id.includes('nome') ? nomeBorderColor :
-                                (id.includes('numero') && zoneKey.startsWith('peito')) ? numeroFrontBorderColor :
-                                (id.includes('numero') && zoneKey.startsWith('costas')) ? numeroBackBorderColor : 'transparent';
-
         const layer: UvLayer = {
           id,
           zoneKey,
@@ -647,8 +591,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           fontFamily: layerFont,
           fontSize: calculatedFontSize,
           fontWeight: 900,
-          strokeColor: layerBorderColor !== 'transparent' ? layerBorderColor : undefined,
-          strokeWidth: layerBorderColor !== 'transparent' ? 4 : 0,
           ...extra
         } as UvLayer;
 
@@ -664,16 +606,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         const numeroContent = uvTextDrafts['numero'] || '10';
         updateOrAddLayer('layer_numero', elementPositions.numero, numeroContent, 'text');
         
-        // O número sempre aparece nas costas, e opcionalmente no peito se a posição for de peito
-        const showBackNumber = true; // Por padrão, sempre mostra nas costas
-        if (showBackNumber && elementPositions.numero !== 'costas_centro') {
-          updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text', {
-            color: numeroBackColor,
-            fontSize: (numeroSize / 100) * (uvMapZones['costas_centro']?.height || 100),
-            fontFamily: numeroFont,
-            strokeColor: numeroBackBorderColor !== 'transparent' ? numeroBackBorderColor : undefined,
-            strokeWidth: numeroBackBorderColor !== 'transparent' ? 4 : 0
-          });
+        // Se o número estiver em uma posição de peito, também pode precisar estar nas costas se o layout for misto? 
+        // Na Jumptec, se o número é "peito_direito", ele ainda costuma ter um número grande nas costas?
+        // O prompt diz: "Número centro frente", "Número peito direito", "Número peito esquerdo".
+        // Mas o seletor de posição de nome diz "Nome costas TOPO + número no centro das costas".
+        // Então o número centro costas parece ser fixo ou implícito quando showNumero é true.
+        if (!elementPositions.numero.startsWith('costas')) {
+             updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text');
         }
       }
 
@@ -691,18 +630,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       Object.keys(uvTextDrafts).forEach(k => {
         if (['nome', 'numero'].includes(k)) return;
         const content = uvTextDrafts[k];
-        if (content) {
-          updateOrAddLayer(`free_${k}`, k, content, 'text');
-        }
+        if (content) updateOrAddLayer(`free_${k}`, k, content, 'text');
       });
 
       return newLayers;
     });
-  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeBorderColor, nomeSize, nomeFont, numeroFrontColor, numeroFrontBorderColor, numeroBackColor, numeroBackBorderColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
-
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
   const uvComposite = useUvCompositor({
-    baseUrl: effectiveUvUrl,
+    baseUrl: (appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl) ? toProxyUrl(appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl!) : null,
     zones: uvMapZones,
     layers: uvLayers,
     uvWidth: uvMapDims.w,
@@ -770,10 +706,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   if (!selectedTemplate) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aguardando Template...</p>
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8 text-center text-gray-800 uppercase tracking-widest">Escolha o seu modelo</h1>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {templates.map(t => (
+              <button key={t.id} onClick={() => setSelectedTemplate(t)} className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all">
+                <div className="p-4"><img src={toProxyUrl(t.frontImageUrl)} className="w-full aspect-[3/4] object-contain rounded-xl bg-gray-50" /></div>
+                <div className="p-4 border-t border-gray-50 bg-gray-50/50">
+                  <p className="font-bold text-gray-700 truncate">{t.name}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -826,7 +771,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       {/* PARTE 4 — Miniaturas de estampas no topo */}
       <div id="faixa-estampas" className="h-20 bg-gray-50 border-b border-gray-100 flex items-center px-4 overflow-x-auto no-scrollbar shrink-0 z-40">
         <div className="flex gap-3 px-2">
-          {stamps.map(s => (
+          {stampsFiltrados.map(s => (
             <button
               key={s.id}
               onClick={() => addStamp(s)}
@@ -1379,50 +1324,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
                   {activeTab === 'text' && (
                     <div className="space-y-4">
-                      {Object.keys(uvMapZones).map((zoneKey) => {
-                        // Filtramos apenas zonas que não são as padrão de nome/número/escudo para evitar duplicidade na UI
-                        // mas permitimos que o usuário digite nelas se desejar (opcional)
-                        const isMainZone = ['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo'].includes(zoneKey);
-                        
-                        return (
-                          <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">
-                                {zoneKey.replace('_', ' ')} {isMainZone ? '(Principal)' : ''}
-                              </span>
-                              <div className="flex gap-1">
-                                <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400">
-                                  <Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
-                                </button>
-                                <button onClick={() => {
-                                  setUvLayerText(zoneKey, '');
-                                  setUvLayers(prev => prev.filter(l => l.zoneKey !== zoneKey));
-                                }} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400">
-                                  <Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Input
-                                value={uvTextDrafts[zoneKey] ?? ''}
-                                onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                                placeholder={`Texto em ${zoneKey}...`}
-                                className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20 flex-1"
-                              />
-                              <input 
-                                id={`uv-file-${zoneKey}`} 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={(e) => { 
-                                  const file = e.target.files?.[0]; 
-                                  if (file) setUvLayerImage(zoneKey, file); 
-                                }} 
-                              />
+                      {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo', 'manga_esquerda', 'manga_direita'].includes(k)).map((zoneKey) => (
+                        <div key={zoneKey} className="p-3 lg:p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2 lg:space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[8px] lg:text-[9px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
+                            <div className="flex gap-1">
+                               <button onClick={() => document.getElementById(`uv-file-${zoneKey}`)?.click()} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Upload className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
+                               <button onClick={() => setUvLayerText(zoneKey, '')} className="p-1 hover:bg-gray-50 rounded-lg text-gray-400"><Trash2 className="w-3 lg:w-3.5 h-3 lg:h-3.5" /></button>
                             </div>
                           </div>
-                        );
-                      })}
+                          <Input
+                            value={uvTextDrafts[zoneKey] ?? ''}
+                            onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
+                            placeholder={`Digite aqui...`}
+                            className="h-8 lg:h-10 bg-gray-50 border-none rounded-xl font-medium text-[10px] lg:text-xs focus-visible:ring-1 focus-visible:ring-[#FF5A00]/20"
+                          />
+                        </div>
+                      ))}
                     </div>
                   )}
 

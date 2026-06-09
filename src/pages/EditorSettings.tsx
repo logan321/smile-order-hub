@@ -16,7 +16,6 @@ import { useUvLibrary } from '@/hooks/useUvLibrary';
 import UvZoneAdminEditor from '@/components/UvZoneAdminEditor';
 import ZoneEditor from '@/components/ZoneEditor';
 import Zone3DEditor from '@/components/Zone3DEditor';
-import { cn } from '@/lib/utils';
 
 interface EditorSettingsProps {
   targetUserId?: string;
@@ -26,7 +25,7 @@ interface EditorSettingsProps {
 const isLikelyStampCode = (name: string) => /^[A-Za-z]{0,6}[-_.]?\d{1,6}[A-Za-z]{0,3}$/i.test(name.trim());
 
 const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {}) => {
-  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, toggleDefault, fetchTemplates } = useShirtTemplates(targetUserId);
+  const { templates, loading: templatesLoading, addTemplate, deleteTemplate, toggleActive, updateTemplateUvMapId, fetchTemplates } = useShirtTemplates(targetUserId);
   const { stamps, loading: stampsLoading, addStamp, deleteStamp, updateStampUvMapId, updateStampTemplateId, fetchStamps } = useStampCatalog(targetUserId);
   const { patches, loading: patchesLoading, addPatch, deletePatch } = usePatchCatalog(targetUserId);
   const { niches, loading: nichesLoading, addNiche, updateNiche, deleteNiche, uploadCoverImage, uploadBackgroundImage } = useNiches(targetUserId);
@@ -608,23 +607,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
         {/* Templates */}
         <TabsContent value="templates">
           <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                Como funciona a projeção 3D?
-              </h3>
-              <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-                <p>
-                  Para que as estampas apareçam no simulador 3D, cada <strong>Template</strong> precisa de uma <strong>Matriz UV</strong> vinculada.
-                </p>
-                <ol className="list-decimal list-inside space-y-1">
-                  <li>Envie a imagem da <strong>Matriz UV</strong> (o molde planificado da camisa) no campo abaixo ao criar o template.</li>
-                  <li>Após criar, use o botão de <strong>Engrenagem</strong> <Pencil className="h-3 w-3 inline" /> ou <strong>Mapear Zonas</strong> <MapPin className="h-3 w-3 inline" /> para definir onde cada parte (frente, costas, mangas) está localizada na matriz.</li>
-                  <li>Templates marcados com <Box className="h-3 w-3 inline text-primary" /> já possuem UV e mostrarão o 3D.</li>
-                </ol>
-              </div>
-            </div>
-
             <div className="flex items-center gap-3 mb-6">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Shirt className="h-5 w-5 text-primary" />
@@ -721,20 +703,11 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                     <Box className="h-3.5 w-3.5 text-amber-600" />
                                   </Button>
                                 </>
-                                );
-                              })()}
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-7 w-7" 
-                                onClick={() => toggleDefault(t.id, !t.isDefault)} 
-                                title={t.isDefault ? 'Remover como padrão' : 'Definir como padrão (abrirá direto no editor)'}
-                              >
-                                <Check className={cn("h-3.5 w-3.5", t.isDefault ? "text-success" : "text-muted-foreground")} />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
-                                {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-                              </Button>
+                              );
+                            })()}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleActive(t.id, !t.active)} title={t.active ? 'Desativar' : 'Ativar'}>
+                              {t.active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (confirm('Remover template?')) deleteTemplate(t.id); }}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
@@ -897,31 +870,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                                 ))}
                               </SelectContent>
                             </Select>
-                            
-                            <Select
-                              value={(s as any).uvMapId || 'none'}
-                              onValueChange={async v => {
-                                try {
-                                  await updateStampUvMapId(s.id, v === 'none' ? null : v);
-                                  toast.success('UV vinculado!');
-                                } catch { toast.error('Erro ao vincular UV'); }
-                              }}
-                            >
-                              <SelectTrigger className="h-7 w-28 text-[10px] flex-shrink-0">
-                                <div className="flex items-center gap-1">
-                                  <Box className={`h-3 w-3 ${(s as any).uvMapId ? 'text-primary' : 'text-muted-foreground'}`} />
-                                  <SelectValue placeholder="Matriz UV" />
-                                </div>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none" className="text-xs">Sem UV</SelectItem>
-                                {uvMaps.map(u => (
-                                  <SelectItem key={u.id} value={u.id} className="text-xs">
-                                    {u.code || u.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </div>
                         </div>
                       </div>
@@ -980,25 +928,7 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">Ao escolher esta estampa no editor, o 3D usa o UV e as zonas do template vinculado.</p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                      <Box className="h-3 w-3" /> Matriz UV (opcional se já no template)
-                    </label>
-                    <Select value={newStampUvMapId} onValueChange={setNewStampUvMapId}>
-                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione a matriz UV desta estampa" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none" className="text-xs">Sem UV específico</SelectItem>
-                        {uvMaps.map(u => (
-                          <SelectItem key={u.id} value={u.id} className="text-xs">
-                            {u.code || u.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[10px] text-muted-foreground mt-1">Define qual "mapa" de projeção será usado no 3D para esta estampa. Se não selecionado, usará o do template acima.</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Ao escolher esta estampa no editor, o 3D usa o UV e as zonas do template vinculado. Cadastre o UV matriz e marque as zonas pelo botão <MapPin className="h-3 w-3 inline" /> em "Camisas em Branco".</p>
                   </div>
                   <Button onClick={handleAddStamp} disabled={uploadingStamp || !newStampName.trim() || !stampFrontFile || !stampBackFile}>
                     <Plus className="h-4 w-4 mr-2" />
