@@ -1423,6 +1423,15 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           {flyingElement.content}
         </div>
       )}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };
