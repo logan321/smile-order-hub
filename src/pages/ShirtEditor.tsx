@@ -507,6 +507,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     fetchData();
   }, [ownerUserId]);
 
+  useEffect(() => {
+    if (stampsFiltrados.length > 0 && !appliedStamp) {
+      addStamp(stampsFiltrados[0]);
+    }
+  }, [stampsFiltrados]);
+
   const prevUvMapIdRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
