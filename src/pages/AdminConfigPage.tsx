@@ -146,9 +146,9 @@ const AdminConfigPage = () => {
           key: configKey, 
           value: publicUrl,
           type: 'image',
-          label: allConfigs.find(c => c.key === configKey)?.label || configKey,
-          category: 'ícones' // Fallback category
-        }, { onConflict: 'key' });
+          label: allConfigs.find((c: any) => c.key === configKey)?.label || configKey,
+          category: 'ícones'
+        } as any, { onConflict: 'key' });
 
       if (dbError) throw dbError;
 
