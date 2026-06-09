@@ -628,6 +628,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         
         const layerFont = id.includes('nome') ? nomeFont : id.includes('numero') ? numeroFont : fontFamily;
         
+        const layerBorderColor = id.includes('nome') ? nomeBorderColor :
+                                (id.includes('numero') && zoneKey.startsWith('peito')) ? numeroFrontBorderColor :
+                                (id.includes('numero') && zoneKey.startsWith('costas')) ? numeroBackBorderColor : 'transparent';
+
         const layer: UvLayer = {
           id,
           zoneKey,
@@ -637,6 +641,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           fontFamily: layerFont,
           fontSize: calculatedFontSize,
           fontWeight: 900,
+          strokeColor: layerBorderColor !== 'transparent' ? layerBorderColor : undefined,
+          strokeWidth: layerBorderColor !== 'transparent' ? 4 : 0,
           ...extra
         } as UvLayer;
 
@@ -654,11 +660,13 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         
         // O número sempre aparece nas costas, e opcionalmente no peito se a posição for de peito
         const showBackNumber = true; // Por padrão, sempre mostra nas costas
-        if (showBackNumber) {
+        if (showBackNumber && elementPositions.numero !== 'costas_centro') {
           updateOrAddLayer('layer_numero_back', 'costas_centro', numeroContent, 'text', {
             color: numeroBackColor,
             fontSize: (numeroSize / 100) * (uvMapZones['costas_centro']?.height || 100),
-            fontFamily: numeroFont
+            fontFamily: numeroFont,
+            strokeColor: numeroBackBorderColor !== 'transparent' ? numeroBackBorderColor : undefined,
+            strokeWidth: numeroBackBorderColor !== 'transparent' ? 4 : 0
           });
         }
       }
@@ -667,7 +675,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       if (elementPositions.escudo) {
         updateOrAddLayer('layer_escudo', elementPositions.escudo, '', 'image', { 
           url: escudoImageUrl || defaultShieldSvg, 
-
           scale: debouncedEscudoScale, 
           offsetX: debouncedEscudoOffsetX,
           offsetY: debouncedEscudoOffsetY,
@@ -685,7 +692,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
       return newLayers;
     });
-  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
+  }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeBorderColor, nomeSize, nomeFont, numeroFrontColor, numeroFrontBorderColor, numeroBackColor, numeroBackBorderColor, numeroSize, numeroFont, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY]);
 
 
   const uvComposite = useUvCompositor({
