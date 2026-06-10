@@ -33,21 +33,32 @@ export type UvLayer =
     };
 
 const imgCache = new Map<string, Promise<HTMLImageElement>>();
-
-async function loadImage(url: string): Promise<HTMLImageElement> {
-  if (imgCache.has(url)) return imgCache.get(url)!;
+function loadImage(url: string): Promise<HTMLImageElement> {
+  const cached = imgCache.get(url);
+  if (cached) return cached;
 
   const p = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
+    // Força crossOrigin anonymous para evitar Canvas Tainted
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
+    
+    img.onload = () => {
+      // Small delay for mobile browsers to ensure the image data is actually accessible
+      setTimeout(() => resolve(img), 10);
+    };
+    
     img.onerror = () => {
-      // Se falhou com anonymous, tenta sem (pode causar canvas tainted mas renderiza)
+      console.warn('CORS loading failed for:', url, 'trying fallback without crossOrigin...');
       const img2 = new Image();
       img2.onload = () => resolve(img2);
-      img2.onerror = reject;
+      img2.onerror = (e) => {
+        console.error('Final image load failed:', url, e);
+        reject(e);
+      };
+      // Fallback: without crossOrigin. The canvas might become "tainted", but at least it renders.
       img2.src = url;
     };
+
     img.src = url;
   });
 
@@ -107,6 +118,7 @@ export async function composeUvTexture(opts: {
     if (layer.type === 'text') {
       const family = layer.fontFamily || 'Arial';
       const weight = layer.fontWeight ?? 700;
+      // auto-fit: pick the largest size where text fits zone.width
       const targetW = zone.width * 0.92 * scale;
       const targetH = zone.height * 0.92 * scale;
       let size = targetH;
@@ -156,15 +168,18 @@ export async function composeUvTexture(opts: {
       try {
         const img = await loadImage(toProxyUrl(layer.url));
         ctx.globalAlpha = layer.opacity ?? 1;
+        // contain
         let zw = (zone?.width ?? w) * scale;
         let zh = (zone?.height ?? h) * scale;
         
+        // Specialized logic for escudo
         if (isEscudo) {
           const uvWidth = opts.uvWidth || base.naturalWidth;
           const sizePx = scale * uvWidth * 0.06;
           zw = sizePx;
           zh = sizePx;
         } else if (isAppliedStamp) {
+          // If it's the main stamp, use full canvas size
           zw = w;
           zh = h;
         }
@@ -174,7 +189,7 @@ export async function composeUvTexture(opts: {
         const dh = img.naturalHeight * ratio;
         ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
       } catch (e) {
-        // ignore
+        // image failed; ignore
       }
     }
     ctx.restore();
