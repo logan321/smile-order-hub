@@ -197,6 +197,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [downloading, setDownloading] = useState(false);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.3, 5.2]);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
