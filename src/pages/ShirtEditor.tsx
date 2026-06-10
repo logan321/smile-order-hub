@@ -194,7 +194,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [nichoAtivo, setNichoAtivo] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
+  const [fetchTimeout, setFetchTimeout] = useState(false);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.3, 5.2]);
@@ -447,25 +447,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     console.log('[DEBUG] ownerUserId logic running, urlUserId:', urlUserId);
+    
+    // Timeout para forçar carregamento se o auth demorar
+    const timeout = setTimeout(() => {
+      if (!ownerUserId) {
+        console.log('[DEBUG] Auth timeout - forcing public fetch');
+        setOwnerUserId('public');
+      }
+    }, 2000);
+
     if (urlUserId) {
       setOwnerUserId(urlUserId);
+      clearTimeout(timeout);
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        setOwnerUserId(session?.user?.id ?? null);
+        if (session?.user?.id) {
+          setOwnerUserId(session.user.id);
+          clearTimeout(timeout);
+        }
       });
     }
+    return () => clearTimeout(timeout);
   }, [urlUserId]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) setFetchTimeout(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  useEffect(() => {
     if (!ownerUserId) return;
+    
     const fetchData = async () => {
       console.log('[DEBUG] fetchData started for ownerUserId:', ownerUserId);
+      
+      let templatesQuery = supabase.from('shirt_templates').select('*').eq('active', true);
+      let stampsQuery = supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('active', true);
+      let nichesQuery = supabase.from('niches').select('*').order('position', { ascending: true });
+      let uvMapsQuery = supabase.from('uv_data').select('id, uv_frente_url, codigo');
+
+      // Se não for carregamento público, filtra por usuário
+      if (ownerUserId !== 'public') {
+        templatesQuery = templatesQuery.eq('user_id', ownerUserId);
+        stampsQuery = stampsQuery.eq('user_id', ownerUserId);
+        nichesQuery = nichesQuery.eq('user_id', ownerUserId);
+        uvMapsQuery = uvMapsQuery.eq('user_id', ownerUserId);
+      }
+
       const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
-        supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-        supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
-        supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
-        supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
+        templatesQuery,
+        stampsQuery,
+        nichesQuery,
+        uvMapsQuery
       ]);
+
+      console.log('[DEBUG] stampsRes.data:', stampsRes.data);
 
       const rawTemplates = (templatesRes.data as any[])?.map(t => ({
         id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
@@ -476,7 +514,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setAllTemplates(rawTemplates);
       setTemplates(rawTemplates);
       
-      // Se houver apenas um template, seleciona-o automaticamente
       if (rawTemplates.length === 1) {
         setSelectedTemplate(rawTemplates[0]);
       }
@@ -491,6 +528,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         backImageUrl: s.back_image_url ?? null,
         nicheId: s.niche_id ?? null,
       })) ?? []);
+
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
         id: n.id,
         name: n.name,
@@ -796,7 +834,21 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            {fetchTimeout ? "Carregando... Se persistir, recarregue a página." : "Carregando Simulador..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (stamps.length === 0 && !loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center p-6">
+          <p className="text-sm font-bold text-gray-800 uppercase tracking-widest mb-4">Nenhuma estampa encontrada.</p>
+          <p className="text-xs text-gray-400 mb-6">Verifique sua conexão ou as configurações do catálogo.</p>
+          <Button onClick={() => window.location.reload()} className="bg-[#FF5A00] text-white font-bold px-8 rounded-xl">Recarregar</Button>
         </div>
       </div>
     );
@@ -1495,6 +1547,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           isMobile ? "h-[100dvh] lg:h-full" : "h-[60vh] lg:h-full"
         )}>
 
+          {/* Catálogo de Estampas Mobile - Sempre Visível no Topo */}
+          {isMobile && (
+            <div className="w-full bg-white/80 backdrop-blur-md border-b border-gray-100 z-40 shrink-0">
+              <div className="flex overflow-x-auto no-scrollbar p-3 gap-3 touch-pan-x">
+                {stampsFiltrados.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => addStamp(s)}
+                    className={cn(
+                      "w-16 h-16 shrink-0 rounded-xl border-2 overflow-hidden transition-all active:scale-95 bg-white",
+                      appliedStamp?.id === s.id ? "border-[#FF5A00] shadow-md" : "border-gray-100"
+                    )}
+                  >
+                    <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 relative">
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
@@ -1683,19 +1755,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       <div id="mobile-sidebar-content">
                         <div className="space-y-6">
                           {activeTab === 'stamps' && (
-                            <div className="grid grid-cols-2 gap-3">
-                              {stampsFiltrados.map(s => (
-                                <button
-                                  key={s.id}
-                                  onClick={() => addStamp(s)}
-                                  className={cn(
-                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
-                                    appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
-                                  )}
-                                >
-                                  <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
-                                </button>
-                              ))}
+                            <div className="text-center py-8">
+                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Use o catálogo no topo da tela</p>
+                               <Button variant="ghost" onClick={() => setIsMobileSheetOpen(false)} className="mt-4 text-[#FF5A00] font-bold">Voltar para Edição</Button>
                             </div>
                           )}
 
