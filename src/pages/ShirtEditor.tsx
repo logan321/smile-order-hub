@@ -729,7 +729,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   console.log('[UV DEBUG] uvLayers count:', uvLayers.length);
 
   const uvComposite = useUvCompositor({
-    baseUrl: activeUvBaseUrl ? toProxyUrl(activeUvBaseUrl) : null,
+    baseUrl: activeUvBaseUrl,
     zones: uvMapZones,
     layers: uvLayers,
     uvWidth: uvMapDims.w,

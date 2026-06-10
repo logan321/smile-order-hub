@@ -41,23 +41,23 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     // Força crossOrigin anonymous para evitar Canvas Tainted
     img.crossOrigin = 'anonymous';
     
-    // Tenta carregar com crossOrigin. Se falhar (ex: Bucket sem CORS), tenta sem crossOrigin como fallback.
-    img.onload = () => resolve(img);
+    img.onload = () => {
+      // Small delay for mobile browsers to ensure the image data is actually accessible
+      setTimeout(() => resolve(img), 10);
+    };
+    
     img.onerror = () => {
-      console.warn('CORS loading failed for:', url, 'trying fallback...');
+      console.warn('CORS loading failed for:', url, 'trying fallback without crossOrigin...');
       const img2 = new Image();
       img2.onload = () => resolve(img2);
       img2.onerror = (e) => {
         console.error('Final image load failed:', url, e);
         reject(e);
       };
-      // No fallback, não usamos crossOrigin. O canvas poderá ficar "tainted" e o .toDataURL() falhará,
-      // mas pelo menos a imagem aparece no canvas inicial.
+      // Fallback: without crossOrigin. The canvas might become "tainted", but at least it renders.
       img2.src = url;
     };
 
-    // No mobile, alguns browsers cacheiam a falha de CORS. Adicionar um cache-bust pode ajudar em alguns casos,
-    // mas aqui confiamos no proxy de imagens que configuramos anteriormente.
     img.src = url;
   });
 
@@ -165,7 +165,7 @@ export async function composeUvTexture(opts: {
       drawText(false);
     } else {
       try {
-        const img = await loadImage(layer.url);
+        const img = await loadImage(toProxyUrl(layer.url));
         ctx.globalAlpha = layer.opacity ?? 1;
         // contain
         let zw = (zone?.width ?? w) * scale;
