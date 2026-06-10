@@ -36,6 +36,25 @@ serve(async (req) => {
     const { priceId, successUrl, cancelUrl } = await req.json();
     console.log('PriceId:', priceId);
 
+    // Validate URLs to prevent open redirect vulnerabilities
+    const origin = req.headers.get('origin');
+    const validateUrl = (url: string, fallback: string) => {
+      if (!url) return fallback;
+      try {
+        const parsed = new URL(url);
+        if (origin && parsed.origin !== origin) {
+          console.warn('Invalid origin for redirect URL:', parsed.origin, 'Expected:', origin);
+          return fallback;
+        }
+        return url;
+      } catch {
+        return fallback;
+      }
+    };
+
+    const finalSuccessUrl = validateUrl(successUrl, `${origin}/configuracoes?payment=success`);
+    const finalCancelUrl = validateUrl(cancelUrl, `${origin}/assinatura?payment=cancelled`);
+
     // Check if user already has a Stripe customer
     const adminSupabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -74,8 +93,8 @@ serve(async (req) => {
       'mode': 'subscription',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
-      'success_url': successUrl || `${req.headers.get('origin')}/configuracoes?payment=success`,
-      'cancel_url': cancelUrl || `${req.headers.get('origin')}/assinatura?payment=cancelled`,
+      'success_url': finalSuccessUrl,
+      'cancel_url': finalCancelUrl,
       'subscription_data[trial_period_days]': '7',
       'metadata[user_id]': userId,
       'payment_method_types[0]': 'card',
