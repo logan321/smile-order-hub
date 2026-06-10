@@ -38,6 +38,7 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
   }
   const [version, setVersion] = useState(0);
   const [ready, setReady] = useState(false);
+  const [dataUrl, setDataUrl] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +60,7 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
       }).then(() => {
         if (cancelled) return;
         setReady(true);
+        setDataUrl(canvasRef.current?.toDataURL('image/png'));
         setVersion(v => v + 1);
       }).catch(err => {
         console.warn('UV composite failed', err);
@@ -73,6 +75,7 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
         }).then(() => {
           if (cancelled) return;
           setReady(true);
+          setDataUrl(canvasRef.current?.toDataURL('image/png'));
           setVersion(v => v + 1);
         }).catch(() => {});
       });
@@ -80,5 +83,5 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [baseUrl, zones, layers, uvWidth, uvHeight]);
 
-  return { canvas: canvasRef.current, version, ready };
+  return { canvas: canvasRef.current, version, ready, dataUrl };
 }
