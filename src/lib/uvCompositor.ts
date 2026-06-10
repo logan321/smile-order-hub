@@ -32,38 +32,28 @@ export type UvLayer =
       opacity?: number;
     };
 
-const imgCache = new Map<string, Promise<HTMLImageElement>>();
-function loadImage(url: string): Promise<HTMLImageElement> {
-  const cached = imgCache.get(url);
-  if (cached) return cached;
-
-  const p = new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    // Força crossOrigin anonymous para evitar Canvas Tainted
-    img.crossOrigin = 'anonymous';
-    
-    img.onload = () => {
-      // Small delay for mobile browsers to ensure the image data is actually accessible
-      setTimeout(() => resolve(img), 10);
-    };
-    
-    img.onerror = () => {
-      console.warn('CORS loading failed for:', url, 'trying fallback without crossOrigin...');
-      const img2 = new Image();
-      img2.onload = () => resolve(img2);
-      img2.onerror = (e) => {
-        console.error('Final image load failed:', url, e);
-        reject(e);
-      };
-      // Fallback: without crossOrigin. The canvas might become "tainted", but at least it renders.
-      img2.src = url;
-    };
-
-    img.src = url;
-  });
-
-  imgCache.set(url, p);
-  return p;
+async function loadImage(url: string): Promise<HTMLImageElement> {
+  // Busca via fetch para evitar canvas tainted no mobile
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(objectUrl); resolve(img); };
+      img.onerror = reject;
+      img.src = objectUrl;
+    });
+  } catch {
+    // fallback para carregamento direto
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
 }
 
 export async function composeUvTexture(opts: {
