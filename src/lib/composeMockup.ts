@@ -8,7 +8,7 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   if (imgCache.has(src)) return imgCache.get(src)!;
   const p = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = 'anonymous'; // CORREÇÃO 1
     img.onload = () => resolve(img);
     img.onerror = (e) => reject(e);
     img.src = src;
