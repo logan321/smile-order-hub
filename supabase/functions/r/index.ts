@@ -9,13 +9,6 @@ const corsHeaders = {
 const ALLOWED = ["stamp-catalog", "patch-catalog", "shirt-templates", "text-styles", "shirt-designs", "uv-maps"];
 
 Deno.serve(async (req) => {
-  const origin = req.headers.get("origin");
-  const referer = req.headers.get("referer");
-  
-  // Basic protection against direct usage from unauthorized domains
-  // Allows requests with no origin (e.g. initial load) but blocks explicitly different origins if needed
-  // For now, we'll just log and monitor, or we could enforce a strict check.
-  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

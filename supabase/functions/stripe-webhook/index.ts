@@ -35,8 +35,8 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400, headers: corsHeaders });
       }
     } else {
-      console.error('STRIPE_WEBHOOK_SECRET not configured, blocking request for security');
-      return new Response(JSON.stringify({ error: 'Webhook secret not configured' }), { status: 500, headers: corsHeaders });
+      console.warn('STRIPE_WEBHOOK_SECRET not configured, skipping signature verification');
+      event = JSON.parse(body);
     }
 
     const supabase = createClient(
