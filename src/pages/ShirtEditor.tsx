@@ -162,12 +162,16 @@ const getRegraNicho = (nichoId: string) => {
 };
 
 function StampThumb({ miniaturaUrl, imageUrl, name }: { miniaturaUrl: string | null | undefined; imageUrl: string; name: string }) {
+  const [error, setError] = useState(false);
+  const finalUrl = toProxyUrl(miniaturaUrl || imageUrl);
+  
   return (
     <img
-      src={toProxyUrl(miniaturaUrl || imageUrl)}
+      src={error ? imageUrl : finalUrl}
       alt={name}
       loading="lazy"
       decoding="async"
+      onError={() => setError(true)}
       className="w-full aspect-square object-contain p-1 bg-muted/10"
     />
   );
@@ -714,7 +718,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         } as any);
       }
 
-      // Sempre adiciona a camada da estampa, priorizando o UV map se disponível
+      // Adiciona a estampa principal como uma camada de imagem
       const stampUrl = appliedStamp?.uvMapUrl || appliedStamp?.imageUrl;
       if (stampUrl) {
         updateOrAddLayer('applied_stamp_main', 'full_canvas', '', 'image', {
@@ -736,10 +740,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, nomeBorderColor, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, numeroFrontBorderColor, numeroBackBorderColor, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY, appliedStamp]);
 
-  const activeUvBaseUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
-  console.log('[UV DEBUG] activeUvBaseUrl:', activeUvBaseUrl);
-  console.log('[UV DEBUG] appliedStamp:', appliedStamp?.name, appliedStamp?.uvMapUrl);
-  console.log('[UV DEBUG] uvMapZones keys:', Object.keys(uvMapZones));
+  const activeUvBaseUrl = selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+  console.log('[UV DEBUG] activeUvBaseUrl (template/fallback):', activeUvBaseUrl);
+  console.log('[UV DEBUG] appliedStamp URL:', appliedStamp?.uvMapUrl || appliedStamp?.imageUrl);
   console.log('[UV DEBUG] uvLayers count:', uvLayers.length);
 
   const uvComposite = useUvCompositor({
