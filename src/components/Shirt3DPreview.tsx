@@ -50,11 +50,16 @@ function ShirtModel({
 
     if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
       // Sempre recria CanvasTexture — é o mais compatível mobile/desktop
-      if (texRef.current) texRef.current.dispose();
+      if (texRef.current) {
+        texRef.current.dispose();
+        texRef.current = null;
+      }
       const ct = new THREE.CanvasTexture(uvCanvas);
       ct.colorSpace = THREE.SRGBColorSpace;
       ct.flipY = false;
-      ct.anisotropy = 4;
+      ct.anisotropy = 2; // Reduzido para mobile performance
+      ct.generateMipmaps = true;
+      ct.minFilter = THREE.LinearMipmapLinearFilter;
       ct.needsUpdate = true;
       texRef.current = ct;
       tex = ct;

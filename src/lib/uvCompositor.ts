@@ -39,28 +39,29 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 
   const p = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
-    // Força crossOrigin anonymous para evitar Canvas Tainted
     img.crossOrigin = 'anonymous'; 
     
     img.onload = () => {
       // Small delay for mobile browsers to ensure the image data is actually accessible
-      setTimeout(() => resolve(img), 10);
+      if (img.complete && img.naturalWidth > 0) {
+        resolve(img);
+      } else {
+        setTimeout(() => resolve(img), 20);
+      }
     };
     
     img.onerror = () => {
-      console.warn('CORS loading failed for:', url, 'trying fallback without crossOrigin...');
-      const img2 = new Image();
-      // CORREÇÃO 1 — Manter crossOrigin anonymous mesmo em fallback se possível, 
-      // ou garantir que a tentativa principal foi feita corretamente.
-      img2.onload = () => resolve(img2);
-      img2.onerror = (e) => {
-        console.error('Final image load failed:', url, e);
-        reject(e);
-      };
-      img2.src = url;
+      // Se falhar com CORS, tentamos uma vez sem proxy se não for proxied, 
+      // mas mantendo crossOrigin se possível.
+      console.warn('Image load failed:', url);
+      reject(new Error(`Failed to load image: ${url}`));
     };
 
     img.src = url;
+    // Se já estiver completa (cache do navegador), resolve imediatamente
+    if (img.complete && img.naturalWidth > 0) {
+      resolve(img);
+    }
   });
 
   imgCache.set(url, p);
@@ -167,7 +168,10 @@ export async function composeUvTexture(opts: {
       drawText(false);
     } else {
       try {
-        const img = await loadImage(toProxyUrl(layer.url));
+        // Adiciona cache-bust para camadas também no mobile para forçar refresh de CORS
+        const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const layerUrl = isMobile ? `${layer.url}${layer.url.includes('?') ? '&' : '?'}cb=${Date.now()}` : layer.url;
+        const img = await loadImage(toProxyUrl(layerUrl));
         ctx.globalAlpha = layer.opacity ?? 1;
         // contain
         let zw = (zone?.width ?? w) * scale;

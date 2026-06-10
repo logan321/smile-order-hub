@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     // Decode base64 param: "bucket|path"
     let decoded: string;
     try {
-      decoded = atob(d);
+      decoded = decodeURIComponent(atob(d).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
     } catch {
       return new Response("", { status: 400, headers: corsHeaders });
     }
