@@ -33,38 +33,33 @@ export type UvLayer =
     };
 
 const imgCache = new Map<string, Promise<HTMLImageElement>>();
-
-/**
- * Carrega uma imagem de forma segura para Canvas (CORS) e robusta para Mobile.
- * Adiciona um cache-bust dinâmico para evitar que o navegador use uma versão em cache sem headers CORS.
- */
 function loadImage(url: string): Promise<HTMLImageElement> {
   const cached = imgCache.get(url);
   if (cached) return cached;
 
   const p = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
+    // Força crossOrigin anonymous para evitar Canvas Tainted
     img.crossOrigin = 'anonymous';
     
-    // Adiciona cache-bust para garantir que o navegador peça novos headers CORS
-    const safeUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
-
     img.onload = () => {
-      // Pequeno atraso para garantir que o buffer da imagem esteja pronto no mobile
-      setTimeout(() => resolve(img), 20);
+      // Small delay for mobile browsers to ensure the image data is actually accessible
+      setTimeout(() => resolve(img), 10);
     };
     
     img.onerror = () => {
-      console.warn('CORS loading failed for:', url, 'trying fallback...');
+      console.warn('CORS loading failed for:', url, 'trying fallback without crossOrigin...');
       const img2 = new Image();
-      // Se falhar com anonymous, tentamos carregar direto. 
-      // O canvas pode ficar "tainted" mas pelo menos renderiza (melhor que nada no mobile)
       img2.onload = () => resolve(img2);
-      img2.onerror = (e) => reject(e);
+      img2.onerror = (e) => {
+        console.error('Final image load failed:', url, e);
+        reject(e);
+      };
+      // Fallback: without crossOrigin. The canvas might become "tainted", but at least it renders.
       img2.src = url;
     };
 
-    img.src = safeUrl;
+    img.src = url;
   });
 
   imgCache.set(url, p);
