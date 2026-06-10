@@ -8,7 +8,6 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import shirtModel from '@/assets/shirt-model.glb.asset.json';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { toProxyUrl } from '@/lib/imageProxy';
 
 interface Shirt3DPreviewProps {
   frontImage: string;
@@ -131,7 +130,7 @@ export default function Shirt3DPreview({
     }
   }, [cameraPosition]);
 
-  const uvImage = uvMapUrl ? toProxyUrl(uvMapUrl) : null;
+  const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
   return (
@@ -143,7 +142,7 @@ export default function Shirt3DPreview({
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
         gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
-        dpr={[1, 1]}
+        dpr={[1, 1.5]}
         style={{ background: canvasBg }}
       >
         <color attach="background" args={[canvasBg]} />
