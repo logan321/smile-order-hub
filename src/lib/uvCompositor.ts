@@ -96,9 +96,22 @@ export async function composeUvTexture(opts: {
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(base, 0, 0, w, h);
 
+  // Calcula fator de escala se o canvas for diferente do tamanho natural da imagem base
+  const scaleX = w / base.naturalWidth;
+  const scaleY = h / base.naturalHeight;
+
   for (const layer of opts.layers) {
-    const zone = opts.zones[layer.zoneKey];
-    if (!zone && !layer.id.includes('applied_stamp')) continue;
+    const rawZone = opts.zones[layer.zoneKey];
+    if (!rawZone && !layer.id.includes('applied_stamp')) continue;
+    
+    // Scale zone coordinates to current canvas resolution
+    const zone = rawZone ? {
+      x: rawZone.x * scaleX,
+      y: rawZone.y * scaleY,
+      width: rawZone.width * scaleX,
+      height: rawZone.height * scaleY
+    } : null;
+
     ctx.save();
     
     // Check if it's the escudo or a stamp layer to decide whether to clip
