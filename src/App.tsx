@@ -100,7 +100,6 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/rastreio/:slug" element={<TrackOrder />} />
             <Route path="/editor/:userId" element={<ShirtEditor />} />
-            <Route path="/simulador-mobile" element={<MobileEditor />} />
 
             {/* Protected + subscription required routes */}
             <Route path="/" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Dashboard /></AppLayout></SubscriptionGuard></ProtectedRoute>} />
