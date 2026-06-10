@@ -863,17 +863,14 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </header>
 
-      {process.env.NODE_ENV !== 'production' && (
-        <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto pointer-events-none">
-          <p>UV URL: {activeUvBaseUrl ? activeUvBaseUrl.substring(0, 60) + '...' : 'NULL'}</p>
-          <p>Stamp: {appliedStamp?.name || 'nenhuma'} (ID: {appliedStamp?.id || '?'})</p>
-          <p>Nicho Ativo: {nichoAtivo || 'nenhum'}</p>
-          <p>Stamps Filtrados: {stampsFiltrados.length}</p>
-          <p>Zones: {Object.keys(uvMapZones).length}</p>
-          <p>Layers: {uvLayers.length}</p>
-          <p>Composite ready: {uvComposite.ready ? 'SIM' : 'NAO'}</p>
-        </div>
-      )}
+      <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto pointer-events-none opacity-80 lg:opacity-100">
+        <p>User ID: {ownerUserId || 'NULL'}</p>
+        <p>Stamps: {stamps.length} (Filtrados: {stampsFiltrados.length})</p>
+        <p>Niches: {niches.length} | Nicho Ativo: {nichoAtivo || 'nenhum'}</p>
+        <p>UV: {activeUvBaseUrl ? 'CARREGADO' : 'NULL'}</p>
+        <p>Composite: {uvComposite.ready ? 'PRONTO' : 'CARREGANDO...'}</p>
+      </div>
+
 
 
 
