@@ -959,11 +959,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                             : 'border-gray-100 hover:border-gray-200'
                         }`}
                       >
-                        <img
-                          src={toProxyUrl(s.imageUrl)}
-                          alt={s.name}
-                          className="w-full h-full object-contain p-2 pointer-events-none"
-                        />
+                        <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
                         <p className="absolute bottom-0 left-0 right-0 text-[8px] font-black text-center uppercase bg-white/90 py-1 truncate px-1">
                           {s.name}
                         </p>
@@ -1678,7 +1674,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                     appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
                                   )}
                                 >
-                                  <img src={toProxyUrl(s.imageUrl)} alt={s.name} className="w-full h-full object-contain pointer-events-none" />
+                                  <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
                                 </button>
                               ))}
                             </div>
