@@ -738,11 +738,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, nomeBorderColor, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, numeroFrontBorderColor, numeroBackBorderColor, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY, appliedStamp]);
 
-  const activeUvBaseUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
-  console.log('[UV DEBUG] activeUvBaseUrl:', activeUvBaseUrl);
-  console.log('[UV DEBUG] appliedStamp:', appliedStamp?.name, appliedStamp?.uvMapUrl);
-  console.log('[UV DEBUG] uvMapZones keys:', Object.keys(uvMapZones));
-  console.log('[UV DEBUG] uvLayers count:', uvLayers.length);
+  const rawUvBaseUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+  const activeUvBaseUrl = rawUvBaseUrl ? toProxyUrl(rawUvBaseUrl) : null;
 
   const uvComposite = useUvCompositor({
     baseUrl: activeUvBaseUrl,
@@ -877,13 +874,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </header>
 
-      <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto pointer-events-none opacity-80 lg:opacity-100">
-        <p>User ID: {ownerUserId || 'NULL'}</p>
-        <p>Stamps: {stamps.length} (Filtrados: {stampsFiltrados.length})</p>
-        <p>Niches: {niches.length} | Nicho Ativo: {nichoAtivo || 'nenhum'}</p>
-        <p>UV: {activeUvBaseUrl ? 'CARREGADO' : 'NULL'}</p>
-        <p>Composite: {uvComposite.ready ? 'PRONTO' : 'CARREGANDO...'}</p>
-      </div>
 
 
 
@@ -1524,6 +1514,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               backImage={selectedTemplate?.backImageUrl || ''} 
               uvMapUrl={uvMapData?.uv_frente_url || selectedTemplate?.uvMapUrl || null}
               uvCanvas={uv3DCanvas}
+              uvDataUrl={uvComposite.dataUrl}
               uvVersion={uvTextureVersion}
               animatingElement={animatingElement}
               onAnimationComplete={() => setAnimatingElement(null)}
