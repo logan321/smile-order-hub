@@ -446,6 +446,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const uvTextCommitTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    console.log('[DEBUG] ownerUserId logic running, urlUserId:', urlUserId);
     if (urlUserId) {
       setOwnerUserId(urlUserId);
     } else {
@@ -458,6 +459,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   useEffect(() => {
     if (!ownerUserId) return;
     const fetchData = async () => {
+      console.log('[DEBUG] fetchData started for ownerUserId:', ownerUserId);
       const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
         supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
