@@ -32,28 +32,27 @@ export type UvLayer =
       opacity?: number;
     };
 
+const imgCache = new Map<string, Promise<HTMLImageElement>>();
+
 async function loadImage(url: string): Promise<HTMLImageElement> {
-  // Busca via fetch para evitar canvas tainted no mobile
-  try {
-    const res = await fetch(url, { mode: 'cors' });
-    const blob = await res.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => { URL.revokeObjectURL(objectUrl); resolve(img); };
-      img.onerror = reject;
-      img.src = objectUrl;
-    });
-  } catch {
-    // fallback para carregamento direto
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
-  }
+  if (imgCache.has(url)) return imgCache.get(url)!;
+
+  const p = new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      // Se falhou com anonymous, tenta sem (pode causar canvas tainted mas renderiza)
+      const img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = reject;
+      img2.src = url;
+    };
+    img.src = url;
+  });
+
+  imgCache.set(url, p);
+  return p;
 }
 
 export async function composeUvTexture(opts: {
@@ -108,7 +107,6 @@ export async function composeUvTexture(opts: {
     if (layer.type === 'text') {
       const family = layer.fontFamily || 'Arial';
       const weight = layer.fontWeight ?? 700;
-      // auto-fit: pick the largest size where text fits zone.width
       const targetW = zone.width * 0.92 * scale;
       const targetH = zone.height * 0.92 * scale;
       let size = targetH;
@@ -158,18 +156,15 @@ export async function composeUvTexture(opts: {
       try {
         const img = await loadImage(toProxyUrl(layer.url));
         ctx.globalAlpha = layer.opacity ?? 1;
-        // contain
         let zw = (zone?.width ?? w) * scale;
         let zh = (zone?.height ?? h) * scale;
         
-        // Specialized logic for escudo
         if (isEscudo) {
           const uvWidth = opts.uvWidth || base.naturalWidth;
           const sizePx = scale * uvWidth * 0.06;
           zw = sizePx;
           zh = sizePx;
         } else if (isAppliedStamp) {
-          // If it's the main stamp, use full canvas size
           zw = w;
           zh = h;
         }
@@ -179,7 +174,7 @@ export async function composeUvTexture(opts: {
         const dh = img.naturalHeight * ratio;
         ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
       } catch (e) {
-        // image failed; ignore
+        // ignore
       }
     }
     ctx.restore();
