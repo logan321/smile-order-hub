@@ -75,14 +75,22 @@ export async function composeUvTexture(opts: {
   canvas?: HTMLCanvasElement;
 }): Promise<HTMLCanvasElement> {
   const base = await loadImage(opts.baseUrl);
-  const w = opts.uvWidth || base.naturalWidth;
-  const h = opts.uvHeight || base.naturalHeight;
+  
+  const MAX_SIZE = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 1024 : 2048;
+  const w = Math.min(opts.uvWidth || base.naturalWidth, MAX_SIZE);
+  const h = Math.min(opts.uvHeight || base.naturalHeight, MAX_SIZE);
+  
   const canvas = opts.canvas ?? document.createElement('canvas');
   if (canvas.width !== w) canvas.width = w;
   if (canvas.height !== h) canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   ctx.clearRect(0, 0, w, h);
-  ctx.drawImage(base, 0, 0, w, h);
+  
+  try {
+    ctx.drawImage(base, 0, 0, w, h);
+  } catch (e) {
+    console.error('Failed to draw base image:', e);
+  }
 
   for (const layer of opts.layers) {
     const zone = opts.zones[layer.zoneKey];
@@ -187,7 +195,11 @@ export async function composeUvTexture(opts: {
         const ratio = Math.min(zw / img.naturalWidth, zh / img.naturalHeight);
         const dw = img.naturalWidth * ratio;
         const dh = img.naturalHeight * ratio;
-        ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+        try {
+          ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+        } catch (drawErr) {
+          console.error('Failed to draw layer image:', drawErr, layer.url);
+        }
       } catch (e) {
         // image failed; ignore
       }
