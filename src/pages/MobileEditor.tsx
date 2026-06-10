@@ -171,7 +171,12 @@ const MobileEditor = () => {
     fetchData();
   }, [ownerUserId]);
 
-  const getConfig = (key: string, fallback: string = '') => configs[key]?.trim() || (key === 'logo_url' ? logoOriginal : fallback);
+  const getConfig = (key: string, fallback: string = '') => {
+    // Try mobile specific key first
+    const mobileKey = `mobile_${key}`;
+    return configs[mobileKey]?.trim() || configs[key]?.trim() || (key === 'logo_url' ? logoOriginal : fallback);
+  };
+
   const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo || ''), [nichoAtivo]);
   const stampsFiltrados = useMemo(() => nichoAtivo ? stamps.filter(s => s.nicheId === nichoAtivo) : stamps, [stamps, nichoAtivo]);
 
