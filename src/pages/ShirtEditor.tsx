@@ -1708,7 +1708,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                 stampsFiltrados.map(s => (
                                   <button
                                     key={s.id}
-                                    onClick={() => addStamp(s)}
+                                    onClick={() => {
+                                      addStamp(s);
+                                      setIsMobileSheetOpen(false);
+                                    }}
                                     className={cn(
                                       "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
                                       appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
