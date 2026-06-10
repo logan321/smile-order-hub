@@ -722,7 +722,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, nomeBorderColor, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, numeroFrontBorderColor, numeroBackBorderColor, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY, appliedStamp]);
 
-  const activeUvBaseUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+  const activeUvBaseUrl = fallbackUvUrl || appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || null;
   console.log('[UV DEBUG] activeUvBaseUrl:', activeUvBaseUrl);
   console.log('[UV DEBUG] appliedStamp:', appliedStamp?.name, appliedStamp?.uvMapUrl);
   console.log('[UV DEBUG] uvMapZones keys:', Object.keys(uvMapZones));
@@ -748,8 +748,25 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     setUvTextureVersion(v => v + 1);
   }, [appliedStamp?.id, selectedTemplate?.id]);
 
-  const addStamp = (stamp: Stamp) => {
+  const addStamp = async (stamp: Stamp) => {
     setAppliedStamp(stamp);
+    // Pré-carrega a URL do UV map como base64 para funcionar no mobile
+    const uvUrl = stamp.uvMapUrl || selectedTemplate?.uvMapUrl || null;
+    if (uvUrl) {
+      try {
+        const proxyUrl = toProxyUrl(uvUrl);
+        const res = await fetch(proxyUrl);
+        const blob = await res.blob();
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          setFallbackUvUrl(base64);
+        };
+        reader.readAsDataURL(blob);
+      } catch (e) {
+        console.warn('Failed to preload UV map as base64', e);
+      }
+    }
   };
 
   const setUvLayerText = (zoneKey: string, content: string) => {
