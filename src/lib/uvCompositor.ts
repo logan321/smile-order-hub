@@ -128,12 +128,16 @@ export async function composeUvTexture(opts: {
     let cx = 0;
     let cy = 0;
     
+    // Scale offsets as well
+    const offX = (layer.offsetX ?? 0) * scaleX;
+    const offY = (layer.offsetY ?? 0) * scaleY;
+
     if (isAppliedStamp) {
-      cx = w / 2 + (layer.offsetX ?? 0);
-      cy = h / 2 + (layer.offsetY ?? 0);
+      cx = w / 2 + offX;
+      cy = h / 2 + offY;
     } else if (zone) {
-      cx = zone.x + zone.width / 2 + (layer.offsetX ?? 0);
-      cy = zone.y + zone.height / 2 + (layer.offsetY ?? 0);
+      cx = zone.x + zone.width / 2 + offX;
+      cy = zone.y + zone.height / 2 + offY;
     }
     
     ctx.translate(cx, cy);
