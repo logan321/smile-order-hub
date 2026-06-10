@@ -34,23 +34,51 @@ interface Shirt3DEditorProps {
   className?: string;
 }
 
+// Força CORS adicionando cache-bust só na primeira vez por URL
+const corsUrlCache = new Set<string>();
+function toCorsUrl(url: string): string {
+  // Se a imagem já vem do nosso proxy, não precisamos de cache-bust extra
+  if (url.includes('/functions/v1/r?')) return url;
+  
+  if (corsUrlCache.has(url)) return url;
+  corsUrlCache.add(url);
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}cb=${Date.now()}`;
+}
+
 function useDecalTexture(url: string) {
   const [tex, setTex] = useState<THREE.Texture | null>(null);
   useEffect(() => {
     let cancelled = false;
     const loader = new THREE.TextureLoader();
+    
+    // Configura o loader para mobile compatibility
     loader.setCrossOrigin('anonymous');
+    
+    const safeUrl = toCorsUrl(url);
+    
     loader.load(
-      url,
+      safeUrl,
       (t) => {
         if (cancelled) return;
         t.colorSpace = THREE.SRGBColorSpace;
         t.anisotropy = 16;
+        t.minFilter = THREE.LinearMipmapLinearFilter;
+        t.magFilter = THREE.LinearFilter;
         t.needsUpdate = true;
         setTex(t);
       },
       undefined,
-      () => setTex(null),
+      (err) => {
+        console.warn('Decal texture load failed with CORS, trying fallback...', err);
+        // Fallback sem crossOrigin (algumas imagens podem não suportar)
+        const fallbackLoader = new THREE.TextureLoader();
+        fallbackLoader.load(url, (t) => {
+          if (cancelled) return;
+          t.colorSpace = THREE.SRGBColorSpace;
+          setTex(t);
+        });
+      },
     );
     return () => {
       cancelled = true;
