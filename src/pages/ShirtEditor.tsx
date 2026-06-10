@@ -714,7 +714,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         } as any);
       }
 
-      // Sempre adiciona a camada da estampa, priorizando o UV map se disponível
+      // Adiciona a estampa principal como uma camada de imagem
       const stampUrl = appliedStamp?.uvMapUrl || appliedStamp?.imageUrl;
       if (stampUrl) {
         updateOrAddLayer('applied_stamp_main', 'full_canvas', '', 'image', {
