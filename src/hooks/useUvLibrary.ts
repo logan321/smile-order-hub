@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toProxyUrl } from '@/lib/imageProxy';
 
 export interface UvMapItem {
   id: string;
@@ -41,7 +42,7 @@ export function useUvLibrary(targetUserId?: string) {
       id: u.id,
       code: u.code,
       name: u.name ?? null,
-      imageUrl: u.image_url,
+      imageUrl: toProxyUrl(u.image_url),
       createdAt: u.created_at,
       uvZones: (u.uv_zones && typeof u.uv_zones === 'object') ? u.uv_zones as Record<string, UvZone> : {},
       uvWidth: u.uv_width ?? null,
