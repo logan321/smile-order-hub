@@ -1533,6 +1533,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               isUvReady={uvComposite.ready}
               className={cn("transition-opacity duration-300")}
               canvasBg={getColor(configs, 'canvas_bg_color', '#f1f3f6')}
+              key={`shirt-preview-${appliedStamp?.id}-${uvTextureVersion}`}
             />
             
             {/* Overlay Actions */}
