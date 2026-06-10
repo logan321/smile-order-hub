@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Save, RotateCcw, Download, Eye, Palette, FileText, Image as ImageIcon, Layout, ArrowLeft, Upload, Trash2, X, Smartphone } from 'lucide-react';
+import { Loader2, Save, RotateCcw, Download, Eye, Palette, FileText, Image as ImageIcon, Layout, ArrowLeft, Upload, Trash2, X } from 'lucide-react';
 import { ConfigIcon } from '@/components/ConfigIcon';
 import { useNavigate } from 'react-router-dom';
 
@@ -212,7 +212,7 @@ const AdminConfigPage = () => {
     fileInputRef.current?.click();
   };
 
-  const categories = ['cores', 'textos', 'ícones', 'layout', 'mobile_config'];
+  const categories = ['cores', 'textos', 'ícones', 'layout'];
 
   if (isLoading) {
     return (
@@ -281,10 +281,6 @@ const AdminConfigPage = () => {
                 <TabsTrigger value="layout" className="py-3 data-[state=active]:bg-slate-100">
                   <Layout className="w-4 h-4 mr-2" />
                   Layout
-                </TabsTrigger>
-                <TabsTrigger value="mobile_config" className="py-3 data-[state=active]:bg-slate-100">
-                  <Smartphone className="w-4 h-4 mr-2" />
-                  Mobile (Teste)
                 </TabsTrigger>
               </TabsList>
 

@@ -1,5 +1,4 @@
 import { Suspense, useEffect, useRef, useState, useMemo } from 'react';
-import { toProxyUrl } from '@/lib/imageProxy';
 import { cn } from '@/lib/utils';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
@@ -16,7 +15,6 @@ interface Shirt3DPreviewProps {
   uvMapUrl?: string | null;
   uvCanvas?: HTMLCanvasElement | null;
   uvVersion?: number;
-  uvDataUrl?: string;
   fabricColor?: string;
   autoRotate?: boolean;
   cameraPosition?: [number, number, number];
@@ -31,12 +29,10 @@ function ShirtModel({
   uvImage,
   uvCanvas,
   uvVersion,
-  uvDataUrl,
   fabricColor,
 }: {
   uvImage: string | null;
   uvCanvas: HTMLCanvasElement | null | undefined;
-  uvDataUrl?: string;
   uvVersion?: number;
   fabricColor: string;
 }) {
@@ -52,34 +48,20 @@ function ShirtModel({
 
     let tex: THREE.Texture | null = null;
 
-    if (uvDataUrl) {
-      const loader = new THREE.TextureLoader();
-      loader.setCrossOrigin('anonymous');
-      tex = loader.load(uvDataUrl);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.flipY = false;
-      tex.needsUpdate = true;
-    } else if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
+    if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
       // Sempre recria CanvasTexture — é o mais compatível mobile/desktop
-      if (texRef.current) {
-        texRef.current.dispose();
-        texRef.current = null;
-      }
+      if (texRef.current) texRef.current.dispose();
       const ct = new THREE.CanvasTexture(uvCanvas);
       ct.colorSpace = THREE.SRGBColorSpace;
       ct.flipY = false;
-      ct.anisotropy = 2; // Reduzido para mobile performance
-      ct.generateMipmaps = true;
-      ct.minFilter = THREE.LinearMipmapLinearFilter;
+      ct.anisotropy = 4;
       ct.needsUpdate = true;
       texRef.current = ct;
       tex = ct;
     } else if (uvImage) {
       const loader = new THREE.TextureLoader();
       loader.setCrossOrigin('anonymous');
-      // Proxies the uvImage too
-      const proxiedUv = toProxyUrl(uvImage);
-      tex = loader.load(proxiedUv);
+      tex = loader.load(uvImage);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.flipY = false;
       tex.needsUpdate = true;
@@ -88,16 +70,6 @@ function ShirtModel({
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!(mesh as any).isMesh) return;
-      
-      // CORREÇÃO 2 — Liberar memória no Shirt3DPreview
-      if (mesh.material) {
-        if (Array.isArray(mesh.material)) {
-          mesh.material.forEach(m => m.dispose());
-        } else {
-          mesh.material.dispose();
-        }
-      }
-
       const mat = new THREE.MeshStandardMaterial({
         color: tex ? new THREE.Color('#ffffff') : color,
         map: tex ?? null,
@@ -109,7 +81,7 @@ function ShirtModel({
       mesh.castShadow = true;
       mesh.receiveShadow = true;
     });
-  }, [scene, uvCanvas, uvDataUrl, uvVersion, uvImage, fabricColor]);
+  }, [scene, uvCanvas, uvVersion, uvImage, fabricColor]);
 
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -137,7 +109,6 @@ export default function Shirt3DPreview({
   backImage,
   uvMapUrl,
   uvCanvas,
-  uvDataUrl,
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
@@ -149,13 +120,7 @@ export default function Shirt3DPreview({
   canvasBg = '#f1f3f6',
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
-  const [webglFailed, setWebglFailed] = useState(false);
   const orbitRef = useRef<any>(null);
-
-  const isMobile = useMemo(() => {
-    if (typeof navigator === 'undefined') return false;
-    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  }, []);
 
   useEffect(() => {
     if (orbitRef.current) {
@@ -168,17 +133,6 @@ export default function Shirt3DPreview({
   const uvImage = uvMapUrl ?? null;
   const hasUv = !!uvImage || !!uvCanvas;
 
-  if (webglFailed) {
-    return (
-      <div className={cn('w-full h-full rounded-lg flex items-center justify-center p-6 text-center bg-muted', className)}>
-        <p className="text-sm text-muted-foreground">
-          Seu dispositivo não suporta visualização 3D ou o contexto WebGL foi perdido. 
-          Tente recarregar a página ou usar outro navegador.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn('w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner', className)}
@@ -187,18 +141,7 @@ export default function Shirt3DPreview({
       <Canvas
         shadows
         camera={{ position: cameraPosition, fov: 35 }}
-        gl={{ 
-          antialias: !isMobile,
-          preserveDrawingBuffer: true, 
-          alpha: true,
-          powerPreference: isMobile ? 'low-power' : 'high-performance'
-        }}
-        onCreated={(state) => {
-          state.gl.domElement.addEventListener(
-            'webglcontextlost', 
-            () => setWebglFailed(true)
-          );
-        }}
+        gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
         dpr={[1, 1.5]}
         style={{ background: canvasBg }}
       >
@@ -220,7 +163,6 @@ export default function Shirt3DPreview({
           <ShirtModel
             uvImage={uvImage}
             uvCanvas={uvCanvas}
-            uvDataUrl={uvDataUrl}
             uvVersion={uvVersion}
             fabricColor={fabricColor}
           />

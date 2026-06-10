@@ -12,33 +12,27 @@ interface Options {
 }
 
 // Força CORS adicionando cache-bust só na primeira vez por URL
-const corsUrlCache = new Map<string, string>();
+const corsUrlCache = new Set<string>();
 function toCorsUrl(url: string): string {
-  if (!url) return '';
-  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  
-  if (!isMobile) return toProxyUrl(url);
-
-  // For mobile, we use a stable cache-bust per session or just once
-  if (corsUrlCache.has(url)) return corsUrlCache.get(url)!;
-  
+  // Use our proxy as the primary way to bypass CORS
   const proxied = toProxyUrl(url);
+  
+  // If the image already comes from our proxy, don't add extra cache-bust unless it's a new request
+  if (corsUrlCache.has(proxied)) return proxied;
+  corsUrlCache.add(proxied);
+  
   const sep = proxied.includes('?') ? '&' : '?';
-  const finalUrl = `${proxied}${sep}cb=${Math.floor(Date.now() / 1000)}`; 
-  corsUrlCache.set(url, finalUrl);
-  return finalUrl;
+  // Cache-bust helps "clear" CORS state in mobile Safari/Chrome
+  return `${proxied}${sep}cb=${Date.now()}`;
 }
 
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
   if (!canvasRef.current && typeof document !== 'undefined') {
     canvasRef.current = document.createElement('canvas');
   }
   const [version, setVersion] = useState(0);
   const [ready, setReady] = useState(false);
-  const [dataUrl, setDataUrl] = useState<string | undefined>();
 
   useEffect(() => {
     let cancelled = false;
@@ -54,13 +48,12 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
         baseUrl: safeUrl,
         zones,
         layers,
-        uvWidth: isMobile ? 1024 : uvWidth,
-        uvHeight: isMobile ? 1024 : uvHeight,
+        uvWidth,
+        uvHeight,
         canvas: canvasRef.current!,
       }).then(() => {
         if (cancelled) return;
         setReady(true);
-        setDataUrl(canvasRef.current?.toDataURL('image/png'));
         setVersion(v => v + 1);
       }).catch(err => {
         console.warn('UV composite failed', err);
@@ -69,13 +62,12 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
           baseUrl,
           zones,
           layers,
-          uvWidth: isMobile ? 1024 : uvWidth,
-          uvHeight: isMobile ? 1024 : uvHeight,
+          uvWidth,
+          uvHeight,
           canvas: canvasRef.current!,
         }).then(() => {
           if (cancelled) return;
           setReady(true);
-          setDataUrl(canvasRef.current?.toDataURL('image/png'));
           setVersion(v => v + 1);
         }).catch(() => {});
       });
@@ -83,5 +75,5 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
     return () => { cancelled = true; window.clearTimeout(timer); };
   }, [baseUrl, zones, layers, uvWidth, uvHeight]);
 
-  return { canvas: canvasRef.current, version, ready, dataUrl };
+  return { canvas: canvasRef.current, version, ready };
 }

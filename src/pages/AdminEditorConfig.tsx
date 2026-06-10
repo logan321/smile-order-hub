@@ -10,14 +10,13 @@ const AdminEditorConfig = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-6">
+    <div>
+      <div className="mb-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
           Voltar ao painel
         </Button>
       </div>
-
       <EditorSettings targetUserId={userId} targetEmail={email} />
     </div>
   );

@@ -173,7 +173,7 @@ function StampThumb({ miniaturaUrl, imageUrl, name }: { miniaturaUrl: string | n
   );
 }
 
-const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
+const MobileEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const isMobile = useIsMobile();
   const { userId: urlUserId } = useParams<{ userId: string }>();
   const frontCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -846,7 +846,12 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden">
+    <div className="h-screen bg-white flex flex-col overflow-hidden relative">
+      <div className="absolute top-14 left-4 z-[60] pointer-events-none">
+        <span className="bg-orange-500 text-white text-[10px] font-black px-2 py-1 rounded shadow-lg animate-pulse">
+          VERSÃO MOBILE DE TESTES
+        </span>
+      </div>
       <header className="h-12 lg:h-14 border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 bg-white shrink-0 z-50">
         <div className="flex items-center gap-2 lg:gap-4">
           <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)} className="text-gray-400 hover:text-gray-900 p-1 lg:p-2"><ChevronLeft className="w-4 h-4 lg:w-5 lg:h-5" /></Button>
@@ -1883,4 +1888,4 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 };
 
 
-export default ShirtEditor;
+export default MobileEditor;

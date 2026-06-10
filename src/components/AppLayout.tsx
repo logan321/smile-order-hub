@@ -40,6 +40,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     ...(editorEnabled ? [
       { label: 'Config. Editor', to: '/config-editor', icon: Palette },
       { label: 'Editor', to: '/meu-editor', icon: Shirt },
+      { label: 'Simulador Mobile (Teste)', to: '/simulador-mobile', icon: Shirt },
     ] : []),
     ...(isAdmin ? [
       { label: 'Admin', to: '/admin', icon: Shield },
