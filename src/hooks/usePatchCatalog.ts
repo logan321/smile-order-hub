@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toProxyUrl } from '@/lib/imageProxy';
 
 export interface PatchItem {
   id: string;
@@ -26,7 +27,7 @@ export function usePatchCatalog(targetUserId?: string) {
     setPatches((data as any[])?.map(p => ({
       id: p.id,
       name: p.name,
-      imageUrl: p.image_url,
+      imageUrl: toProxyUrl(p.image_url),
       targetZoneName: p.target_zone_name,
       active: p.active,
       createdAt: p.created_at,
