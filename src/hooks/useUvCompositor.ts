@@ -13,10 +13,14 @@ interface Options {
 // Força CORS adicionando cache-bust só na primeira vez por URL
 const corsUrlCache = new Set<string>();
 function toCorsUrl(url: string): string {
+  // Se a imagem já vem do nosso proxy, não precisamos de cache-bust extra
+  if (url.includes('/functions/v1/r?')) return url;
+  
   if (corsUrlCache.has(url)) return url;
   corsUrlCache.add(url);
   const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}_cb=${Date.now()}`;
+  // Cache-bust ajuda a "limpar" o estado de CORS no mobile Safari/Chrome
+  return `${url}${sep}cb=${Date.now()}`;
 }
 
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {

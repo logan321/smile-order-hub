@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toProxyUrl } from '@/lib/imageProxy';
 
 export interface StampItem {
   id: string;
@@ -34,11 +35,11 @@ export function useStampCatalog(targetUserId?: string) {
       id: s.id,
       name: s.name,
       category: s.category,
-      imageUrl: s.miniatura_frente_url || s.image_url,
-      miniaturaFrenteUrl: s.miniatura_frente_url ?? null,
+      imageUrl: toProxyUrl(s.miniatura_frente_url || s.image_url),
+      miniaturaFrenteUrl: s.miniatura_frente_url ? toProxyUrl(s.miniatura_frente_url) : null,
       codigo: s.codigo ?? null,
-      backImageUrl: s.back_image_url ?? null,
-      uvMapUrl: s.uv_map_url ?? null,
+      backImageUrl: s.back_image_url ? toProxyUrl(s.back_image_url) : null,
+      uvMapUrl: s.uv_map_url ? toProxyUrl(s.uv_map_url) : null,
       uvMapId: s.uv_map_id ?? null,
       templateId: s.template_id ?? null,
       nicheId: s.niche_id ?? null,
