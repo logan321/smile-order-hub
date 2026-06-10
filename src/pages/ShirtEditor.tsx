@@ -460,7 +460,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     const fetchData = async () => {
       const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-        supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo').eq('active', true).eq('user_id', ownerUserId),
+        supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
         supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
         supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
       ]);
@@ -850,26 +850,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       </header>
 
       {process.env.NODE_ENV !== 'production' && (
-        <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto">
+        <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto pointer-events-none">
           <p>UV URL: {activeUvBaseUrl ? activeUvBaseUrl.substring(0, 60) + '...' : 'NULL'}</p>
-          <p>Stamp: {appliedStamp?.name || 'nenhuma'}</p>
-          <p>Zones: {Object.keys(uvMapZones).join(', ') || 'nenhuma'}</p>
+          <p>Stamp: {appliedStamp?.name || 'nenhuma'} (ID: {appliedStamp?.id || '?'})</p>
+          <p>Nicho Ativo: {nichoAtivo || 'nenhum'}</p>
+          <p>Stamps Filtrados: {stampsFiltrados.length}</p>
+          <p>Zones: {Object.keys(uvMapZones).length}</p>
           <p>Layers: {uvLayers.length}</p>
           <p>Composite ready: {uvComposite.ready ? 'SIM' : 'NAO'}</p>
-          <p>Canvas: {uvComposite.canvas ? `${uvComposite.canvas.width}x${uvComposite.canvas.height}` : 'NULL'}</p>
-          <p>uv3DCanvas: {uv3DCanvas ? `${uv3DCanvas.width}x${uv3DCanvas.height}` : 'NULL'}</p>
         </div>
       )}
 
 
 
       {/* PARTE 1 — Barra de nichos no topo */}
-      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-none lg:touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
         <button className="absolute left-1 lg:left-2 z-10 p-1 lg:p-2 text-white/50 hover:text-white transition-colors hidden lg:block">
           <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
         
-        <ul className="flex-1 flex items-center justify-start gap-3 lg:gap-6 px-4 lg:px-10 overflow-x-auto no-scrollbar scroll-smooth h-full">
+        <ul className="flex-1 flex items-center justify-start gap-3 lg:gap-6 px-4 lg:px-10 overflow-x-auto no-scrollbar scroll-smooth h-full touch-pan-x">
           {niches.map(nicho => (
             <li key={nicho.id} className="flex-shrink-0">
               <button
@@ -1644,7 +1644,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
                     
                     {/* Tabs Horizontal Scroll */}
-                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x">
+                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x min-h-[80px]">
                       {[
                         { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
                         { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
