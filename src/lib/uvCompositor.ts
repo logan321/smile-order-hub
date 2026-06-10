@@ -41,6 +41,8 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     const img = new Image();
     // Força crossOrigin anonymous para evitar Canvas Tainted
     img.crossOrigin = 'anonymous';
+    // No Safari/iOS mobile, crossOrigin deve vir antes do src
+
     
     img.onload = () => {
       // Small delay for mobile browsers to ensure the image data is actually accessible

@@ -197,6 +197,8 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [downloading, setDownloading] = useState(false);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.3, 5.2]);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [fallbackUvUrl, setFallbackUvUrl] = useState<string | null>(null);
@@ -754,8 +756,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     if (uvComposite.canvas) {
       setUv3DCanvas(uvComposite.canvas);
       setUvTextureVersion(v => v + 1);
+      setLastUpdateTime(Date.now());
     }
-  }, [uvComposite.version, uvComposite.ready]);
+  }, [uvComposite.version, uvComposite.ready, uvComposite.canvas]);
 
   // Limpa canvas quando estampa muda para evitar mostrar textura antiga
   useEffect(() => {
@@ -1530,6 +1533,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               isUvReady={uvComposite.ready}
               className={cn("transition-opacity duration-300")}
               canvasBg={getColor(configs, 'canvas_bg_color', '#f1f3f6')}
+              key={`shirt-preview-${appliedStamp?.id}-${uvTextureVersion}`}
             />
             
             {/* Overlay Actions */}
@@ -1708,7 +1712,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                 stampsFiltrados.map(s => (
                                   <button
                                     key={s.id}
-                                    onClick={() => addStamp(s)}
+                                    onClick={() => {
+                                      addStamp(s);
+                                      setIsMobileSheetOpen(false);
+                                    }}
                                     className={cn(
                                       "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
                                       appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
