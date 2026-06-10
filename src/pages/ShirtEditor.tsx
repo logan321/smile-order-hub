@@ -1693,18 +1693,27 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                         <div className="space-y-6">
                           {activeTab === 'stamps' && (
                             <div className="grid grid-cols-2 gap-3">
-                              {stampsFiltrados.map(s => (
-                                <button
-                                  key={s.id}
-                                  onClick={() => addStamp(s)}
-                                  className={cn(
-                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
-                                    appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
-                                  )}
-                                >
-                                  <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
-                                </button>
-                              ))}
+                              {stampsFiltrados.length > 0 ? (
+                                stampsFiltrados.map(s => (
+                                  <button
+                                    key={s.id}
+                                    onClick={() => addStamp(s)}
+                                    className={cn(
+                                      "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
+                                      appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
+                                    )}
+                                  >
+                                    <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="col-span-2 py-10 text-center space-y-2">
+                                  <Shirt className="w-8 h-8 text-gray-200 mx-auto" />
+                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    {stamps.length === 0 ? "Nenhuma estampa cadastrada" : "Nenhuma estampa para este nicho"}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )}
 
