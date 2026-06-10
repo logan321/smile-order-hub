@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,10 +14,30 @@ serve(async (req) => {
 
   try {
     const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
+    const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    
     if (!STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY not configured');
 
+    const stripe = new Stripe(STRIPE_SECRET_KEY, {
+      apiVersion: '2022-11-15',
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+
+    const signature = req.headers.get('stripe-signature');
     const body = await req.text();
-    const event = JSON.parse(body);
+    
+    let event;
+    if (STRIPE_WEBHOOK_SECRET && signature) {
+      try {
+        event = await stripe.webhooks.constructEventAsync(body, signature, STRIPE_WEBHOOK_SECRET);
+      } catch (err) {
+        console.error(`Webhook signature verification failed: ${err.message}`);
+        return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400, headers: corsHeaders });
+      }
+    } else {
+      console.warn('STRIPE_WEBHOOK_SECRET not configured, skipping signature verification');
+      event = JSON.parse(body);
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -26,7 +47,6 @@ serve(async (req) => {
     const handleSubscriptionEvent = async (subscription: any) => {
       const customerId = subscription.customer;
       
-      // Find user by stripe_customer_id
       const { data: sub } = await supabase
         .from('subscriptions')
         .select('user_id')
@@ -38,7 +58,7 @@ serve(async (req) => {
         return;
       }
 
-      const status = subscription.status; // active, past_due, canceled, trialing, etc.
+      const status = subscription.status;
       
       await supabase.from('subscriptions').update({
         stripe_subscription_id: subscription.id,
@@ -56,12 +76,8 @@ serve(async (req) => {
         await handleSubscriptionEvent(event.data.object);
         break;
       case 'invoice.payment_succeeded':
-        // Subscription renewed successfully
         if (event.data.object.subscription) {
-          const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${event.data.object.subscription}`, {
-            headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
-          });
-          const sub = await subRes.json();
+          const sub = await stripe.subscriptions.retrieve(event.data.object.subscription as string);
           await handleSubscriptionEvent(sub);
         }
         break;
