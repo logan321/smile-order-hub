@@ -446,6 +446,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const uvTextCommitTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    console.log('[DEBUG] ownerUserId logic running, urlUserId:', urlUserId);
     if (urlUserId) {
       setOwnerUserId(urlUserId);
     } else {
