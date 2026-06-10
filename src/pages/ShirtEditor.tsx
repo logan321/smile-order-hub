@@ -162,12 +162,16 @@ const getRegraNicho = (nichoId: string) => {
 };
 
 function StampThumb({ miniaturaUrl, imageUrl, name }: { miniaturaUrl: string | null | undefined; imageUrl: string; name: string }) {
+  const [error, setError] = useState(false);
+  const finalUrl = toProxyUrl(miniaturaUrl || imageUrl);
+  
   return (
     <img
-      src={toProxyUrl(miniaturaUrl || imageUrl)}
+      src={error ? imageUrl : finalUrl}
       alt={name}
       loading="lazy"
       decoding="async"
+      onError={() => setError(true)}
       className="w-full aspect-square object-contain p-1 bg-muted/10"
     />
   );
