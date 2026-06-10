@@ -14,7 +14,6 @@ interface Shirt3DPreviewProps {
   backImage: string;
   uvMapUrl?: string | null;
   uvCanvas?: HTMLCanvasElement | null;
-  uvDataUrl?: string | null;
   uvVersion?: number;
   fabricColor?: string;
   autoRotate?: boolean;
@@ -27,14 +26,12 @@ interface Shirt3DPreviewProps {
 }
 
 function ShirtModel({
-  uvDataUrl,
-  uvMapUrl,
+  uvImage,
   uvCanvas,
   uvVersion,
   fabricColor,
 }: {
-  uvDataUrl?: string | null;
-  uvMapUrl: string | null;
+  uvImage: string | null;
   uvCanvas: HTMLCanvasElement | null | undefined;
   uvVersion?: number;
   fabricColor: string;
@@ -44,24 +41,15 @@ function ShirtModel({
   });
 
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
-  const texRef = useRef<THREE.Texture | null>(null);
-
-  // Usa dataUrl quando disponível (mobile-safe), senão canvas, senão URL
-  const texSource = uvDataUrl || uvMapUrl || null;
+  const texRef = useRef<THREE.CanvasTexture | null>(null);
 
   useEffect(() => {
     const color = new THREE.Color(fabricColor);
+
     let tex: THREE.Texture | null = null;
 
-    if (uvDataUrl) {
-      // dataURL: funciona em desktop e mobile sem CORS
-      const loader = new THREE.TextureLoader();
-      tex = loader.load(uvDataUrl);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.flipY = false;
-      tex.needsUpdate = true;
-    } else if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
-      // Canvas direto: funciona no desktop
+    if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
+      // Sempre recria CanvasTexture — é o mais compatível mobile/desktop
       if (texRef.current) texRef.current.dispose();
       const ct = new THREE.CanvasTexture(uvCanvas);
       ct.colorSpace = THREE.SRGBColorSpace;
@@ -70,10 +58,10 @@ function ShirtModel({
       ct.needsUpdate = true;
       texRef.current = ct;
       tex = ct;
-    } else if (uvMapUrl) {
+    } else if (uvImage) {
       const loader = new THREE.TextureLoader();
       loader.setCrossOrigin('anonymous');
-      tex = loader.load(uvMapUrl);
+      tex = loader.load(uvImage);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.flipY = false;
       tex.needsUpdate = true;
@@ -93,7 +81,7 @@ function ShirtModel({
       mesh.castShadow = true;
       mesh.receiveShadow = true;
     });
-  }, [scene, uvDataUrl, uvCanvas, uvVersion, uvMapUrl, fabricColor]);
+  }, [scene, uvCanvas, uvVersion, uvImage, fabricColor]);
 
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -107,18 +95,29 @@ function ShirtModel({
   const fitScale = 2.4 / Math.max(size.y, 0.0001);
 
   return (
-    <group scale={fitScale}
-      position={[-center.x * fitScale, -center.y * fitScale, -center.z * fitScale]}>
+    <group
+      scale={fitScale}
+      position={[-center.x * fitScale, -center.y * fitScale, -center.z * fitScale]}
+    >
       <primitive object={scene} />
     </group>
   );
 }
 
 export default function Shirt3DPreview({
-  frontImage, backImage, uvMapUrl, uvCanvas, uvDataUrl,
-  uvVersion = 0, fabricColor = '#ffffff', autoRotate = true,
-  cameraPosition = [0, 0.1, 5.2], className, animatingElement,
-  onAnimationComplete, isUvReady, canvasBg = '#f1f3f6',
+  frontImage,
+  backImage,
+  uvMapUrl,
+  uvCanvas,
+  uvVersion = 0,
+  fabricColor = '#ffffff',
+  autoRotate = true,
+  cameraPosition = [0, 0.1, 5.2],
+  className,
+  animatingElement,
+  onAnimationComplete,
+  isUvReady,
+  canvasBg = '#f1f3f6',
 }: Shirt3DPreviewProps) {
   const [rotating, setRotating] = useState(autoRotate);
   const orbitRef = useRef<any>(null);
@@ -132,36 +131,65 @@ export default function Shirt3DPreview({
   }, [cameraPosition]);
 
   const uvImage = uvMapUrl ?? null;
-  const hasUv = !!uvImage || !!uvCanvas || !!uvDataUrl;
+  const hasUv = !!uvImage || !!uvCanvas;
 
   return (
-    <div className={cn('w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner', className)}
-      style={{ background: canvasBg }}>
-      <Canvas shadows camera={{ position: cameraPosition, fov: 35 }}
+    <div
+      className={cn('w-full h-full rounded-lg overflow-hidden relative border border-border/20 shadow-inner', className)}
+      style={{ background: canvasBg }}
+    >
+      <Canvas
+        shadows
+        camera={{ position: cameraPosition, fov: 35 }}
         gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
-        dpr={[1, 1.5]} style={{ background: canvasBg }}>
+        dpr={[1, 1.5]}
+        style={{ background: canvasBg }}
+      >
         <color attach="background" args={[canvasBg]} />
         <ambientLight intensity={0.8} />
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
         <directionalLight position={[3, 4, 5]} intensity={1.5} castShadow shadow-mapSize={[512, 512]} />
         <directionalLight position={[-3, 2, -2]} intensity={0.5} />
         <pointLight position={[0, 5, 0]} intensity={0.5} />
-        <Suspense fallback={<Html center><div className="flex flex-col items-center gap-2"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="text-xs font-medium text-muted-foreground">Carregando 3D...</p></div></Html>}>
-          <ShirtModel uvDataUrl={uvDataUrl} uvMapUrl={uvImage} uvCanvas={uvCanvas}
-            uvVersion={uvVersion} fabricColor={fabricColor} />
+
+        <Suspense fallback={
+          <Html center>
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-xs font-medium text-muted-foreground">Carregando 3D...</p>
+            </div>
+          </Html>
+        }>
+          <ShirtModel
+            uvImage={uvImage}
+            uvCanvas={uvCanvas}
+            uvVersion={uvVersion}
+            fabricColor={fabricColor}
+          />
           <ContactShadows position={[0, -1.95, 0]} opacity={0.4} scale={6} blur={2.6} far={3} />
           <Environment preset="city" />
         </Suspense>
-        <OrbitControls ref={orbitRef} enablePan={false} autoRotate={rotating}
-          autoRotateSpeed={1.2} minDistance={3} maxDistance={8}
-          enableDamping dampingFactor={0.08} makeDefault />
+
+        <OrbitControls
+          ref={orbitRef}
+          enablePan={false}
+          autoRotate={rotating}
+          autoRotateSpeed={1.2}
+          minDistance={3}
+          maxDistance={8}
+          enableDamping
+          dampingFactor={0.08}
+          makeDefault
+        />
       </Canvas>
+
       <div className="absolute top-2 right-2 flex gap-2">
         <Button size="sm" variant="secondary" className="h-8 px-2 shadow-sm"
           onClick={() => setRotating((r) => !r)}>
           {rotating ? 'Pausar' : 'Girar'}
         </Button>
       </div>
+
       {!hasUv && (
         <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur border rounded-lg p-3 shadow-lg text-xs text-center text-muted-foreground">
           Esta camisa ainda não tem um <strong>molde UV</strong> configurado.
