@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
 import { composeUvTexture, UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 import { toProxyUrl } from '@/lib/imageProxy';
@@ -29,8 +28,6 @@ function toCorsUrl(url: string): string {
 
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const textureRef = useRef<THREE.CanvasTexture | null>(null);
-  
   if (!canvasRef.current && typeof document !== 'undefined') {
     canvasRef.current = document.createElement('canvas');
   }
@@ -75,14 +72,7 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
         }).catch(() => {});
       });
     }, delay);
-    return () => { 
-      cancelled = true; 
-      window.clearTimeout(timer); 
-      if (textureRef.current) {
-        textureRef.current.dispose();
-        textureRef.current = null;
-      }
-    };
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [baseUrl, zones, layers, uvWidth, uvHeight]);
 
   return { canvas: canvasRef.current, version, ready };
