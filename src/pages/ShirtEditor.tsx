@@ -98,7 +98,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const isMobile = useIsMobile();
   const { userId: urlUserId } = useParams<{ userId: string }>();
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
-  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [niches, setNiches] = useState<Niche[]>([]);
@@ -106,13 +105,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
-  const [uvTextureVersion, setUvTextureVersion] = useState(0);
-  const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.3, 5.2]);
   const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
-  const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
-  const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
-  const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
-  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
   const { configs } = useSiteConfigContext();
 
@@ -123,10 +116,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   useEffect(() => {
     let active = true;
     const fetch = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = urlUserId || session?.user?.id || 'public';
-      setOwnerUserId(userId);
-
       const [templatesRes, stampsRes, nichesRes] = await Promise.all([
         supabase.from('shirt_templates').select('*').eq('active', true),
         supabase.from('stamp_catalog').select('*').eq('active', true),
@@ -138,10 +127,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, miniaturaFrenteUrl: s.miniatura_frente_url,
           codigo: s.codigo, backImageUrl: s.back_image_url, nicheId: s.niche_id, uvMapUrl: s.uv_map_url, uvMapId: s.uv_map_id
         })) ?? []);
-        setNiches(nichesRes.data ?? []);
-        setTemplates((templatesRes.data as any[])?.map(t => ({
-          id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url, uvMapId: t.uv_map_id, uvMapUrl: t.uv_map_url, userId: t.user_id, nicheId: t.niche_id
+        
+        setNiches((nichesRes.data as any[])?.map(n => ({
+          id: n.id, name: n.name, icon: n.icon || '🏷️', patchLabel: n.patch_label,
+          coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || ''
         })) ?? []);
+
+        const rawTemplates = (templatesRes.data as any[])?.map(t => ({
+          id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
+          uvMapId: t.uv_map_id, uvMapUrl: t.uv_map_url, userId: t.user_id, nicheId: t.niche_id
+        })) ?? [];
+        
+        setTemplates(rawTemplates);
+        if (rawTemplates.length > 0) setSelectedTemplate(rawTemplates[0]);
         setLoading(false);
       }
     };
@@ -151,24 +149,29 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   const addStamp = (stamp: Stamp) => setAppliedStamp(stamp);
 
-  if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
-  if (!loading && stamps.length === 0) return <div className="h-screen flex items-center justify-center">Nenhuma estampa encontrada.</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center">Carregando Simulador...</div>;
+  if (!loading && stamps.length === 0) return <div className="h-screen flex items-center justify-center text-center p-4">Nenhuma estampa encontrada. Verifique sua conexão.</div>;
 
   return (
-    <div className="h-screen flex flex-col">
-       {/* Catálogo Mobile */}
+    <div className="h-screen flex flex-col bg-white overflow-hidden">
        {isMobile && (
-         <div className="bg-white p-2 border-b flex gap-2 overflow-x-auto">
+         <div className="bg-white p-3 border-b flex gap-3 overflow-x-auto no-scrollbar shrink-0 z-50">
            {stampsFiltrados.map(s => (
-             <button key={s.id} onClick={() => addStamp(s)} className="w-16 h-16 border rounded-lg overflow-hidden shrink-0">
+             <button key={s.id} onClick={() => addStamp(s)} className={cn("w-16 h-16 shrink-0 rounded-xl border-2 overflow-hidden transition-all bg-gray-50", appliedStamp?.id === s.id ? "border-[#FF5A00]" : "border-gray-100")}>
                <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
              </button>
            ))}
          </div>
        )}
        
-       <div className="flex-1 overflow-hidden relative">
-         <Shirt3DPreview frontImage={selectedTemplate?.frontImageUrl || ''} backImage={selectedTemplate?.backImageUrl || ''} uvMapUrl={appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl} uvCanvas={uv3DCanvas} />
+       <div className="flex-1 relative bg-gray-50">
+         <Shirt3DPreview 
+            frontImage={selectedTemplate?.frontImageUrl || ''} 
+            backImage={selectedTemplate?.backImageUrl || ''} 
+            uvMapUrl={appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl} 
+            uvCanvas={uv3DCanvas} 
+            fabricColor={appliedStamp ? '#ffffff' : '#cccccc'}
+         />
        </div>
     </div>
   );
