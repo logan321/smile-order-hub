@@ -161,10 +161,10 @@ const getRegraNicho = (nichoId: string) => {
   return REGRAS_NICHO[nichoId as keyof typeof REGRAS_NICHO] || REGRAS_NICHO.futebol;
 };
 
-function StampThumb({ stampUrl, name }: { stampUrl: string; name: string }) {
+function StampThumb({ miniaturaUrl, imageUrl, name }: { miniaturaUrl: string | null | undefined; imageUrl: string; name: string }) {
   return (
     <img
-      src={toProxyUrl(stampUrl)}
+      src={toProxyUrl(miniaturaUrl || imageUrl)}
       alt={name}
       loading="lazy"
       decoding="async"
@@ -483,7 +483,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         id: s.id, 
         name: s.name, 
         category: s.category, 
-        imageUrl: s.miniatura_frente_url || s.image_url, 
+        imageUrl: s.image_url, 
         miniaturaFrenteUrl: s.miniatura_frente_url,
         codigo: s.codigo,
         backImageUrl: s.back_image_url ?? null,
