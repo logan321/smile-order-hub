@@ -20,7 +20,6 @@ import TrackOrder from "./pages/TrackOrder";
 import Admin from "./pages/Admin";
 import SubscriptionPage from "./pages/Subscription";
 import ShirtEditor from "./pages/ShirtEditor";
-import MobileEditor from "./pages/MobileEditor";
 import EditorSettings from "./pages/EditorSettings";
 import AdminEditorConfig from "./pages/AdminEditorConfig";
 import AdminConfigPage from "./pages/AdminConfigPage";
@@ -100,7 +99,6 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/rastreio/:slug" element={<TrackOrder />} />
             <Route path="/editor/:userId" element={<ShirtEditor />} />
-            <Route path="/simulador-mobile" element={<MobileEditor />} />
 
             {/* Protected + subscription required routes */}
             <Route path="/" element={<ProtectedRoute><SubscriptionGuard><AppLayout><Dashboard /></AppLayout></SubscriptionGuard></ProtectedRoute>} />

@@ -479,10 +479,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
 
       <Tabs defaultValue="niches" className="max-w-3xl">
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
-          <TabsTrigger value="mobile-lab" className="gap-2 bg-amber-500/10 text-amber-600 border-amber-200">
-            <Sparkles className="h-4 w-4" />
-            Laboratório Mobile (Teste)
-          </TabsTrigger>
           <TabsTrigger value="niches" className="gap-2">
             <Tag className="h-4 w-4" />
             Nichos
@@ -512,66 +508,6 @@ const EditorSettings = ({ targetUserId, targetEmail }: EditorSettingsProps = {})
             WhatsApp
           </TabsTrigger>
         </TabsList>
-
-        {/* Laboratório Mobile (Teste) */}
-        <TabsContent value="mobile-lab">
-          <div className="bg-card rounded-xl border-2 border-amber-200 shadow-sm p-6 overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-2">
-              <span className="text-[10px] font-bold uppercase tracking-tighter bg-amber-500 text-white px-2 py-0.5 rounded-bl-lg">Ambiente de Teste</span>
-            </div>
-            
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold font-display text-amber-900">Laboratório Mobile (Isolado)</h2>
-                <p className="text-sm text-amber-700/80">Configure UVs e estampas exclusivas para o simulador de teste sem afetar o original.</p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="p-4 bg-amber-50 rounded-lg border border-amber-100">
-                <p className="text-sm text-amber-800 font-medium mb-2">Como usar o Laboratório:</p>
-                <ol className="text-xs text-amber-700 space-y-1 list-decimal ml-4">
-                  <li>As configurações aqui são <strong>separadas</strong> das outras abas.</li>
-                  <li>Use para testar o novo sistema de UV "Silhueta" no Android.</li>
-                  <li>O simulador mobile (/simulador-mobile) lerá os dados daqui.</li>
-                </ol>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Box className="h-4 w-4" /> UVs de Teste
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Cadastre o mapa UV que será usado no teste (ex: a silhueta do peito).</p>
-                  <Button variant="outline" className="w-full justify-start gap-2 border-amber-200 hover:bg-amber-50" onClick={() => toast.info('Funcionalidade sendo vinculada...')}>
-                    <Plus className="h-4 w-4" /> Adicionar UV de Teste
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Stamp className="h-4 w-4" /> Estampas de Teste
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Cadastre as estampas que você quer ver aplicadas no 3D de teste.</p>
-                  <Button variant="outline" className="w-full justify-start gap-2 border-amber-200 hover:bg-amber-50" onClick={() => toast.info('Funcionalidade sendo vinculada...')}>
-                    <Plus className="h-4 w-4" /> Adicionar Estampa de Teste
-                  </Button>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-amber-100 flex justify-center">
-                <a href="/simulador-mobile" target="_blank" rel="noopener noreferrer">
-                  <Button className="bg-amber-600 hover:bg-amber-700 text-white gap-2">
-                    <Eye className="h-4 w-4" /> Abrir Simulador de Teste
-                  </Button>
-                </a>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
 
         {/* Niches */}
         <TabsContent value="niches">
