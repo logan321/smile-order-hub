@@ -736,10 +736,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     });
   }, [elementPositions, uvMapZones, textColor, fontSize, fontFamily, uvTextDrafts, animatingElement?.layer?.id, showNome, showNumero, nomeColor, nomeSize, nomeFont, nomeBorderColor, numeroFrontColor, numeroBackColor, numeroSize, numeroFont, numeroFrontBorderColor, numeroBackBorderColor, escudoImageUrl, debouncedEscudoScale, debouncedEscudoOffsetX, debouncedEscudoOffsetY, appliedStamp]);
 
-  const activeUvBaseUrl = appliedStamp?.uvMapUrl || selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
-  console.log('[UV DEBUG] activeUvBaseUrl:', activeUvBaseUrl);
-  console.log('[UV DEBUG] appliedStamp:', appliedStamp?.name, appliedStamp?.uvMapUrl);
-  console.log('[UV DEBUG] uvMapZones keys:', Object.keys(uvMapZones));
+  const activeUvBaseUrl = selectedTemplate?.uvMapUrl || fallbackUvUrl || null;
+  console.log('[UV DEBUG] activeUvBaseUrl (template/fallback):', activeUvBaseUrl);
+  console.log('[UV DEBUG] appliedStamp URL:', appliedStamp?.uvMapUrl || appliedStamp?.imageUrl);
   console.log('[UV DEBUG] uvLayers count:', uvLayers.length);
 
   const uvComposite = useUvCompositor({
