@@ -16,6 +16,7 @@ interface Shirt3DPreviewProps {
   uvMapUrl?: string | null;
   uvCanvas?: HTMLCanvasElement | null;
   uvVersion?: number;
+  uvDataUrl?: string;
   fabricColor?: string;
   autoRotate?: boolean;
   cameraPosition?: [number, number, number];
@@ -30,10 +31,12 @@ function ShirtModel({
   uvImage,
   uvCanvas,
   uvVersion,
+  uvDataUrl,
   fabricColor,
 }: {
   uvImage: string | null;
   uvCanvas: HTMLCanvasElement | null | undefined;
+  uvDataUrl?: string;
   uvVersion?: number;
   fabricColor: string;
 }) {
@@ -49,7 +52,14 @@ function ShirtModel({
 
     let tex: THREE.Texture | null = null;
 
-    if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
+    if (uvDataUrl) {
+      const loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('anonymous');
+      tex = loader.load(uvDataUrl);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.flipY = false;
+      tex.needsUpdate = true;
+    } else if (uvCanvas && uvCanvas.width > 0 && uvCanvas.height > 0) {
       // Sempre recria CanvasTexture — é o mais compatível mobile/desktop
       if (texRef.current) {
         texRef.current.dispose();
@@ -99,7 +109,7 @@ function ShirtModel({
       mesh.castShadow = true;
       mesh.receiveShadow = true;
     });
-  }, [scene, uvCanvas, uvVersion, uvImage, fabricColor]);
+  }, [scene, uvCanvas, uvDataUrl, uvVersion, uvImage, fabricColor]);
 
   const { center, size } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -127,6 +137,7 @@ export default function Shirt3DPreview({
   backImage,
   uvMapUrl,
   uvCanvas,
+  uvDataUrl,
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
@@ -209,6 +220,7 @@ export default function Shirt3DPreview({
           <ShirtModel
             uvImage={uvImage}
             uvCanvas={uvCanvas}
+            uvDataUrl={uvDataUrl}
             uvVersion={uvVersion}
             fabricColor={fabricColor}
           />
