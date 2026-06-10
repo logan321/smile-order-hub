@@ -23,7 +23,7 @@ import { fetchAllStampColors, StampColor } from '@/hooks/useStampColors';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { composeUvWithStamp, loadImage as loadUvImage } from '@/lib/composeMockup';
-import { useUvCompositor } from '@/hooks/useUvCompositor';
+import { useMobileUvCompositor, MobileUvZone } from '@/hooks/useMobileUvCompositor';
 import type { UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
 import { cn } from '@/lib/utils';
@@ -205,12 +205,79 @@ const MobileEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(70);
   const [fontFamily, setFontFamily] = useState('Impact');
-  const [uvLayers, setUvLayers] = useState<UvLayer[]>([]);
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
-  const [uvMapZones, setUvMapZones] = useState<Record<string, UvZone>>({});
+  const { uvCanvas: mobileUvCanvas, version: mobileUvVersion, compose: mobileCompose } = useMobileUvCompositor();
+
+  const mobileZones: MobileUvZone[] = useMemo(() => [
+    { id: 'full-silhouette', x: 0, y: 0, width: 100, height: 100, type: 'estampa' },
+    // Simplified mapping for other zones based on common UV coordinates
+    { id: 'peito_esquerdo', x: 55, y: 35, width: 15, height: 15, type: 'escudo' },
+    { id: 'peito_direito', x: 30, y: 35, width: 15, height: 15, type: 'escudo' },
+    { id: 'peito_centro', x: 42, y: 38, width: 15, height: 15, type: 'escudo' },
+    { id: 'costas_topo', x: 35, y: 15, width: 30, height: 10, type: 'nome' },
+    { id: 'costas_centro', x: 35, y: 35, width: 30, height: 30, type: 'numero' },
+    { id: 'costas_fundo', x: 35, y: 65, width: 30, height: 10, type: 'nome' },
+  ], []);
 
   const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
   const { configs } = useSiteConfigContext();
+
+  const nomeText = uvTextDrafts['nome'] || '';
+  const numeroText = uvTextDrafts['numero'] || '';
+
+  useEffect(() => {
+    const textElements = [];
+    if (showNome && nomeText && elementPositions.nome) {
+      textElements.push({
+        id: 'nome',
+        text: nomeText,
+        zoneId: elementPositions.nome,
+        color: nomeColor,
+        fontSize: nomeSize,
+        fontFamily: nomeFont
+      });
+    }
+    if (showNumero && numeroText && elementPositions.numero) {
+      textElements.push({
+        id: 'numero',
+        text: numeroText,
+        zoneId: elementPositions.numero,
+        color: activeView === 'front' ? numeroFrontColor : numeroBackColor,
+        fontSize: numeroSize,
+        fontFamily: numeroFont
+      });
+    }
+
+    mobileCompose({
+      stampUrl: appliedStamp?.uvMapUrl || appliedStamp?.imageUrl,
+      escudoUrl: escudoImageUrl,
+      escudoScale: debouncedEscudoScale,
+      escudoOffset: { x: debouncedEscudoOffsetX, y: debouncedEscudoOffsetY },
+      zones: mobileZones,
+      textElements
+    });
+  }, [
+    appliedStamp, 
+    escudoImageUrl, 
+    debouncedEscudoScale, 
+    debouncedEscudoOffsetX, 
+    debouncedEscudoOffsetY, 
+    mobileZones, 
+    nomeText, 
+    numeroText, 
+    elementPositions, 
+    showNome, 
+    showNumero, 
+    nomeColor, 
+    numeroFrontColor, 
+    numeroBackColor, 
+    activeView,
+    nomeSize,
+    numeroSize,
+    nomeFont,
+    numeroFont,
+    mobileCompose
+  ]);
 
   const getConfig = (key: string, fallback: string = '') => {
     const value = configs[key]?.trim();
