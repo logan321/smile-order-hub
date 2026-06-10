@@ -447,25 +447,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   useEffect(() => {
     console.log('[DEBUG] ownerUserId logic running, urlUserId:', urlUserId);
+    
+    // Timeout para forçar carregamento se o auth demorar
+    const timeout = setTimeout(() => {
+      if (!ownerUserId) {
+        console.log('[DEBUG] Auth timeout - forcing public fetch');
+        setOwnerUserId('public');
+      }
+    }, 2000);
+
     if (urlUserId) {
       setOwnerUserId(urlUserId);
+      clearTimeout(timeout);
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        setOwnerUserId(session?.user?.id ?? null);
+        if (session?.user?.id) {
+          setOwnerUserId(session.user.id);
+          clearTimeout(timeout);
+        }
       });
     }
+    return () => clearTimeout(timeout);
   }, [urlUserId]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) setFetchTimeout(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  useEffect(() => {
     if (!ownerUserId) return;
+    
     const fetchData = async () => {
       console.log('[DEBUG] fetchData started for ownerUserId:', ownerUserId);
+      
+      let templatesQuery = supabase.from('shirt_templates').select('*').eq('active', true);
+      let stampsQuery = supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('active', true);
+      let nichesQuery = supabase.from('niches').select('*').order('position', { ascending: true });
+      let uvMapsQuery = supabase.from('uv_data').select('id, uv_frente_url, codigo');
+
+      // Se não for carregamento público, filtra por usuário
+      if (ownerUserId !== 'public') {
+        templatesQuery = templatesQuery.eq('user_id', ownerUserId);
+        stampsQuery = stampsQuery.eq('user_id', ownerUserId);
+        nichesQuery = nichesQuery.eq('user_id', ownerUserId);
+        uvMapsQuery = uvMapsQuery.eq('user_id', ownerUserId);
+      }
+
       const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
-        supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-        supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
-        supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
-        supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
+        templatesQuery,
+        stampsQuery,
+        nichesQuery,
+        uvMapsQuery
       ]);
+
+      console.log('[DEBUG] stampsRes.data:', stampsRes.data);
 
       const rawTemplates = (templatesRes.data as any[])?.map(t => ({
         id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
@@ -476,7 +514,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       setAllTemplates(rawTemplates);
       setTemplates(rawTemplates);
       
-      // Se houver apenas um template, seleciona-o automaticamente
       if (rawTemplates.length === 1) {
         setSelectedTemplate(rawTemplates[0]);
       }
@@ -491,6 +528,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         backImageUrl: s.back_image_url ?? null,
         nicheId: s.niche_id ?? null,
       })) ?? []);
+
       const loadedNiches = (nichesRes.data as any[])?.map(n => ({
         id: n.id,
         name: n.name,
