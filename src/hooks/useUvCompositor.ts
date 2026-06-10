@@ -45,11 +45,11 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
       // Usa URL com cache-bust para evitar canvas tainted no mobile
       const safeUrl = toCorsUrl(baseUrl);
       composeUvTexture({
-        baseUrl: safeUrl,
+        baseUrl,
         zones,
         layers,
-        uvWidth,
-        uvHeight,
+        uvWidth: uvWidth ? Math.min(uvWidth, 2048) : null,
+        uvHeight: uvHeight ? Math.min(uvHeight, 2048) : null,
         canvas: canvasRef.current!,
       }).then(() => {
         if (cancelled) return;
