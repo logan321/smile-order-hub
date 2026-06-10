@@ -460,51 +460,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     if (!ownerUserId) return;
     const fetchData = async () => {
       console.log('[DEBUG] fetchData started for ownerUserId:', ownerUserId);
-      const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
-        supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-        supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
-        supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
-        supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
-      ]);
+      try {
+        const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
+          supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
+          supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
+          supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
+          supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
+        ]);
 
-      const rawTemplates = (templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
-        uvMapId: t.uv_map_id, uvMapUrl: t.uv_map_url,
-        userId: t.user_id, nicheId: t.niche_id ?? null,
-      })) ?? [];
+        console.log('[DEBUG] Templates found:', templatesRes.data?.length ?? 0);
+        console.log('[DEBUG] Stamps found:', stampsRes.data?.length ?? 0);
+        console.log('[DEBUG] Niches found:', nichesRes.data?.length ?? 0);
 
-      setAllTemplates(rawTemplates);
-      setTemplates(rawTemplates);
-      
-      // Se houver apenas um template, seleciona-o automaticamente
-      if (rawTemplates.length === 1) {
-        setSelectedTemplate(rawTemplates[0]);
+        if (stampsRes.error) console.error('[DEBUG] Stamps error:', stampsRes.error);
+        if (templatesRes.error) console.error('[DEBUG] Templates error:', templatesRes.error);
+
+        const rawTemplates = (templatesRes.data as any[])?.map(t => ({
+          id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
+          uvMapId: t.uv_map_id, uvMapUrl: t.uv_map_url,
+          userId: t.user_id, nicheId: t.niche_id ?? null,
+        })) ?? [];
+
+        setAllTemplates(rawTemplates);
+        setTemplates(rawTemplates);
+        
+        if (rawTemplates.length === 1) {
+          setSelectedTemplate(rawTemplates[0]);
+        }
+
+        setStamps((stampsRes.data as any[])?.map(s => ({
+          id: s.id, 
+          name: s.name, 
+          category: s.category, 
+          imageUrl: s.image_url, 
+          miniaturaFrenteUrl: s.miniatura_frente_url,
+          codigo: s.codigo,
+          backImageUrl: s.back_image_url ?? null,
+          nicheId: s.niche_id ?? null,
+        })) ?? []);
+
+        const loadedNiches = (nichesRes.data as any[])?.map(n => ({
+          id: n.id,
+          name: n.name,
+          icon: n.icon || '🏷️',
+          patchLabel: n.patch_label,
+          coverImageUrl: n.cover_image_url || '',
+          backgroundImageUrl: n.background_image_url || ''
+        })) ?? [];
+        setNiches(loadedNiches);
+        
+        if (loadedNiches.length > 0 && !nichoAtivo) {
+          setNichoAtivo(loadedNiches[0].id);
+        }
+      } catch (err) {
+        console.error('[DEBUG] fetchData critical error:', err);
+      } finally {
+        setLoading(false);
       }
-
-      setStamps((stampsRes.data as any[])?.map(s => ({
-        id: s.id, 
-        name: s.name, 
-        category: s.category, 
-        imageUrl: s.image_url, 
-        miniaturaFrenteUrl: s.miniatura_frente_url,
-        codigo: s.codigo,
-        backImageUrl: s.back_image_url ?? null,
-        nicheId: s.niche_id ?? null,
-      })) ?? []);
-      const loadedNiches = (nichesRes.data as any[])?.map(n => ({
-        id: n.id,
-        name: n.name,
-        icon: n.icon || '🏷️',
-        patchLabel: n.patch_label,
-        coverImageUrl: n.cover_image_url || '',
-        backgroundImageUrl: n.background_image_url || ''
-      })) ?? [];
-      setNiches(loadedNiches);
-      
-      if (loadedNiches.length > 0 && !nichoAtivo) {
-        setNichoAtivo(loadedNiches[0].id);
-      }
-      setLoading(false);
     };
     fetchData();
   }, [ownerUserId]);
