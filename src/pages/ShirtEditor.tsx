@@ -875,7 +875,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
 
       {/* PARTE 1 — Barra de nichos no topo */}
-      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-none lg:touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
         <button className="absolute left-1 lg:left-2 z-10 p-1 lg:p-2 text-white/50 hover:text-white transition-colors hidden lg:block">
           <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
