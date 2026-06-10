@@ -20,7 +20,6 @@ import TrackOrder from "./pages/TrackOrder";
 import Admin from "./pages/Admin";
 import SubscriptionPage from "./pages/Subscription";
 import ShirtEditor from "./pages/ShirtEditor";
-import MobileEditor from "./pages/MobileEditor";
 import EditorSettings from "./pages/EditorSettings";
 import AdminEditorConfig from "./pages/AdminEditorConfig";
 import AdminConfigPage from "./pages/AdminConfigPage";
