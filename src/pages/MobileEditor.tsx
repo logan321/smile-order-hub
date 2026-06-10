@@ -1,259 +1,220 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, RotateCcw, Shirt, Sparkles, Hand, Box, Menu } from 'lucide-react';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, RotateCcw, Shirt, Sparkles, Hand, Box, Menu, Settings, Plus, Layout } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import logoOriginal from '@/assets/logo.png';
 import { ConfigIcon } from '@/components/ConfigIcon';
 import { toProxyUrl } from '@/lib/imageProxy';
 import Shirt3DPreview from '@/components/Shirt3DPreview';
 import { cn } from '@/lib/utils';
-import { useUVMap } from '@/hooks/useUVMap';
 import { useSiteConfigContext } from '@/contexts/SiteConfigContext';
-import { getColor, getIcon } from '@/lib/siteConfigUtils';
+import { getColor } from '@/lib/siteConfigUtils';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useMobileUvCompositor, MobileUvZone } from '@/hooks/useMobileUvCompositor';
 
-interface Niche {
-  id: string;
-  name: string;
-  icon: string;
-  patchLabel: string;
-  coverImageUrl: string;
-  backgroundImageUrl: string;
-}
-
-interface Template {
-  id: string;
-  name: string;
-  frontImageUrl: string;
-  backImageUrl: string;
-  uvMapUrl: string | null;
-  uvMapId?: string | null;
-  userId: string;
-  nicheId: string | null;
-}
-
-interface Stamp {
-  id: string;
-  name: string;
-  category: string;
-  imageUrl: string;
-  miniaturaFrenteUrl?: string | null;
-  codigo?: string | null;
-  backImageUrl: string | null;
-  uvMapUrl?: string | null;
-  uvMapId?: string | null;
-  templateId?: string | null;
-  nicheId?: string | null;
-}
-
-type ToolbarTab = 'stamps' | 'text' | 'name' | 'emblems' | 'logo' | 'patches' | 'textStyles' | null;
-
-const REGRAS_NICHO = {
-  futebol: { temNumero: true, temNome: true, temEscudo: true, labelEscudo: 'Escudo', labelNome: 'Nome' },
-  pesca: { temNumero: false, temNome: true, temEscudo: true, labelEscudo: 'Logo', labelNome: 'Nome' },
-  ciclismo: { temNumero: false, temNome: true, temEscudo: true, labelEscudo: 'Logo', labelNome: 'Nome' },
-};
-
-const getRegraNicho = (nichoId: string) => REGRAS_NICHO[nichoId as keyof typeof REGRAS_NICHO] || REGRAS_NICHO.futebol;
-
 const MobileEditor = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { userId: urlUserId } = useParams<{ userId: string }>();
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
-  const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
+  const [activeTab, setActiveTab] = useState<'stamps' | 'text' | 'emblems' | 'config'>('stamps');
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [stamps, setStamps] = useState<Stamp[]>([]);
-  const [niches, setNiches] = useState<Niche[]>([]);
-  const [nichoAtivo, setNichoAtivo] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  // States for Mobile Data
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [stamps, setStamps] = useState<any[]>([]);
+  const [mobileUvMaps, setMobileUvMaps] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [appliedStamp, setAppliedStamp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.3, 5.2]);
-  const [appliedStamp, setAppliedStamp] = useState<Stamp | null>(null);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
 
+  // Editor Config States
   const [uvTextDrafts, setUvTextDrafts] = useState<Record<string, string>>({});
-  const { uvCanvas: mobileUvCanvas, version: mobileUvVersion, compose: mobileCompose } = useMobileUvCompositor();
-
-  const { configs } = useSiteConfigContext();
-  const { data: uvMapData } = useUVMap(appliedStamp?.codigo);
-
-  const mobileZones: MobileUvZone[] = useMemo(() => [
-    { id: 'full-silhouette', x: 0, y: 0, width: 100, height: 100, type: 'estampa' },
-    { id: 'peito_esquerdo', x: 55, y: 35, width: 15, height: 15, type: 'escudo' },
-    { id: 'peito_direito', x: 30, y: 35, width: 15, height: 15, type: 'escudo' },
-    { id: 'peito_centro', x: 42, y: 38, width: 15, height: 15, type: 'escudo' },
-    { id: 'costas_topo', x: 35, y: 15, width: 30, height: 10, type: 'nome' },
-    { id: 'costas_centro', x: 35, y: 35, width: 30, height: 30, type: 'numero' },
-    { id: 'costas_fundo', x: 35, y: 65, width: 30, height: 10, type: 'nome' },
-  ], []);
-
-  const [elementPositions, setElementPositions] = useState({ nome: 'costas_topo', escudo: 'peito_esquerdo', numero: 'costas_centro' });
-  const [showNome, setShowNome] = useState(true);
-  const [showNumero, setShowNumero] = useState(true);
-  const [nomeColor, setNomeColor] = useState('#FFFFFF');
-  const [numeroFrontColor, setNumeroFrontColor] = useState('#FFFFFF');
-  const [numeroBackColor, setNumeroBackColor] = useState('#FFFFFF');
-  const [nomeSize, setNomeSize] = useState(70);
-  const [numeroSize, setNumeroSize] = useState(70);
-  const [nomeFont, setNomeFont] = useState('Impact');
-  const [numeroFont, setNumeroFont] = useState('Impact');
   const [escudoImageUrl, setEscudoImageUrl] = useState<string | null>(null);
   const [escudoScale, setEscudoScale] = useState(1);
   const [escudoOffsetX, setEscudoOffsetX] = useState(0);
   const [escudoOffsetY, setEscudoOffsetY] = useState(0);
 
-  const nomeText = uvTextDrafts['nome'] || '';
-  const numeroText = uvTextDrafts['numero'] || '';
+  const { uvCanvas: mobileUvCanvas, version: mobileUvVersion, compose: mobileCompose } = useMobileUvCompositor();
+  const { configs } = useSiteConfigContext();
 
-  useEffect(() => {
-    const textElements = [];
-    if (showNome && nomeText && elementPositions.nome) {
-      textElements.push({ id: 'nome', text: nomeText, zoneId: elementPositions.nome, color: nomeColor, fontSize: nomeSize, fontFamily: nomeFont });
-    }
-    if (showNumero && numeroText && elementPositions.numero) {
-      textElements.push({ id: 'numero', text: numeroText, zoneId: elementPositions.numero, color: activeView === 'front' ? numeroFrontColor : numeroBackColor, fontSize: numeroSize, fontFamily: numeroFont });
-    }
-
-    mobileCompose({
-      stampUrl: appliedStamp?.uvMapUrl || appliedStamp?.imageUrl,
-      escudoUrl: escudoImageUrl,
-      escudoScale,
-      escudoOffset: { x: escudoOffsetX, y: escudoOffsetY },
-      zones: mobileZones,
-      textElements
-    });
-  }, [appliedStamp, escudoImageUrl, escudoScale, escudoOffsetX, escudoOffsetY, mobileZones, nomeText, numeroText, elementPositions, showNome, showNumero, nomeColor, numeroFrontColor, numeroBackColor, activeView, nomeSize, numeroSize, nomeFont, numeroFont, mobileCompose]);
+  const mobileZones: MobileUvZone[] = useMemo(() => [
+    { id: 'full-silhouette', x: 0, y: 0, width: 100, height: 100, type: 'estampa' },
+    { id: 'peito_esquerdo', x: 55, y: 35, width: 15, height: 15, type: 'escudo' },
+    { id: 'peito_direito', x: 30, y: 35, width: 15, height: 15, type: 'escudo' },
+    { id: 'costas_topo', x: 35, y: 15, width: 30, height: 10, type: 'nome' },
+    { id: 'costas_centro', x: 35, y: 35, width: 30, height: 30, type: 'numero' },
+  ], []);
 
   useEffect(() => {
     if (urlUserId) setOwnerUserId(urlUserId);
     else supabase.auth.getSession().then(({ data: { session } }) => setOwnerUserId(session?.user?.id ?? null));
   }, [urlUserId]);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!ownerUserId) return;
-    const fetchData = async () => {
-      try {
-        const [templatesRes, stampsRes, nichesRes] = await Promise.all([
-          supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-          supabase.from('stamp_catalog').select('*').eq('user_id', ownerUserId).eq('active', true),
-          supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
-        ]);
+    try {
+      const [templatesRes, stampsRes, uvsRes] = await Promise.all([
+        supabase.from('mobile_shirt_templates').select('*').eq('user_id', ownerUserId),
+        supabase.from('mobile_stamp_catalog').select('*').eq('user_id', ownerUserId),
+        supabase.from('mobile_uv_maps').select('*').eq('user_id', ownerUserId),
+      ]);
 
-        const rawTemplates = (templatesRes.data as any[])?.map(t => ({
-          id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
-          uvMapId: t.uv_map_id, uvMapUrl: t.uv_map_url, userId: t.user_id, nicheId: t.niche_id ?? null,
-        })) ?? [];
-        setTemplates(rawTemplates);
-        if (rawTemplates.length > 0) setSelectedTemplate(rawTemplates[0]);
+      setTemplates(templatesRes.data || []);
+      setStamps(stampsRes.data || []);
+      setMobileUvMaps(uvsRes.data || []);
 
-        setStamps((stampsRes.data as any[])?.map(s => ({
-          id: s.id, name: s.name, category: s.category, imageUrl: s.image_url, miniaturaFrenteUrl: s.miniatura_frente_url,
-          codigo: s.codigo, backImageUrl: s.back_image_url ?? null, nicheId: s.niche_id ?? null,
-          uvMapUrl: s.uv_frente_url || s.image_url // Simplified
-        })) ?? []);
-
-        const loadedNiches = (nichesRes.data as any[])?.map(n => ({
-          id: n.id, name: n.name, icon: n.icon || '🏷️', patchLabel: n.patch_label,
-          coverImageUrl: n.cover_image_url || '', backgroundImageUrl: n.background_image_url || ''
-        })) ?? [];
-        setNiches(loadedNiches);
-        if (loadedNiches.length > 0) setNichoAtivo(loadedNiches[0].id);
-      } catch (err) { console.error(err); } finally { setLoading(false); }
-    };
-    fetchData();
+      if (templatesRes.data?.length && !selectedTemplate) setSelectedTemplate(templatesRes.data[0]);
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   }, [ownerUserId]);
 
-  const getConfig = (key: string, fallback: string = '') => {
-    // Try mobile specific key first
-    const mobileKey = `mobile_${key}`;
-    return configs[mobileKey]?.trim() || configs[key]?.trim() || (key === 'logo_url' ? logoOriginal : fallback);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    mobileCompose({
+      stampUrl: appliedStamp?.uv_frente_url || appliedStamp?.image_url,
+      escudoUrl: escudoImageUrl,
+      escudoScale,
+      escudoOffset: { x: escudoOffsetX, y: escudoOffsetY },
+      zones: mobileZones,
+      textElements: [
+        { id: 'nome', text: uvTextDrafts['nome'] || '', zoneId: 'costas_topo', color: '#FFF', fontSize: 70, fontFamily: 'Impact' },
+        { id: 'numero', text: uvTextDrafts['numero'] || '', zoneId: 'costas_centro', color: '#FFF', fontSize: 70, fontFamily: 'Impact' },
+      ]
+    });
+  }, [appliedStamp, escudoImageUrl, escudoScale, escudoOffsetX, escudoOffsetY, uvTextDrafts, mobileCompose]);
+
+  // Handle Image Upload to Mobile-Specific Tables
+  const handleMobileStampUpload = async (e: any) => {
+    const file = e.target.files?.[0];
+    if (!file || !ownerUserId) return;
+    
+    const fileName = `mobile-stamp-${Date.now()}`;
+    const { data, error } = await supabase.storage.from('stamps').upload(fileName, file);
+    if (error) return toast.error("Erro no upload");
+
+    const { data: { publicUrl } } = supabase.storage.from('stamps').getPublicUrl(fileName);
+
+    await supabase.from('mobile_stamp_catalog').insert({
+      name: 'Nova Estampa Mobile',
+      image_url: publicUrl,
+      uv_frente_url: publicUrl,
+      user_id: ownerUserId
+    });
+
+    toast.success("Estampa adicionada ao catálogo mobile!");
+    fetchData();
   };
 
-  const regrasAtuais = useMemo(() => getRegraNicho(nichoAtivo || ''), [nichoAtivo]);
-  const stampsFiltrados = useMemo(() => nichoAtivo ? stamps.filter(s => s.nicheId === nichoAtivo) : stamps, [stamps, nichoAtivo]);
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center">Carregando Ambiente de Teste Mobile...</div>;
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
-      {/* TEST BADGE */}
-      <div className="absolute top-4 left-4 z-50 bg-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
-        VERSÃO MOBILE DE TESTES
+      <div className="absolute top-4 left-4 z-50 bg-yellow-500 text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
+        <Smartphone className="w-3 h-3" /> AMBIENTE ISOLADO MOBILE
       </div>
 
-      <div className="flex-1 relative bg-gray-50">
+      <div className="flex-1 relative bg-gray-100">
         <Shirt3DPreview 
-          frontImage="" 
-          backImage=""
+          frontImage="" backImage=""
           uvCanvas={mobileUvCanvas}
           uvVersion={mobileUvVersion}
           autoRotate={false}
-          cameraPosition={cameraPosition}
-          canvasBg="transparent"
+          cameraPosition={[0, 0.3, 5.2]}
           className="w-full h-full"
         />
 
-        {/* View Selectors */}
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-4 z-30">
-          <Button variant="outline" size="sm" onClick={() => setCameraPosition([0, 0.3, 5.2])}>FRENTE</Button>
-          <Button variant="outline" size="sm" onClick={() => setCameraPosition([0, 0.3, -5.2])}>COSTAS</Button>
-        </div>
-
-        {/* Floating Menu (Simplified) */}
+        {/* Floating Menu Toggle */}
         <div className="absolute bottom-6 right-6 z-40">
           <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
             <SheetTrigger asChild>
-              <Button className="w-16 h-16 rounded-full shadow-2xl bg-orange-600">
-                <Menu className="w-8 h-8 text-white" />
+              <Button className="w-16 h-16 rounded-full shadow-2xl bg-black hover:bg-gray-900 border-4 border-white/20">
+                <Menu className="w-8 h-8" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl p-6">
-              <SheetHeader><SheetTitle>EDITOR MOBILE</SheetTitle></SheetHeader>
-              <div className="mt-6 space-y-6">
-                 {/* Simplified Editor Controls */}
-                 <div className="flex gap-4 overflow-x-auto py-2">
-                    {['stamps', 'text', 'emblems'].map(tab => (
-                      <Button key={tab} variant={activeTab === tab ? 'default' : 'outline'} onClick={() => setActiveTab(tab as any)}>{tab.toUpperCase()}</Button>
-                    ))}
-                 </div>
+            <SheetContent side="bottom" className="h-[85vh] rounded-t-[2rem] p-0 overflow-hidden border-none">
+              <div className="flex flex-col h-full bg-white">
+                <SheetHeader className="p-4 border-b shrink-0">
+                  <SheetTitle className="text-center font-black text-xs uppercase tracking-widest">Painel de Configuração Mobile</SheetTitle>
+                </SheetHeader>
 
-                 {activeTab === 'stamps' && (
-                   <div className="grid grid-cols-3 gap-2 h-64 overflow-y-auto">
-                     {stampsFiltrados.map(s => (
-                       <button key={s.id} onClick={() => setAppliedStamp(s)} className={cn("p-1 border rounded", appliedStamp?.id === s.id && "border-orange-500")}>
-                         <img src={toProxyUrl(s.miniaturaFrenteUrl || s.imageUrl)} className="w-full h-auto" />
-                       </button>
-                     ))}
-                   </div>
-                 )}
+                <Tabs defaultValue="editor" className="flex-1 flex flex-col overflow-hidden">
+                  <TabsList className="grid grid-cols-2 p-1 bg-gray-100 mx-4 mt-4">
+                    <TabsTrigger value="editor">Editor</TabsTrigger>
+                    <TabsTrigger value="config">Config. Dados</TabsTrigger>
+                  </TabsList>
 
-                 {activeTab === 'text' && (
-                   <div className="space-y-4">
-                     <Input placeholder="Nome" value={uvTextDrafts['nome'] || ''} onChange={(e) => setUvTextDrafts(prev => ({...prev, nome: e.target.value}))} />
-                     <Input placeholder="Número" value={uvTextDrafts['numero'] || ''} onChange={(e) => setUvTextDrafts(prev => ({...prev, numero: e.target.value}))} />
-                   </div>
-                 )}
-
-                 {activeTab === 'emblems' && (
-                    <div className="space-y-4">
-                       <Input type="file" onChange={(e) => {
-                         const file = e.target.files?.[0];
-                         if (file) setEscudoImageUrl(URL.createObjectURL(file));
-                       }} />
-                       <div className="space-y-2">
-                         <label className="text-xs">Escala</label>
-                         <Slider value={[escudoScale]} min={0.5} max={2} step={0.1} onValueChange={([v]) => setEscudoScale(v)} />
-                       </div>
+                  <TabsContent value="editor" className="flex-1 overflow-y-auto p-4 space-y-6">
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {['stamps', 'text', 'emblems'].map(t => (
+                        <Button key={t} variant={activeTab === t ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab(t as any)} className="uppercase text-[10px] font-bold">
+                          {t}
+                        </Button>
+                      ))}
                     </div>
-                 )}
+
+                    {activeTab === 'stamps' && (
+                      <div className="grid grid-cols-3 gap-3">
+                        {stamps.map(s => (
+                          <button key={s.id} onClick={() => setAppliedStamp(s)} className={cn("aspect-square border-2 rounded-xl p-1 bg-gray-50", appliedStamp?.id === s.id ? "border-yellow-500" : "border-transparent")}>
+                            <img src={toProxyUrl(s.image_url)} className="w-full h-full object-contain" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeTab === 'text' && (
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400">NOME</label>
+                          <Input value={uvTextDrafts['nome'] || ''} onChange={(e) => setUvTextDrafts(prev => ({...prev, nome: e.target.value}))} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400">NÚMERO</label>
+                          <Input value={uvTextDrafts['numero'] || ''} onChange={(e) => setUvTextDrafts(prev => ({...prev, numero: e.target.value}))} />
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="config" className="flex-1 overflow-y-auto p-4 space-y-8">
+                    <section className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black uppercase">Catálogo de Estampas (Mobile)</h3>
+                        <Button variant="outline" size="sm" onClick={() => document.getElementById('mobile-upload')?.click()}>
+                          <Plus className="w-3 h-3 mr-1" /> Add Nova
+                        </Button>
+                        <input id="mobile-upload" type="file" className="hidden" onChange={handleMobileStampUpload} />
+                      </div>
+                      <p className="text-[10px] text-gray-400">Estas estampas aparecem APENAS neste simulador de teste.</p>
+                      
+                      <div className="border rounded-xl p-4 space-y-4">
+                         {stamps.length === 0 && <p className="text-center py-8 text-gray-400 text-xs italic">Nenhuma estampa no catálogo mobile</p>}
+                         {stamps.map(s => (
+                           <div key={s.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                             <img src={toProxyUrl(s.image_url)} className="w-10 h-10 object-contain bg-white rounded border" />
+                             <div className="flex-1">
+                               <p className="text-[10px] font-bold">{s.name}</p>
+                               <p className="text-[8px] text-gray-400">ID: {s.id.slice(0,8)}</p>
+                             </div>
+                             <Button variant="ghost" size="icon" onClick={() => {
+                               supabase.from('mobile_stamp_catalog').delete().eq('id', s.id).then(() => fetchData());
+                             }}>
+                               <Trash2 className="w-3 h-3 text-red-400" />
+                             </Button>
+                           </div>
+                         ))}
+                      </div>
+                    </section>
+                  </TabsContent>
+                </Tabs>
               </div>
             </SheetContent>
           </Sheet>
@@ -262,5 +223,8 @@ const MobileEditor = () => {
     </div>
   );
 };
+
+// Simplified lucide import for local usage
+const Smartphone = (props: any) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>;
 
 export default MobileEditor;
