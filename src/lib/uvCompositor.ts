@@ -188,7 +188,8 @@ export async function composeUvTexture(opts: {
       if (layer.strokeWidth && layer.strokeWidth > 0) {
         ctx.lineJoin = 'round';
         ctx.strokeStyle = layer.strokeColor || '#000';
-        ctx.lineWidth = layer.strokeWidth;
+        // Scale stroke width
+        ctx.lineWidth = layer.strokeWidth * scaleX;
         drawText(true);
       }
       ctx.fillStyle = layer.color || '#ffffff';
