@@ -1,4 +1,5 @@
 import type { UvZone } from '@/hooks/useUvLibrary';
+import { toProxyUrl } from '@/lib/imageProxy';
 
 export type UvLayer =
   | {

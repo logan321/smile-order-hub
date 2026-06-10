@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { composeUvTexture, UvLayer } from '@/lib/uvCompositor';
 import type { UvZone } from '@/hooks/useUvLibrary';
+import { toProxyUrl } from '@/lib/imageProxy';
 
 interface Options {
   baseUrl: string | null | undefined;
