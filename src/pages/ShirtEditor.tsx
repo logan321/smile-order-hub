@@ -756,8 +756,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     if (uvComposite.canvas) {
       setUv3DCanvas(uvComposite.canvas);
       setUvTextureVersion(v => v + 1);
+      setLastUpdateTime(Date.now());
     }
-  }, [uvComposite.version, uvComposite.ready]);
+  }, [uvComposite.version, uvComposite.ready, uvComposite.canvas]);
 
   // Limpa canvas quando estampa muda para evitar mostrar textura antiga
   useEffect(() => {
