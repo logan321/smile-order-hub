@@ -194,7 +194,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [nichoAtivo, setNichoAtivo] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
+  const [fetchTimeout, setFetchTimeout] = useState(false);
   const [uv3DCanvas, setUv3DCanvas] = useState<HTMLCanvasElement | null>(null);
   const [uvTextureVersion, setUvTextureVersion] = useState(0);
   const [cameraPosition, setCameraPosition] = useState<[number, number, number]>([0, 0.3, 5.2]);
@@ -796,7 +796,21 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            {fetchTimeout ? "Carregando... Se persistir, recarregue a página." : "Carregando Simulador..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (stamps.length === 0 && !loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center p-6">
+          <p className="text-sm font-bold text-gray-800 uppercase tracking-widest mb-4">Nenhuma estampa encontrada.</p>
+          <p className="text-xs text-gray-400 mb-6">Verifique sua conexão ou as configurações do catálogo.</p>
+          <Button onClick={() => window.location.reload()} className="bg-[#FF5A00] text-white font-bold px-8 rounded-xl">Recarregar</Button>
         </div>
       </div>
     );
@@ -1495,6 +1509,26 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           isMobile ? "h-[100dvh] lg:h-full" : "h-[60vh] lg:h-full"
         )}>
 
+          {/* Catálogo de Estampas Mobile - Sempre Visível no Topo */}
+          {isMobile && (
+            <div className="w-full bg-white/80 backdrop-blur-md border-b border-gray-100 z-40 shrink-0">
+              <div className="flex overflow-x-auto no-scrollbar p-3 gap-3 touch-pan-x">
+                {stampsFiltrados.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => addStamp(s)}
+                    className={cn(
+                      "w-16 h-16 shrink-0 rounded-xl border-2 overflow-hidden transition-all active:scale-95 bg-white",
+                      appliedStamp?.id === s.id ? "border-[#FF5A00] shadow-md" : "border-gray-100"
+                    )}
+                  >
+                    <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 relative">
             <Shirt3DPreview 
               frontImage={selectedTemplate?.frontImageUrl || ''} 
@@ -1683,19 +1717,9 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                       <div id="mobile-sidebar-content">
                         <div className="space-y-6">
                           {activeTab === 'stamps' && (
-                            <div className="grid grid-cols-2 gap-3">
-                              {stampsFiltrados.map(s => (
-                                <button
-                                  key={s.id}
-                                  onClick={() => addStamp(s)}
-                                  className={cn(
-                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
-                                    appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
-                                  )}
-                                >
-                                  <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
-                                </button>
-                              ))}
+                            <div className="text-center py-8">
+                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Use o catálogo no topo da tela</p>
+                               <Button variant="ghost" onClick={() => setIsMobileSheetOpen(false)} className="mt-4 text-[#FF5A00] font-bold">Voltar para Edição</Button>
                             </div>
                           )}
 
