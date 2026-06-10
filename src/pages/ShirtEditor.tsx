@@ -849,6 +849,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </header>
 
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto">
+          <p>UV URL: {activeUvBaseUrl ? activeUvBaseUrl.substring(0, 60) + '...' : 'NULL'}</p>
+          <p>Stamp: {appliedStamp?.name || 'nenhuma'}</p>
+          <p>Zones: {Object.keys(uvMapZones).join(', ') || 'nenhuma'}</p>
+          <p>Layers: {uvLayers.length}</p>
+          <p>Composite ready: {uvComposite.ready ? 'SIM' : 'NAO'}</p>
+          <p>Canvas: {uvComposite.canvas ? `${uvComposite.canvas.width}x${uvComposite.canvas.height}` : 'NULL'}</p>
+          <p>uv3DCanvas: {uv3DCanvas ? `${uv3DCanvas.width}x${uv3DCanvas.height}` : 'NULL'}</p>
+        </div>
+      )}
+
+
 
       {/* PARTE 1 — Barra de nichos no topo */}
       <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
