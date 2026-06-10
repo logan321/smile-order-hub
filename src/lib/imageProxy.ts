@@ -21,7 +21,10 @@ export function toProxyUrl(originalUrl: string): string {
     const idx = originalUrl.indexOf(marker);
     if (idx !== -1) {
       const path = decodeURIComponent(originalUrl.substring(idx + marker.length));
-      const encoded = btoa(`${bucket}|${path}`);
+      // Usa uma codificação segura para UTF-8 que funciona em btoa
+      const encoded = btoa(encodeURIComponent(`${bucket}|${path}`).replace(/%([0-9A-F]{2})/g, (match, p1) => 
+        String.fromCharCode(parseInt(p1, 16))
+      ));
       return `${SUPABASE_URL}/functions/v1/r?d=${encoded}`;
     }
   }

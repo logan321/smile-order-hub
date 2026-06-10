@@ -460,51 +460,63 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
     if (!ownerUserId) return;
     const fetchData = async () => {
       console.log('[DEBUG] fetchData started for ownerUserId:', ownerUserId);
-      const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
-        supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-        supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
-        supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
-        supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
-      ]);
+      try {
+        const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
+          supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
+          supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
+          supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
+          supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
+        ]);
 
-      const rawTemplates = (templatesRes.data as any[])?.map(t => ({
-        id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
-        uvMapId: t.uv_map_id, uvMapUrl: t.uv_map_url,
-        userId: t.user_id, nicheId: t.niche_id ?? null,
-      })) ?? [];
+        console.log('[DEBUG] Templates found:', templatesRes.data?.length ?? 0);
+        console.log('[DEBUG] Stamps found:', stampsRes.data?.length ?? 0);
+        console.log('[DEBUG] Niches found:', nichesRes.data?.length ?? 0);
 
-      setAllTemplates(rawTemplates);
-      setTemplates(rawTemplates);
-      
-      // Se houver apenas um template, seleciona-o automaticamente
-      if (rawTemplates.length === 1) {
-        setSelectedTemplate(rawTemplates[0]);
+        if (stampsRes.error) console.error('[DEBUG] Stamps error:', stampsRes.error);
+        if (templatesRes.error) console.error('[DEBUG] Templates error:', templatesRes.error);
+
+        const rawTemplates = (templatesRes.data as any[])?.map(t => ({
+          id: t.id, name: t.name, frontImageUrl: t.front_image_url, backImageUrl: t.back_image_url,
+          uvMapId: t.uv_map_id, uvMapUrl: t.uv_map_url,
+          userId: t.user_id, nicheId: t.niche_id ?? null,
+        })) ?? [];
+
+        setAllTemplates(rawTemplates);
+        setTemplates(rawTemplates);
+        
+        if (rawTemplates.length === 1) {
+          setSelectedTemplate(rawTemplates[0]);
+        }
+
+        setStamps((stampsRes.data as any[])?.map(s => ({
+          id: s.id, 
+          name: s.name, 
+          category: s.category, 
+          imageUrl: s.image_url, 
+          miniaturaFrenteUrl: s.miniatura_frente_url,
+          codigo: s.codigo,
+          backImageUrl: s.back_image_url ?? null,
+          nicheId: s.niche_id ?? null,
+        })) ?? []);
+
+        const loadedNiches = (nichesRes.data as any[])?.map(n => ({
+          id: n.id,
+          name: n.name,
+          icon: n.icon || '🏷️',
+          patchLabel: n.patch_label,
+          coverImageUrl: n.cover_image_url || '',
+          backgroundImageUrl: n.background_image_url || ''
+        })) ?? [];
+        setNiches(loadedNiches);
+        
+        if (loadedNiches.length > 0 && !nichoAtivo) {
+          setNichoAtivo(loadedNiches[0].id);
+        }
+      } catch (err) {
+        console.error('[DEBUG] fetchData critical error:', err);
+      } finally {
+        setLoading(false);
       }
-
-      setStamps((stampsRes.data as any[])?.map(s => ({
-        id: s.id, 
-        name: s.name, 
-        category: s.category, 
-        imageUrl: s.image_url, 
-        miniaturaFrenteUrl: s.miniatura_frente_url,
-        codigo: s.codigo,
-        backImageUrl: s.back_image_url ?? null,
-        nicheId: s.niche_id ?? null,
-      })) ?? []);
-      const loadedNiches = (nichesRes.data as any[])?.map(n => ({
-        id: n.id,
-        name: n.name,
-        icon: n.icon || '🏷️',
-        patchLabel: n.patch_label,
-        coverImageUrl: n.cover_image_url || '',
-        backgroundImageUrl: n.background_image_url || ''
-      })) ?? [];
-      setNiches(loadedNiches);
-      
-      if (loadedNiches.length > 0 && !nichoAtivo) {
-        setNichoAtivo(loadedNiches[0].id);
-      }
-      setLoading(false);
     };
     fetchData();
   }, [ownerUserId]);
@@ -793,10 +805,21 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-4 text-center">
+          {!ownerUserId && !urlUserId ? (
+            <>
+              <Box className="w-12 h-12 text-gray-200" />
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Usuário não identificado</p>
+              <p className="text-xs text-gray-400">Por favor, acesse através de um link válido ou faça login.</p>
+              <Button variant="outline" onClick={() => window.location.href = '/login'} className="mt-4">Ir para Login</Button>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
+            </>
+          )}
         </div>
       </div>
     );
@@ -851,22 +874,19 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         </div>
       </header>
 
-      {process.env.NODE_ENV !== 'production' && (
-        <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto pointer-events-none">
-          <p>UV URL: {activeUvBaseUrl ? activeUvBaseUrl.substring(0, 60) + '...' : 'NULL'}</p>
-          <p>Stamp: {appliedStamp?.name || 'nenhuma'} (ID: {appliedStamp?.id || '?'})</p>
-          <p>Nicho Ativo: {nichoAtivo || 'nenhum'}</p>
-          <p>Stamps Filtrados: {stampsFiltrados.length}</p>
-          <p>Zones: {Object.keys(uvMapZones).length}</p>
-          <p>Layers: {uvLayers.length}</p>
-          <p>Composite ready: {uvComposite.ready ? 'SIM' : 'NAO'}</p>
-        </div>
-      )}
+      <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-black/90 text-white text-[9px] p-2 max-h-32 overflow-y-auto pointer-events-none opacity-80 lg:opacity-100">
+        <p>User ID: {ownerUserId || 'NULL'}</p>
+        <p>Stamps: {stamps.length} (Filtrados: {stampsFiltrados.length})</p>
+        <p>Niches: {niches.length} | Nicho Ativo: {nichoAtivo || 'nenhum'}</p>
+        <p>UV: {activeUvBaseUrl ? 'CARREGADO' : 'NULL'}</p>
+        <p>Composite: {uvComposite.ready ? 'PRONTO' : 'CARREGANDO...'}</p>
+      </div>
+
 
 
 
       {/* PARTE 1 — Barra de nichos no topo */}
-      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-none lg:touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
+      <div id="nav-nichos" className="h-16 lg:h-[100px] flex items-center px-2 lg:px-4 relative shrink-0 z-40 touch-pan-x" style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}>
         <button className="absolute left-1 lg:left-2 z-10 p-1 lg:p-2 text-white/50 hover:text-white transition-colors hidden lg:block">
           <ChevronLeft className="w-6 h-6 lg:w-8 lg:h-8" />
         </button>
@@ -1684,18 +1704,27 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                         <div className="space-y-6">
                           {activeTab === 'stamps' && (
                             <div className="grid grid-cols-2 gap-3">
-                              {stampsFiltrados.map(s => (
-                                <button
-                                  key={s.id}
-                                  onClick={() => addStamp(s)}
-                                  className={cn(
-                                    "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
-                                    appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
-                                  )}
-                                >
-                                  <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
-                                </button>
-                              ))}
+                              {stampsFiltrados.length > 0 ? (
+                                stampsFiltrados.map(s => (
+                                  <button
+                                    key={s.id}
+                                    onClick={() => addStamp(s)}
+                                    className={cn(
+                                      "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
+                                      appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
+                                    )}
+                                  >
+                                    <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="col-span-2 py-10 text-center space-y-2">
+                                  <Shirt className="w-8 h-8 text-gray-200 mx-auto" />
+                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    {stamps.length === 0 ? "Nenhuma estampa cadastrada" : "Nenhuma estampa para este nicho"}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )}
 
