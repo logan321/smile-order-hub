@@ -29,8 +29,10 @@ export function useMobileUvCompositor() {
     
     // 1. Create Canvas
     const canvas = document.createElement('canvas');
-    canvas.width = 2048; // High res for UV
-    canvas.height = 2048;
+    // Mobile: Limitar tamanho para evitar falha de alocação de memória WebGL
+    const maxDim = 2048; 
+    canvas.width = maxDim;
+    canvas.height = maxDim;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 

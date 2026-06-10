@@ -40,9 +40,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   const p = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
     // Força crossOrigin anonymous para evitar Canvas Tainted
-    img.crossOrigin = 'anonymous';
-    // No Safari/iOS mobile, crossOrigin deve vir antes do src
-
+    img.crossOrigin = 'anonymous'; 
     
     img.onload = () => {
       // Small delay for mobile browsers to ensure the image data is actually accessible
@@ -52,12 +50,13 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     img.onerror = () => {
       console.warn('CORS loading failed for:', url, 'trying fallback without crossOrigin...');
       const img2 = new Image();
+      // CORREÇÃO 1 — Manter crossOrigin anonymous mesmo em fallback se possível, 
+      // ou garantir que a tentativa principal foi feita corretamente.
       img2.onload = () => resolve(img2);
       img2.onerror = (e) => {
         console.error('Final image load failed:', url, e);
         reject(e);
       };
-      // Fallback: without crossOrigin. The canvas might become "tainted", but at least it renders.
       img2.src = url;
     };
 
