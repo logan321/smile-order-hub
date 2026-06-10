@@ -28,6 +28,8 @@ function toCorsUrl(url: string): string {
 
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   if (!canvasRef.current && typeof document !== 'undefined') {
     canvasRef.current = document.createElement('canvas');
   }
@@ -48,8 +50,8 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
         baseUrl: safeUrl,
         zones,
         layers,
-        uvWidth,
-        uvHeight,
+        uvWidth: isMobile ? 1024 : uvWidth,
+        uvHeight: isMobile ? 1024 : uvHeight,
         canvas: canvasRef.current!,
       }).then(() => {
         if (cancelled) return;
@@ -62,8 +64,8 @@ export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: O
           baseUrl,
           zones,
           layers,
-          uvWidth,
-          uvHeight,
+          uvWidth: isMobile ? 1024 : uvWidth,
+          uvHeight: isMobile ? 1024 : uvHeight,
           canvas: canvasRef.current!,
         }).then(() => {
           if (cancelled) return;
