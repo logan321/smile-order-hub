@@ -32,40 +32,50 @@ export type UvLayer =
       opacity?: number;
     };
 
-const imgCache = new Map<string, Promise<HTMLImageElement>>();
+const imgCache = new Map<string, HTMLImageElement>();
 function loadImage(url: string): Promise<HTMLImageElement> {
-  const cached = imgCache.get(url);
-  if (cached) return cached;
+  if (imgCache.has(url)) {
+    const cachedImg = imgCache.get(url)!;
+    if (cachedImg.complete && cachedImg.naturalWidth > 0) {
+      return Promise.resolve(cachedImg);
+    }
+  }
 
-  const p = new Promise<HTMLImageElement>((resolve, reject) => {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous'; 
     
-    img.onload = () => {
-      // Small delay for mobile browsers to ensure the image data is actually accessible
-      if (img.complete && img.naturalWidth > 0) {
+    let resolved = false;
+    const handleSuccess = () => {
+      if (resolved) return;
+      if (img.naturalWidth > 0) {
+        resolved = true;
+        imgCache.set(url, img);
         resolve(img);
-      } else {
-        setTimeout(() => resolve(img), 20);
       }
     };
-    
-    img.onerror = () => {
-      // Se falhar com CORS, tentamos uma vez sem proxy se não for proxied, 
-      // mas mantendo crossOrigin se possível.
-      console.warn('Image load failed:', url);
+
+    img.onload = handleSuccess;
+    img.onerror = (e) => {
+      if (resolved) return;
+      console.warn('Image load failed:', url, e);
       reject(new Error(`Failed to load image: ${url}`));
     };
 
     img.src = url;
-    // Se já estiver completa (cache do navegador), resolve imediatamente
+    
+    // Check if already complete (cached)
     if (img.complete && img.naturalWidth > 0) {
-      resolve(img);
+      handleSuccess();
     }
+    
+    // Safety timeout for mobile browsers
+    setTimeout(() => {
+      if (!resolved && img.complete && img.naturalWidth > 0) {
+        handleSuccess();
+      }
+    }, 100);
   });
-
-  imgCache.set(url, p);
-  return p;
 }
 
 export async function composeUvTexture(opts: {
@@ -86,9 +96,22 @@ export async function composeUvTexture(opts: {
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(base, 0, 0, w, h);
 
+  // Calcula fator de escala se o canvas for diferente do tamanho natural da imagem base
+  const scaleX = w / base.naturalWidth;
+  const scaleY = h / base.naturalHeight;
+
   for (const layer of opts.layers) {
-    const zone = opts.zones[layer.zoneKey];
-    if (!zone && !layer.id.includes('applied_stamp')) continue;
+    const rawZone = opts.zones[layer.zoneKey];
+    if (!rawZone && !layer.id.includes('applied_stamp')) continue;
+    
+    // Scale zone coordinates to current canvas resolution
+    const zone = rawZone ? {
+      x: rawZone.x * scaleX,
+      y: rawZone.y * scaleY,
+      width: rawZone.width * scaleX,
+      height: rawZone.height * scaleY
+    } : null;
+
     ctx.save();
     
     // Check if it's the escudo or a stamp layer to decide whether to clip
@@ -105,12 +128,16 @@ export async function composeUvTexture(opts: {
     let cx = 0;
     let cy = 0;
     
+    // Scale offsets as well
+    const offX = (layer.offsetX ?? 0) * scaleX;
+    const offY = (layer.offsetY ?? 0) * scaleY;
+
     if (isAppliedStamp) {
-      cx = w / 2 + (layer.offsetX ?? 0);
-      cy = h / 2 + (layer.offsetY ?? 0);
+      cx = w / 2 + offX;
+      cy = h / 2 + offY;
     } else if (zone) {
-      cx = zone.x + zone.width / 2 + (layer.offsetX ?? 0);
-      cy = zone.y + zone.height / 2 + (layer.offsetY ?? 0);
+      cx = zone.x + zone.width / 2 + offX;
+      cy = zone.y + zone.height / 2 + offY;
     }
     
     ctx.translate(cx, cy);
@@ -161,7 +188,8 @@ export async function composeUvTexture(opts: {
       if (layer.strokeWidth && layer.strokeWidth > 0) {
         ctx.lineJoin = 'round';
         ctx.strokeStyle = layer.strokeColor || '#000';
-        ctx.lineWidth = layer.strokeWidth;
+        // Scale stroke width
+        ctx.lineWidth = layer.strokeWidth * scaleX;
         drawText(true);
       }
       ctx.fillStyle = layer.color || '#ffffff';
@@ -170,8 +198,9 @@ export async function composeUvTexture(opts: {
       try {
         // Adiciona cache-bust para camadas também no mobile para forçar refresh de CORS
         const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const layerUrl = isMobile ? `${layer.url}${layer.url.includes('?') ? '&' : '?'}cb=${Date.now()}` : layer.url;
-        const img = await loadImage(toProxyUrl(layerUrl));
+        const proxiedUrl = toProxyUrl(layer.url);
+        const layerUrl = isMobile ? `${proxiedUrl}${proxiedUrl.includes('?') ? '&' : '?'}cb=${Date.now()}` : proxiedUrl;
+        const img = await loadImage(layerUrl);
         ctx.globalAlpha = layer.opacity ?? 1;
         // contain
         let zw = (zone?.width ?? w) * scale;
