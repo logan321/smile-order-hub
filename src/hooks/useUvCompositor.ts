@@ -12,18 +12,21 @@ interface Options {
 }
 
 // Força CORS adicionando cache-bust só na primeira vez por URL
-const corsUrlCache = new Set<string>();
+const corsUrlCache = new Map<string, string>();
 function toCorsUrl(url: string): string {
-  // Use our proxy as the primary way to bypass CORS
+  if (!url) return '';
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  if (!isMobile) return toProxyUrl(url);
+
+  // For mobile, we use a stable cache-bust per session or just once
+  if (corsUrlCache.has(url)) return corsUrlCache.get(url)!;
+  
   const proxied = toProxyUrl(url);
-  
-  // If the image already comes from our proxy, don't add extra cache-bust unless it's a new request
-  if (corsUrlCache.has(proxied)) return proxied;
-  corsUrlCache.add(proxied);
-  
   const sep = proxied.includes('?') ? '&' : '?';
-  // Cache-bust helps "clear" CORS state in mobile Safari/Chrome
-  return `${proxied}${sep}cb=${Date.now()}`;
+  const finalUrl = `${proxied}${sep}cb=${Math.floor(Date.now() / 1000)}`; 
+  corsUrlCache.set(url, finalUrl);
+  return finalUrl;
 }
 
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {

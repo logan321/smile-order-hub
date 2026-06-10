@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useRef, useState, useMemo } from 'react';
+import { toProxyUrl } from '@/lib/imageProxy';
 import { cn } from '@/lib/utils';
 import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Environment, Html } from '@react-three/drei';
@@ -66,7 +67,9 @@ function ShirtModel({
     } else if (uvImage) {
       const loader = new THREE.TextureLoader();
       loader.setCrossOrigin('anonymous');
-      tex = loader.load(uvImage);
+      // Proxies the uvImage too
+      const proxiedUv = toProxyUrl(uvImage);
+      tex = loader.load(proxiedUv);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.flipY = false;
       tex.needsUpdate = true;
