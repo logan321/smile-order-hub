@@ -805,10 +805,21 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-4 text-center">
+          {!ownerUserId && !urlUserId ? (
+            <>
+              <Box className="w-12 h-12 text-gray-200" />
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Usuário não identificado</p>
+              <p className="text-xs text-gray-400">Por favor, acesse através de um link válido ou faça login.</p>
+              <Button variant="outline" onClick={() => window.location.href = '/login'} className="mt-4">Ir para Login</Button>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 border-4 border-[#FF5A00] border-t-transparent rounded-full animate-spin" />
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando Simulador...</p>
+            </>
+          )}
         </div>
       </div>
     );
