@@ -15,7 +15,7 @@ serve(async (req) => {
     const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
     if (!STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY not configured');
 
-    console.log('STRIPE_SECRET_KEY prefix:', STRIPE_SECRET_KEY.substring(0, 7));
+    // Removed sensitive prefix logging for security
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header');
@@ -77,7 +77,7 @@ serve(async (req) => {
         body: new URLSearchParams({ email: email || '', 'metadata[user_id]': userId }),
       });
       const customerText = await customerRes.text();
-      console.log('Stripe customer response:', customerRes.status, customerText);
+      console.log('Stripe customer created:', customerRes.status);
       
       if (!customerRes.ok) throw new Error(`Stripe customer error: ${customerText}`);
       
@@ -111,7 +111,7 @@ serve(async (req) => {
       body: params,
     });
     const sessionText = await sessionRes.text();
-    console.log('Stripe session response:', sessionRes.status, sessionText);
+    console.log('Stripe session created:', sessionRes.status);
 
     if (!sessionRes.ok) throw new Error(`Stripe session error: ${sessionText}`);
 
