@@ -33,21 +33,34 @@ export type UvLayer =
 
 const imgCache = new Map<string, Promise<HTMLImageElement>>();
 function loadImage(url: string): Promise<HTMLImageElement> {
-  if (imgCache.has(url)) return imgCache.get(url)!;
+  const cached = imgCache.get(url);
+  if (cached) return cached;
+
   const p = new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
-    // Seta crossOrigin ANTES do src — obrigatório para CORS funcionar no mobile
+    // Força crossOrigin anonymous para evitar Canvas Tainted
     img.crossOrigin = 'anonymous';
+    
+    // Tenta carregar com crossOrigin. Se falhar (ex: Bucket sem CORS), tenta sem crossOrigin como fallback.
     img.onload = () => resolve(img);
     img.onerror = () => {
-      // Fallback sem crossOrigin (para imagens sem CORS header)
+      console.warn('CORS loading failed for:', url, 'trying fallback...');
       const img2 = new Image();
       img2.onload = () => resolve(img2);
-      img2.onerror = reject;
+      img2.onerror = (e) => {
+        console.error('Final image load failed:', url, e);
+        reject(e);
+      };
+      // No fallback, não usamos crossOrigin. O canvas poderá ficar "tainted" e o .toDataURL() falhará,
+      // mas pelo menos a imagem aparece no canvas inicial.
       img2.src = url;
     };
+
+    // No mobile, alguns browsers cacheiam a falha de CORS. Adicionar um cache-bust pode ajudar em alguns casos,
+    // mas aqui confiamos no proxy de imagens que configuramos anteriormente.
     img.src = url;
   });
+
   imgCache.set(url, p);
   return p;
 }
