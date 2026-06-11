@@ -463,7 +463,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       try {
         const [templatesRes, stampsRes, nichesRes, uvMapsRes] = await Promise.all([
           supabase.from('shirt_templates').select('*').eq('active', true).eq('user_id', ownerUserId),
-          supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active').eq('user_id', ownerUserId),
+          supabase.from('stamp_catalog').select('id, name, category, miniatura_frente_url, image_url, back_image_url, niche_id, codigo, active, uv_map_url').eq('user_id', ownerUserId),
           supabase.from('niches').select('*').eq('user_id', ownerUserId).order('position', { ascending: true }),
           supabase.from('uv_data').select('id, uv_frente_url, codigo').eq('user_id', ownerUserId),
         ]);
@@ -488,16 +488,70 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
           setSelectedTemplate(rawTemplates[0]);
         }
 
-        setStamps((stampsRes.data as any[])?.map(s => ({
-          id: s.id, 
-          name: s.name, 
-          category: s.category, 
-          imageUrl: s.image_url, 
-          miniaturaFrenteUrl: s.miniatura_frente_url,
-          codigo: s.codigo,
-          backImageUrl: s.back_image_url ?? null,
-          nicheId: s.niche_id ?? null,
-        })) ?? []);
+        const data = stampsRes.data;
+        const stampsWithSignedUrls = await Promise.all((data ?? []).map(async (s: any) => {
+          try {
+            const getPath = (url: string | null) => {
+              if (!url) return null;
+              if (url.includes('token=')) return null;
+              const buckets = ['stamp-catalog', 'uv-maps', 'shirt-templates'];
+              for (const bucket of buckets) {
+                const marker = `/storage/v1/object/public/${bucket}/`;
+                const idx = url.indexOf(marker);
+                if (idx !== -1) {
+                  return { bucket, path: decodeURIComponent(url.substring(idx + marker.length).split('?')[0]) };
+                }
+              }
+              return null;
+            };
+
+            const uvInfo = getPath(s.uvMapUrl || s.uv_map_url);
+            const imgInfo = getPath(s.imageUrl || s.image_url);
+
+            let signedUvUrl = s.uvMapUrl || s.uv_map_url;
+            let signedImgUrl = s.imageUrl || s.image_url;
+
+            if (uvInfo) {
+              const { data: uvSigned } = await supabase.storage
+                .from(uvInfo.bucket)
+                .createSignedUrl(uvInfo.path, 3600);
+              if (uvSigned) signedUvUrl = uvSigned.signedUrl;
+            }
+
+            if (imgInfo) {
+              const { data: imgSigned } = await supabase.storage
+                .from(imgInfo.bucket)
+                .createSignedUrl(imgInfo.path, 3600);
+              if (imgSigned) signedImgUrl = imgSigned.signedUrl;
+            }
+
+            return { 
+              id: s.id, 
+              name: s.name, 
+              category: s.category, 
+              imageUrl: signedImgUrl, 
+              miniaturaFrenteUrl: s.miniatura_frente_url,
+              codigo: s.codigo,
+              backImageUrl: s.back_image_url ?? null,
+              nicheId: s.niche_id ?? null,
+              uvMapUrl: signedUvUrl 
+            };
+          } catch {
+            return {
+              id: s.id, 
+              name: s.name, 
+              category: s.category, 
+              imageUrl: s.image_url, 
+              miniaturaFrenteUrl: s.miniatura_frente_url,
+              codigo: s.codigo,
+              backImageUrl: s.back_image_url ?? null,
+              nicheId: s.niche_id ?? null,
+              uvMapUrl: s.uv_map_url
+            };
+          }
+        }));
+
+        setStamps(stampsWithSignedUrls);
 
         const loadedNiches = (nichesRes.data as any[])?.map(n => ({
           id: n.id,
