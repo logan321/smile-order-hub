@@ -1007,7 +1007,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                     {stampsFiltrados.map(s => (
                       <button
                         key={s.id}
+                        type="button"
                         onClick={() => addStamp(s)}
+                        onTouchEnd={(e) => { e.preventDefault(); addStamp(s); }}
+                        style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                         className={`group rounded-xl border-2 overflow-hidden transition-all aspect-square relative ${
                           appliedStamp?.id === s.id
                             ? 'border-[#FF5A00] bg-[#FF5A00]/5'
@@ -1724,7 +1727,10 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                                 stampsFiltrados.map(s => (
                                   <button
                                     key={s.id}
+                                    type="button"
                                     onClick={() => addStamp(s)}
+                                    onTouchEnd={(e) => { e.preventDefault(); addStamp(s); }}
+                                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                                     className={cn(
                                       "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
                                       appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
