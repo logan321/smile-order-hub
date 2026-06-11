@@ -819,11 +819,11 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   });
 
   useEffect(() => {
-    if (uvComposite.canvas) {
+    if (uvComposite.dataUrl || uvComposite.canvas) {
       setUv3DCanvas(uvComposite.canvas);
       setUvTextureVersion(v => v + 1);
     }
-  }, [uvComposite.version, uvComposite.ready]);
+  }, [uvComposite.version, uvComposite.ready, uvComposite.dataUrl]);
 
   // Limpa canvas quando estampa muda para evitar mostrar textura antiga
   useEffect(() => {
@@ -1592,6 +1592,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
               backImage={selectedTemplate?.backImageUrl || ''} 
               uvMapUrl={uvMapData?.uv_frente_url || selectedTemplate?.uvMapUrl || null}
               uvCanvas={uv3DCanvas}
+              uvDataUrl={uvComposite.dataUrl}
               uvVersion={uvTextureVersion}
               animatingElement={animatingElement}
               onAnimationComplete={() => setAnimatingElement(null)}
