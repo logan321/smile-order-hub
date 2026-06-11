@@ -118,6 +118,7 @@ export default function Shirt3DPreview({
   backImage,
   uvMapUrl,
   uvCanvas,
+  uvDataUrl,
   uvVersion = 0,
   fabricColor = '#ffffff',
   autoRotate = true,
