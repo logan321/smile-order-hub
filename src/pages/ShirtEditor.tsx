@@ -182,7 +182,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
   const [showUvPanel, setShowUvPanel] = useState(true);
-  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
 
   const [templates, setTemplates] = useState<Template[]>([]);
