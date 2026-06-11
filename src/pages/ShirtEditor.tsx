@@ -6,8 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check, ArrowLeft, ArrowRight, Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Type, Upload, Trash2, Download, Image as ImageIcon, ChevronLeft, ChevronRight, Move, MapPin, ZoomIn, ZoomOut, RotateCcw, Shirt, Sparkles, X, Hand, Box, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import EditorGuide, { type GuideStep } from '@/components/EditorGuide';
 import { Shadow } from 'fabric';
@@ -183,7 +182,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
   const [activeView, setActiveView] = useState<'front' | 'back'>('front');
   const [activeTab, setActiveTab] = useState<ToolbarTab>('stamps');
   const [showUvPanel, setShowUvPanel] = useState(true);
-  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
 
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -1585,7 +1583,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
         {/* Coluna 3: Canvas 3D */}
         <div className={cn(
           "flex-1 relative bg-[#F8F9FA] flex flex-col overflow-hidden w-full lg:w-auto",
-          isMobile ? "h-[100dvh] lg:h-full" : "h-[60vh] lg:h-full"
+          "h-[60vh] lg:h-full"
         )}>
 
           <div className="flex-1 relative">
@@ -1625,7 +1623,7 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
             {/* Visual View Selectors */}
             <div className={cn(
               "absolute left-1/2 -translate-x-1/2 lg:left-auto lg:translate-x-0 bottom-24 lg:bottom-auto lg:right-6 lg:top-1/2 lg:-translate-y-1/2 flex flex-row lg:flex-col gap-2 lg:gap-4 z-30 bg-white/20 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-1.5 lg:p-0 rounded-2xl border border-white/30 lg:border-none",
-              isMobile ? "bottom-32" : ""
+              ""
             )}>
 
                {/* Helper para identificar a visão ativa */}
@@ -1715,202 +1713,6 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
                })()}
             </div>
 
-            {/* Floating Menu Button (Mobile) */}
-            <div className="lg:hidden absolute bottom-6 right-6 z-40">
-              <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button 
-                    className="w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90 border-4 border-white/50"
-                    style={{ backgroundColor: getColor(configs, 'primary_color', '#FF5A00') }}
-                  >
-                    <Menu className="w-8 h-8 text-white" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent 
-                  side="bottom"
-                  className="h-[80vh] px-0 pb-0 rounded-t-[2.5rem] border-none overflow-hidden"
-                  style={{ maxHeight: '80dvh' }}
-                >
-                  <div className="flex flex-col h-full bg-white">
-                    <SheetHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
-                      <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4" />
-                      <SheetTitle className="text-center font-black text-gray-800 uppercase tracking-widest text-sm">Configurações</SheetTitle>
-                    </SheetHeader>
-
-                    
-                    {/* Tabs Horizontal Scroll */}
-                    <div className="flex overflow-x-auto no-scrollbar px-4 py-4 gap-4 border-b border-gray-100 shrink-0 touch-pan-x min-h-[80px]">
-                      {[
-                        { id: 'stamps', label: getConfig('estampa_tab_label', 'Estampa'), icon: Shirt, show: true },
-                        { id: 'text', label: getConfig('texto_tab_label', 'Texto'), icon: Type, show: true },
-                        { id: 'name', label: getConfig('nome_tab_label', regrasAtuais.labelNome), icon: Hand, show: regrasAtuais.temNome },
-                        { id: 'patches', label: getConfig('acabamento_tab_label', 'Acabamento'), icon: Sparkles, show: true },
-                        { id: 'emblems', label: getConfig('escudo_tab_label', regrasAtuais.labelEscudo), icon: ImageIcon, show: regrasAtuais.temEscudo },
-                        { id: 'logo', label: getConfig('numero_tab_label', 'Número'), icon: Box, show: regrasAtuais.temNumero },
-                        { id: 'upload_generic', label: getConfig('upload_tab_label', 'Upload'), icon: Upload, show: true },
-                      ].filter(item => item.show).map(({ id, label, icon: Icon }) => (
-                        <button
-                          key={id}
-                          onClick={() => setActiveTab(id as ToolbarTab)}
-                          className={cn(
-                            "flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl transition-all min-w-[90px] min-h-[44px] active:scale-95",
-                            activeTab === id ? "bg-gray-50 shadow-sm" : "text-gray-400"
-                          )}
-                        >
-                          <ConfigIcon 
-                            icon={getIcon(configs, `icon_${id}`, Icon)} 
-                            className="w-6 h-6 pointer-events-none" 
-                            style={{ color: activeTab === id ? getColor(configs, 'primary_color', '#FF5A00') : undefined }}
-                          />
-                          <span className={cn(
-                            "text-[8px] font-black uppercase tracking-tighter pointer-events-none",
-                            activeTab === id ? "text-gray-900" : "text-gray-400"
-                          )}>{label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto px-6 py-6 pb-safe touch-pan-y overscroll-contain"
-                      style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'max(6rem, env(safe-area-inset-bottom))' }}>
-
-                      <div id="mobile-sidebar-content">
-                        <div className="space-y-6">
-                          {activeTab === 'stamps' && (
-                            <div className="grid grid-cols-2 gap-3">
-                              {stampsFiltrados.length > 0 ? (
-                                stampsFiltrados.map(s => (
-                                  <button
-                                    key={s.id}
-                                    type="button"
-                                    onClick={() => addStamp(s)}
-                                    onTouchEnd={(e) => { e.preventDefault(); addStamp(s); }}
-                                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                                    className={cn(
-                                      "aspect-square rounded-xl border-2 overflow-hidden transition-all active:scale-95 min-h-[44px]",
-                                      appliedStamp?.id === s.id ? "border-[#FF5A00] bg-[#FF5A00]/5" : "border-gray-100"
-                                    )}
-                                  >
-                                    <StampThumb miniaturaUrl={s.miniaturaFrenteUrl} imageUrl={s.imageUrl} name={s.name} />
-                                  </button>
-                                ))
-                              ) : (
-                                <div className="col-span-2 py-10 text-center space-y-2">
-                                  <Shirt className="w-8 h-8 text-gray-200 mx-auto" />
-                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                    {stamps.length === 0 ? "Nenhuma estampa cadastrada" : "Nenhuma estampa para este nicho"}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {activeTab === 'text' && (
-                            <div className="space-y-4">
-                              {Object.keys(uvMapZones).filter(k => !['peito_direito', 'peito_esquerdo', 'peito_centro', 'costas_topo', 'costas_centro', 'costas_fundo', 'manga_esquerda', 'manga_direita'].includes(k)).map((zoneKey) => (
-                                <div key={zoneKey} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-black text-[#FF5A00] uppercase tracking-widest">{zoneKey}</span>
-                                    <div className="flex gap-2">
-                                       <button onClick={() => document.getElementById(`uv-file-mobile-${zoneKey}`)?.click()} className="p-2 bg-white rounded-lg shadow-sm"><Upload className="w-4 h-4 text-gray-400" /></button>
-                                       <button onClick={() => setUvLayerText(zoneKey, '')} className="p-2 bg-white rounded-lg shadow-sm"><Trash2 className="w-4 h-4 text-gray-400" /></button>
-                                    </div>
-                                    <input id={`uv-file-mobile-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
-                                  </div>
-                                  <Input
-                                    value={uvTextDrafts[zoneKey] ?? ''}
-                                    onChange={(e) => setUvLayerText(zoneKey, e.target.value)}
-                                    placeholder={`Digite aqui...`}
-                                    className="h-12 bg-white border-none rounded-xl font-bold shadow-sm"
-                                    inputMode="text"
-                                    enterKeyHint="done"
-                                    onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {activeTab === 'name' && (
-                            <div className="space-y-6">
-                              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">{regrasAtuais.labelNome}</label>
-                                <Input 
-                                  value={uvTextDrafts['nome'] ?? ''}
-                                  onChange={(e) => setUvLayerText('nome', e.target.value)}
-                                  placeholder="Digite o nome..."
-                                  className="h-12 bg-white border-none rounded-xl font-bold shadow-sm"
-                                  inputMode="text"
-                                  enterKeyHint="done"
-                                  onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                                />
-                                <div className="space-y-3">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase">Tamanho</span>
-                                    <span className="text-[10px] font-black text-[#FF5A00]">{nomeSize}</span>
-                                  </div>
-                                  <Slider value={[nomeSize]} min={10} max={200} step={1} onValueChange={([v]) => setNomeSize(v)} />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {activeTab === 'emblems' && (
-                             <div className="space-y-4">
-                               <div className="p-6 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-4 text-center"
-                                    onClick={() => document.getElementById('escudo-upload-mobile')?.click()}>
-                                 <div className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center">
-                                   <Upload className="w-8 h-8 text-[#FF5A00]" />
-                                 </div>
-                                 <div>
-                                   <p className="font-black text-sm text-gray-800 uppercase tracking-widest">Enviar {regrasAtuais.labelEscudo}</p>
-                                   <p className="text-[10px] text-gray-400 font-bold mt-1">PNG, JPG, SVG ou PDF</p>
-                                 </div>
-                                 <input id="escudo-upload-mobile" type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleEscudoUpload(file); }} />
-                               </div>
-                               {escudoImageUrl && (
-                                 <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-                                   <img src={escudoImageUrl} className="w-12 h-12 object-contain" />
-                                   <div className="flex-1">
-                                     <p className="text-[10px] font-black uppercase text-gray-800">{regrasAtuais.labelEscudo} ativo</p>
-                                     <button onClick={() => setEscudoImageUrl(null)} className="text-[10px] font-bold text-red-500 uppercase mt-1">Remover</button>
-                                   </div>
-                                 </div>
-                               )}
-                             </div>
-                          )}
-
-                          {activeTab === 'logo' && (
-                            <div className="grid grid-cols-2 gap-4">
-                               {['peito_centro', 'manga_esquerda', 'manga_direita'].map(zoneKey => (
-                                 <div key={zoneKey} className="flex flex-col gap-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                   <span className="text-[9px] font-black text-gray-400 uppercase text-center">{zoneKey.replace('_', ' ')}</span>
-                                   <Button 
-                                     variant="outline" 
-                                     className="h-16 bg-white border-none shadow-sm flex flex-col gap-1 rounded-xl"
-                                     onClick={() => document.getElementById(`uv-file-mobile-${zoneKey}`)?.click()}
-                                   >
-                                     <Upload className="w-4 h-4 text-[#FF5A00]" />
-                                     <span className="text-[8px] font-bold">UPLOAD</span>
-                                   </Button>
-                                   <input id={`uv-file-mobile-${zoneKey}`} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setUvLayerImage(zoneKey, file); }} />
-                                 </div>
-                               ))}
-                            </div>
-                          )}
-
-                          {!['stamps', 'text', 'name', 'emblems', 'logo'].includes(activeTab as string) && (
-                            <div className="text-center py-12">
-                               <p className="font-black text-gray-800 uppercase tracking-widest text-sm">Seção {activeTab}</p>
-                               <p className="text-xs text-gray-400 mt-2 font-medium">Configurações avançadas disponíveis no desktop.</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
 
           </div>
           
