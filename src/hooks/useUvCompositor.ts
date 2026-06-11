@@ -24,10 +24,9 @@ async function toBlobUrl(url: string): Promise<string> {
 }
 
 export function useUvCompositor({ baseUrl, zones, layers, uvWidth, uvHeight }: Options) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  if (!canvasRef.current && typeof document !== 'undefined') {
-    canvasRef.current = document.createElement('canvas');
-  }
+  const canvasRef = useRef<HTMLCanvasElement | null>(
+    typeof document !== 'undefined' ? document.createElement('canvas') : null
+  );
   const [version, setVersion] = useState(0);
   const [ready, setReady] = useState(false);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
