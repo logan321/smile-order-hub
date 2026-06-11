@@ -557,7 +557,23 @@ const ShirtEditor = ({ useOwnAssets }: { useOwnAssets?: boolean }) => {
       const row = data as any;
       setUvMapZones((row.uv_zones && typeof row.uv_zones === 'object') ? row.uv_zones : {});
       setUvMapDims({ w: row.uv_width ?? null, h: row.uv_height ?? null });
-      setFallbackUvUrl(row.image_url || null);
+      const imageUrl = row.image_url ?? null;
+      if (imageUrl) {
+        // Extrai o path do bucket uv-maps para gerar signed URL
+        const marker = '/storage/v1/object/public/uv-maps/';
+        const idx = imageUrl.indexOf(marker);
+        if (idx !== -1) {
+          const path = decodeURIComponent(imageUrl.substring(idx + marker.length));
+          const { data: signedData } = await supabase.storage
+            .from('uv-maps')
+            .createSignedUrl(path, 3600);
+          setFallbackUvUrl(signedData?.signedUrl ?? imageUrl);
+        } else {
+          setFallbackUvUrl(imageUrl);
+        }
+      } else {
+        setFallbackUvUrl(null);
+      }
       
       // Reset layers when the mold changes
       setUvLayers([]);
