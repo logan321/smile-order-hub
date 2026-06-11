@@ -32,38 +32,34 @@ export type UvLayer =
       opacity?: number;
     };
 
-const imgCache = new Map<string, Promise<HTMLImageElement>>();
-function loadImage(url: string): Promise<HTMLImageElement> {
-  const cached = imgCache.get(url);
-  if (cached) return cached;
-
-  const p = new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    // Força crossOrigin anonymous para evitar Canvas Tainted
-    img.crossOrigin = 'anonymous';
-    
-    img.onload = () => {
-      // Small delay for mobile browsers to ensure the image data is actually accessible
-      setTimeout(() => resolve(img), 10);
-    };
-    
-    img.onerror = () => {
-      console.warn('CORS loading failed for:', url, 'trying fallback without crossOrigin...');
-      const img2 = new Image();
-      img2.onload = () => resolve(img2);
-      img2.onerror = (e) => {
-        console.error('Final image load failed:', url, e);
-        reject(e);
+// Sem cache — cada chamada faz fetch fresco com blob URL
+async function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // fetch + blob URL: evita canvas tainted em qualquer browser/mobile
+      const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(blobUrl);
+        resolve(img);
       };
-      // Fallback: without crossOrigin. The canvas might become "tainted", but at least it renders.
-      img2.src = url;
-    };
-
-    img.src = url;
+      img.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error('img load failed'));
+      };
+      img.src = blobUrl;
+    } catch {
+      // fallback direto
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    }
   });
-
-  imgCache.set(url, p);
-  return p;
 }
 
 export async function composeUvTexture(opts: {
